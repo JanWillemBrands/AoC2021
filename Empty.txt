@@ -1,0 +1,27 @@
+create: edge from A0 to #
+add Descriptor(slot: A, stack: #, index: 0)
+get Descriptor(slot: A, stack: #, index: 0)
+setScanStart 0
+next type: x image: x
+parse node .SEQ
+create: edge from C0 to #
+create: edge from B0 to C0
+pop: B0
+popadd
+add Descriptor(slot: B, stack: C0, index: 0)
+get Descriptor(slot: B, stack: C0, index: 0)
+setScanStart 0
+next type: x image: x
+parse node .TRM
+end of input reached
+pop: C0
+popadd
+add Descriptor(slot: C, stack: #, index: 2)
+get Descriptor(slot: C, stack: #, index: 2)
+setScanStart 2
+end of input reached
+parse node .OPT
+NOGOOD Parse ended due to didNotReachEndOfInput
+
+
+matched: 0   failed: 1   gss size: 3

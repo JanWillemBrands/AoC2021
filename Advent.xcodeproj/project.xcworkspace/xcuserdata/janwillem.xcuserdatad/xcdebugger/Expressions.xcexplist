@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "parseMessages():main.swift">
+      </ContextState>
+      <ContextState
+         contextName = "add(_:):mangrove.swift">
+      </ContextState>
+      <ContextState
+         contextName = "nextStep():mangrove.swift">
+      </ContextState>
+      <ContextState
+         contextName = "nextPath():mangrove.swift">
+      </ContextState>
+      <ContextState
+         contextName = "pathIsEmpty.getter:mangrove.swift">
+      </ContextState>
+      <ContextState
+         contextName = "tomitaParse():main.swift">
+      </ContextState>
+      <ContextState
+         contextName = "todo.unsafeMutableAddressor:mangrove.swift">
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

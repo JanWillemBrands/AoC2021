@@ -1,0 +1,66 @@
+whitespace  : '\s+' ;
+singleLine  : '//.*' ;
+multiLine   : '(?s)(/\*).*?(\*/)' ;
+
+name        = '[\p{L}\p{N}\p{Pc}]+' ;
+regular     = '\'(\\\'|[^\']+?)*\'' ;
+action      = '@(\\@|[^@]+?)*@' ;
+literal     = '\"(\\"|[^\"]+?)*\"' ;
+
+message     = '\¶(\\\¶|[^\¶])+' .
+
+S     = { production } { input } .
+              
+input       = message .
+production  = name
+                ( ":" ( regular | literal )
+                | "=" ( regular | selection )
+                )
+                ( "." | ";" ) .
+selection   = sequence { "|" sequence } .
+sequence    = term { term } .
+term        = terminal
+            | "[" selection "]"
+            | "{" selection "}"
+            | "<" selection ">"
+            | "(" selection
+                ( ")"
+                | ")?"
+                | ")*"
+                | ")+"
+                ) .
+terminal    = name | literal | action .
+
+¶
+whitespace  : '\s+' ;
+singleLine  : '//.*' ;
+multiLine   : '(?s)(/\*).*?(\*/)' ;
+
+name        = '[\p{L}\p{N}\p{Pc}]+' ;
+regular     = '\'(\\\'|[^\']+?)*\'' ;
+action      = '@(\\@|[^@]+?)*@' ;
+literal     = '\"(\\"|[^\"]+?)*\"' ;
+
+message     = '\¶(\\\¶|[^\¶])+' .
+
+S     = { production } { input } .
+              
+input       = message .
+production  = name
+                ( ":" ( regular | literal )
+                | "=" ( regular | selection )
+                )
+                ( "." | ";" ) .
+selection   = sequence { "|" sequence } .
+sequence    = term { term } .
+term        = terminal
+            | "[" selection "]"
+            | "{" selection "}"
+            | "<" selection ">"
+            | "(" selection
+                ( ")"
+                | ")?"
+                | ")*"
+                | ")+"
+                ) .
+terminal    = name | literal | action .

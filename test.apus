@@ -1,0 +1,77 @@
+whitespace : '\s+'.
+
+
+//S = X X X.                    // PASS
+//X = "x".
+
+//S = X "x" | X "x".            // PASS
+//X = "x".
+
+//S = "x" X | "x" X.            // PASS
+//X = "x".
+
+//S = X | X.
+//X = "x".                      // PASS
+
+//S = X | X.                    // PASS
+//X = ["x"].
+
+//S = "x" | "x".                // PASS
+
+//S = "x" X "x" | "x" X "x".    // PASS
+//X = "x".
+
+//S = ( ["x"] | ["x"] ) "x".    // PASS
+
+//S = "x".                      // PASS
+//S = "x" "x".                  // PASS
+//S = "a" "b".                  // PASS
+
+//S = ["x"].                    // PASS
+//S = ["x"] "a".                // PASS
+//S = "x" ["x"].                // PASS but opportunity for improvement (LA?), should not fail on "xx"  matched: 1   failed: 1   gss size: 4
+//S = ["x"] "x".                // PASS
+
+//S = {"x"}.                    // PASS
+//S = "x" {"x"}.                // PASS but FAIL due to too may fails on xxxxx matched: 1   failed: 4   gss size: 11
+//S = {"x"} "x".                // PASS but FAIL due to too may fails on xxxxx matched: 1   failed: 5   gss size: 12
+
+//S = "x" [S].                  // PASS
+
+//S = "x" | "x" S.              // PASS but FAIL should have fewer GSS nodes on xxx matched: 1   failed: 6   gss size: 15
+//S = "x" S | "x".              // PASS but FAIL should have fewer GSS nodes on xxx matched: 1   failed: 6   gss size: 15
+
+//S = "x" | S "x".              // PASS but FAIL too many failed on xxx   matched: 1   failed: 6   gss size: 5
+//S = S "x" | "x".              // PASS but FAIL too many failed on xxx   matched: 1   failed: 6   gss size: 5
+
+//S = A B C.  A = "a". B = "b". C = "c".    // PASS
+//S = X X X.  X = "x".                      // PASS
+
+//S = "a" {"x"} "c".            // PASS
+
+//S = {{"x"}}.                  // PASS lots of descriptors including with index == input.endIndex
+//S = {{"x"}} "a".              // PASS
+//S = {"x"} {"x"}.         `    // PASS but nor sure all combination sets are reached
+
+//S = <"x">.                    // PASS
+//S = <"x"> <"x">.              // PASS
+
+//S = "x".                      // PASS
+//S = "a" | "b" .               // PASS
+//S = "x" | "x" .               // PASS
+//S = ("x"|"x") "a".            // PASS on "xa" matched: 1   failed: 1   gss size: 5
+//S = "x" ( "x" | "x" ) "x".    // PASS
+//S = ( "x" | "x" ) "x".        // PASS
+//S = "x" ( "x" | "x" ).        // PASS
+
+//S = [ "b" S | A S "d" ].      // FAIL Cappers thesis Γ3 on aad but matches all terminals
+//A = "a".
+
+//S = [ "a" S | A S "d" ].        // PASS Cappers thesis Γ5 but fail since only one match
+//A = "a".
+
+//S = "a" S "b" | "a" S "c" | "a".    // PASS Alfroozeh
+
+S = "a" "b" "c" "d".
+
+¶abcd

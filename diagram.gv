@@ -1,0 +1,40 @@
+digraph G {
+  fontname = Menlo
+  fontsize = 10
+  node [fontname = Menlo, fontsize = 10]
+  edge [fontname = Menlo, fontsize = 10]
+  graph [ordering = out]
+  subgraph GSS {
+    cluster = true
+    label = "GLL abcd\\n" fontcolor = green
+    labeljust = l
+    node [shape = box, style = rounded, height = 0]
+    "E0" -> "●"
+    "D0" -> "E0"
+    "C0" -> "D0"
+    "B0" -> "C0"
+    "A0" -> "●"
+  }
+  subgraph S {
+    cluster = true
+    label = "S = \"a\" \"b\" \"c\" \"d\""
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    A [label = "A: SEQ"]
+    A -> B
+    B [label = "B: \"a\"\n0:1"]
+    A -> C
+    C [label = "C: \"b\"\n1:2"]
+    A -> D
+    D [label = "D: \"c\"\n2:3"]
+    A -> E
+    E [label = "E: \"d\"\n3:4"]
+  }
+  subgraph whitespace {
+    cluster = true
+    label = "whitespace = \"\s+\""
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    F [label = "F: \"whitespace\"\n"]
+  }
+}
