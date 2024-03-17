@@ -2,7 +2,7 @@ whitespace  : '\s+'.
 
                                // syntax empty
 .                              // syntax no rule
-S00 =.                         // syntax empty sequence
+S00 = .                        // syntax empty sequence
 S01 = |.                       // syntax empty selection
 S02 = ().                      // syntax empty group
 S03 = [].                      // syntax empty option
@@ -11,17 +11,21 @@ S05 = <>.                      // syntax empty iteration non zero
 S06 = "a" "".                  // syntax explicit end of input
 S07 = N07.                     // syntax indirection not defined
 
+
 S10 = "".                       // empty string
 S11 = "a".                      // literal
 S12 = 'a'.                      // regular
-S13 = "a" "b".                  // sequence
+S13 = "a" "b" "c" "d".          // sequence
 S14 = "a" | "b".                // selection
 S15 = "a". S15 = "b".           // selection decomposed
+
 
 S20 = ("a").                    // group
 S21 = ["a"].                    // option
 S22 = {"a"}.                    // iteration
 S23 = <"a">.                    // iteration non zero
+S24 = "x" | "".                 // literal or empty
+
 
 S30 = N30. N30 = "a".                   // indirection
 S31 = N31. N31 = ["a"].                 // indirection nullable option
@@ -43,6 +47,7 @@ S44 = "a" N44. N44 = S44 "a".   // loop mutual recursion productive left right
 S45 = N45 "a". N45 = S45 "a".   // loop mutual recursion productive right right
 S46 = N46 "a". N46 = "a" S46.   // loop mutual recursion productive right left
 
+
 S50 = ["a" S50].                // right recursion zero
 S51 = "a" S51 | "a".            // right recursion non zero
 S52 = "a" [S52].                // right recursion non zero optional
@@ -52,11 +57,13 @@ S55 = [S55] "a".                // left recursion non zero optional
 S56 = ["a" S56 "a"].            // even numbered brackets
 S57 = "a" S57 "a" | "a".        // odd numbered brackets
 
+
 S60 = "a" | "a".                // ambiguous selection
 S61 = ["a"]["a"].               // ambiguous sequence option
 S62 = {"a"}{"a"}.               // ambiguous sequence iteration
 S63 = <"a"><"a">.               // ambiguous sequence iteration non zero
 S64 = ["a"] | ["a"].            // ambiguous selection nullable
+
 
 S70 = "a" {"a"}.                // sequence one or more
 S71 = {"a"} "a".                // ambiguous sequence one or more
@@ -65,17 +72,20 @@ S73 = <"a"> "a".                // ambiguous sequence two or more
 S74 = "a" ["a"].                // sequence one or two
 S75 = ["a"] "a".                // ambiguous sequence one or two
 
+
 S80 = {"a"} "b".                // sequence iteration halt
 S81 = <"a"> "b".                // sequence iteration non zero halt
 S82 = "a" ["a"].                // sequence nullable tail
 S83 = ["a"] "a".                // ambiguous sequence nullable head
 
-S90 = [["a"]].                  // ambiguous nested 2 option
-S91 = {{"a"}}.                  // ambiguous nested 2 iteration
-S92 = <<"a">>.                  // ambiguous nested 2 iteration non zero
-S93 = [ "b" S93 | N93 S93 "d" ]. N93 = "a".     // ambiguous matched brackets Cappers thesis Γ3
-S94 = [ "a" S94 | N94 S94 "d" ]. N94 = "a".     // ambiguous matched brackets Cappers thesis Γ5
-S95 = "a" S95 "b" | "a" S95 "c" | "a".          // ambiguous matched brackets Alfroozeh
+
+S90 = [["a"]].                              // ambiguous nested 2 option
+S91 = {{"a"}}.                              // ambiguous nested 2 iteration
+S92 = <<"a">>.                              // ambiguous nested 2 iteration non zero
+S93 = "b" S93 | "a" S93 "c" | "".           // matched brackets Cappers thesis Γ3
+S94 = "a" S94 | "a" S94 "c" | "".           // ambiguous matched brackets Cappers thesis Γ5
+S95 = "a" S95 "b" | "a" S95 "c" | "a".      // ambiguous matched brackets Alfroozeh
+
 
 //¶       ALL? 0 All! 0 LL1?0 LL1!0 GLL? 1  GLL! 1
 ¶a
@@ -93,4 +103,7 @@ S95 = "a" S95 "b" | "a" S95 "c" | "a".          // ambiguous matched brackets Al
 ¶bba
 ¶bbb
 ¶x
-¶ax
+¶aacc
+¶aaaccc
+¶aac
+¶aaacc

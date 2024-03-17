@@ -17,9 +17,9 @@ struct Vertex: Hashable, CustomStringConvertible, Comparable {
 }
 
 struct Edge: Hashable,CustomStringConvertible {
-    var to: Vertex?
+    var towards: Vertex?
     var weight: Int = 0
-    var description: String { to?.description ?? "·" }
+    var description: String { towards?.description ?? "·" }
 }
 
 struct Descriptor: Hashable {
@@ -46,6 +46,9 @@ struct Poppy: Hashable {
 struct GraphStructuredStack {
     var graph: [Vertex: Set<Edge>] = [:]
     var stack_Cu: Vertex?
+    
+    // TODO: replace while loop in main
+    var slot_L: GrammarNode?
 
     var todo_R: [Descriptor] = []
     var seen_U: Set<Descriptor> = []
@@ -60,7 +63,7 @@ struct GraphStructuredStack {
     // set the current stack_Cu to v
     mutating func create(slot: GrammarNode) {
         let v = Vertex(slot: slot, index: index_Ci)
-        let e = Edge(to: stack_Cu)
+        let e = Edge(towards: stack_Cu)
         trace("create: edge from \(v) to", stack_Cu ?? "nil")
 
         var edges = graph[v] ?? []
@@ -79,15 +82,37 @@ struct GraphStructuredStack {
     }
 
     // pop the current stack
+//    mutating func pop() {
+//        trace("pop:", stack_Cu ?? "nil")
+//        if let stack = stack_Cu {
+//            let p = Poppy(popped: stack, at: index_Ci)
+//            pops_P.insert(p)
+//            
+//            // one of the edges can be popped without addDescriptor
+//            let edges = Array(graph[stack] ?? [])
+//            if edges.count > 0 {
+//                stack_Cu = edges.last?.towards
+//                slot_L = stack_Cu!.slot
+//                next()
+//                print(slot_L.description)
+//                for edge in edges.dropLast() {
+//                    trace("popadd")
+//                    addDescriptor(slot: stack.slot, stack: edge.towards)
+//                }
+//            }
+//        }
+//    }
+    
     mutating func pop() {
         trace("pop:", stack_Cu ?? "nil")
         if let stack_Cu {
             let p = Poppy(popped: stack_Cu, at: index_Ci)
             pops_P.insert(p)
             
+            // TODO: the first edge can be popped without addDescriptor
             for edge in graph[stack_Cu] ?? [] {
                 trace("popadd")
-                addDescriptor(slot: stack_Cu.slot, stack: edge.to)
+                addDescriptor(slot: stack_Cu.slot, stack: edge.towards)
             }
         }
     }
@@ -98,6 +123,7 @@ struct GraphStructuredStack {
         if seen_U.insert(d).inserted {
             todo_R.append(d)
             trace("add Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
+            addedDescriptors += 1
         } else {
             trace("not add Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
         }
@@ -111,7 +137,7 @@ struct GraphStructuredStack {
             let d = todo_R.removeLast()
             trace("get Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
             stack_Cu = d.stack
-            setScanPosition(to: d.index)
+            index_Ci(to: d.index)
             next()
             return d.slot
         }

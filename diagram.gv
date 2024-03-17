@@ -6,7 +6,7 @@ digraph G {
   graph [ordering = out]
   subgraph GSS {
     cluster = true
-    label = "GLL abcd\\n" fontcolor = green
+    label = "LL1 abcd\\n" fontcolor = green
     labeljust = l
     node [shape = box, style = rounded, height = 0]
     "E0" -> "●"

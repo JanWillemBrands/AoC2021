@@ -37,7 +37,7 @@ func generateDiagrams() {
                 diagramContent.append("\n    \"\(key)\" -> \"#\"")
             } else {
                 for element in value {
-                    diagramContent.append("\n    \"\(key)\" -> \"\(element.to?.description ?? "●")\"") // "●○"
+                    diagramContent.append("\n    \"\(key)\" -> \"\(element.towards?.description ?? "●")\"") // "●○"
                 }
             }
         }

@@ -23,45 +23,37 @@ var token = Token()
 typealias TokenPattern = (pattern: String, regular: Bool, muted: Bool)
 var tokenPatterns: [String:TokenPattern] = [:]
 
-func initScanner(inputString: String, patterns: [String:TokenPattern]) {
-    input = inputString
+func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) {
     tokenPatterns = patterns
-    setScanPosition(to: input.startIndex)
+    input = inputString
+    index_Ci(to: input.startIndex)
 }
 
-func initScanner(inputFileURL: URL, patterns: [String:TokenPattern]) {
+func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
     guard let inputFileContent = try? String(contentsOf: inputFileURL, encoding: .utf8) else {
         print("error: could not read from \(inputFileURL.absoluteString)")
         exit(1)
     }
-    input = inputFileContent
     tokenPatterns = patterns
-    setScanPosition(to: input.startIndex)
-}
-
-func setScanPosition(to i: String.Index) {
-    trace("setScanStart", i)
-    index_Ci = i
-    token.range = index_Ci..<index_Ci
-    token.image = ""
-    token.type = ""
+    input = inputFileContent
+    index_Ci(to: input.startIndex)
 }
 
 // handwritten parser: BE CAREFUL!
 let handwrittenTokenPatterns: [String:TokenPattern] = [
     "singleLine":   (#"//.*"#,                  true,  true),
-    "whitespace":   (#"\s+"#,                   true,   true),
+    "whitespace":   (#"\s+"#,                   true,  true),
     "multiLine":    (#"(?s)(/\*).*?(\*/)"#,     true,  true),
     "literal":      (#""(\\"|[^"]+?)*""#,       true,  false),
-    "message":      (#"¶(\\\¶|[^¶])+"#,         true,   false),
-    "regular":      (#"'(\\'|[^']+?)*'"#,       true,    false),
-    "action":       (#"@(\\@|[^@]+?)*@"#,       true,   false),
-    "name":         (#"[\p{L}\p{N}\p{Pc}]+"#,   true, false),
-    ".":            (".",                       false,  false),
-    ";":            (";",                       false,  false),
-    ":":            (":",                       false,  false),
-    "=":            ("=",                       false,  false),
-    "|":            ("|",                       false,  false),
+    "message":      (#"¶(\\\¶|[^¶])+"#,         true,  false),
+    "regular":      (#"'(\\'|[^']+?)*'"#,       true,  false),
+    "action":       (#"@(\\@|[^@]+?)*@"#,       true,  false),
+    "name":         (#"[\p{L}\p{N}\p{Pc}]+"#,   true,  false),
+    ".":            (".",                       false, false),
+    ";":            (";",                       false, false),
+    ":":            (":",                       false, false),
+    "=":            ("=",                       false, false),
+    "|":            ("|",                       false, false),
     "(":            ("(",                       false, false),
     ")":            (")",                       false, false),
     "[":            ("[",                       false, false),
@@ -99,21 +91,29 @@ struct Token {
     }
 }
 
+func index_Ci(to i: String.Index) {
+//    trace("setScanStart", i)
+    index_Ci = i
+    token.range = index_Ci ..< index_Ci
+    token.image = ""
+    token.type = ""
+}
+
 func next() {
-    var remainder = token.range.upperBound..<input.endIndex
+    var remainder = token.range.upperBound ..< input.endIndex // index_Ci is set to token.range.lowerBound
     if remainder.isEmpty {
+        trace("end of input reached")
         index_Ci = input.endIndex
-        token.range = input.endIndex..<input.endIndex
+        token.range = index_Ci ..< index_Ci
         token.image = ""
         token.type = ""
-        trace("end of input reached")
         return
     }
     var longestMatchIsMuted = true
     var longestMatchType = ""
-    var longestMatch = remainder.lowerBound..<remainder.lowerBound
+    var longestMatch = remainder.lowerBound ..< remainder.lowerBound
     while longestMatchIsMuted {
-        longestMatch = remainder.lowerBound..<remainder.lowerBound
+        longestMatch = remainder.lowerBound ..< remainder.lowerBound
         for pattern in tokenPatterns {
             var m: Range<String.Index>?
             if pattern.value.regular {
@@ -160,8 +160,6 @@ func next() {
     token.type = longestMatchType
     index_Ci = token.range.lowerBound
     trace("next token: \"\(token.image.escapesAdded)\" range: \(token.range.shortDescription)")
-
-//    trace("next type:", token.type.escapesAdded, "image:", token.image.escapesAdded)
 }
 
 func expect(_ expectedTokens: Set<String>) {

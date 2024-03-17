@@ -9,12 +9,12 @@ let tokenPatterns: [String:TokenPattern] = [
     "c":	("c",	false,	false),
     "d":	("d",	false,	false),
 ]
-func whitespace() {
-    next()
-}
 func S() {
     next()
     next()
     next()
+    next()
+}
+func whitespace() {
     next()
 }

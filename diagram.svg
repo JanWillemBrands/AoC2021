@@ -9,20 +9,20 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 339.72)">
 <title>G</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-339.72 710,-339.72 710,4 -4,4"/>
+<g id="clust3" class="cluster">
+<title>whitespace</title>
+<polygon fill="none" stroke="black" points="532,-261.63 532,-327.72 698,-327.72 698,-261.63 532,-261.63"/>
+<text text-anchor="middle" x="591" y="-314.22" font-family="Menlo" font-size="10.00">whitespace = &quot;s+&quot;</text>
+</g>
 <g id="clust1" class="cluster">
 <title>GSS</title>
 <polygon fill="none" stroke="black" points="8,-8 8,-323.42 150,-323.42 150,-8 8,-8"/>
-<text text-anchor="middle" x="46" y="-309.92" font-family="Menlo" font-size="10.00" fill="green">GLL abcd\n</text>
+<text text-anchor="middle" x="46" y="-309.92" font-family="Menlo" font-size="10.00" fill="green">LL1 abcd\n</text>
 </g>
 <g id="clust2" class="cluster">
 <title>S</title>
 <polygon fill="none" stroke="black" points="158,-178.25 158,-327.72 524,-327.72 524,-178.25 158,-178.25"/>
 <text text-anchor="middle" x="223" y="-314.22" font-family="Menlo" font-size="10.00">S = &quot;a&quot; &quot;b&quot; &quot;c&quot; &quot;d&quot;</text>
-</g>
-<g id="clust3" class="cluster">
-<title>whitespace</title>
-<polygon fill="none" stroke="black" points="532,-261.63 532,-327.72 698,-327.72 698,-261.63 532,-261.63"/>
-<text text-anchor="middle" x="591" y="-314.22" font-family="Menlo" font-size="10.00">whitespace = &quot;s+&quot;</text>
 </g>
 <!-- E0 -->
 <g id="node1" class="node">

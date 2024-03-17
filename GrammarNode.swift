@@ -50,6 +50,7 @@ final class GrammarNode {
 
     var first:  Set<String> = []
     var follow: Set<String> = []
+    var ambiguous: Set<String> = []
     
     var extents = Extents()
     
@@ -113,15 +114,15 @@ extension GrammarNode: CustomStringConvertible {
 }
 
 extension GrammarNode {
-    final func populateLookAheadSets() -> Int {
-        var lookaheadCount = 0
+    final func populateFirstFollowSets() -> Int {
+        var sizeofSets = 0
+        
         switch kind {
-            
         case .SEQ(let children):
             var f = follow
             for child in children.reversed() {
                 child.follow = f
-                lookaheadCount += child.populateLookAheadSets()
+                sizeofSets += child.populateFirstFollowSets()
                 f = child.first
                 if f.contains("") {
                     f.subtract([""])
@@ -137,19 +138,19 @@ extension GrammarNode {
         case .ALT(let children):
             for child in children {
                 child.follow = follow
-                lookaheadCount += child.populateLookAheadSets()
+                sizeofSets += child.populateFirstFollowSets()
                 first.formUnion(child.first)
             }
             
         case .OPT(let child):
             child.follow = follow
-            lookaheadCount += child.populateLookAheadSets()
+            sizeofSets += child.populateFirstFollowSets()
             first = child.first
             first.insert("")
             
         case .REP(let child):
             child.follow = follow
-            lookaheadCount += child.populateLookAheadSets()
+            sizeofSets += child.populateFirstFollowSets()
             child.follow = child.follow.union(child.first.subtracting([""]))
             first = child.first
             first.insert("")
@@ -167,7 +168,7 @@ extension GrammarNode {
         case .TRM(let type):
             first = [type]
         }
-        return lookaheadCount + first.count + follow.count
+        return sizeofSets + first.count + follow.count
     }
 }
 
@@ -185,18 +186,24 @@ extension GrammarNode {
         self.number = GrammarNode.count
         GrammarNode.count += 1
         
-        var ambiguous: Set<String> = []
+//        var ambiguous: Set<String> = []
+        
         switch kind {
         case .SEQ(let children):
             for child in children {
                 child.detectAmbiguity()
             }
         case .ALT(let children):
+            var occurance: [String:Int] = [:]
             for child in children {
-                ambiguous.formSymmetricDifference(child.first)
-                child.detectAmbiguity()
+                for token in child.first {
+                    occurance[token] = (occurance[token] ?? 0) + 1
+                    child.detectAmbiguity()
+                }
             }
-            ambiguous = first.subtracting(ambiguous)
+            for key in occurance.keys where (occurance[key] ?? 0) > 1 {
+                ambiguous.insert(key)
+            }
         case .OPT(let child):
             ambiguous = child.first.intersection(follow)
             child.detectAmbiguity()
@@ -211,7 +218,7 @@ extension GrammarNode {
         }
         traceIndent -= 1
         
-        ambiguous.remove("")    // to handle "" (epsilon) in first and "" ($ or EOF) in follow
+        ambiguous.remove("")    // to handle both uses of "" in first (as ε, ϵ, epsilon) and in follow (as $, EOF)
         if !ambiguous.isEmpty {
             switch parseMode {
             case .ALL: break

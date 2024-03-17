@@ -26,8 +26,10 @@ whitespace : '\s+'.
 //S = "x".                      // PASS c
 //S = "x" "x".                  // PASS c
 //S = "a" "b".                  // PASS c
+//S = "a" "".                   // PASS c
 
 //S = ["x"].                    // PASS c
+//S = "x" | "".                 // PASS but on ""   matched: 2   failed: 0   gss size: 2
 //S = ["x"] "a".                // PASS
 //S = "x" ["x"].                // PASS c but opportunity for improvement (LA?), should not fail on "xx"  matched: 1   failed: 1   gss size: 4
 //S = ["x"] "x".                // PASS c
@@ -57,6 +59,7 @@ whitespace : '\s+'.
 //S = <"x"> <"x">.              // PASS c
 
 //S = "x".                      // PASS c
+
 //S = "a" | "b" .               // PASS c
 //S = "x" | "x" .               // PASS c
 //S = ("x"|"x") "a".            // PASS on "xa" matched: 1   failed: 1   gss size: 5
@@ -64,14 +67,13 @@ whitespace : '\s+'.
 //S = ( "x" | "x" ) "x".        // PASS
 //S = "x" ( "x" | "x" ).        // PASS
 
-//S = [ "b" S | A S "d" ].      // FAIL c Cappers thesis Γ3 on aad but matches all terminals
-//A = "a".
+//S = "a" S "d" | "b" S | "".           // PASS c on "aadd" Cappers thesis Γ3
 
-//S = [ "a" S | A S "d" ].        // PASS c Cappers thesis Γ5 but fail since only one match
-//A = "a".
+//S = "a" S "d" | "a" S | "".           // PASS c Cappers thesis Γ5 but fail since only one match
 
-//S = "a" S "b" | "a" S "c" | "a".    // PASS c Alfroozeh
+//S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
 
-S = "a" "b" "c" "d".
+S = "a" "b" "c" "d".                  // PASS c but unnecessary desriptors and pops
+
 
 ¶abcd
