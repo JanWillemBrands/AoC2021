@@ -1,15 +1,15 @@
-whitespace  : '\s+' .
+whitespace  : '\s+'.
 
-//                                // syntax empty
-//.                               // syntax no rule
-//S00 = .                         // syntax empty sequence
-//S01 = | .                       // syntax empty selection
-//S02 = () .                      // syntax empty group
-//S03 = [] .                      // syntax empty option
-//S04 = {} .                      // syntax empty iteration
-//S05 = <> .                      // syntax empty iteration non zero
-S06 = "a" "" .                  // syntax explicit end of input
-//S07 = N07 .                     // syntax indirection not defined
+                               // syntax empty
+.                              // syntax no rule
+S00 =.                         // syntax empty sequence
+S01 = |.                       // syntax empty selection
+S02 = ().                      // syntax empty group
+S03 = [].                      // syntax empty option
+S04 = {}.                      // syntax empty iteration
+S05 = <>.                      // syntax empty iteration non zero
+S06 = "a" "".                  // syntax explicit end of input
+S07 = N07.                     // syntax indirection not defined
 
 S10 = "".                       // empty string
 S11 = "a".                      // literal
@@ -18,16 +18,22 @@ S13 = "a" "b".                  // sequence
 S14 = "a" | "b".                // selection
 S15 = "a". S15 = "b".           // selection decomposed
 
-S20 = ( "a" ).                  // group
-S21 = [ "a" ].                  // option
-S22 = { "a" }.                  // iteration
-S23 = < "a" >.                  // iteration non zero
+S20 = ("a").                    // group
+S21 = ["a"].                    // option
+S22 = {"a"}.                    // iteration
+S23 = <"a">.                    // iteration non zero
 
-S30 = N30. N30 = "a".           // indirection
-S31 = N31. N31 = ["a"].         // indirection nullable option
-S32 = N32. N32 = {"a"}.         // indirection nullable iteration
-S33 = "a" N33. N33 = ["a"].     // indirection nullable leading
-S34 = N34 "a". N34 = ["a"].     // indirection nullable trailing
+S30 = N30. N30 = "a".                   // indirection
+S31 = N31. N31 = ["a"].                 // indirection nullable option
+S32 = N32. N32 = {"a"}.                 // indirection nullable iteration
+S33 = "a" N33. N33 = ["a"].             // indirection nullable leading
+S34 = N34 "a". N34 = ["a"].             // indirection nullable trailing
+S35 = N35 N35. N35 = "a".               // indirection shared
+S36 = N36 | N36. N36 = "a".             // indirection shared selection
+S37 = N37 | N37. N37 = ["a"].           // indirection shared nullable selection
+S38 = N38 "a" | N38 "a". N38 = "a".     // indirection shared tail
+S39 = "a" N39 | "a" N39. N39 = "a".     // indirection shared head
+
 
 S40 = S40 "a".                  // loop left recursion
 S41 = "a" S41.                  // loop right recursion
@@ -37,22 +43,27 @@ S44 = "a" N44. N44 = S44 "a".   // loop mutual recursion productive left right
 S45 = N45 "a". N45 = S45 "a".   // loop mutual recursion productive right right
 S46 = N46 "a". N46 = "a" S46.   // loop mutual recursion productive right left
 
-S50 = [ "a" S50 ] .             // right recursion zero
+S50 = ["a" S50].                // right recursion zero
 S51 = "a" S51 | "a".            // right recursion non zero
-S52 = [ S52 "a" ].              // left recursion zero
-S53 = S53 "a" | "a".            // left recursion non zero
-S54 = [ "a" S54 "a" ].          // even numbered brackets
-S55 = "a" S55 "a" | "a".        // odd numbered brackets
+S52 = "a" [S52].                // right recursion non zero optional
+S53 = [S53 "a"].                // left recursion zero
+S54 = S54 "a" | "a".            // left recursion non zero
+S55 = [S55] "a".                // left recursion non zero optional
+S56 = ["a" S56 "a"].            // even numbered brackets
+S57 = "a" S57 "a" | "a".        // odd numbered brackets
 
 S60 = "a" | "a".                // ambiguous selection
 S61 = ["a"]["a"].               // ambiguous sequence option
 S62 = {"a"}{"a"}.               // ambiguous sequence iteration
 S63 = <"a"><"a">.               // ambiguous sequence iteration non zero
+S64 = ["a"] | ["a"].            // ambiguous selection nullable
 
 S70 = "a" {"a"}.                // sequence one or more
 S71 = {"a"} "a".                // ambiguous sequence one or more
 S72 = "a" <"a">.                // sequence two or more
 S73 = <"a"> "a".                // ambiguous sequence two or more
+S74 = "a" ["a"].                // sequence one or two
+S75 = ["a"] "a".                // ambiguous sequence one or two
 
 S80 = {"a"} "b".                // sequence iteration halt
 S81 = <"a"> "b".                // sequence iteration non zero halt
@@ -62,9 +73,9 @@ S83 = ["a"] "a".                // ambiguous sequence nullable head
 S90 = [["a"]].                  // ambiguous nested 2 option
 S91 = {{"a"}}.                  // ambiguous nested 2 iteration
 S92 = <<"a">>.                  // ambiguous nested 2 iteration non zero
-S93 = [[["a"]]].                // ambiguous nested 3 option
-S94 = {{{"a"}}}.                // ambiguous nested 3 iteration
-S95 = <<<"a">>>.                // ambiguous nested 3 iteration non zero
+S93 = [ "b" S93 | N93 S93 "d" ]. N93 = "a".     // ambiguous matched brackets Cappers thesis Γ3
+S94 = [ "a" S94 | N94 S94 "d" ]. N94 = "a".     // ambiguous matched brackets Cappers thesis Γ5
+S95 = "a" S95 "b" | "a" S95 "c" | "a".          // ambiguous matched brackets Alfroozeh
 
 //¶       ALL? 0 All! 0 LL1?0 LL1!0 GLL? 1  GLL! 1
 ¶a
