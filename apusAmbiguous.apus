@@ -1,0 +1,50 @@
+whitespace  : '\s+' ;
+singleLine  : '//.*' ;
+multiLine   : '(?s)(/\*).*?(\*/)' ;
+
+identifier  = '[\p{L}\p{N}\p{Pc}]+' ;
+regex       = '\'(\\\'|[^\']+?)*\'' ;
+action      = '@(\\@|[^@]+?)*@' ;
+keyword     = '\"(\\"|[^\"]+?)*\"' ;
+
+testInput   = '\¶(\\\¶|[^\¶])+' .
+
+S           = { production } { testInput } .
+              
+production  = rule | silentRule .
+rule        = identifier "=" ( regex | selection ) ( "." | ";" ) .
+silentRule  = identifier ":" ( regex | keyword ) ( "." | ";" ) .
+selection   = sequence { "|" sequence } .
+sequence    = term { term } .
+term        = terminal | option | zeroOrMore | oneOrMore | grouping .
+option      = "(" selection ")?" | "[" selection "]" .
+zeroOrMore  = "(" selection ")*" | "{" selection "}" .
+oneOrMore   = "(" selection ")+" | "<" selection ">" .
+grouping    = "(" selection ")" .
+terminal    = identifier | keyword | action .
+
+¶
+whitespace  : '\s+' ;
+singleLine  : '//.*' ;
+multiLine   : '(?s)(/\*).*?(\*/)' ;
+
+identifier  = '[\p{L}\p{N}\p{Pc}]+' ;
+regex       = '\'(\\\'|[^\']+?)*\'' ;
+action      = '@(\\@|[^@]+?)*@' ;
+keyword     = '\"(\\"|[^\"]+?)*\"' ;
+
+testInput   = '\¶(\\\¶|[^\¶])+' .
+
+S           = { production } { testInput } .
+              
+production  = rule | silentRule .
+rule        = identifier "=" ( regex | selection ) ( "." | ";" ) .
+silentRule  = identifier ":" ( regex | keyword ) ( "." | ";" ) .
+selection   = sequence { "|" sequence } .
+sequence    = term { term } .
+term        = terminal | option | zeroOrMore | oneOrMore | grouping .
+option      = "(" selection ")?" | "[" selection "]" .
+zeroOrMore  = "(" selection ")*" | "{" selection "}" .
+oneOrMore   = "(" selection ")+" | "<" selection ">" .
+grouping    = "(" selection ")" .
+terminal    = identifier | keyword | action .

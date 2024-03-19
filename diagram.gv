@@ -6,35 +6,1398 @@ digraph G {
   graph [ordering = out]
   subgraph GSS {
     cluster = true
-    label = "LL1 abcd\\n" fontcolor = green
+    label = <LL1 ↵whitespace··:·'\...> fontcolor = green
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    "E0" -> "●"
-    "D0" -> "E0"
-    "C0" -> "D0"
-    "B0" -> "C0"
+    "Z473" -> "AA473"
+    "Z453" -> "AA453"
+    "Z408" -> "AA408"
+    "Z386" -> "AA386"
+    "Y473" -> "Z473"
+    "Y453" -> "Z453"
+    "Y408" -> "Z408"
+    "Y386" -> "Z386"
+    "X473" -> "BG473"
+    "X453" -> "BG453"
+    "X408" -> "BG408"
+    "X386" -> "BG386"
+    "W473" -> "BG473"
+    "W453" -> "BG453"
+    "W408" -> "BG408"
+    "W386" -> "BG386"
+    "R473" -> "BG473"
+    "R453" -> "BG453"
+    "R408" -> "BG408"
+    "R386" -> "BG386"
+    "Q473" -> "R473"
+    "Q453" -> "R453"
+    "Q408" -> "R408"
+    "Q386" -> "R386"
+    "P473" -> "Q473"
+    "P453" -> "Q453"
+    "P408" -> "Q408"
+    "P386" -> "Q386"
+    "O473" -> "BG473"
+    "O453" -> "BG453"
+    "O408" -> "BG408"
+    "O386" -> "BG386"
+    "N473" -> "BG473"
+    "N453" -> "BG453"
+    "N408" -> "BG408"
+    "N386" -> "BG386"
+    "L824" -> "BG824"
+    "L810" -> "BG810"
+    "L790" -> "BG790"
+    "L776" -> "BG776"
+    "L769" -> "BG769"
+    "L755" -> "BG755"
+    "L735" -> "BG735"
+    "L721" -> "BG721"
+    "L714" -> "BG714"
+    "L700" -> "BG700"
+    "L680" -> "BG680"
+    "L666" -> "BG666"
+    "L659" -> "BG659"
+    "L645" -> "BG645"
+    "L514" -> "BG514"
+    "L481" -> "BG481"
+    "L475" -> "BG475"
+    "L449" -> "BG449"
+    "L416" -> "BG416"
+    "L410" -> "BG410"
+    "L382" -> "BG382"
+    "K867" -> "BG867"
+    "K857" -> "BG857"
+    "K844" -> "BG844"
+    "K830" -> "BK830"
+    "K830" -> "AL830"
+    "K83" -> "BK83"
+    "K83" -> "AL83"
+    "K814" -> "BG814"
+    "K796" -> "BK796"
+    "K796" -> "AL796"
+    "K780" -> "BG780"
+    "K759" -> "BG759"
+    "K741" -> "BK741"
+    "K741" -> "AL741"
+    "K725" -> "BG725"
+    "K704" -> "BG704"
+    "K686" -> "BK686"
+    "K686" -> "AL686"
+    "K670" -> "BG670"
+    "K649" -> "BG649"
+    "K631" -> "BK631"
+    "K631" -> "AL631"
+    "K620" -> "BG620"
+    "K608" -> "BG608"
+    "K595" -> "BG595"
+    "K586" -> "BG586"
+    "K575" -> "BG575"
+    "K561" -> "BK561"
+    "K561" -> "AL561"
+    "K552" -> "BG552"
+    "K545" -> "BG545"
+    "K531" -> "BK531"
+    "K531" -> "AL531"
+    "K518" -> "BG518"
+    "K503" -> "BG503"
+    "K489" -> "BK489"
+    "K489" -> "AL489"
+    "K463" -> "BG463"
+    "K46" -> "BK46"
+    "K46" -> "AL46"
+    "K455" -> "BG455"
+    "K438" -> "BG438"
+    "K424" -> "BK424"
+    "K424" -> "AL424"
+    "K396" -> "BG396"
+    "K388" -> "BG388"
+    "K371" -> "BG371"
+    "K357" -> "BK357"
+    "K357" -> "AL357"
+    "K344" -> "BG344"
+    "K337" -> "BG337"
+    "K323" -> "BK323"
+    "K323" -> "AL323"
+    "K294" -> "BG294"
+    "K279" -> "BG279"
+    "K263" -> "BK263"
+    "K263" -> "AL263"
+    "K231" -> "BK231"
+    "K231" -> "AL231"
+    "K23" -> "BK23"
+    "K23" -> "AL23"
+    "K193" -> "BK193"
+    "K193" -> "AL193"
+    "K159" -> "BK159"
+    "K159" -> "AL159"
+    "K121" -> "BK121"
+    "K121" -> "AL121"
+    "K1" -> "BK1"
+    "K1" -> "AL1"
+    "J473" -> "BG473"
+    "J453" -> "BG453"
+    "J408" -> "BG408"
+    "J386" -> "BG386"
+    "I473" -> "J473"
+    "I453" -> "J453"
+    "I408" -> "J408"
+    "I386" -> "J386"
+    "H473" -> "I473"
+    "H453" -> "I453"
+    "H408" -> "I408"
+    "H386" -> "I386"
+    "G473" -> "BG473"
+    "G453" -> "BG453"
+    "G408" -> "BG408"
+    "G386" -> "BG386"
+    "D1" -> "●"
+    "CR550" -> "BG550"
+    "CR512" -> "BG512"
+    "CR292" -> "BG292"
+    "CR277" -> "BG277"
+    "CQ550" -> "CR550"
+    "CQ512" -> "CR512"
+    "CQ292" -> "CR292"
+    "CQ277" -> "CR277"
+    "CP550" -> "CQ550"
+    "CP512" -> "CQ512"
+    "CP292" -> "CQ292"
+    "CP277" -> "CQ277"
+    "CO550" -> "BG550"
+    "CO512" -> "BG512"
+    "CO292" -> "BG292"
+    "CO277" -> "BG277"
+    "CN473" -> "BG473"
+    "CN453" -> "BG453"
+    "CN408" -> "BG408"
+    "CN386" -> "BG386"
+    "CM473" -> "CN473"
+    "CM453" -> "CN453"
+    "CM408" -> "CN408"
+    "CM386" -> "CN386"
+    "CL473" -> "CM473"
+    "CL453" -> "CM453"
+    "CL408" -> "CM408"
+    "CL386" -> "CM386"
+    "CK473" -> "BG473"
+    "CK453" -> "BG453"
+    "CK408" -> "BG408"
+    "CK386" -> "BG386"
+    "CJ550" -> "BG550"
+    "CJ512" -> "BG512"
+    "CJ473" -> "BG473"
+    "CJ453" -> "BG453"
+    "CJ408" -> "BG408"
+    "CJ386" -> "BG386"
+    "CJ292" -> "BG292"
+    "CJ277" -> "BG277"
+    "CF824" -> "BG824"
+    "CF810" -> "BG810"
+    "CF790" -> "BG790"
+    "CF776" -> "BG776"
+    "CF769" -> "BG769"
+    "CF755" -> "BG755"
+    "CF735" -> "BG735"
+    "CF721" -> "BG721"
+    "CF714" -> "BG714"
+    "CF700" -> "BG700"
+    "CF680" -> "BG680"
+    "CF666" -> "BG666"
+    "CF659" -> "BG659"
+    "CF645" -> "BG645"
+    "CF514" -> "BG514"
+    "CF481" -> "BG481"
+    "CF475" -> "BG475"
+    "CF449" -> "BG449"
+    "CF416" -> "BG416"
+    "CF410" -> "BG410"
+    "CF382" -> "BG382"
+    "CE867" -> "BG867"
+    "CE857" -> "BG857"
+    "CE844" -> "BG844"
+    "CE814" -> "BG814"
+    "CE780" -> "BG780"
+    "CE759" -> "BG759"
+    "CE725" -> "BG725"
+    "CE704" -> "BG704"
+    "CE670" -> "BG670"
+    "CE649" -> "BG649"
+    "CE620" -> "BG620"
+    "CE608" -> "BG608"
+    "CE595" -> "BG595"
+    "CE586" -> "BG586"
+    "CE575" -> "BG575"
+    "CE552" -> "BG552"
+    "CE545" -> "BG545"
+    "CE518" -> "BG518"
+    "CE503" -> "BG503"
+    "CE463" -> "BG463"
+    "CE455" -> "BG455"
+    "CE438" -> "BG438"
+    "CE396" -> "BG396"
+    "CE388" -> "BG388"
+    "CE371" -> "BG371"
+    "CE344" -> "BG344"
+    "CE337" -> "BG337"
+    "CE294" -> "BG294"
+    "CE279" -> "BG279"
+    "CD867" -> "BG867"
+    "CD857" -> "BG857"
+    "CD844" -> "BG844"
+    "CD824" -> "BG824"
+    "CD814" -> "BG814"
+    "CD810" -> "BG810"
+    "CD790" -> "BG790"
+    "CD780" -> "BG780"
+    "CD776" -> "BG776"
+    "CD769" -> "BG769"
+    "CD759" -> "BG759"
+    "CD755" -> "BG755"
+    "CD735" -> "BG735"
+    "CD725" -> "BG725"
+    "CD721" -> "BG721"
+    "CD714" -> "BG714"
+    "CD704" -> "BG704"
+    "CD700" -> "BG700"
+    "CD680" -> "BG680"
+    "CD670" -> "BG670"
+    "CD666" -> "BG666"
+    "CD659" -> "BG659"
+    "CD649" -> "BG649"
+    "CD645" -> "BG645"
+    "CD620" -> "BG620"
+    "CD608" -> "BG608"
+    "CD595" -> "BG595"
+    "CD586" -> "BG586"
+    "CD575" -> "BG575"
+    "CD552" -> "BG552"
+    "CD545" -> "BG545"
+    "CD518" -> "BG518"
+    "CD514" -> "BG514"
+    "CD503" -> "BG503"
+    "CD481" -> "BG481"
+    "CD475" -> "BG475"
+    "CD463" -> "BG463"
+    "CD455" -> "BG455"
+    "CD449" -> "BG449"
+    "CD438" -> "BG438"
+    "CD416" -> "BG416"
+    "CD410" -> "BG410"
+    "CD396" -> "BG396"
+    "CD388" -> "BG388"
+    "CD382" -> "BG382"
+    "CD371" -> "BG371"
+    "CD344" -> "BG344"
+    "CD337" -> "BG337"
+    "CD294" -> "BG294"
+    "CD279" -> "BG279"
+    "CC473" -> "BG473"
+    "CC453" -> "BG453"
+    "CC408" -> "BG408"
+    "CC386" -> "BG386"
+    "CB473" -> "BG473"
+    "CB453" -> "BG453"
+    "CB408" -> "BG408"
+    "CB386" -> "BG386"
+    "C830" -> "B830"
+    "C83" -> "B83"
+    "C796" -> "B796"
+    "C741" -> "B741"
+    "C686" -> "B686"
+    "C631" -> "B631"
+    "C561" -> "B561"
+    "C531" -> "B531"
+    "C489" -> "B489"
+    "C46" -> "B46"
+    "C424" -> "B424"
+    "C357" -> "B357"
+    "C323" -> "B323"
+    "C263" -> "B263"
+    "C231" -> "B231"
+    "C23" -> "B23"
+    "C193" -> "B193"
+    "C159" -> "B159"
+    "C121" -> "B121"
+    "C1" -> "B1"
+    "BZ550" -> "BG550"
+    "BZ512" -> "BG512"
+    "BZ473" -> "BG473"
+    "BZ453" -> "BG453"
+    "BZ408" -> "BG408"
+    "BZ386" -> "BG386"
+    "BZ292" -> "BG292"
+    "BZ277" -> "BG277"
+    "BX473" -> "BG473"
+    "BX453" -> "BG453"
+    "BX408" -> "BG408"
+    "BX386" -> "BG386"
+    "BV867" -> "BG867"
+    "BV857" -> "BG857"
+    "BV844" -> "BG844"
+    "BV824" -> "BG824"
+    "BV814" -> "BG814"
+    "BV810" -> "BG810"
+    "BV790" -> "BG790"
+    "BV780" -> "BG780"
+    "BV776" -> "BG776"
+    "BV769" -> "BG769"
+    "BV759" -> "BG759"
+    "BV755" -> "BG755"
+    "BV735" -> "BG735"
+    "BV725" -> "BG725"
+    "BV721" -> "BG721"
+    "BV714" -> "BG714"
+    "BV704" -> "BG704"
+    "BV700" -> "BG700"
+    "BV680" -> "BG680"
+    "BV670" -> "BG670"
+    "BV666" -> "BG666"
+    "BV659" -> "BG659"
+    "BV649" -> "BG649"
+    "BV645" -> "BG645"
+    "BV620" -> "BG620"
+    "BV608" -> "BG608"
+    "BV595" -> "BG595"
+    "BV586" -> "BG586"
+    "BV575" -> "BG575"
+    "BV552" -> "BG552"
+    "BV545" -> "BG545"
+    "BV518" -> "BG518"
+    "BV514" -> "BG514"
+    "BV503" -> "BG503"
+    "BV481" -> "BG481"
+    "BV475" -> "BG475"
+    "BV463" -> "BG463"
+    "BV455" -> "BG455"
+    "BV449" -> "BG449"
+    "BV438" -> "BG438"
+    "BV416" -> "BG416"
+    "BV410" -> "BG410"
+    "BV396" -> "BG396"
+    "BV388" -> "BG388"
+    "BV382" -> "BG382"
+    "BV371" -> "BG371"
+    "BV344" -> "BG344"
+    "BV337" -> "BG337"
+    "BV294" -> "BG294"
+    "BV279" -> "BG279"
+    "BS867" -> "BG867"
+    "BS857" -> "BG857"
+    "BS844" -> "BG844"
+    "BS824" -> "BG824"
+    "BS814" -> "BG814"
+    "BS810" -> "BG810"
+    "BS790" -> "BG790"
+    "BS780" -> "BG780"
+    "BS776" -> "BG776"
+    "BS769" -> "BG769"
+    "BS759" -> "BG759"
+    "BS755" -> "BG755"
+    "BS735" -> "BG735"
+    "BS725" -> "BG725"
+    "BS721" -> "BG721"
+    "BS714" -> "BG714"
+    "BS704" -> "BG704"
+    "BS700" -> "BG700"
+    "BS680" -> "BG680"
+    "BS670" -> "BG670"
+    "BS666" -> "BG666"
+    "BS659" -> "BG659"
+    "BS649" -> "BG649"
+    "BS645" -> "BG645"
+    "BS620" -> "BG620"
+    "BS608" -> "BG608"
+    "BS595" -> "BG595"
+    "BS586" -> "BG586"
+    "BS575" -> "BG575"
+    "BS552" -> "BG552"
+    "BS550" -> "BG550"
+    "BS545" -> "BG545"
+    "BS518" -> "BG518"
+    "BS514" -> "BG514"
+    "BS512" -> "BG512"
+    "BS503" -> "BG503"
+    "BS481" -> "BG481"
+    "BS475" -> "BG475"
+    "BS473" -> "BG473"
+    "BS463" -> "BG463"
+    "BS455" -> "BG455"
+    "BS453" -> "BG453"
+    "BS449" -> "BG449"
+    "BS438" -> "BG438"
+    "BS416" -> "BG416"
+    "BS410" -> "BG410"
+    "BS408" -> "BG408"
+    "BS396" -> "BG396"
+    "BS388" -> "BG388"
+    "BS386" -> "BG386"
+    "BS382" -> "BG382"
+    "BS371" -> "BG371"
+    "BS344" -> "BG344"
+    "BS337" -> "BG337"
+    "BS294" -> "BG294"
+    "BS292" -> "BG292"
+    "BS279" -> "BG279"
+    "BS277" -> "BG277"
+    "BQ80" -> "B46"
+    "BQ44" -> "B23"
+    "BQ21" -> "B1"
+    "BO830" -> "B830"
+    "BO83" -> "B83"
+    "BO796" -> "B796"
+    "BO741" -> "B741"
+    "BO686" -> "B686"
+    "BO631" -> "B631"
+    "BO561" -> "B561"
+    "BO531" -> "B531"
+    "BO489" -> "B489"
+    "BO46" -> "B46"
+    "BO424" -> "B424"
+    "BO357" -> "B357"
+    "BO323" -> "B323"
+    "BO263" -> "B263"
+    "BO231" -> "B231"
+    "BO23" -> "B23"
+    "BO193" -> "B193"
+    "BO159" -> "B159"
+    "BO121" -> "B121"
+    "BO1" -> "B1"
+    "BM60" -> "BO46"
+    "BM37" -> "BO23"
+    "BM15" -> "BO1"
+    "BL830" -> "BO830"
+    "BL83" -> "BO83"
+    "BL796" -> "BO796"
+    "BL741" -> "BO741"
+    "BL686" -> "BO686"
+    "BL631" -> "BO631"
+    "BL561" -> "BO561"
+    "BL531" -> "BO531"
+    "BL489" -> "BO489"
+    "BL46" -> "BO46"
+    "BL424" -> "BO424"
+    "BL357" -> "BO357"
+    "BL323" -> "BO323"
+    "BL263" -> "BO263"
+    "BL231" -> "BO231"
+    "BL23" -> "BO23"
+    "BL193" -> "BO193"
+    "BL159" -> "BO159"
+    "BL121" -> "BO121"
+    "BL1" -> "BO1"
+    "BK830" -> "BL830"
+    "BK83" -> "BL83"
+    "BK796" -> "BL796"
+    "BK741" -> "BL741"
+    "BK686" -> "BL686"
+    "BK631" -> "BL631"
+    "BK561" -> "BL561"
+    "BK531" -> "BL531"
+    "BK489" -> "BL489"
+    "BK46" -> "BL46"
+    "BK424" -> "BL424"
+    "BK357" -> "BL357"
+    "BK323" -> "BL323"
+    "BK263" -> "BL263"
+    "BK231" -> "BL231"
+    "BK23" -> "BL23"
+    "BK193" -> "BL193"
+    "BK159" -> "BL159"
+    "BK121" -> "BL121"
+    "BK1" -> "BL1"
+    "BJ830" -> "BK830"
+    "BJ83" -> "BK83"
+    "BJ796" -> "BK796"
+    "BJ741" -> "BK741"
+    "BJ686" -> "BK686"
+    "BJ631" -> "BK631"
+    "BJ561" -> "BK561"
+    "BJ531" -> "BK531"
+    "BJ489" -> "BK489"
+    "BJ46" -> "BK46"
+    "BJ424" -> "BK424"
+    "BJ357" -> "BK357"
+    "BJ323" -> "BK323"
+    "BJ263" -> "BK263"
+    "BJ231" -> "BK231"
+    "BJ23" -> "BK23"
+    "BJ193" -> "BK193"
+    "BJ159" -> "BK159"
+    "BJ121" -> "BK121"
+    "BJ1" -> "BK1"
+    "BI830" -> "B830"
+    "BI83" -> "B83"
+    "BI796" -> "B796"
+    "BI741" -> "B741"
+    "BI686" -> "B686"
+    "BI631" -> "B631"
+    "BI561" -> "B561"
+    "BI531" -> "B531"
+    "BI489" -> "B489"
+    "BI46" -> "B46"
+    "BI424" -> "B424"
+    "BI357" -> "B357"
+    "BI323" -> "B323"
+    "BI263" -> "B263"
+    "BI231" -> "B231"
+    "BI23" -> "B23"
+    "BI193" -> "B193"
+    "BI159" -> "B159"
+    "BI121" -> "B121"
+    "BI1" -> "B1"
+    "BH824" -> "BG824"
+    "BH814" -> "BG814"
+    "BH790" -> "BG790"
+    "BH780" -> "BG780"
+    "BH769" -> "BG769"
+    "BH759" -> "BG759"
+    "BH735" -> "BG735"
+    "BH725" -> "BG725"
+    "BH714" -> "BG714"
+    "BH704" -> "BG704"
+    "BH680" -> "BG680"
+    "BH670" -> "BG670"
+    "BH659" -> "BG659"
+    "BH649" -> "BG649"
+    "BH550" -> "BG550"
+    "BH518" -> "BG518"
+    "BH512" -> "BG512"
+    "BH473" -> "BG473"
+    "BH453" -> "BG453"
+    "BH449" -> "BG449"
+    "BH408" -> "BG408"
+    "BH386" -> "BG386"
+    "BH382" -> "BG382"
+    "BH292" -> "BG292"
+    "BG867" -> "BA865"
+    "BG857" -> "BA855"
+    "BG844" -> "BA844"
+    "BG824" -> "BA810"
+    "BG814" -> "BA810"
+    "BG810" -> "BA810"
+    "BG790" -> "BA774"
+    "BG780" -> "BA774"
+    "BG776" -> "BA774"
+    "BG769" -> "BA755"
+    "BG759" -> "BA755"
+    "BG755" -> "BA755"
+    "BG735" -> "BA719"
+    "BG725" -> "BA719"
+    "BG721" -> "BA719"
+    "BG714" -> "BA700"
+    "BG704" -> "BA700"
+    "BG700" -> "BA700"
+    "BG680" -> "BA664"
+    "BG670" -> "BA664"
+    "BG666" -> "BA664"
+    "BG659" -> "BA645"
+    "BG649" -> "BA645"
+    "BG645" -> "BA645"
+    "BG620" -> "BA618"
+    "BG608" -> "BA606"
+    "BG595" -> "BA593"
+    "BG586" -> "BA584"
+    "BG575" -> "BA575"
+    "BG552" -> "BA552"
+    "BG550" -> "BA545"
+    "BG545" -> "BA545"
+    "BG518" -> "BA514"
+    "BG514" -> "BA514"
+    "BG512" -> "BA503"
+    "BG503" -> "BA503"
+    "BG481" -> "BA479"
+    "BG475" -> "BA475"
+    "BG473" -> "BA438"
+    "BG463" -> "BA461"
+    "BG455" -> "BA455"
+    "BG453" -> "BA438"
+    "BG449" -> "BA438"
+    "BG438" -> "BA438"
+    "BG416" -> "BA414"
+    "BG410" -> "BA410"
+    "BG408" -> "BA371"
+    "BG396" -> "BA394"
+    "BG388" -> "BA388"
+    "BG386" -> "BA371"
+    "BG382" -> "BA371"
+    "BG371" -> "BA371"
+    "BG344" -> "BA342"
+    "BG337" -> "BA337"
+    "BG294" -> "BA294"
+    "BG292" -> "BA277"
+    "BG279" -> "BA279"
+    "BG277" -> "BA277"
+    "BF867" -> "BG867"
+    "BF857" -> "BG857"
+    "BF844" -> "BG844"
+    "BF810" -> "BG810"
+    "BF776" -> "BG776"
+    "BF755" -> "BG755"
+    "BF721" -> "BG721"
+    "BF700" -> "BG700"
+    "BF666" -> "BG666"
+    "BF645" -> "BG645"
+    "BF620" -> "BG620"
+    "BF608" -> "BG608"
+    "BF595" -> "BG595"
+    "BF586" -> "BG586"
+    "BF575" -> "BG575"
+    "BF552" -> "BG552"
+    "BF545" -> "BG545"
+    "BF514" -> "BG514"
+    "BF503" -> "BG503"
+    "BF481" -> "BG481"
+    "BF475" -> "BG475"
+    "BF463" -> "BG463"
+    "BF455" -> "BG455"
+    "BF438" -> "BG438"
+    "BF416" -> "BG416"
+    "BF410" -> "BG410"
+    "BF396" -> "BG396"
+    "BF388" -> "BG388"
+    "BF371" -> "BG371"
+    "BF344" -> "BG344"
+    "BF337" -> "BG337"
+    "BF294" -> "BG294"
+    "BF279" -> "BG279"
+    "BF277" -> "BG277"
+    "BE867" -> "BA865"
+    "BE857" -> "BA855"
+    "BE844" -> "BA844"
+    "BE810" -> "BA810"
+    "BE776" -> "BA774"
+    "BE755" -> "BA755"
+    "BE721" -> "BA719"
+    "BE700" -> "BA700"
+    "BE666" -> "BA664"
+    "BE645" -> "BA645"
+    "BE620" -> "BA618"
+    "BE608" -> "BA606"
+    "BE595" -> "BA593"
+    "BE586" -> "BA584"
+    "BE575" -> "BA575"
+    "BE552" -> "BA552"
+    "BE545" -> "BA545"
+    "BE514" -> "BA514"
+    "BE503" -> "BA503"
+    "BE481" -> "BA479"
+    "BE475" -> "BA475"
+    "BE463" -> "BA461"
+    "BE455" -> "BA455"
+    "BE438" -> "BA438"
+    "BE416" -> "BA414"
+    "BE410" -> "BA410"
+    "BE396" -> "BA394"
+    "BE388" -> "BA388"
+    "BE371" -> "BA371"
+    "BE344" -> "BA342"
+    "BE337" -> "BA337"
+    "BE294" -> "BA294"
+    "BE279" -> "BA279"
+    "BE277" -> "BA277"
+    "BD865" -> "BA865"
+    "BD855" -> "BA855"
+    "BD774" -> "BA774"
+    "BD719" -> "BA719"
+    "BD664" -> "BA664"
+    "BD618" -> "BA618"
+    "BD606" -> "BA606"
+    "BD593" -> "BA593"
+    "BD584" -> "BA584"
+    "BD479" -> "BA479"
+    "BD461" -> "BA461"
+    "BD414" -> "BA414"
+    "BD394" -> "BA394"
+    "BD342" -> "BA342"
+    "BC865" -> "BD865"
+    "BC855" -> "BD855"
+    "BC774" -> "BD774"
+    "BC719" -> "BD719"
+    "BC664" -> "BD664"
+    "BC618" -> "BD618"
+    "BC606" -> "BD606"
+    "BC593" -> "BD593"
+    "BC584" -> "BD584"
+    "BC479" -> "BD479"
+    "BC461" -> "BD461"
+    "BC414" -> "BD414"
+    "BC394" -> "BD394"
+    "BC342" -> "BD342"
+    "BB865" -> "BA865"
+    "BB855" -> "BA855"
+    "BB774" -> "BA774"
+    "BB719" -> "BA719"
+    "BB664" -> "BA664"
+    "BB618" -> "BA618"
+    "BB606" -> "BA606"
+    "BB593" -> "BA593"
+    "BB584" -> "BA584"
+    "BB479" -> "BA479"
+    "BB479" -> "BA479"
+    "BB479" -> "BA479"
+    "BB479" -> "BA479"
+    "BB461" -> "BA461"
+    "BB461" -> "BA461"
+    "BB461" -> "BA461"
+    "BB461" -> "BA461"
+    "BB414" -> "BA414"
+    "BB414" -> "BA414"
+    "BB414" -> "BA414"
+    "BB414" -> "BA414"
+    "BB394" -> "BA394"
+    "BB394" -> "BA394"
+    "BB394" -> "BA394"
+    "BB394" -> "BA394"
+    "BB342" -> "BA342"
+    "BA865" -> "AV830"
+    "BA855" -> "AV830"
+    "BA844" -> "AV830"
+    "BA810" -> "AV796"
+    "BA774" -> "AV741"
+    "BA755" -> "AV741"
+    "BA719" -> "AV686"
+    "BA700" -> "AV686"
+    "BA664" -> "AV631"
+    "BA645" -> "AV631"
+    "BA618" -> "AV561"
+    "BA606" -> "AV561"
+    "BA593" -> "AV561"
+    "BA584" -> "AV561"
+    "BA575" -> "AV561"
+    "BA552" -> "CR550"
+    "BA545" -> "AV531"
+    "BA514" -> "CR512"
+    "BA503" -> "AV489"
+    "BA479" -> "J473"
+    "BA479" -> "R473"
+    "BA479" -> "CN473"
+    "BA479" -> "AA473"
+    "BA475" -> "J473"
+    "BA475" -> "R473"
+    "BA475" -> "CN473"
+    "BA475" -> "AA473"
+    "BA461" -> "J453"
+    "BA461" -> "R453"
+    "BA461" -> "CN453"
+    "BA461" -> "AA453"
+    "BA455" -> "J453"
+    "BA455" -> "R453"
+    "BA455" -> "CN453"
+    "BA455" -> "AA453"
+    "BA438" -> "AV424"
+    "BA414" -> "J408"
+    "BA414" -> "R408"
+    "BA414" -> "CN408"
+    "BA414" -> "AA408"
+    "BA410" -> "J408"
+    "BA410" -> "R408"
+    "BA410" -> "CN408"
+    "BA410" -> "AA408"
+    "BA394" -> "J386"
+    "BA394" -> "R386"
+    "BA394" -> "CN386"
+    "BA394" -> "AA386"
+    "BA388" -> "J386"
+    "BA388" -> "R386"
+    "BA388" -> "CN386"
+    "BA388" -> "AA386"
+    "BA371" -> "AV357"
+    "BA342" -> "AV323"
+    "BA337" -> "AV323"
+    "BA294" -> "CR292"
+    "BA279" -> "CR277"
+    "BA277" -> "AV263"
+    "B830" -> "D1"
+    "B83" -> "D1"
+    "B796" -> "D1"
+    "B741" -> "D1"
+    "B686" -> "D1"
+    "B631" -> "D1"
+    "B561" -> "D1"
+    "B531" -> "D1"
+    "B489" -> "D1"
+    "B46" -> "D1"
+    "B424" -> "D1"
+    "B357" -> "D1"
+    "B323" -> "D1"
+    "B263" -> "D1"
+    "B231" -> "D1"
+    "B23" -> "D1"
+    "B193" -> "D1"
+    "B159" -> "D1"
+    "B121" -> "D1"
+    "B1" -> "D1"
+    "B1" -> "D1"
+    "AZ844" -> "BA844"
+    "AZ810" -> "BA810"
+    "AZ755" -> "BA755"
+    "AZ700" -> "BA700"
+    "AZ645" -> "BA645"
+    "AZ575" -> "BA575"
+    "AZ552" -> "BA552"
+    "AZ545" -> "BA545"
+    "AZ514" -> "BA514"
+    "AZ503" -> "BA503"
+    "AZ475" -> "BA475"
+    "AZ475" -> "BA475"
+    "AZ475" -> "BA475"
+    "AZ475" -> "BA475"
+    "AZ455" -> "BA455"
+    "AZ455" -> "BA455"
+    "AZ455" -> "BA455"
+    "AZ455" -> "BA455"
+    "AZ438" -> "BA438"
+    "AZ410" -> "BA410"
+    "AZ410" -> "BA410"
+    "AZ410" -> "BA410"
+    "AZ410" -> "BA410"
+    "AZ388" -> "BA388"
+    "AZ388" -> "BA388"
+    "AZ388" -> "BA388"
+    "AZ388" -> "BA388"
+    "AZ371" -> "BA371"
+    "AZ337" -> "BA337"
+    "AZ294" -> "BA294"
+    "AZ279" -> "BA279"
+    "AZ277" -> "BA277"
+    "AY844" -> "AV830"
+    "AY810" -> "AV796"
+    "AY755" -> "AV741"
+    "AY700" -> "AV686"
+    "AY645" -> "AV631"
+    "AY575" -> "AV561"
+    "AY552" -> "CR550"
+    "AY545" -> "AV531"
+    "AY514" -> "CR512"
+    "AY503" -> "AV489"
+    "AY475" -> "J473"
+    "AY475" -> "R473"
+    "AY475" -> "CN473"
+    "AY475" -> "AA473"
+    "AY455" -> "J453"
+    "AY455" -> "R453"
+    "AY455" -> "CN453"
+    "AY455" -> "AA453"
+    "AY438" -> "AV424"
+    "AY410" -> "J408"
+    "AY410" -> "R408"
+    "AY410" -> "CN408"
+    "AY410" -> "AA408"
+    "AY388" -> "J386"
+    "AY388" -> "R386"
+    "AY388" -> "CN386"
+    "AY388" -> "AA386"
+    "AY371" -> "AV357"
+    "AY337" -> "AV323"
+    "AY294" -> "CR292"
+    "AY279" -> "CR277"
+    "AY277" -> "AV263"
+    "AX228" -> "B193"
+    "AX191" -> "B159"
+    "AX157" -> "B121"
+    "AX119" -> "B83"
+    "AW874" -> "B830"
+    "AW828" -> "B796"
+    "AW794" -> "B741"
+    "AW739" -> "B686"
+    "AW684" -> "B631"
+    "AW629" -> "B561"
+    "AW559" -> "B531"
+    "AW529" -> "B489"
+    "AW487" -> "B424"
+    "AW422" -> "B357"
+    "AW355" -> "B323"
+    "AW306" -> "B263"
+    "AW260" -> "B231"
+    "AV830" -> "B830"
+    "AV83" -> "B83"
+    "AV796" -> "B796"
+    "AV741" -> "B741"
+    "AV686" -> "B686"
+    "AV631" -> "B631"
+    "AV561" -> "B561"
+    "AV531" -> "B531"
+    "AV489" -> "B489"
+    "AV46" -> "B46"
+    "AV424" -> "B424"
+    "AV357" -> "B357"
+    "AV323" -> "B323"
+    "AV263" -> "B263"
+    "AV231" -> "B231"
+    "AV23" -> "B23"
+    "AV193" -> "B193"
+    "AV159" -> "B159"
+    "AV121" -> "B121"
+    "AV1" -> "B1"
+    "AU844" -> "AV830"
+    "AU810" -> "AV796"
+    "AU755" -> "AV741"
+    "AU700" -> "AV686"
+    "AU645" -> "AV631"
+    "AU575" -> "AV561"
+    "AU545" -> "AV531"
+    "AU503" -> "AV489"
+    "AU438" -> "AV424"
+    "AU371" -> "AV357"
+    "AU337" -> "AV323"
+    "AU277" -> "AV263"
+    "AN97" -> "AV83"
+    "AN245" -> "AV231"
+    "AN207" -> "AV193"
+    "AN173" -> "AV159"
+    "AN135" -> "AV121"
+    "AM830" -> "AV830"
+    "AM83" -> "AV83"
+    "AM796" -> "AV796"
+    "AM741" -> "AV741"
+    "AM686" -> "AV686"
+    "AM631" -> "AV631"
+    "AM561" -> "AV561"
+    "AM531" -> "AV531"
+    "AM489" -> "AV489"
+    "AM46" -> "AV46"
+    "AM424" -> "AV424"
+    "AM357" -> "AV357"
+    "AM323" -> "AV323"
+    "AM263" -> "AV263"
+    "AM231" -> "AV231"
+    "AM23" -> "AV23"
+    "AM193" -> "AV193"
+    "AM159" -> "AV159"
+    "AM121" -> "AV121"
+    "AM1" -> "AV1"
+    "AL830" -> "AM830"
+    "AL83" -> "AM83"
+    "AL796" -> "AM796"
+    "AL741" -> "AM741"
+    "AL686" -> "AM686"
+    "AL631" -> "AM631"
+    "AL561" -> "AM561"
+    "AL531" -> "AM531"
+    "AL489" -> "AM489"
+    "AL46" -> "AM46"
+    "AL424" -> "AM424"
+    "AL357" -> "AM357"
+    "AL323" -> "AM323"
+    "AL263" -> "AM263"
+    "AL231" -> "AM231"
+    "AL23" -> "AM23"
+    "AL193" -> "AM193"
+    "AL159" -> "AM159"
+    "AL121" -> "AM121"
+    "AL1" -> "AM1"
+    "AK830" -> "AL830"
+    "AK83" -> "AL83"
+    "AK796" -> "AL796"
+    "AK741" -> "AL741"
+    "AK686" -> "AL686"
+    "AK631" -> "AL631"
+    "AK561" -> "AL561"
+    "AK531" -> "AL531"
+    "AK489" -> "AL489"
+    "AK46" -> "AL46"
+    "AK424" -> "AL424"
+    "AK357" -> "AL357"
+    "AK323" -> "AL323"
+    "AK263" -> "AL263"
+    "AK231" -> "AL231"
+    "AK23" -> "AL23"
+    "AK193" -> "AL193"
+    "AK159" -> "AL159"
+    "AK121" -> "AL121"
+    "AK1" -> "AL1"
+    "AJ830" -> "B830"
+    "AJ83" -> "B83"
+    "AJ796" -> "B796"
+    "AJ741" -> "B741"
+    "AJ686" -> "B686"
+    "AJ631" -> "B631"
+    "AJ561" -> "B561"
+    "AJ531" -> "B531"
+    "AJ489" -> "B489"
+    "AJ46" -> "B46"
+    "AJ424" -> "B424"
+    "AJ357" -> "B357"
+    "AJ323" -> "B323"
+    "AJ263" -> "B263"
+    "AJ231" -> "B231"
+    "AJ23" -> "B23"
+    "AJ193" -> "B193"
+    "AJ159" -> "B159"
+    "AJ121" -> "B121"
+    "AJ1" -> "B1"
+    "AI97" -> "AV83"
+    "AI60" -> "BO46"
+    "AI37" -> "BO23"
+    "AI245" -> "AV231"
+    "AI207" -> "AV193"
+    "AI173" -> "AV159"
+    "AI15" -> "BO1"
+    "AI135" -> "AV121"
+    "AH830" -> "B830"
+    "AH83" -> "B83"
+    "AH796" -> "B796"
+    "AH741" -> "B741"
+    "AH686" -> "B686"
+    "AH631" -> "B631"
+    "AH561" -> "B561"
+    "AH531" -> "B531"
+    "AH489" -> "B489"
+    "AH46" -> "B46"
+    "AH424" -> "B424"
+    "AH357" -> "B357"
+    "AH323" -> "B323"
+    "AH263" -> "B263"
+    "AH231" -> "B231"
+    "AH23" -> "B23"
+    "AH193" -> "B193"
+    "AH159" -> "B159"
+    "AH121" -> "B121"
+    "AH1" -> "B1"
+    "AG830" -> "B830"
+    "AG83" -> "B83"
+    "AG796" -> "B796"
+    "AG741" -> "B741"
+    "AG686" -> "B686"
+    "AG631" -> "B631"
+    "AG561" -> "B561"
+    "AG531" -> "B531"
+    "AG489" -> "B489"
+    "AG46" -> "B46"
+    "AG424" -> "B424"
+    "AG357" -> "B357"
+    "AG323" -> "B323"
+    "AG263" -> "B263"
+    "AG231" -> "B231"
+    "AG23" -> "B23"
+    "AG193" -> "B193"
+    "AG159" -> "B159"
+    "AG121" -> "B121"
+    "AG1" -> "B1"
+    "AF830" -> "B830"
+    "AF83" -> "B83"
+    "AF796" -> "B796"
+    "AF741" -> "B741"
+    "AF686" -> "B686"
+    "AF631" -> "B631"
+    "AF561" -> "B561"
+    "AF531" -> "B531"
+    "AF489" -> "B489"
+    "AF46" -> "B46"
+    "AF424" -> "B424"
+    "AF357" -> "B357"
+    "AF323" -> "B323"
+    "AF263" -> "B263"
+    "AF231" -> "B231"
+    "AF23" -> "B23"
+    "AF193" -> "B193"
+    "AF159" -> "B159"
+    "AF121" -> "B121"
+    "AF1" -> "B1"
+    "AA473" -> "BG473"
+    "AA453" -> "BG453"
+    "AA408" -> "BG408"
+    "AA386" -> "BG386"
     "A0" -> "●"
   }
   subgraph S {
     cluster = true
-    label = "S = \"a\" \"b\" \"c\" \"d\""
+    label = <S = {production} {testInput}>
     labeljust = l
     node [shape = ellipse, height = 0]
-    A [label = "A: SEQ"]
+    A [label = <A: SEQ>]
     A -> B
-    B [label = "B: \"a\"\n0:1"]
-    A -> C
-    C [label = "C: \"b\"\n1:2"]
+    B [label = <B: REP>]
+    B -> C
+    C [label = <C: production>]
     A -> D
-    D [label = "D: \"c\"\n2:3"]
-    A -> E
-    E [label = "E: \"d\"\n3:4"]
+    D [label = <D: REP>]
+    D -> E
+    E [label = <E: testInput>]
+  }
+  subgraph action {
+    cluster = true
+    label = <action = "@(\@|[^@]+?)*@">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    F [label = <F: "action"<br/><font color="gray" point-size="8.0">  </font> >]
+  }
+  subgraph grouping {
+    cluster = true
+    label = <grouping = "(" selection ")">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    G [label = <G: SEQ>]
+    G -> H
+    H [label = <H: "("<br/><font color="gray" point-size="8.0"> 453:454 473:474 408:409 386:387 </font> >]
+    G -> I
+    I [label = <I: selection>]
+    G -> J
+    J [label = <J: ")"<br/><font color="gray" point-size="8.0"> 485:486 406:407 471:472 420:421 </font> >]
+  }
+  subgraph identifier {
+    cluster = true
+    label = <identifier = "[\p{L}\p{N}\p{Pc}]+">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    K [label = <K: "identifier"<br/><font color="gray" point-size="8.0"> 503:511 759:768 796:804 545:549 552:556 725:734 620:628 741:750 631:637 121:126 518:526 844:854 357:361 263:264 323:333 424:434 1:11 231:240 586:592 23:33 438:448 83:93 575:583 455:460 780:789 388:393 608:617 463:470 686:696 867:873 396:405 531:539 830:838 595:605 159:165 489:498 337:341 279:289 704:713 294:303 193:200 561:565 371:381 670:679 857:864 814:823 649:658 46:55 344:354 </font> >]
+  }
+  subgraph keyword {
+    cluster = true
+    label = <keyword = ""(\"|[^"]+?)*"">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    L [label = <L: "keyword"<br/><font color="gray" point-size="8.0"> 382:385 514:517 714:718 810:813 776:779 824:827 680:683 666:669 410:413 416:419 769:773 755:758 645:648 790:793 659:663 481:484 475:478 721:724 735:738 700:703 449:452 </font> >]
+  }
+  subgraph multiLine {
+    cluster = true
+    label = <multiLine = "(?s)(/\*).*?(\*/)">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    M [label = <M: "multiLine"<br/><font color="gray" point-size="8.0">  </font> >]
+  }
+  subgraph oneOrMore {
+    cluster = true
+    label = <oneOrMore = "(" selection ")+" | "&lt;" selection "&gt;">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    N [label = <N: ALT>]
+    N -> O
+    O [label = <O: SEQ>]
+    O -> P
+    P [label = <P: "("<br/><font color="gray" point-size="8.0"> 408:409 473:474 453:454 386:387 </font> >]
+    O -> Q
+    Q [label = <Q: selection>]
+    O -> R
+    R [label = <R: ")+"<br/><font color="gray" point-size="8.0">  </font> >]
+    N -> S
+    S [label = <S: SEQ>]
+    S -> T
+    T [label = <T: "&lt;"<br/><font color="gray" point-size="8.0">  </font> >]
+    S -> U
+    U [label = <U: selection>]
+    S -> V
+    V [label = <V: "&gt;"<br/><font color="gray" point-size="8.0">  </font> >]
+  }
+  subgraph option {
+    cluster = true
+    label = <option = "(" selection ")?" | "[" selection "]">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    W [label = <W: ALT>]
+    W -> X
+    X [label = <X: SEQ>]
+    X -> Y
+    Y [label = <Y: "("<br/><font color="gray" point-size="8.0"> 473:474 408:409 453:454 386:387 </font> >]
+    X -> Z
+    Z [label = <Z: selection>]
+    X -> AA
+    AA [label = <AA: ")?"<br/><font color="gray" point-size="8.0">  </font> >]
+    W -> AB
+    AB [label = <AB: SEQ>]
+    AB -> AC
+    AC [label = <AC: "["<br/><font color="gray" point-size="8.0">  </font> >]
+    AB -> AD
+    AD [label = <AD: selection>]
+    AB -> AE
+    AE [label = <AE: "]"<br/><font color="gray" point-size="8.0">  </font> >]
+  }
+  subgraph production {
+    cluster = true
+    label = <production = rule | silentRule>
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    AF [label = <AF: ALT>]
+    AF -> AG
+    AG [label = <AG: rule>]
+    AF -> AH
+    AH [label = <AH: silentRule>]
+  }
+  subgraph regex {
+    cluster = true
+    label = <regex = "'(\'|[^']+?)*'">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    AI [label = <AI: "regex"<br/><font color="gray" point-size="8.0"> 245:259 135:156 60:79 97:118 207:227 173:190 37:43 15:20 </font> >]
+  }
+  subgraph rule {
+    cluster = true
+    label = <rule = identifier "=" (regex | selection) ("." | ";")>
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    AJ [label = <AJ: SEQ>]
+    AJ -> AK
+    AK [label = <AK: identifier>]
+    AJ -> AL
+    AL [label = <AL: "="<br/><font color="gray" point-size="8.0"> 275:276 808:809 133:134 698:699 243:244 95:96 369:370 335:336 205:206 436:437 171:172 643:644 842:843 543:544 501:502 573:574 753:754 </font> >]
+    AJ -> AM
+    AM [label = <AM: ALT>]
+    AM -> AN
+    AN [label = <AN: regex>]
+    AM -> AU
+    AU [label = <AU: selection>]
+    AJ -> AV
+    AV [label = <AV: ALT>]
+    AV -> AW
+    AW [label = <AW: "."<br/><font color="gray" point-size="8.0"> 355:356 874:875 629:630 306:307 422:423 559:560 794:795 529:530 260:261 828:829 684:685 487:488 739:740 </font> >]
+    AV -> AX
+    AX [label = <AX: ";"<br/><font color="gray" point-size="8.0"> 157:158 119:120 228:229 191:192 </font> >]
+  }
+  subgraph selection {
+    cluster = true
+    label = <selection = sequence {"|" sequence}>
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    AY [label = <AY: SEQ>]
+    AY -> AZ
+    AZ [label = <AZ: sequence>]
+    AY -> BA
+    BA [label = <BA: REP>]
+    BA -> BB
+    BB [label = <BB: SEQ>]
+    BB -> BC
+    BC [label = <BC: "|"<br/><font color="gray" point-size="8.0"> 479:480 774:775 584:585 342:343 664:665 719:720 865:866 414:415 855:856 461:462 593:594 394:395 606:607 618:619 </font> >]
+    BB -> BD
+    BD [label = <BD: sequence>]
+  }
+  subgraph sequence {
+    cluster = true
+    label = <sequence = term {term}>
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    BE [label = <BE: SEQ>]
+    BE -> BF
+    BF [label = <BF: term>]
+    BE -> BG
+    BG [label = <BG: REP>]
+    BG -> BH
+    BH [label = <BH: term>]
+  }
+  subgraph silentRule {
+    cluster = true
+    label = <silentRule = identifier ":" (regex | keyword) ("." | ";")>
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    BI [label = <BI: SEQ>]
+    BI -> BJ
+    BJ [label = <BJ: identifier>]
+    BI -> BK
+    BK [label = <BK: ":"<br/><font color="gray" point-size="8.0"> 13:14 35:36 58:59 </font> >]
+    BI -> BL
+    BL [label = <BL: ALT>]
+    BL -> BM
+    BM [label = <BM: regex>]
+    BL -> BN
+    BN [label = <BN: keyword>]
+    BI -> BO
+    BO [label = <BO: ALT>]
+    BO -> BP
+    BP [label = <BP: "."<br/><font color="gray" point-size="8.0">  </font> >]
+    BO -> BQ
+    BQ [label = <BQ: ";"<br/><font color="gray" point-size="8.0"> 80:81 44:45 21:22 </font> >]
+  }
+  subgraph singleLine {
+    cluster = true
+    label = <singleLine = "//.*">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    BR [label = <BR: "singleLine"<br/><font color="gray" point-size="8.0">  </font> >]
+  }
+  subgraph term {
+    cluster = true
+    label = <term = terminal | option | zeroOrMore | oneOrMore | grouping>
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    BS [label = <BS: ALT>]
+    BS -> BV
+    BV [label = <BV: terminal>]
+    BS -> BX
+    BX [label = <BX: option>]
+    BS -> BZ
+    BZ [label = <BZ: zeroOrMore>]
+    BS -> CB
+    CB [label = <CB: oneOrMore>]
+    BS -> CC
+    CC [label = <CC: grouping>]
+  }
+  subgraph terminal {
+    cluster = true
+    label = <terminal = identifier | keyword | action>
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    CD [label = <CD: ALT>]
+    CD -> CE
+    CE [label = <CE: identifier>]
+    CD -> CF
+    CF [label = <CF: keyword>]
+    CD -> CG
+    CG [label = <CG: action>]
+  }
+  subgraph testInput {
+    cluster = true
+    label = <testInput = "\¶(\\¶|[^\¶])+">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    CH [label = <CH: "testInput"<br/><font color="gray" point-size="8.0">  </font> >]
   }
   subgraph whitespace {
     cluster = true
-    label = "whitespace = \"\s+\""
+    label = <whitespace = "\s+">
     labeljust = l
     node [shape = ellipse, height = 0]
-    F [label = "F: \"whitespace\"\n"]
+    CI [label = <CI: "whitespace"<br/><font color="gray" point-size="8.0">  </font> >]
   }
+  subgraph zeroOrMore {
+    cluster = true
+    label = <zeroOrMore = "(" selection ")*" | "{" selection "}">
+    labeljust = l
+    node [shape = ellipse, height = 0]
+    CJ [label = <CJ: ALT>]
+    CJ -> CK
+    CK [label = <CK: SEQ>]
+    CK -> CL
+    CL [label = <CL: "("<br/><font color="gray" point-size="8.0"> 473:474 386:387 453:454 408:409 </font> >]
+    CK -> CM
+    CM [label = <CM: selection>]
+    CK -> CN
+    CN [label = <CN: ")*"<br/><font color="gray" point-size="8.0">  </font> >]
+    CJ -> CO
+    CO [label = <CO: SEQ>]
+    CO -> CP
+    CP [label = <CP: "{"<br/><font color="gray" point-size="8.0"> 512:513 292:293 550:551 277:278 </font> >]
+    CO -> CQ
+    CQ [label = <CQ: selection>]
+    CO -> CR
+    CR [label = <CR: "}"<br/><font color="gray" point-size="8.0"> 527:528 290:291 304:305 557:558 </font> >]
+  }
+  C -> AF [style = dotted, constraint = false]
+  E -> CH [style = dotted, constraint = false]
+  I -> AY [style = dotted, constraint = false]
+  Q -> AY [style = dotted, constraint = false]
+  U -> AY [style = dotted, constraint = false]
+  Z -> AY [style = dotted, constraint = false]
+  AD -> AY [style = dotted, constraint = false]
+  AG -> AJ [style = dotted, constraint = false]
+  AH -> BI [style = dotted, constraint = false]
+  AK -> K [style = dotted, constraint = false]
+  AN -> AI [style = dotted, constraint = false]
+  AU -> AY [style = dotted, constraint = false]
+  AZ -> BE [style = dotted, constraint = false]
+  BD -> BE [style = dotted, constraint = false]
+  BF -> BS [style = dotted, constraint = false]
+  BH -> BS [style = dotted, constraint = false]
+  BJ -> K [style = dotted, constraint = false]
+  BM -> AI [style = dotted, constraint = false]
+  BN -> L [style = dotted, constraint = false]
+  BV -> CD [style = dotted, constraint = false]
+  BX -> W [style = dotted, constraint = false]
+  BZ -> CJ [style = dotted, constraint = false]
+  CB -> N [style = dotted, constraint = false]
+  CC -> G [style = dotted, constraint = false]
+  CE -> K [style = dotted, constraint = false]
+  CF -> L [style = dotted, constraint = false]
+  CG -> F [style = dotted, constraint = false]
+  CM -> AY [style = dotted, constraint = false]
+  CQ -> AY [style = dotted, constraint = false]
 }

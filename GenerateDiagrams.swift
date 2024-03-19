@@ -28,7 +28,14 @@ var nonterminalLinks: [(from: GrammarNode, to: GrammarNode)] = []
 func generateDiagrams() {
     diagramContent.append("\n  subgraph GSS {")
     diagramContent.append("\n    cluster = true")
-    diagramContent.append("\n    label = \"\(parseMode) \(messages[0].whitespaceMadeVisible)\" \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
+    
+    var shortMessage = messages[0]
+    if shortMessage.count > 20 {
+        shortMessage = String(shortMessage.prefix(17))
+        shortMessage.append("...")
+    }
+
+    diagramContent.append("\n    label = <\(parseMode) \(shortMessage.whitespaceMadeVisible.graphviz)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
     diagramContent.append("\n    labeljust = l")
     diagramContent.append("\n    node [shape = box, style = rounded, height = 0]")
     if GSS.graph.count > 1 {
@@ -48,7 +55,7 @@ func generateDiagrams() {
     for (name, node) in nonTerminals.sorted(by: { $0.key < $1.key }) {
         diagramContent.append("\n  subgraph \(name) {")
         diagramContent.append("\n    cluster = true")
-        diagramContent.append("\n    label = \"\(name) = \(node.ebnf())\"")
+        diagramContent.append("\n    label = <\(name) = \(node.ebnf().graphviz)>")
         diagramContent.append("\n    labeljust = l")
         diagramContent.append("\n    node [shape = ellipse, height = 0]")
         addDiagramOf(node)
@@ -72,31 +79,29 @@ func generateDiagrams() {
 func addDiagramOf(_ slot: GrammarNode) {
     switch slot.kind {
     case .SEQ(let children):
-        diagramContent.append("\n    \(slot) [label = \"\(slot): SEQ\"]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): SEQ>]")
         for child in children {
             diagramContent.append("\n    \(slot) -> \(child)")
             addDiagramOf(child)
         }
     case .ALT(let children):
-        diagramContent.append("\n    \(slot) [label = \"\(slot): ALT\"]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): ALT>]")
         for child in children {
             diagramContent.append("\n    \(slot) -> \(child)")
             addDiagramOf(child)
         }
     case .OPT(let child):
-        diagramContent.append("\n    \(slot) [label = \"\(slot): OPT\"]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): OPT>]")
         diagramContent.append("\n    \(slot) -> \(child)")
         addDiagramOf(child)
     case .REP(let child):
-        diagramContent.append("\n    \(slot) [label = \"\(slot): REP\"]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): REP>]")
         diagramContent.append("\n    \(slot) -> \(child)")
         addDiagramOf(child)
     case .NTR(let name, let link):
-        diagramContent.append("\n    \(slot) [label = \"\(slot): \(name)\"]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): \(name)>]")
         nonterminalLinks.append((slot, link!))
     case .TRM(let type):
-        diagramContent.append("\n    \(slot) [label = \"\(slot): \\\"\(type)\\\"\\n\(slot.extents)\"]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): \"\(type.escapesRemoved.graphviz)\"<br/><font color=\"gray\" point-size=\"8.0\"> \(slot.extents) </font> >]")
     }
 }
-
-

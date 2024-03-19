@@ -39,6 +39,23 @@ func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
     index_Ci(to: input.startIndex)
 }
 
+// TODO: future defs
+//let whitespace  = /\s+/                         // any regex whitespace
+//let singleLine  = /\/\/.*/                      // anything on the same line after //
+//let multiLine   = /(?s)\/\*.*?\*\//             // anything on multiple lines between /* and */
+//
+//let identifier  = /[\p{L}\p{N}\p{Pc}]+/         // one or more letters or numbers or punctuation in any script
+//let i           = /a-zA-Z[_a-zA-Z0-9]*/         // a letters followed by zero or more letters or digits or underscores
+//
+//let regex       = /\/[^\/]*\//                  // anything between /, no escape for //
+//let action      = /@[^@]*@/                     // anything between @, no escape for /@
+//
+//let keyword     = /"(\"|[^"]+?)*\"/
+//let k           = /"[^"\\]*(?:\\.[^"\\]*)*"/    // anything between ", with escapes for /" and //
+//
+//let testInput   = /¶(¶|[^¶])+/
+
+
 // handwritten parser: BE CAREFUL!
 let handwrittenTokenPatterns: [String:TokenPattern] = [
     "singleLine":   (#"//.*"#,                  true,  true),
@@ -92,7 +109,6 @@ struct Token {
 }
 
 func index_Ci(to i: String.Index) {
-//    trace("setScanStart", i)
     index_Ci = i
     token.range = index_Ci ..< index_Ci
     token.image = ""

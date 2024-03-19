@@ -6,19 +6,35 @@
 //
 
 import Foundation
+import SwiftUI
 
 extension Range<String.Index> {
     var shortDescription: String { self.lowerBound.description + ":" + self.upperBound.description }
 }
 
 extension String {
+    
+    // https://forum.graphviz.org/t/how-do-i-properly-escape-arbitrary-text-for-use-in-labels/1762/5
+    var graphviz: String {
+        var modified = ""
+        for char in self {
+            switch char {
+            case "&": modified.append("&amp;")
+            case "<": modified.append("&lt;")
+            case ">": modified.append("&gt;")
+            default: modified.append(char)
+            }
+        }
+        return modified.escapesRemoved
+    }
+
     var escapesRemoved: String {
-        var substitute = self
+        var modified = self
         for entity in ["\0", "\t", "\n", "\r", "\"", "\'", "\\"] {
             let escapedCharacter = entity.debugDescription.dropFirst().dropLast()
-            substitute = substitute.replacingOccurrences(of: escapedCharacter, with: entity)
+            modified = modified.replacingOccurrences(of: escapedCharacter, with: entity)
         }
-        return substitute
+        return modified
     }
     
     var escapesAdded: String {
@@ -26,9 +42,11 @@ extension String {
     }
     
     var whitespaceMadeVisible: String {
-        return self.escapesAdded
-            .replacingOccurrences(of: "\\", with: "\\\\")
+        return self
+            .replacingOccurrences(of: "\\", with: "\\\\")  // TODO: WTF?
             .replacingOccurrences(of: " ", with: "·")
+            .replacingOccurrences(of: "\t", with: "→")
+            .replacingOccurrences(of: "\n", with: "↵")
     }
 
     var validSwiftIdentifier: String {
