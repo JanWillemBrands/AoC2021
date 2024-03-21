@@ -21,7 +21,7 @@ whitespace : '\s+'.
 //S = "x" X "x" | "x" X "x".    // PASS
 //X = "x".
 
-S = ( ["x"] | ["x"] ) "x".    // PASS c
+//S = ( ["x"] | ["x"] ) "x".    // PASS c
 
 //S = "x".                      // PASS c
 //S = "x" "x".                  // PASS c
@@ -72,8 +72,9 @@ S = ( ["x"] | ["x"] ) "x".    // PASS c
 //S = "a" S "d" | "a" S | "".           // PASS c Cappers thesis Γ5 but fail since only one match
 
 //S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
+S = "a" S "b" | "a" S "d" | "a".
 
 //S = "a" "b" "c" "d".                  // PASS c but unnecessary desriptors and pops
 
 
-¶xx
+¶aad

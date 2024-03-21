@@ -76,8 +76,12 @@ extension GrammarNode {
 }
 
 extension GrammarNode: Hashable {
-    static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool { ObjectIdentifier(lhs) == ObjectIdentifier(rhs) }
-    func hash(into hasher: inout Hasher) { return hasher.combine(ObjectIdentifier(self)) }
+    static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
+        ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+    }
+    func hash(into hasher: inout Hasher) {
+        return hasher.combine(ObjectIdentifier(self))
+    }
 }
 
 extension GrammarNode: CustomStringConvertible {
@@ -182,7 +186,7 @@ extension GrammarNode {
         
         traceIndent += 1
         
-        // manually assign the node number here so that the entire tree gets a depth-first-left-to-right sequence
+        // manually assign the node number here so that the entire tree gets a top-down-left-to-right numbering sequence
         self.number = GrammarNode.count
         GrammarNode.count += 1
         
@@ -264,9 +268,9 @@ extension GrammarNode {
         switch kind {
         case .SEQ(let children):
             for child in children {
-                if case .ALT = child.kind { s.append("(") }
+                if case .ALT = child.kind { s.append("( ") }
                 s.append(child.ebnf())
-                if case .ALT = child.kind { s.append(")") }
+                if case .ALT = child.kind { s.append(" )") }
                 s.append(" ")
             }
             s.removeLast(1)
@@ -277,13 +281,13 @@ extension GrammarNode {
             }
             s.removeLast(3)
         case .OPT(let child):
-            s.append("[")
+            s.append("[ ")
             s.append(child.ebnf())
-            s.append("]")
+            s.append(" ]")
         case .REP(let child):
-            s.append("{")
+            s.append("{ ")
             s.append(child.ebnf())
-            s.append("}")
+            s.append(" }")
         case .NTR(let name, _):
             s.append(name)
         case .TRM(let type):

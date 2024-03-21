@@ -48,34 +48,6 @@ extension String {
             .replacingOccurrences(of: "\t", with: "→")
             .replacingOccurrences(of: "\n", with: "↵")
     }
-
-    var validSwiftIdentifier: String {
-        var valid = ""
-        for c in self {
-            if c.isLetter || c.isNumber {
-                valid.append(c)
-            } else {
-                for s in c.unicodeScalars {
-                    if let alias = nameAliases[s] {
-                        valid.append(alias)
-                    } else if let name = s.properties.name {
-                        valid.append(name.capitalized)
-                    } else {
-                        valid.append("XXX")
-                    }
-                }
-            }
-        }
-        valid = valid.replacingOccurrences(of: " ", with: "")
-        if let first = valid.first {
-            if first.isNumber {
-                valid = "_" + valid
-            }
-        } else {
-            valid = "_"
-        }
-        return valid
-    }
 }
 
 // Describe string index as an integer label 0, 1, 2...
@@ -84,43 +56,4 @@ extension String.Index: CustomStringConvertible {
         String(input.distance(from: input.startIndex, to: self))
     }
 }
-
-// https://www.unicode.org/Public/draft/UCD/ucd/NameAliases.txt
-let nameAliases: [UnicodeScalar:String] = [
-    "\u{0000}" : "NUL",
-    "\u{0001}" : "SOH",
-    "\u{0002}" : "STX",
-    "\u{0003}" : "ETX",
-    "\u{0004}" : "EOT",
-    "\u{0005}" : "ENQ",
-    "\u{0006}" : "ACK",
-    "\u{0007}" : "BEL",
-    "\u{0008}" : "BS",
-    "\u{0009}" : "HT",
-    "\u{000A}" : "NL",
-    "\u{000B}" : "VT",
-    "\u{000C}" : "FF",
-    "\u{000D}" : "CR",
-    "\u{000E}" : "SO",
-    "\u{000F}" : "SI",
-    "\u{0010}" : "DLE",
-    "\u{0011}" : "DC1",
-    "\u{0012}" : "DC2",
-    "\u{0013}" : "DC3",
-    "\u{0014}" : "DC4",
-    "\u{0015}" : "NAK",
-    "\u{0016}" : "SYN",
-    "\u{0017}" : "ETB",
-    "\u{0018}" : "CAN",
-    "\u{0019}" : "EOM",
-    "\u{001A}" : "SUB",
-    "\u{001B}" : "ESC",
-    "\u{001C}" : "FS",
-    "\u{001D}" : "GS",
-    "\u{001E}" : "RS",
-    "\u{001F}" : "US",
-    "\u{0020}" : "SP",
-    
-    "\u{007F}" : "DEL"
-]
 

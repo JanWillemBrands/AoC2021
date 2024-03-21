@@ -21,9 +21,9 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     let inputFileURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
 //        .appendingPathComponent("TortureSyntax")
-//        .appendingPathComponent("test")
+        .appendingPathComponent("test")
 //        .appendingPathComponent("apusNoAction")
-        .appendingPathComponent("apusAmbiguous")
+//        .appendingPathComponent("apusAmbiguous")
         .appendingPathExtension("apus")
     
     initScanner(fromFile: inputFileURL, patterns: handwrittenTokenPatterns)
@@ -121,10 +121,10 @@ func parseMessage() {
                 switch parseMode {
                 case .ALL:
                     for child in children {
-                        let saved = GSS.stack_Cu
+                        let saved = GSS.currentStack
                         GSS.create(slot: child)
                         GSS.addDescriptor(slot: child, stack: saved)
-                        GSS.stack_Cu = saved
+                        GSS.currentStack = saved
                     }
                     
                 case .LL1:
@@ -136,10 +136,10 @@ func parseMessage() {
                     }
                 case .GLL:
                     for child in children where child.first.contains(token.type) {
-                        let saved = GSS.stack_Cu
+                        let saved = GSS.currentStack
                         GSS.create(slot: child)
                         GSS.addDescriptor(slot: child, stack: saved)
-                        GSS.stack_Cu = saved
+                        GSS.currentStack = saved
                     }
                 }
                 
@@ -151,32 +151,32 @@ func parseMessage() {
             case .OPT(let child):
                 switch parseMode {
                 case .ALL:
-                    let saved = GSS.stack_Cu
+                    let saved = GSS.currentStack
                     GSS.create(slot: child)
                     GSS.addDescriptor(slot: child, stack: saved)
-                    GSS.stack_Cu = saved
+                    GSS.currentStack = saved
                 case .LL1:
                     if child.first.contains(token.type) {
                         GSS.create(slot: child)
                     }
                 case .GLL:
                     if child.first.contains(token.type) {
-                        let saved = GSS.stack_Cu
+                        let saved = GSS.currentStack
                         GSS.create(slot: child)
                         GSS.addDescriptor(slot: child, stack: saved)
-                        GSS.stack_Cu = saved
+                        GSS.currentStack = saved
                     }
                 }
                 
             case .REP(let child):
                 switch parseMode {
                 case .ALL:
-                    let saved = GSS.stack_Cu
+                    let saved = GSS.currentStack
                     GSS.create(slot: slot)
-                    let intermediate = GSS.stack_Cu
+                    let intermediate = GSS.currentStack
                     GSS.create(slot: child)
                     GSS.addDescriptor(slot: child, stack: intermediate)
-                    GSS.stack_Cu = saved
+                    GSS.currentStack = saved
                 case .LL1:
                     if child.first.contains(token.type) {
                         GSS.create(slot: slot)
@@ -184,12 +184,12 @@ func parseMessage() {
                     }
                 case .GLL:
                     if child.first.contains(token.type) {
-                        let saved = GSS.stack_Cu
+                        let saved = GSS.currentStack
                         GSS.create(slot: slot)
-                        let intermediate = GSS.stack_Cu
+                        let intermediate = GSS.currentStack
                         GSS.create(slot: child)
                         GSS.addDescriptor(slot: child, stack: intermediate)
-                        GSS.stack_Cu = saved
+                        GSS.currentStack = saved
                     }
                 }
                 
@@ -202,7 +202,7 @@ func parseMessage() {
                 next()
             }
             
-            if GSS.stack_Cu == nil {
+            if GSS.currentStack == nil {
                 if token.range.upperBound == input.endIndex {
                     successfullParses += 1
                     trace("HURRAH", terminator: "\n")

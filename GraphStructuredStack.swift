@@ -5,21 +5,156 @@
 //  Created by Johannes Brands on 01/03/2024.
 //
 
-struct Vertex: Hashable, CustomStringConvertible, Comparable {
+struct Vertex {
     var slot: GrammarNode
     var index: String.Index
     
+    var popped: Set<String.Index> = []
     // TODO: optimization cf. Afroozeh
-    // var seen_U: Set<Descriptor> = []
-    // var popIndexes_P: Set<String.Index> = []
+    var unique: Set<miniDescriptor> = []
+}
+
+struct Edge {
+    var towards: Vertex?
+    var weight: Int = 0
+}
+
+struct Descriptor {
+    var slot: GrammarNode
+    var stack: Vertex?
+    var index: String.Index
+    var weight = Extents()
+}
+
+struct miniDescriptor: Hashable {
+    var slot: GrammarNode
+    var index: String.Index
+}
+
+var remainder: [Descriptor] = []
+
+struct GraphStructuredStack {
+    // TODO: OPTIMIZATION cf. Afroozeh change the set of edged to an array of edges
+    var graph: [Vertex: [Edge]] = [:]
+//    var graph: [Vertex: Set<Edge>] = [:]
+    
+    var currentStack: Vertex?
+    
+//    var unique: Set<Descriptor> = []
+        
+    var extents_Cn = Extents()
+    
+    // creates a GSS vertex v, if it doesn't exist already
+    // add an edge from v to the current stack top
+    // add descriptors for previous pop actions from v
+    // set the current stack_Cu to v
+    mutating func create(slot: GrammarNode) {
+        let v = Vertex(slot: slot, index: currentIndex)
+        let e = Edge(towards: currentStack)
+        trace("create: edge from \(v) to", currentStack ?? "nil")
+        
+        var edges = graph[v] ?? []
+//        edges.insert(e)
+        edges.append(e)
+        graph[v] = edges
+        
+//        assert(edges.sorted() == Set(edges).sorted(), "should have used a Set<Edge> for\n\(edges)")
+        
+        for p in v.popped {
+            trace("createadd")
+            addDescriptor(slot: slot, stack: &currentStack, at: p)
+        }
+        currentStack = v
+    }
+    
+    // pop the current stack
+    // OPTIMIZATION dot not create a descriptor for the fist edge that is popped
+//    mutating func pop2() {
+//        trace("pop:", stack_Cu ?? "nil")
+//        if stack_Cu != nil {
+//            stack.popped.insert(currentIndex)
+////            let p = Poppy(vertex: stack, index: currentIndex)
+////            popped.insert(p)
+//            
+//            // one of the edges can be popped without addDescriptor
+//            let edges = Array(graph[stack] ?? [])
+//            if !edges.isEmpty {
+//                stack_Cu = edges.last?.towards
+//                slot_L = stack_Cu!.slot
+//                next()
+//                print("slot",slot_L)
+//                for edge in edges.dropLast() {
+//                    trace("popadd")
+//                    addDescriptor(slot: stack.slot, stack: edge.towards, at: p.index)
+//                }
+//            }
+//        }
+//    }
+    
+    mutating func pop() {
+        trace("pop:", currentStack ?? "nil")
+        if currentStack != nil {
+            currentStack!.popped.insert(currentIndex)
+            // TODO: the first edge can be popped without addDescriptor
+            for var edge in graph[currentStack!] ?? [] {
+                trace("contingent pop add")
+                addDescriptor(slot: currentStack!.slot, stack: &edge.towards)
+            }
+        }
+    }
+    
+//    mutating func addDescriptorOld(slot: GrammarNode, stack: Vertex?, at index: String.Index = currentIndex) {
+//        let d = Descriptor(slot: slot, stack: stack, index: index)
+//        if unique.insert(d).inserted {
+//            remainder.append(d)
+//            trace("add Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
+//            addedDescriptors += 1
+//        } else {
+//            trace("not add Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
+//        }
+//    }
+    
+    mutating func addDescriptor(slot: GrammarNode, stack: inout Vertex?, at index: String.Index = currentIndex) {
+        let md = miniDescriptor(slot: slot, index: index)
+        
+        if let b = stack?.unique.insert(md).inserted {
+            let d = Descriptor(slot: md.slot, stack: stack, index: md.index)
+            remainder.append(d)
+            trace("add Descriptor(slot: \(slot.description), stack: \(stack?.description ?? "nil"), index: \(index))")
+            addedDescriptors += 1
+        } else {
+            trace("not add Descriptor(slot: \(slot.description), stack: \(stack?.description ?? "nil"), index: \(index))")
+        }
+    }
+    
+    mutating func getDescriptor() -> GrammarNode? {
+        if remainder.isEmpty {
+            return nil
+        } else {
+            let d = remainder.removeLast()
+            trace("get Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
+            currentStack = d.stack
+            currentIndex(to: d.index)
+            next()
+            return d.slot
+        }
+    }
+    
+}
+
+extension Vertex: Hashable, CustomStringConvertible, Comparable {
+    static func == (lhs: Vertex, rhs: Vertex) -> Bool {
+        lhs.slot == rhs.slot && lhs.index == rhs.index
+    }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(slot)
+        hasher.combine(index)
+    }
     var description: String { slot.description + index.description }
     static func < (lhs: Vertex, rhs: Vertex) -> Bool { lhs.description < rhs.description }
 }
 
-struct Edge: Hashable, CustomStringConvertible, Comparable {
-    var towards: Vertex?
-    var weight: Int = 0
-    
+extension Edge: Hashable, CustomStringConvertible, Comparable {
     var description: String { towards?.description ?? "·" }
     static func < (lhs: Edge, rhs: Edge) -> Bool {
         if lhs.towards == nil && rhs.towards == nil {
@@ -34,12 +169,7 @@ struct Edge: Hashable, CustomStringConvertible, Comparable {
     }
 }
 
-struct Descriptor: Hashable {
-    var slot: GrammarNode
-    var stack: Vertex?
-    var index: String.Index
-    var weight = Extents()
-    
+extension Descriptor: Hashable {
     static func == (lhs: Descriptor, rhs: Descriptor) -> Bool {
         lhs.slot == rhs.slot && lhs.stack == rhs.stack && lhs.index == rhs.index
     }
@@ -50,119 +180,6 @@ struct Descriptor: Hashable {
     }
 }
 
-struct Poppy: Hashable {
-    var popped: Vertex
-    var at: String.Index
-}
-
-struct GraphStructuredStack {
-    var graph: [Vertex: [Edge]] = [:]
-    //    var graph: [Vertex: Set<Edge>] = [:]
-    // TODO: OPTIMIZATION cf. Afroozeh change the set of edged to an array of edges
-    // to verify add this in create()
-    // let a = [4,3,2,1,1]
-    // assert(a.sorted() == Set(a).sorted(), "should have used a Set")
-    
-    var stack_Cu: Vertex?
-    
-    var todo_R: [Descriptor] = []
-    var seen_U: Set<Descriptor> = []
-    
-    var pops_P: Set<Poppy> = []
-    
-    var extents_Cn = Extents()
-    
-    // creates a GSS vertex v, if it doesn't exist already
-    // add an edge from v to the current stack top
-    // add descriptors for previous pop actions from v
-    // set the current stack_Cu to v
-    mutating func create(slot: GrammarNode) {
-        let v = Vertex(slot: slot, index: index_Ci)
-        let e = Edge(towards: stack_Cu)
-        trace("create: edge from \(v) to", stack_Cu ?? "nil")
-        
-        var edges = graph[v] ?? []
-        //        edges.insert(e)
-        edges.append(e)
-        graph[v] = edges
-        
-//        assert(edges.sorted() == Set(edges).sorted(), "should have used a Set for\n\(edges)")
-        
-        // TODO: optimization store seen_P in GSS Vertex
-        // for p in v.done_P {
-        //     add(slot: slot, stack: stack_Cu, at: p)
-        // }
-        for p in pops_P where p.popped == v {
-            trace("createadd")
-            addDescriptor(slot: slot, stack: stack_Cu, at: p.at)
-        }
-        stack_Cu = v
-    }
-    
-    // pop the current stack
-    // OPTIMIZATION dot not create a descriptor for the fist edge that is popped
-    mutating func pop2() {
-        trace("pop:", stack_Cu ?? "nil")
-        if let stack = stack_Cu {
-            let p = Poppy(popped: stack, at: index_Ci)
-            pops_P.insert(p)
-            
-            // one of the edges can be popped without addDescriptor
-            let edges = Array(graph[stack] ?? [])
-            if !edges.isEmpty {
-                stack_Cu = edges.last?.towards
-                slot_L = stack_Cu!.slot
-                next()
-                print(slot_L)
-                for edge in edges.dropLast() {
-                    trace("popadd")
-                    addDescriptor(slot: stack.slot, stack: edge.towards)
-                }
-            }
-        }
-    }
-    
-    mutating func pop() {
-        trace("pop:", stack_Cu ?? "nil")
-        if let stack_Cu {
-            let p = Poppy(popped: stack_Cu, at: index_Ci)
-            pops_P.insert(p)
-            
-            // TODO: the first edge can be popped without addDescriptor
-            for edge in graph[stack_Cu] ?? [] {
-                trace("popadd")
-                addDescriptor(slot: stack_Cu.slot, stack: edge.towards)
-            }
-        }
-    }
-    
-    mutating func addDescriptor(slot: GrammarNode, stack: Vertex?, at position: String.Index = index_Ci) {
-        let d = Descriptor(slot: slot, stack: stack, index: position)
-        
-        if seen_U.insert(d).inserted {
-            todo_R.append(d)
-            trace("add Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
-            addedDescriptors += 1
-        } else {
-            trace("not add Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
-        }
-        // TODO: optimization store seen_U in GSS Vertex
-    }
-    
-    mutating func getDescriptor() -> GrammarNode? {
-        if todo_R.isEmpty {
-            return nil
-        } else {
-            let d = todo_R.removeLast()
-            trace("get Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
-            stack_Cu = d.stack
-            index_Ci(to: d.index)
-            next()
-            return d.slot
-        }
-    }
-    
-}
 
 //apusNoAction before GSS:
 //all paths

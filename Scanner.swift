@@ -16,7 +16,7 @@ import Foundation
 var input: String = ""
 
 // index is right before the first character of the current token
-var index_Ci: String.Index = input.startIndex
+var currentIndex: String.Index = input.startIndex
 
 var token = Token()
 
@@ -26,7 +26,7 @@ var tokenPatterns: [String:TokenPattern] = [:]
 func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) {
     tokenPatterns = patterns
     input = inputString
-    index_Ci(to: input.startIndex)
+    currentIndex(to: input.startIndex)
 }
 
 func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
@@ -36,7 +36,7 @@ func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
     }
     tokenPatterns = patterns
     input = inputFileContent
-    index_Ci(to: input.startIndex)
+    currentIndex(to: input.startIndex)
 }
 
 // TODO: future defs
@@ -108,9 +108,9 @@ struct Token {
     }
 }
 
-func index_Ci(to i: String.Index) {
-    index_Ci = i
-    token.range = index_Ci ..< index_Ci
+func currentIndex(to i: String.Index) {
+    currentIndex = i
+    token.range = currentIndex ..< currentIndex
     token.image = ""
     token.type = ""
 }
@@ -119,8 +119,8 @@ func next() {
     var remainder = token.range.upperBound ..< input.endIndex // index_Ci is set to token.range.lowerBound
     if remainder.isEmpty {
         trace("end of input reached")
-        index_Ci = input.endIndex
-        token.range = index_Ci ..< index_Ci
+        currentIndex = input.endIndex
+        token.range = currentIndex ..< currentIndex
         token.image = ""
         token.type = ""
         return
@@ -166,7 +166,7 @@ func next() {
             token.range = longestMatch
             token.image = ""
             token.type = ""
-            index_Ci = token.range.lowerBound
+            currentIndex = token.range.lowerBound
             return
         }
         remainder = longestMatch.upperBound..<input.endIndex
@@ -174,7 +174,7 @@ func next() {
     token.range = longestMatch
     token.image = String(input[token.range])
     token.type = longestMatchType
-    index_Ci = token.range.lowerBound
+    currentIndex = token.range.lowerBound
     trace("next token: \"\(token.image.escapesAdded)\" range: \(token.range.shortDescription)")
 }
 
