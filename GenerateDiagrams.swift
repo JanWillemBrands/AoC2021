@@ -38,8 +38,8 @@ func generateDiagrams() {
     diagramContent.append("\n    label = <\(parseMode) \(shortMessage.whitespaceMadeVisible.graphviz)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
     diagramContent.append("\n    labeljust = l")
     diagramContent.append("\n    node [shape = box, style = rounded, height = 0]")
-    if GSS.graph.count > 1 {
-        for (key, value) in GSS.graph.sorted(by: { $0.key > $1.key }) {
+    if graph.count > 1 {
+        for (key, value) in graph.sorted(by: { $0.key > $1.key }) {
             if value.isEmpty {
                 diagramContent.append("\n    \"\(key)\" -> \"#\"")
             } else {

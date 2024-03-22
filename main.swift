@@ -86,10 +86,10 @@ func parseMessage() {
     
     enum ParseFailure: Error { case unexpectedToken, didNotReachEndOfInput }
     
-    //    while let slot = GSS.slot_L {
-    while let slot = GSS.getDescriptor() {
-        //    while !GSS.todo_R.isEmpty {
-        //        GSS.slot_L = GSS.getDescriptor()!
+    //    while let slot = slot_L {
+    while let slot = getDescriptor() {
+        //    while !todo_R.isEmpty {
+        //        slot_L = getDescriptor()!
         
         do {
             
@@ -114,32 +114,32 @@ func parseMessage() {
                 
             case .SEQ(let children):
                 for child in children.reversed() {
-                    GSS.create(slot: child)
+                    create(slot: child)
                 }
                 
             case .ALT(let children):
                 switch parseMode {
                 case .ALL:
                     for child in children {
-                        let saved = GSS.currentStack
-                        GSS.create(slot: child)
-                        GSS.addDescriptor(slot: child, stack: saved)
-                        GSS.currentStack = saved
+                        var saved = currentStack
+                        create(slot: child)
+                        addDescriptor(slot: child, stack: &saved)
+                        currentStack = saved
                     }
                     
                 case .LL1:
                     for child in children {
                         if child.first.contains(token.type) {
-                            GSS.create(slot: child)
+                            create(slot: child)
                             break
                         }
                     }
                 case .GLL:
                     for child in children where child.first.contains(token.type) {
-                        let saved = GSS.currentStack
-                        GSS.create(slot: child)
-                        GSS.addDescriptor(slot: child, stack: saved)
-                        GSS.currentStack = saved
+                        var saved = currentStack
+                        create(slot: child)
+                        addDescriptor(slot: child, stack: &saved)
+                        currentStack = saved
                     }
                 }
                 
@@ -151,50 +151,50 @@ func parseMessage() {
             case .OPT(let child):
                 switch parseMode {
                 case .ALL:
-                    let saved = GSS.currentStack
-                    GSS.create(slot: child)
-                    GSS.addDescriptor(slot: child, stack: saved)
-                    GSS.currentStack = saved
+                    var saved = currentStack
+                    create(slot: child)
+                    addDescriptor(slot: child, stack: &saved)
+                    currentStack = saved
                 case .LL1:
                     if child.first.contains(token.type) {
-                        GSS.create(slot: child)
+                        create(slot: child)
                     }
                 case .GLL:
                     if child.first.contains(token.type) {
-                        let saved = GSS.currentStack
-                        GSS.create(slot: child)
-                        GSS.addDescriptor(slot: child, stack: saved)
-                        GSS.currentStack = saved
+                        var saved = currentStack
+                        create(slot: child)
+                        addDescriptor(slot: child, stack: &saved)
+                        currentStack = saved
                     }
                 }
                 
             case .REP(let child):
                 switch parseMode {
                 case .ALL:
-                    let saved = GSS.currentStack
-                    GSS.create(slot: slot)
-                    let intermediate = GSS.currentStack
-                    GSS.create(slot: child)
-                    GSS.addDescriptor(slot: child, stack: intermediate)
-                    GSS.currentStack = saved
+                    let saved = currentStack
+                    create(slot: slot)
+                    var intermediate = currentStack
+                    create(slot: child)
+                    addDescriptor(slot: child, stack: &intermediate)
+                    currentStack = saved
                 case .LL1:
                     if child.first.contains(token.type) {
-                        GSS.create(slot: slot)
-                        GSS.create(slot: child)
+                        create(slot: slot)
+                        create(slot: child)
                     }
                 case .GLL:
                     if child.first.contains(token.type) {
-                        let saved = GSS.currentStack
-                        GSS.create(slot: slot)
-                        let intermediate = GSS.currentStack
-                        GSS.create(slot: child)
-                        GSS.addDescriptor(slot: child, stack: intermediate)
-                        GSS.currentStack = saved
+                        let saved = currentStack
+                        create(slot: slot)
+                        var intermediate = currentStack
+                        create(slot: child)
+                        addDescriptor(slot: child, stack: &intermediate)
+                        currentStack = saved
                     }
                 }
                 
             case .NTR(_, let link):
-                GSS.create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
+                create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
                 
             case .TRM(_):
                 slot.extents.insert(token.range)
@@ -202,7 +202,7 @@ func parseMessage() {
                 next()
             }
             
-            if GSS.currentStack == nil {
+            if currentStack == nil {
                 if token.range.upperBound == input.endIndex {
                     successfullParses += 1
                     trace("HURRAH", terminator: "\n")
@@ -210,24 +210,24 @@ func parseMessage() {
                     throw ParseFailure.didNotReachEndOfInput
                 }
             } else {
-                GSS.pop()
+                pop()
             }
             
-            //            } while GSS.stack_Cu != nil
+            //            } while stack_Cu != nil
             
         } catch let error {
             failedParses += 1
             trace("NOGOOD Parse ended due to \(error)", terminator: "\n")
         }
         
-        //        GSS.slot_L = GSS.getDescriptor()
+        //        slot_L = getDescriptor()
         
     }
     
     trace(
         "\nmatched:", successfullParses,
         "  failed:", failedParses,
-        "  gss size:", GSS.graph.count,
+        "  gss size:", graph.count,
         "  descriptors:", addedDescriptors
     )
 }
@@ -250,7 +250,7 @@ let grammarRoot = parseGrammar(startSymbol: "S")
 var slot_L = grammarRoot
 
 trace = false
-var GSS = GraphStructuredStack()
+//var GSS = GraphStructuredStack()
 //generateDiagrams()      // first time with empty GSS
 
 if let grammarRoot {
@@ -260,12 +260,12 @@ if let grammarRoot {
         
         //        grammarRoot.resetParseResults()
         
-        GSS = GraphStructuredStack()
+//        GSS = GraphStructuredStack()
         
         trace = true
         slot_L = grammarRoot
-        GSS.create(slot: grammarRoot)
-        GSS.addDescriptor(slot: grammarRoot, stack: nil)
+        create(slot: grammarRoot)
+//        addDescriptor(slot: grammarRoot, stack: nil)
         
         parseMessage()
     }

@@ -33,7 +33,7 @@ struct miniDescriptor: Hashable {
 
 var remainder: [Descriptor] = []
 
-struct GraphStructuredStack {
+//struct GraphStructuredStack {
     // TODO: OPTIMIZATION cf. Afroozeh change the set of edged to an array of edges
     var graph: [Vertex: [Edge]] = [:]
 //    var graph: [Vertex: Set<Edge>] = [:]
@@ -48,7 +48,7 @@ struct GraphStructuredStack {
     // add an edge from v to the current stack top
     // add descriptors for previous pop actions from v
     // set the current stack_Cu to v
-    mutating func create(slot: GrammarNode) {
+    func create(slot: GrammarNode) {
         let v = Vertex(slot: slot, index: currentIndex)
         let e = Edge(towards: currentStack)
         trace("create: edge from \(v) to", currentStack ?? "nil")
@@ -91,7 +91,7 @@ struct GraphStructuredStack {
 //        }
 //    }
     
-    mutating func pop() {
+    func pop() {
         trace("pop:", currentStack ?? "nil")
         if currentStack != nil {
             currentStack!.popped.insert(currentIndex)
@@ -114,7 +114,7 @@ struct GraphStructuredStack {
 //        }
 //    }
     
-    mutating func addDescriptor(slot: GrammarNode, stack: inout Vertex?, at index: String.Index = currentIndex) {
+    func addDescriptor(slot: GrammarNode, stack: inout Vertex?, at index: String.Index = currentIndex) {
         let md = miniDescriptor(slot: slot, index: index)
         
         if let b = stack?.unique.insert(md).inserted {
@@ -127,7 +127,7 @@ struct GraphStructuredStack {
         }
     }
     
-    mutating func getDescriptor() -> GrammarNode? {
+    func getDescriptor() -> GrammarNode? {
         if remainder.isEmpty {
             return nil
         } else {
@@ -140,7 +140,7 @@ struct GraphStructuredStack {
         }
     }
     
-}
+
 
 extension Vertex: Hashable, CustomStringConvertible, Comparable {
     static func == (lhs: Vertex, rhs: Vertex) -> Bool {
