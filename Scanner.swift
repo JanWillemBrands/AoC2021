@@ -15,9 +15,6 @@ import Foundation
 // input is the string that's being scanned and parsed
 var input: String = ""
 
-// index is right before the first character of the current token
-var currentIndex: String.Index = input.startIndex
-
 var token = Token()
 
 typealias TokenPattern = (pattern: String, regular: Bool, muted: Bool)

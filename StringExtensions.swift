@@ -6,11 +6,7 @@
 //
 
 import Foundation
-import SwiftUI
-
-extension Range<String.Index> {
-    var shortDescription: String { self.lowerBound.description + ":" + self.upperBound.description }
-}
+//import SwiftUI
 
 extension String {
     
@@ -38,11 +34,13 @@ extension String {
     }
     
     var escapesAdded: String {
-        return self.unicodeScalars.reduce("") { $0 + $1.escaped(asASCII: false)}
+        self
+            .unicodeScalars
+            .reduce("") { $0 + $1.escaped(asASCII: false)}
     }
     
     var whitespaceMadeVisible: String {
-        return self
+        self
             .replacingOccurrences(of: "\\", with: "\\\\")  // TODO: WTF?
             .replacingOccurrences(of: " ", with: "·")
             .replacingOccurrences(of: "\t", with: "→")
@@ -50,10 +48,13 @@ extension String {
     }
 }
 
-// Describe string index as an integer label 0, 1, 2...
 extension String.Index: CustomStringConvertible {
+    // Describe string index as an integer label 0, 1, 2...
     public var description: String {
         String(input.distance(from: input.startIndex, to: self))
     }
 }
 
+extension Range<String.Index> {
+    var shortDescription: String { self.lowerBound.description + ":" + self.upperBound.description }
+}

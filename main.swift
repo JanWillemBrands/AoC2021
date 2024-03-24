@@ -20,10 +20,10 @@ func trace(_ items: Any..., terminator term: String = "") {
 func parseGrammar(startSymbol: String) -> GrammarNode? {
     let inputFileURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
-//        .appendingPathComponent("TortureSyntax")
+    //        .appendingPathComponent("TortureSyntax")
         .appendingPathComponent("test")
-//        .appendingPathComponent("apusNoAction")
-//        .appendingPathComponent("apusAmbiguous")
+    //        .appendingPathComponent("apusNoAction")
+    //        .appendingPathComponent("apusAmbiguous")
         .appendingPathExtension("apus")
     
     initScanner(fromFile: inputFileURL, patterns: handwrittenTokenPatterns)
@@ -42,10 +42,7 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
         trace("\t", nonTerminal.key, "\t", nonTerminal.value)
     }
     
-    guard let root = nonTerminals[startSymbol] else {
-        print("error: start symbol '\(startSymbol)' not found")
-        return nil
-    }
+    guard let root = nonTerminals[startSymbol] else { return nil }
     
     root.follow.insert("")
     trace("start symbol '\(startSymbol)' first:", root.first, "follow:", root.follow)
@@ -69,8 +66,59 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     }
     
     return root
-    
 }
+
+enum ParseFailure: Error { case unexpectedToken, didNotReachEndOfInput }
+
+enum ParseMode { case ALL, LL1, GLL }
+var parseMode = ParseMode.GLL
+switch parseMode {
+case .ALL:
+    print("All paths")
+case .LL1:
+    print("Pure LL1")
+case .GLL:
+    print("General LL")
+}
+
+// transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
+// this uses a handbuilt recursive descent parser
+let startSymbol = "S"
+guard let grammarRoot = parseGrammar(startSymbol: startSymbol) else {
+    trace("ERROR: Start Symbol '\(startSymbol)' not found")
+    exit(5)
+}
+
+// the first character of the current token
+var currentIndex = input.startIndex
+
+// the GrammarNode being processed
+var currentSlot = grammarRoot
+
+// the top of one of the stacks in the Graph Structured Stack
+var currentStack = Vertex(slot: currentSlot, index: currentIndex)
+
+trace = false
+addDescriptor(slot: currentSlot, stack: &currentStack, at: currentIndex)
+
+trace = false
+for m in messages {
+    trace = false
+    initScanner(fromString: m, patterns: terminals)
+    
+    //        grammarRoot.resetParseResults()
+    // TODO: set startSymbol depending on the message
+    
+    trace = true
+    // use the AST to parse the message in LL1, GLL or ALL mode
+    parseMessage()
+}
+
+trace = false
+generateParser()
+
+trace = false
+generateDiagrams()      // second time including actual GSS
 
 var failedParses = 0
 var successfullParses = 0
@@ -84,33 +132,31 @@ func parseMessage() {
     
     let savedParseMode = parseMode
     
-    enum ParseFailure: Error { case unexpectedToken, didNotReachEndOfInput }
-    
     //    while let slot = slot_L {
-    while let slot = getDescriptor() {
-        //    while !todo_R.isEmpty {
-        //        slot_L = getDescriptor()!
+    //    while let slot_L = getDescriptor() {
+    while !remainder.isEmpty {
+        currentSlot = getDescriptor()
         
         do {
             
             //            repeat {
             
-            trace("parse node",slot.kindName)
+            trace("parse node",currentSlot.kindName)
             
-            if slot.testSelect(token) == false {
+            if currentSlot.testSelect(token) == false {
                 throw ParseFailure.unexpectedToken
             }
             
             // OPTIMIZATION do not create descriptors if only one path is possible
-            if slot.ambiguous.contains(token.type) {
-                print("node \(slot.description) is not LL1 for \"\(token.type)\"")
+            if currentSlot.ambiguous.contains(token.type) {
+                print("node \(currentSlot.description) is not LL1 for \"\(token.type)\"")
                 parseMode = savedParseMode
             } else {
-                print("node \(slot.description) is LL1 for \"\(token.type)\"")
+                print("node \(currentSlot.description) is LL1 for \"\(token.type)\"")
                 parseMode = .LL1
             }
             
-            switch slot.kind {
+            switch currentSlot.kind {
                 
             case .SEQ(let children):
                 for child in children.reversed() {
@@ -143,7 +189,7 @@ func parseMessage() {
                     }
                 }
                 
-                if !slot.first.contains("") && parseMode != .LL1 {
+                if !currentSlot.first.contains("") && parseMode != .LL1 {
                     print("ALT is not nullable")
                     throw ParseFailure.didNotReachEndOfInput
                 }
@@ -172,20 +218,20 @@ func parseMessage() {
                 switch parseMode {
                 case .ALL:
                     let saved = currentStack
-                    create(slot: slot)
+                    create(slot: currentSlot)
                     var intermediate = currentStack
                     create(slot: child)
                     addDescriptor(slot: child, stack: &intermediate)
                     currentStack = saved
                 case .LL1:
                     if child.first.contains(token.type) {
-                        create(slot: slot)
+                        create(slot: currentSlot)
                         create(slot: child)
                     }
                 case .GLL:
                     if child.first.contains(token.type) {
                         let saved = currentStack
-                        create(slot: slot)
+                        create(slot: currentSlot)
                         var intermediate = currentStack
                         create(slot: child)
                         addDescriptor(slot: child, stack: &intermediate)
@@ -197,7 +243,7 @@ func parseMessage() {
                 create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
                 
             case .TRM(_):
-                slot.extents.insert(token.range)
+                currentSlot.extents.insert(token.range)
                 print("add \(token.type) extent \(token.range.shortDescription)")
                 next()
             }
@@ -231,50 +277,4 @@ func parseMessage() {
         "  descriptors:", addedDescriptors
     )
 }
-
-enum ParseMode { case ALL, LL1, GLL }
-var parseMode = ParseMode.GLL
-switch parseMode {
-case .ALL:
-    print("All paths")
-case .LL1:
-    print("Pure LL1")
-case .GLL:
-    print("General LL")
-}
-
-trace = false
-let grammarRoot = parseGrammar(startSymbol: "S")
-
-// TODO: replace while loop in main
-var slot_L = grammarRoot
-
-trace = false
-//var GSS = GraphStructuredStack()
-//generateDiagrams()      // first time with empty GSS
-
-if let grammarRoot {
-    for m in messages {
-        trace = false
-        initScanner(fromString: m, patterns: terminals)
-        
-        //        grammarRoot.resetParseResults()
-        
-//        GSS = GraphStructuredStack()
-        
-        trace = true
-        slot_L = grammarRoot
-        create(slot: grammarRoot)
-//        addDescriptor(slot: grammarRoot, stack: nil)
-        
-        parseMessage()
-    }
-}
-
-trace = false
-generateParser()
-
-trace = false
-generateDiagrams()      // second time including actual GSS
-
 
