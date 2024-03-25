@@ -8,9 +8,6 @@ let tokenPatterns: [String:TokenPattern] = [
     "b":	("b",	false,	false),
     "d":	("d",	false,	false),
 ]
-func whitespace() {
-    next()
-}
 func S() {
     switch token.type {
     case "a":
@@ -26,4 +23,7 @@ func S() {
     default:
         expect(["a"])
     }
+}
+func whitespace() {
+    next()
 }

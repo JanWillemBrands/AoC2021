@@ -22,7 +22,7 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
         .deletingLastPathComponent()
     //        .appendingPathComponent("TortureSyntax")
         .appendingPathComponent("test")
-    //        .appendingPathComponent("apusNoAction")
+//            .appendingPathComponent("apusNoAction")
     //        .appendingPathComponent("apusAmbiguous")
         .appendingPathExtension("apus")
     
@@ -85,7 +85,7 @@ case .GLL:
 // this uses a handbuilt recursive descent parser
 let startSymbol = "S"
 guard let grammarRoot = parseGrammar(startSymbol: startSymbol) else {
-    trace("ERROR: Start Symbol '\(startSymbol)' not found")
+    print("ERROR: Start Symbol '\(startSymbol)' not found")
     exit(5)
 }
 
@@ -96,12 +96,16 @@ var currentIndex = input.startIndex
 var currentSlot = grammarRoot
 
 // the top of one of the stacks in the Graph Structured Stack
+let gssRoot = Vertex(slot: currentSlot, index: currentIndex)
 var currentStack = Vertex(slot: currentSlot, index: currentIndex)
 
 trace = false
-addDescriptor(slot: currentSlot, stack: &currentStack, at: currentIndex)
+addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
 
-trace = false
+var failedParses = 0
+var successfullParses = 0
+var addedDescriptors = 0
+
 for m in messages {
     trace = false
     initScanner(fromString: m, patterns: terminals)
@@ -110,6 +114,10 @@ for m in messages {
     // TODO: set startSymbol depending on the message
     
     trace = true
+    failedParses = 0
+    successfullParses = 0
+    addedDescriptors = 0
+    
     // use the AST to parse the message in LL1, GLL or ALL mode
     parseMessage()
 }
@@ -120,26 +128,18 @@ generateParser()
 trace = false
 generateDiagrams()      // second time including actual GSS
 
-var failedParses = 0
-var successfullParses = 0
-var addedDescriptors = 0
-
 func parseMessage() {
-    trace = true
-    
-    failedParses = 0
-    successfullParses = 0
-    
     let savedParseMode = parseMode
     
-    //    while let slot = slot_L {
-    //    while let slot_L = getDescriptor() {
     while !remainder.isEmpty {
-        currentSlot = getDescriptor()
+        let d = remainder.removeLast()
+        trace("get Descriptor(slot: \(d.slot.description), stack: \(d.stack.description), index: \(d.index.inputPosition))")
+        currentStack = d.stack
+        currentIndex(to: d.index)
+        next()
+        currentSlot = d.slot
         
         do {
-            
-            //            repeat {
             
             trace("parse node",currentSlot.kindName)
             
@@ -167,9 +167,9 @@ func parseMessage() {
                 switch parseMode {
                 case .ALL:
                     for child in children {
-                        var saved = currentStack
+                        let saved = currentStack
                         create(slot: child)
-                        addDescriptor(slot: child, stack: &saved)
+                        addDescriptor(slot: child, stack: saved, index: currentIndex)
                         currentStack = saved
                     }
                     
@@ -182,9 +182,9 @@ func parseMessage() {
                     }
                 case .GLL:
                     for child in children where child.first.contains(token.type) {
-                        var saved = currentStack
+                        let saved = currentStack
                         create(slot: child)
-                        addDescriptor(slot: child, stack: &saved)
+                        addDescriptor(slot: child, stack: saved, index: currentIndex)
                         currentStack = saved
                     }
                 }
@@ -197,9 +197,9 @@ func parseMessage() {
             case .OPT(let child):
                 switch parseMode {
                 case .ALL:
-                    var saved = currentStack
+                    let saved = currentStack
                     create(slot: child)
-                    addDescriptor(slot: child, stack: &saved)
+                    addDescriptor(slot: child, stack: saved, index: currentIndex)
                     currentStack = saved
                 case .LL1:
                     if child.first.contains(token.type) {
@@ -207,9 +207,9 @@ func parseMessage() {
                     }
                 case .GLL:
                     if child.first.contains(token.type) {
-                        var saved = currentStack
+                        let saved = currentStack
                         create(slot: child)
-                        addDescriptor(slot: child, stack: &saved)
+                        addDescriptor(slot: child, stack: saved, index: currentIndex)
                         currentStack = saved
                     }
                 }
@@ -219,9 +219,9 @@ func parseMessage() {
                 case .ALL:
                     let saved = currentStack
                     create(slot: currentSlot)
-                    var intermediate = currentStack
+                    let intermediate = currentStack
                     create(slot: child)
-                    addDescriptor(slot: child, stack: &intermediate)
+                    addDescriptor(slot: child, stack: intermediate, index: currentIndex)
                     currentStack = saved
                 case .LL1:
                     if child.first.contains(token.type) {
@@ -232,42 +232,38 @@ func parseMessage() {
                     if child.first.contains(token.type) {
                         let saved = currentStack
                         create(slot: currentSlot)
-                        var intermediate = currentStack
+                        let intermediate = currentStack
                         create(slot: child)
-                        addDescriptor(slot: child, stack: &intermediate)
+                        addDescriptor(slot: child, stack: intermediate, index: currentIndex)
                         currentStack = saved
                     }
                 }
                 
             case .NTR(_, let link):
                 create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
-                
+//                addDescriptor(slot: link!, stack: currentStack, index: currentIndex)
+
             case .TRM(_):
                 currentSlot.extents.insert(token.range)
                 print("add \(token.type) extent \(token.range.shortDescription)")
                 next()
             }
             
-            if currentStack == nil {
+//            if currentStack == gssRoot {
                 if token.range.upperBound == input.endIndex {
                     successfullParses += 1
                     trace("HURRAH", terminator: "\n")
-                } else {
-                    throw ParseFailure.didNotReachEndOfInput
+//                } else {
+//                    throw ParseFailure.didNotReachEndOfInput
                 }
-            } else {
+//            } else {
                 pop()
-            }
-            
-            //            } while stack_Cu != nil
+//            }
             
         } catch let error {
             failedParses += 1
             trace("NOGOOD Parse ended due to \(error)", terminator: "\n")
         }
-        
-        //        slot_L = getDescriptor()
-        
     }
     
     trace(
@@ -277,4 +273,3 @@ func parseMessage() {
         "  descriptors:", addedDescriptors
     )
 }
-

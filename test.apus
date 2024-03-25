@@ -34,7 +34,7 @@ whitespace : '\s+'.
 //S = "x" ["x"].                // PASS c but opportunity for improvement (LA?), should not fail on "xx"  matched: 1   failed: 1   gss size: 4
 //S = ["x"] "x".                // PASS c
 
-//S = {"x"}.                    // PASS c
+//S = {"x"}.                    // FAIL c
 //S = "x" {"x"}.                // PASS c but FAIL due to too may fails on xxxxx matched: 1   failed: 4   gss size: 11
 //S = {"x"} "x".                // PASS c but FAIL due to too may fails on xxxxx matched: 1   failed: 5   gss size: 12
 
@@ -45,6 +45,8 @@ whitespace : '\s+'.
 
 //S = "x" | S "x".              // PASS c but FAIL too many failed on xxx   matched: 1   failed: 6   gss size: 5
 //S = S "x" | "x".              // PASS c but FAIL too many failed on xxx   matched: 1   failed: 6   gss size: 5
+
+//S = S "x" | "".
 
 //S = A B C.  A = "a". B = "b". C = "c".    // PASS
 //S = X X X.  X = "x".                      // PASS c
@@ -71,8 +73,7 @@ whitespace : '\s+'.
 
 //S = "a" S "d" | "a" S | "".           // PASS c Cappers thesis Γ5 but fail since only one match
 
-//S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
-S = "a" S "b" | "a" S "d" | "a".
+S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
 
 //S = "a" "b" "c" "d".                  // PASS c but unnecessary desriptors and pops
 

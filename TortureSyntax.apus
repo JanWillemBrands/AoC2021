@@ -1,4 +1,5 @@
 whitespace  : '\s+'.
+singleLine  : '//.*'.
 
                                // syntax empty
 .                              // syntax no rule

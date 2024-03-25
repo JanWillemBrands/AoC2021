@@ -5,24 +5,18 @@
 //  Created by Johannes Brands on 01/03/2024.
 //
 
-struct Vertex {
+final class Vertex: Hashable, CustomStringConvertible, Comparable {
     var slot: GrammarNode
     var index: String.Index
     
-    var popped: Set<String.Index> = []
-    mutating func popInsert(_ newMember: String.Index) {
-        popped.insert(newMember)
+    init(slot: GrammarNode, index: String.Index) {
+        self.slot = slot
+        self.index = index
     }
-    // TODO: optimizations cf. Afroozeh
-    var unique: Set<SlotIndexPair> = []
-    mutating func insertedUniqueDescriptor(slot: GrammarNode, index: String.Index) -> Bool {
-        print("unique \(self) set \(unique)")
-        print("popped \(self) set \(popped)")
-        return unique.insert(SlotIndexPair(slot: slot, index: index)).inserted
-    }
-}
+    
+//    var popped: Set<String.Index> = []
+//    var unique: Set<SlotIndexPair> = []
 
-extension Vertex: Hashable, CustomStringConvertible, Comparable {
     static func == (lhs: Vertex, rhs: Vertex) -> Bool {
         lhs.slot == rhs.slot && lhs.index == rhs.index
     }
@@ -30,38 +24,40 @@ extension Vertex: Hashable, CustomStringConvertible, Comparable {
         hasher.combine(slot)
         hasher.combine(index)
     }
-    var description: String { slot.description + index.description }
-    static func < (lhs: Vertex, rhs: Vertex) -> Bool { lhs.description < rhs.description }
-}
-
-struct Edge {
-    var towards: Vertex
-    var yield: Set<BSR> = []
-    mutating func yieldInsert(i: String.Index, k: String.Index, j: String.Index) {
-        yield.insert(BSR(i, k, j))
+    var description: String {
+        slot.description + index.inputPosition
+    }
+    static func < (lhs: Vertex, rhs: Vertex) -> Bool {
+        lhs.description < rhs.description
     }
 }
 
-extension Edge: Hashable, CustomStringConvertible, Comparable {
-    var description: String { towards.description }
-    static func < (lhs: Edge, rhs: Edge) -> Bool { lhs.towards < rhs.towards }
-    //        if lhs.towards == nil && rhs.towards == nil {
-    //            return false
-    //        } else if lhs.towards == nil && rhs.towards != nil {
-    //            return true
-    //        } else if lhs.towards != nil && rhs.towards == nil {
-    //            return false
-    //        } else {
-    //            return lhs!.towards < rhs!.towards
-    //        }
-    //    }
+final class Edge: Hashable, CustomStringConvertible, Comparable {
+    var towards: Vertex
+    init(towards: Vertex) {
+        self.towards = towards
+    }
+    var yield: Set<BiRange> = []
+
+    static func == (lhs: Edge, rhs: Edge) -> Bool {
+        lhs.towards == rhs.towards
+    }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(towards)
+    }
+    var description: String {
+        towards.description
+    }
+    static func < (lhs: Edge, rhs: Edge) -> Bool {
+        lhs.towards < rhs.towards
+    }
 }
 
-struct Descriptor {
+struct Descriptor: Hashable {
     var slot: GrammarNode
     var stack: Vertex
     var index: String.Index
-    var yield: Set<BSR> = []
+    var yield: Set<BiRange> = []
 }
 
 struct SlotIndexPair: Hashable {
@@ -69,28 +65,34 @@ struct SlotIndexPair: Hashable {
     var index: String.Index
 }
 
-struct BSR: Hashable {
-    var left:  String.Index
+struct Poppy: Hashable {
+    var stack: Vertex
+    var index: String.Index
+}
+
+struct BiRange: Hashable, CustomStringConvertible {
+    var lowerBound:  String.Index
     var pivot: String.Index
-    var right: String.Index
-    init(_ left: String.Index, _ pivot: String.Index, _ right: String.Index) {
-        self.left = left
+    var upperBound: String.Index
+    init(_ lowerBound: String.Index, _ pivot: String.Index, _ upperBound: String.Index) {
+        self.lowerBound = lowerBound
         self.pivot = pivot
-        self.right = right
+        self.upperBound = upperBound
     }
+    var description: String { lowerBound.inputPosition + ":" + pivot.inputPosition + ":" + upperBound.inputPosition }
 }
 
 var remainder: [Descriptor] = []
 
-//struct GraphStructuredStack {
-// TODO: OPTIMIZATION cf. Afroozeh change the set of edged to an array of edges
-var graph: [Vertex: [Edge]] = [:]
-//    var graph: [Vertex: Set<Edge>] = [:]
+// TODO: OPTIMIZATION cf. Afroozeh change the set of edges to an array of edges
+//var graph: [Vertex: [Edge]] = [:]
+    var graph: [Vertex: Set<Edge>] = [:]
 
 
-//    var unique: Set<Descriptor> = []
+var unique: Set<Descriptor> = []
+var popped: Set<Poppy> = []
 
-var currentYield_Cn: Set<BSR> = []
+var currentYield_Cn: Set<BiRange> = []
 
 // creates a GSS vertex v, if it doesn't exist already
 // add an edge from v to the current stack top
@@ -102,16 +104,23 @@ func create(slot: GrammarNode) {
     trace("create: edge from \(v) to", currentStack)
     
     var edges = graph[v] ?? []
-    //        edges.insert(e)
-    edges.append(e)
+            edges.insert(e)
+//    edges.append(e)
     graph[v] = edges
     
     //        assert(edges.sorted() == Set(edges).sorted(), "should have used a Set<Edge> for\n\(edges)")
     
-    for p in v.popped {
+    // TODO: remove global popped
+    for p in popped where p.stack == v {
         trace("createadd")
-        addDescriptor(slot: slot, stack: &currentStack, at: p)
+        addDescriptor(slot: slot, stack: currentStack, index: p.index)
     }
+
+    // TODO: revive distributed popped
+//    for p in v.popped {
+//        trace("createadd")
+//        addDescriptor(slot: slot, stack: currentStack, index: p)
+//    }
     currentStack = v
 }
 
@@ -142,57 +151,49 @@ func create(slot: GrammarNode) {
 // TODO: the first edge can be popped without addDescriptor
 func pop() {
     trace("pop:", currentStack)
-    currentStack.popInsert(currentIndex)
+    // TODO: revive distributed popped
 //    currentStack.popped.insert(currentIndex)
-    for var edge in graph[currentStack] ?? [] {
+    // TODO: remove global popped
+    popped.insert(Poppy(stack: currentStack, index: currentIndex))
+    for edge in graph[currentStack] ?? [] {
         trace("contingent pop add")
-        addDescriptor(slot: currentStack.slot, stack: &edge.towards)
+        addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
     }
 }
 
-//    mutating func addDescriptorOld(slot: GrammarNode, stack: Vertex?, at index: String.Index = currentIndex) {
-//        let d = Descriptor(slot: slot, stack: stack, index: index)
-//        if unique.insert(d).inserted {
-//            remainder.append(d)
-//            trace("add Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
-//            addedDescriptors += 1
-//        } else {
-//            trace("not add Descriptor(slot: \(d.slot.description), stack: \(d.stack?.description ?? "nil"), index: \(d.index))")
-//        }
-//    }
-
-func addDescriptor(slot: GrammarNode, stack: inout Vertex, at index: String.Index = currentIndex) {
-    if stack.insertedUniqueDescriptor(slot: slot, index: index) {
+func addDescriptor(slot: GrammarNode, stack: Vertex, index: String.Index) {
+    // TODO: revive distributed unique
+//    if stack.unique.insert(SlotIndexPair(slot: slot, index: index)).inserted {
+    // TODO: remove global unique
+    if unique.insert(Descriptor(slot: slot, stack: stack, index: index)).inserted {
         remainder.append(Descriptor(slot: slot, stack: stack, index: index))
-        trace("add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index))")
+        trace("add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index.inputPosition))")
         addedDescriptors += 1
     } else {
-        trace("not add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index))")
+        trace("not add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index.inputPosition))")
     }
 }
 
-func getDescriptor() -> GrammarNode {
-    let d = remainder.removeLast()
-    trace("get Descriptor(slot: \(d.slot.description), stack: \(d.stack.description), index: \(d.index))")
-    currentStack = d.stack
-    currentIndex(to: d.index)
-    next()
-    return d.slot
-}
+//func getDescriptor() -> GrammarNode {
+//    let d = remainder.removeLast()
+//    trace("get Descriptor(slot: \(d.slot.description), stack: \(d.stack.description), index: \(d.index.inputPosition))")
+//    currentStack = d.stack
+//    currentIndex(to: d.index)
+//    next()
+//    return d.slot
+//}
+//
 
-
-
-
-extension Descriptor: Hashable {
-    static func == (lhs: Descriptor, rhs: Descriptor) -> Bool {
-        lhs.slot == rhs.slot && lhs.stack == rhs.stack && lhs.index == rhs.index
-    }
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(slot)
-        hasher.combine(stack)
-        hasher.combine(index)
-    }
-}
+//extension Descriptor: Hashable {
+//    static func == (lhs: Descriptor, rhs: Descriptor) -> Bool {
+//        lhs.slot == rhs.slot && lhs.stack == rhs.stack && lhs.index == rhs.index
+//    }
+//    func hash(into hasher: inout Hasher) {
+//        hasher.combine(slot)
+//        hasher.combine(stack)
+//        hasher.combine(index)
+//    }
+//}
 
 
 //apusNoAction before GSS:

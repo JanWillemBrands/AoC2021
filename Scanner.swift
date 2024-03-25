@@ -6,7 +6,7 @@
 //
 
 // TODO: explicit EOF notation
-// TODO: explicit matching rules e.g. -\- any, regex101 not preceed or follow <<!  !>>
+// TODO: explicit matching rules e.g. -\- any, regex101 not preceed or follow <<!  !>>, or exclude "\" not preceded "-/-" not followed "-\-"
 // TODO: change to character-level scanner
 // let s = CharacterSet.alphanumerics.union(CharacterSet.capitalizedLetters)
 

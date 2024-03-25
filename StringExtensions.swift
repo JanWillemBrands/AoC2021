@@ -48,13 +48,13 @@ extension String {
     }
 }
 
-extension String.Index: CustomStringConvertible {
-    // Describe string index as an integer label 0, 1, 2...
-    public var description: String {
+extension String.Index {
+    // the position in the input as a string "0", "1", "2"...
+    public var inputPosition: String {
         String(input.distance(from: input.startIndex, to: self))
     }
 }
 
 extension Range<String.Index> {
-    var shortDescription: String { self.lowerBound.description + ":" + self.upperBound.description }
+    var shortDescription: String { lowerBound.inputPosition + ":" + upperBound.inputPosition }
 }

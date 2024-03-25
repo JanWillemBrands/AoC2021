@@ -14,21 +14,22 @@ struct Extents: CustomStringConvertible {
         ranges.insert(range)
     }
     
-    func envelop() -> Range<String.Index> {
-        var e = "".startIndex ..< "".endIndex
-        for r in ranges {
-            if r.lowerBound < e.lowerBound { e = r.lowerBound ..< e.upperBound }
-            if r.upperBound > e.upperBound { e = e.lowerBound ..< r.upperBound }
+    func envelop() -> Range<String.Index>? {
+        if ranges.isEmpty {
+            return nil
+        } else {
+            return ranges.reduce(ranges.first!) { x, y in
+                min(x.lowerBound, y.lowerBound) ..< max(x.upperBound, y.upperBound)
+            }
         }
-        return e
     }
     
     var description: String {
         var s = ""
         for r in ranges {
-            s.append(r.lowerBound.description + ":" + r.upperBound.description + " ")
+            s.append(r.lowerBound.inputPosition + ":" + r.upperBound.inputPosition + " ")
         }
-        if s.count > 0 { s.removeLast() }
+        if s.count > 0 { s.removeLast(1) }
         return s
     }
 }
@@ -48,9 +49,9 @@ final class GrammarNode {
         self.kind = kind
     }
 
-    var first:  Set<String> = []
-    var follow: Set<String> = []
-    var ambiguous: Set<String> = []
+    var first:      Set<String> = []
+    var follow:     Set<String> = []
+    var ambiguous:  Set<String> = []
     
     var extents = Extents()
     
@@ -80,7 +81,7 @@ extension GrammarNode: Hashable {
         ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
     }
     func hash(into hasher: inout Hasher) {
-        return hasher.combine(ObjectIdentifier(self))
+        hasher.combine(ObjectIdentifier(self))
     }
 }
 
