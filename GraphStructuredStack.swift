@@ -14,8 +14,8 @@ final class Vertex: Hashable, CustomStringConvertible, Comparable {
         self.index = index
     }
     
-//    var popped: Set<String.Index> = []
-//    var unique: Set<SlotIndexPair> = []
+    var popped: Set<String.Index> = []
+    var unique: Set<SlotIndexPair> = []
 
     static func == (lhs: Vertex, rhs: Vertex) -> Bool {
         lhs.slot == rhs.slot && lhs.index == rhs.index
@@ -65,10 +65,11 @@ struct SlotIndexPair: Hashable {
     var index: String.Index
 }
 
-struct Poppy: Hashable {
-    var stack: Vertex
-    var index: String.Index
-}
+// global popped
+//struct Poppy: Hashable {
+//    var stack: Vertex
+//    var index: String.Index
+//}
 
 struct BiRange: Hashable, CustomStringConvertible {
     var lowerBound:  String.Index
@@ -88,9 +89,9 @@ var remainder: [Descriptor] = []
 //var graph: [Vertex: [Edge]] = [:]
     var graph: [Vertex: Set<Edge>] = [:]
 
-
-var unique: Set<Descriptor> = []
-var popped: Set<Poppy> = []
+// global popped
+//var unique: Set<Descriptor> = []
+//var popped: Set<Poppy> = []
 
 var currentYield_Cn: Set<BiRange> = []
 
@@ -110,17 +111,17 @@ func create(slot: GrammarNode) {
     
     //        assert(edges.sorted() == Set(edges).sorted(), "should have used a Set<Edge> for\n\(edges)")
     
-    // TODO: remove global popped
-    for p in popped where p.stack == v {
-        trace("createadd")
-        addDescriptor(slot: slot, stack: currentStack, index: p.index)
-    }
+    // global popped
+    // for p in popped where p.stack == v {
+    //     trace("createadd")
+    //     addDescriptor(slot: slot, stack: currentStack, index: p.index)
+    // }
 
-    // TODO: revive distributed popped
-//    for p in v.popped {
-//        trace("createadd")
-//        addDescriptor(slot: slot, stack: currentStack, index: p)
-//    }
+    // distributed popped
+    for p in v.popped {
+        trace("createadd")
+        addDescriptor(slot: slot, stack: currentStack, index: p)
+    }
     currentStack = v
 }
 
@@ -151,10 +152,10 @@ func create(slot: GrammarNode) {
 // TODO: the first edge can be popped without addDescriptor
 func pop() {
     trace("pop:", currentStack)
-    // TODO: revive distributed popped
-//    currentStack.popped.insert(currentIndex)
-    // TODO: remove global popped
-    popped.insert(Poppy(stack: currentStack, index: currentIndex))
+    // distributed popped
+    currentStack.popped.insert(currentIndex)
+    // global popped
+    // popped.insert(Poppy(stack: currentStack, index: currentIndex))
     for edge in graph[currentStack] ?? [] {
         trace("contingent pop add")
         addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
@@ -162,10 +163,10 @@ func pop() {
 }
 
 func addDescriptor(slot: GrammarNode, stack: Vertex, index: String.Index) {
-    // TODO: revive distributed unique
-//    if stack.unique.insert(SlotIndexPair(slot: slot, index: index)).inserted {
-    // TODO: remove global unique
-    if unique.insert(Descriptor(slot: slot, stack: stack, index: index)).inserted {
+    // distributed unique
+    if stack.unique.insert(SlotIndexPair(slot: slot, index: index)).inserted {
+    // global unique
+    // if unique.insert(Descriptor(slot: slot, stack: stack, index: index)).inserted {
         remainder.append(Descriptor(slot: slot, stack: stack, index: index))
         trace("add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index.inputPosition))")
         addedDescriptors += 1

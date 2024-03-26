@@ -71,7 +71,7 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
 enum ParseFailure: Error { case unexpectedToken, didNotReachEndOfInput }
 
 enum ParseMode { case ALL, LL1, GLL }
-var parseMode = ParseMode.GLL
+var parseMode = ParseMode.LL1
 switch parseMode {
 case .ALL:
     print("All paths")
@@ -99,7 +99,6 @@ var currentSlot = grammarRoot
 let gssRoot = Vertex(slot: currentSlot, index: currentIndex)
 var currentStack = Vertex(slot: currentSlot, index: currentIndex)
 
-trace = false
 addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
 
 var failedParses = 0
@@ -147,13 +146,13 @@ func parseMessage() {
                 throw ParseFailure.unexpectedToken
             }
             
-            // OPTIMIZATION do not create descriptors if only one path is possible
-            if currentSlot.ambiguous.contains(token.type) {
-                print("node \(currentSlot.description) is not LL1 for \"\(token.type)\"")
-                parseMode = savedParseMode
-            } else {
-                print("node \(currentSlot.description) is LL1 for \"\(token.type)\"")
-                parseMode = .LL1
+            // optimization for .GLL parseMode: switch to .LL1 mode if only one path is possible
+            if savedParseMode == .GLL {
+                if currentSlot.ambiguous.contains(token.type) {
+                    parseMode = savedParseMode
+                } else {
+                    parseMode = .LL1
+                }
             }
             
             switch currentSlot.kind {
@@ -189,10 +188,10 @@ func parseMessage() {
                     }
                 }
                 
-                if !currentSlot.first.contains("") && parseMode != .LL1 {
-                    print("ALT is not nullable")
-                    throw ParseFailure.didNotReachEndOfInput
-                }
+//                if !currentSlot.first.contains("") && parseMode != .LL1 {
+//                    print("ALT is not nullable")
+//                    throw ParseFailure.didNotReachEndOfInput
+//                }
                 
             case .OPT(let child):
                 switch parseMode {
