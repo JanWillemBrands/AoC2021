@@ -6,31 +6,34 @@ digraph G {
   graph [ordering = out]
   subgraph GSS {
     cluster = true
-    label = <LL1 xxx↵> fontcolor = red
+    label = <LL1 abcd↵> fontcolor = green
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    "D1" -> "A0"
-    "C0" -> "A0"
+    "E0" -> "A0"
+    "D0" -> "E0"
+    "C0" -> "D0"
     "B0" -> "C0"
   }
   subgraph S {
     cluster = true
-    label = <S = "x" [ "x" ]>
+    label = <S = "a" "b" "c" "d">
     labeljust = l
     node [shape = ellipse, height = 0]
     A [label = <A: SEQ>]
     A -> B
-    B [label = <B: "x"<br/><font color="gray" point-size="8.0"> 0:1 </font> >]
+    B [label = <B: "a"<br/><font color="gray" point-size="8.0"> 0:1 </font> >]
     A -> C
-    C [label = <C: OPT>]
-    C -> D
-    D [label = <D: "x"<br/><font color="gray" point-size="8.0"> 1:2 </font> >]
+    C [label = <C: "b"<br/><font color="gray" point-size="8.0"> 1:2 </font> >]
+    A -> D
+    D [label = <D: "c"<br/><font color="gray" point-size="8.0"> 2:3 </font> >]
+    A -> E
+    E [label = <E: "d"<br/><font color="gray" point-size="8.0"> 3:4 </font> >]
   }
   subgraph whitespace {
     cluster = true
     label = <whitespace = "\s+">
     labeljust = l
     node [shape = ellipse, height = 0]
-    E [label = <E: "whitespace"<br/><font color="gray" point-size="8.0">  </font> >]
+    F [label = <F: "whitespace"<br/><font color="gray" point-size="8.0">  </font> >]
   }
 }

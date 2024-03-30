@@ -93,7 +93,7 @@ var remainder: [Descriptor] = []
 //var unique: Set<Descriptor> = []
 //var popped: Set<Poppy> = []
 
-var currentYield_Cn: Set<BiRange> = []
+var currentYield_Cn_ϒ: Set<BiRange> = []
 
 // creates a GSS vertex v, if it doesn't exist already
 // add an edge from v to the current stack top

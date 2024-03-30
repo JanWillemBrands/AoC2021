@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4E0781F52BB6C3F600B16B95 /* NewScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0781F42BB6C3F600B16B95 /* NewScanner.swift */; };
 		4E333D712629D60000640821 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D632629D5E400640821 /* main.swift */; };
 		4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */; };
 		4E333D752629D60A00640821 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D672629D5E400640821 /* StringExtensions.swift */; };
@@ -31,6 +32,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4E0781F42BB6C3F600B16B95 /* NewScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewScanner.swift; sourceTree = "<group>"; };
 		4E333D612629D5E300640821 /* testmessages.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = testmessages.txt; sourceTree = "<group>"; };
 		4E333D622629D5E400640821 /* apus.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
 		4E333D632629D5E400640821 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
@@ -73,6 +75,7 @@
 		CB6B730C257EA9F400B929C6 = {
 			isa = PBXGroup;
 			children = (
+				4E0781F42BB6C3F600B16B95 /* NewScanner.swift */,
 				4E333D622629D5E400640821 /* apus.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
 				4E333D6C2629D5E500640821 /* apusNoAction.apus */,
@@ -177,6 +180,7 @@
 				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
 				4E333D712629D60000640821 /* main.swift in Sources */,
 				4EB4DE422B91CDDA00BA9A88 /* GrammarNode.swift in Sources */,
+				4E0781F52BB6C3F600B16B95 /* NewScanner.swift in Sources */,
 				4EB4DE442B91D2FB00BA9A88 /* Scanner.swift in Sources */,
 				4EB4DE4A2B91D81C00BA9A88 /* GenerateDiagrams.swift in Sources */,
 				4EB4DE462B91D30600BA9A88 /* Parser.swift in Sources */,

@@ -31,7 +31,7 @@ whitespace : '\s+'.
 //S = ["x"].                    // PASS c
 //S = "x" | "".                 // PASS but on ""   matched: 2   failed: 0   gss size: 2
 //S = ["x"] "a".                // PASS
-S = "x" ["x"].                // PASS c but opportunity for improvement (LA?), should not fail on "xx"  matched: 1   failed: 1   gss size: 4
+//S = "x" ["x"].                // PASS c but opportunity for improvement (LA?), should not fail on "xx"  matched: 1   failed: 1   gss size: 4
 //S = ["x"] "x".                // PASS c
 
 //S = {"x"}.                    // FAIL c
@@ -75,7 +75,7 @@ S = "x" ["x"].                // PASS c but opportunity for improvement (LA?), s
 
 //S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
 
-//S = "a" "b" "c" "d".                  // PASS c but unnecessary desriptors and pops
+S = "a" "b" "c" "d".                  // PASS c but unnecessary desriptors and pops
 
 
-¶xxx
+¶abcd

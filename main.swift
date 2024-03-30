@@ -22,7 +22,7 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
         .deletingLastPathComponent()
     //        .appendingPathComponent("TortureSyntax")
         .appendingPathComponent("test")
-//            .appendingPathComponent("apusNoAction")
+    //            .appendingPathComponent("apusNoAction")
     //        .appendingPathComponent("apusAmbiguous")
         .appendingPathExtension("apus")
     
@@ -188,10 +188,10 @@ func parseMessage() {
                     }
                 }
                 
-//                if !currentSlot.first.contains("") && parseMode != .LL1 {
-//                    print("ALT is not nullable")
-//                    throw ParseFailure.didNotReachEndOfInput
-//                }
+                //                if !currentSlot.first.contains("") && parseMode != .LL1 {
+                //                    print("ALT is not nullable")
+                //                    throw ParseFailure.didNotReachEndOfInput
+                //                }
                 
             case .OPT(let child):
                 switch parseMode {
@@ -240,24 +240,24 @@ func parseMessage() {
                 
             case .NTR(_, let link):
                 create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
-//                addDescriptor(slot: link!, stack: currentStack, index: currentIndex)
-
+                //                addDescriptor(slot: link!, stack: currentStack, index: currentIndex)
+                
             case .TRM(_):
                 currentSlot.extents.insert(token.range)
                 print("add \(token.type) extent \(token.range.shortDescription)")
                 next()
             }
             
-//            if currentStack == gssRoot {
-                if token.range.upperBound == input.endIndex {
-                    successfullParses += 1
-                    trace("HURRAH", terminator: "\n")
-//                } else {
-//                    throw ParseFailure.didNotReachEndOfInput
-                }
-//            } else {
-                pop()
-//            }
+            //            if currentStack == gssRoot {
+            if token.range.upperBound == input.endIndex {
+                successfullParses += 1
+                trace("HURRAH", terminator: "\n")
+                //                } else {
+                //                    throw ParseFailure.didNotReachEndOfInput
+            }
+            //            } else {
+            pop()
+            //            }
             
         } catch let error {
             failedParses += 1
@@ -272,3 +272,5 @@ func parseMessage() {
         "  descriptors:", addedDescriptors
     )
 }
+
+testNewScanner()
