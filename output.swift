@@ -9,12 +9,21 @@ let tokenPatterns: [String:TokenPattern] = [
     "c":	("c",	false,	false),
     "d":	("d",	false,	false),
 ]
-func whitespace() {
+func S() {
+    switch token.type {
+    case "a":
+        next()
+        next()
+        next()
+    case "a":
+        next()
+        next()
+        next()
+    default:
+        expect(["a"])
+    }
     next()
 }
-func S() {
-    next()
-    next()
-    next()
+func whitespace() {
     next()
 }

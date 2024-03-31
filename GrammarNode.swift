@@ -53,7 +53,7 @@ final class GrammarNode {
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
     
-    var extents = Extents()
+    var yield = Extents()
     
     static var count = 0
     var number = 0
@@ -241,7 +241,7 @@ extension GrammarNode {
     func resetParseResults() {
 //        seen_U = []
 //        done_P = []
-        extents = Extents()
+        yield = Extents()
         switch kind {
         case .SEQ(let children):
             for child in children {

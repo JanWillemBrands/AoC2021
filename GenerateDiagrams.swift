@@ -103,7 +103,7 @@ func addDiagramOf(_ slot: GrammarNode) {
         diagramContent.append("\n    \(slot) [label = <\(slot): \(name)>]")
         nonterminalLinks.append((slot, link!))
     case .TRM(let type):
-        diagramContent.append("\n    \(slot) [label = <\(slot): \"\(type.escapesRemoved.graphviz)\"<br/><font color=\"gray\" point-size=\"8.0\"> \(slot.extents) </font> >]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): \"\(type.escapesRemoved.graphviz)\"<br/><font color=\"gray\" point-size=\"8.0\"> \(slot.yield) </font> >]")
     }
 }
 

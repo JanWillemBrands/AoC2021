@@ -75,7 +75,7 @@ whitespace : '\s+'.
 
 //S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
 
-S = "a" "b" "c" "d".                  // PASS c but unnecessary desriptors and pops
+S = ( "a" "b" "c" | "a" "b" "c" ) "d".                  // PASS c but unnecessary desriptors and pops
 
 
 ¶abcd
