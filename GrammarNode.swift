@@ -60,7 +60,7 @@ final class GrammarNode {
 }
 
 extension GrammarNode {
-    func testSelect(_ token: Token) -> Bool {
+    func expected(_ token: Token) -> Bool {
         if first.contains(token.type) {
             return true
         } else if first.contains("") && follow.contains(token.type) {
@@ -225,12 +225,10 @@ extension GrammarNode {
         
         ambiguous.remove("")    // to handle both uses of "" in first (as ε, ϵ, epsilon) and in follow (as $, EOF)
         if !ambiguous.isEmpty {
-            switch parseMode {
-            case .ALL: break
-            case .LL1:
+            if LL1 {
                 trace("^ ERROR: node is not LL1, ambiguous set:", ambiguous)
                 exit(1)
-            case .GLL:
+            } else {
                 trace("^ warning: processing may be slower due to ambiguity of set:", ambiguous)
             }
         }

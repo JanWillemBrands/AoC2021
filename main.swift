@@ -21,8 +21,8 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     let inputFileURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
     //        .appendingPathComponent("TortureSyntax")
-        .appendingPathComponent("test")
-    //                .appendingPathComponent("apusNoAction")
+//        .appendingPathComponent("test")
+                    .appendingPathComponent("apusNoAction")
     //        .appendingPathComponent("apusAmbiguous")
         .appendingPathExtension("apus")
     
@@ -70,17 +70,6 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
 
 enum ParseFailure: Error { case unexpectedToken, didNotReachEndOfInput }
 
-enum ParseMode { case ALL, LL1, GLL }
-var parseMode = ParseMode.GLL
-switch parseMode {
-case .ALL:
-    print("All paths")
-case .LL1:
-    print("Pure LL1")
-case .GLL:
-    print("General LL")
-}
-
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
 // this uses a handbuilt recursive descent parser
 let startSymbol = "S"
@@ -99,10 +88,9 @@ var currentSlot = grammarRoot
 let gssRoot = Vertex(slot: currentSlot, index: currentIndex)
 var currentStack = Vertex(slot: currentSlot, index: currentIndex)
 
-var localStack: [GrammarNode] = []
-
 addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
 
+var LL1 = false
 var failedParses = 0
 var successfullParses = 0
 var addedDescriptors = 0
@@ -119,7 +107,7 @@ for m in messages {
     successfullParses = 0
     addedDescriptors = 0
     
-    // use the AST to parse the message in LL1, GLL or ALL mode
+    // use the AST to parse the message
     parseMessage()
 }
 
@@ -127,11 +115,9 @@ trace = false
 generateParser()
 
 trace = false
-generateDiagrams()      // second time including actual GSS
+generateDiagrams()
 
 func parseMessage() {
-    
-    let savedParseMode = parseMode
     
     while !remainder.isEmpty {
         let d = remainder.removeLast()
@@ -141,148 +127,81 @@ func parseMessage() {
         next()
         currentSlot = d.slot
         
-        localStack = [currentSlot]
-        
         do {
             
-            repeat {
-                currentSlot = localStack.removeLast()
-                trace("parse node",currentSlot.kindName)
+            trace("parse node", currentSlot.kindName)
+            
+            if currentSlot.expected(token) == false {
+                throw ParseFailure.unexpectedToken
+            }
+            
+            // switch to .LL1 mode if only one path is possible
+            if currentSlot.ambiguous.contains(token.type) {
+                LL1 = false
+            } else {
+                LL1 = true
+            }
+            print("LL1", LL1)
+            
+            switch currentSlot.kind {
                 
-                if currentSlot.testSelect(token) == false {
-                    throw ParseFailure.unexpectedToken
+            case .SEQ(let children):
+                for child in children.reversed() {
+                    create(slot: child)
                 }
                 
-                // optimization for .GLL parseMode: switch to .LL1 mode if only one path is possible
-                if savedParseMode == .GLL {
-                    if currentSlot.ambiguous.contains(token.type) {
-                        parseMode = savedParseMode
+            case .ALT(let children):
+                for child in children where child.first.contains(token.type) {
+                    if LL1 {
+                        create(slot: child)
+                        break
                     } else {
-                        parseMode = .LL1
-                    }
-                }
-                print("current ParseMode", parseMode)
-                
-                switch currentSlot.kind {
-                    
-                case .SEQ(let children):
-                    switch parseMode {
-                    case .ALL:
-                        for child in children.reversed() {
-                            create(slot: child)
-                        }
-                    case .LL1:
-                        for child in children.reversed() {
-                            localStack.append(child)
-                            print(localStack)
-                        }
-                    case .GLL:
-                        for child in children.reversed() {
-                            create(slot: child)
-                        }
-                    }
-                    
-                case .ALT(let children):
-                    switch parseMode {
-                    case .ALL:
-                        for child in children {
-                            let saved = currentStack
-                            create(slot: child)
-                            addDescriptor(slot: child, stack: saved, index: currentIndex)
-                            currentStack = saved
-                        }
-                        
-                    case .LL1:
-                        for child in children {
-                            if child.first.contains(token.type) {
-                                localStack.append(child)
-                                print(localStack)
-                                break
-                            }
-                        }
-                    case .GLL:
-                        for child in children where child.first.contains(token.type) {
-                            let saved = currentStack
-                            create(slot: child)
-                            addDescriptor(slot: child, stack: saved, index: currentIndex)
-                            currentStack = saved
-                        }
-                    }
-                    
-                    //                if !currentSlot.first.contains("") && parseMode != .LL1 {
-                    //                    print("ALT is not nullable")
-                    //                    throw ParseFailure.didNotReachEndOfInput
-                    //                }
-                    
-                case .OPT(let child):
-                    switch parseMode {
-                    case .ALL:
                         let saved = currentStack
                         create(slot: child)
                         addDescriptor(slot: child, stack: saved, index: currentIndex)
                         currentStack = saved
-                    case .LL1:
-                        if child.first.contains(token.type) {
-                            localStack.append(child)
-                            print(localStack)
-                        }
-                    case .GLL:
-                        if child.first.contains(token.type) {
-                            let saved = currentStack
-                            create(slot: child)
-                            addDescriptor(slot: child, stack: saved, index: currentIndex)
-                            currentStack = saved
-                        }
                     }
-                    
-                case .REP(let child):
-                    switch parseMode {
-                    case .ALL:
+                }
+                
+            case .OPT(let child):
+                if child.first.contains(token.type) {
+                    if LL1 {
+                        create(slot: child)
+                    } else {
+                        let saved = currentStack
+                        create(slot: child)
+                        addDescriptor(slot: child, stack: saved, index: currentIndex)
+                        currentStack = saved
+                    }
+                }
+
+           case .REP(let child):
+                if child.first.contains(token.type) {
+                    if LL1 {
+                        create(slot: currentSlot)
+                        create(slot: child)
+                    } else {
                         let saved = currentStack
                         create(slot: currentSlot)
                         let intermediate = currentStack
                         create(slot: child)
                         addDescriptor(slot: child, stack: intermediate, index: currentIndex)
                         currentStack = saved
-                    case .LL1:
-                        if child.first.contains(token.type) {
-                            localStack.append(currentSlot)
-                            localStack.append(child)
-                            print(localStack)
-                        }
-                    case .GLL:
-                        if child.first.contains(token.type) {
-                            let saved = currentStack
-                            create(slot: currentSlot)
-                            let intermediate = currentStack
-                            create(slot: child)
-                            addDescriptor(slot: child, stack: intermediate, index: currentIndex)
-                            currentStack = saved
-                        }
                     }
-                    
-                case .NTR(_, let link):
-                    switch parseMode {
-                    case .ALL:
-                        create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
-                    case .LL1:
-                        localStack.append(link!)     // all nonterminal links have been resolved in func populateLookAheadSets
-                        print(localStack)
-                    case .GLL:
-                        create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
-                    }
-                    
-                case .TRM(_):
-                    currentSlot.yield.insert(token.range)
-                    //                    print("add \(token.type) extent \(token.range.shortDescription)")
-                    next()
                 }
                 
-                if token.range.upperBound == input.endIndex {
-                    successfullParses += 1
-                    trace("HURRAH", terminator: "\n")
-                }
-            } while !localStack.isEmpty
+            case .NTR(_, let link):
+                create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
+                
+            case .TRM(_):
+                currentSlot.yield.insert(token.range)
+                next()
+            }
+            
+            if token.range.upperBound == input.endIndex {
+                successfullParses += 1
+                trace("HURRAH", terminator: "\n")
+            }
             
             pop()
             

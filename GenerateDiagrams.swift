@@ -35,7 +35,7 @@ func generateDiagrams() {
         shortMessage.append("...")
     }
 
-    diagramContent.append("\n    label = <\(parseMode) \(shortMessage.whitespaceMadeVisible.graphviz)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
+    diagramContent.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphviz)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
     diagramContent.append("\n    labeljust = l")
     diagramContent.append("\n    node [shape = box, style = rounded, height = 0]")
     if graph.count > 1 {

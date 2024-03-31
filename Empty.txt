@@ -1,27 +1,86 @@
-create: edge from A0 to #
-add Descriptor(slot: A, stack: #, index: 0)
-get Descriptor(slot: A, stack: #, index: 0)
-setScanStart 0
-next type: x image: x
+get Descriptor(slot: G, stack: K0, index: 0)
+next token: "a" range: 0:1
 parse node .SEQ
-create: edge from C0 to #
-create: edge from B0 to C0
-pop: B0
-popadd
-add Descriptor(slot: B, stack: C0, index: 0)
-get Descriptor(slot: B, stack: C0, index: 0)
-setScanStart 0
-next type: x image: x
+current ParseMode LL1
+create: edge from J0 to K0
+create: edge from I0 to J0
+create: edge from H0 to I0
+pop: H0
+contingent pop add
+add Descriptor(slot: H, stack: I0, index: 0)
+get Descriptor(slot: H, stack: I0, index: 0)
+next token: "a" range: 0:1
 parse node .TRM
+current ParseMode LL1
+next token: "b" range: 1:2
+pop: I0
+contingent pop add
+add Descriptor(slot: I, stack: J0, index: 1)
+get Descriptor(slot: I, stack: J0, index: 1)
+next token: "b" range: 1:2
+parse node .TRM
+current ParseMode LL1
+next token: "c" range: 2:3
+pop: J0
+contingent pop add
+add Descriptor(slot: J, stack: K0, index: 2)
+get Descriptor(slot: J, stack: K0, index: 2)
+next token: "c" range: 2:3
+parse node .TRM
+current ParseMode LL1
+next token: "d" range: 3:4
+pop: K0
+contingent pop add
+add Descriptor(slot: K, stack: A0, index: 3)
+get Descriptor(slot: K, stack: A0, index: 3)
+next token: "d" range: 3:4
+parse node .TRM
+current ParseMode LL1
 end of input reached
-pop: C0
-popadd
-add Descriptor(slot: C, stack: #, index: 2)
-get Descriptor(slot: C, stack: #, index: 2)
-setScanStart 2
-end of input reached
-parse node .OPT
-NOGOOD Parse ended due to didNotReachEndOfInput
+HURRAH
 
 
-matched: 0   failed: 1   gss size: 3
+
+
+
+
+
+
+
+
+
+pop: A0
+get Descriptor(slot: C, stack: K0, index: 0)
+next token: "a" range: 0:1
+parse node .SEQ
+current ParseMode LL1
+create: edge from F0 to K0
+create: edge from E0 to F0
+create: edge from D0 to E0
+pop: D0
+contingent pop add
+add Descriptor(slot: D, stack: E0, index: 0)
+get Descriptor(slot: D, stack: E0, index: 0)
+next token: "a" range: 0:1
+parse node .TRM
+current ParseMode LL1
+next token: "b" range: 1:2
+pop: E0
+contingent pop add
+add Descriptor(slot: E, stack: F0, index: 1)
+get Descriptor(slot: E, stack: F0, index: 1)
+next token: "b" range: 1:2
+parse node .TRM
+current ParseMode LL1
+next token: "c" range: 2:3
+pop: F0
+contingent pop add
+add Descriptor(slot: F, stack: K0, index: 2)
+get Descriptor(slot: F, stack: K0, index: 2)
+next token: "c" range: 2:3
+parse node .TRM
+current ParseMode LL1
+next token: "d" range: 3:4
+pop: K0
+contingent pop add
+not add Descriptor(slot: K, stack: A0, index: 3)
