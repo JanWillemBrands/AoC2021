@@ -33,7 +33,6 @@
 
 /* Begin PBXFileReference section */
 		4E0781F42BB6C3F600B16B95 /* NewScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewScanner.swift; sourceTree = "<group>"; };
-		4E333D612629D5E300640821 /* testmessages.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = testmessages.txt; sourceTree = "<group>"; };
 		4E333D622629D5E400640821 /* apus.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
 		4E333D632629D5E400640821 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		4E333D642629D5E400640821 /* output.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = output.swift; sourceTree = "<group>"; };
@@ -56,8 +55,8 @@
 		4EB4DE492B91D81C00BA9A88 /* GenerateDiagrams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateDiagrams.swift; sourceTree = "<group>"; };
 		4EBBDFF52B935BB90049A17F /* diagram.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = diagram.svg; sourceTree = "<group>"; };
 		4EBBDFF62B935BB90049A17F /* diagram.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = diagram.gv; sourceTree = "<group>"; };
+		4EC5CE942BBC111E0045F751 /* apusUnicode.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusUnicode.apus; sourceTree = "<group>"; };
 		4EC9D6F42B977927002BA303 /* postRunActions.log */ = {isa = PBXFileReference; lastKnownFileType = text; path = postRunActions.log; sourceTree = "<group>"; };
-		4ECE26C725D94E9700B14C96 /* SwiftParse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftParse.swift; sourceTree = "<group>"; };
 		CB6B7315257EA9F400B929C6 /* Advent */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Advent; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -79,6 +78,7 @@
 				4E333D622629D5E400640821 /* apus.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
 				4E333D6C2629D5E500640821 /* apusNoAction.apus */,
+				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
 				4E333D692629D5E500640821 /* TortureSyntax.apus */,
 				4EBBDFF62B935BB90049A17F /* diagram.gv */,
@@ -94,12 +94,10 @@
 				4EB4DE452B91D30600BA9A88 /* Parser.swift */,
 				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
 				4E333D672629D5E400640821 /* StringExtensions.swift */,
-				4ECE26C725D94E9700B14C96 /* SwiftParse.swift */,
 				4EA8E8272B9B47F0002A5C51 /* Empty.txt */,
 				4E333D652629D5E400640821 /* messages.txt */,
 				4E333D682629D5E400640821 /* part2messages.txt */,
 				4E333D662629D5E400640821 /* test2messages.txt */,
-				4E333D612629D5E300640821 /* testmessages.txt */,
 				4EA293972BAACDE40014546F /* UnicodeNameAliases.swift */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 			);

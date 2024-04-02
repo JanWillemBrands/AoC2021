@@ -1,5 +1,5 @@
-whitespace  : '\s+'.
-singleLine  : '//.*'.
+whitespace  : /\s+/ .
+singleLine  : /\/\/.*/ .
 
                                // syntax empty
 .                              // syntax no rule

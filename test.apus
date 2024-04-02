@@ -1,4 +1,6 @@
-whitespace : '\s+'.
+whitespace  : /\s+/ .
+singleLine  : /\/\/.*/ .
+multiLine   : /\/\*(?s).*?\*\// .
 
 
 //S = X X X.                    // PASS c
@@ -78,4 +80,5 @@ whitespace : '\s+'.
 S = ( "a" "b" "c" | "a" "b" "c" ) "d".                  // PASS c but unnecessary desriptors and pops
 
 
-¶abcd
+¶
+abcd

@@ -35,7 +35,7 @@ func generateDiagrams() {
         shortMessage.append("...")
     }
 
-    diagramContent.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphviz)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
+    diagramContent.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphvizHTML)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
     diagramContent.append("\n    labeljust = l")
     diagramContent.append("\n    node [shape = box, style = rounded, height = 0]")
     if graph.count > 1 {
@@ -45,7 +45,6 @@ func generateDiagrams() {
             } else {
                 for element in value {
                     diagramContent.append("\n    \"\(key)\" -> \"\(element.towards.description)\"") // "●○"
-//                    diagramContent.append("\n    \"\(key)\" -> \"\(element.towards?.description ?? "●")\"") // "●○"
                 }
             }
         }
@@ -56,7 +55,7 @@ func generateDiagrams() {
     for (name, node) in nonTerminals.sorted(by: { $0.key < $1.key }) {
         diagramContent.append("\n  subgraph \(name) {")
         diagramContent.append("\n    cluster = true")
-        diagramContent.append("\n    label = <\(name) = \(node.ebnf().graphviz)>")
+        diagramContent.append("\n    label = <\(name) = \(node.ebnf().graphvizHTML)>")
         diagramContent.append("\n    labeljust = l")
         diagramContent.append("\n    node [shape = ellipse, height = 0]")
         addDiagramOf(node)
@@ -103,7 +102,7 @@ func addDiagramOf(_ slot: GrammarNode) {
         diagramContent.append("\n    \(slot) [label = <\(slot): \(name)>]")
         nonterminalLinks.append((slot, link!))
     case .TRM(let type):
-        diagramContent.append("\n    \(slot) [label = <\(slot): \"\(type.escapesRemoved.graphviz)\"<br/><font color=\"gray\" point-size=\"8.0\"> \(slot.yield) </font> >]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): \"\(type.escapesRemoved.graphvizHTML)\"<br/><font color=\"gray\" point-size=\"8.0\"> \(slot.yield)</font>>]")
     }
 }
 

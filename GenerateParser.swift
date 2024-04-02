@@ -18,7 +18,7 @@ func generateParser() {
     let template = #"""
     //: start of template code
     import Foundation
-    typealias TokenPattern = (image: String, regular: Bool, muted: Bool)
+    typealias TokenPattern = (image: String, regex: Bool, muted: Bool)
     //: start of generated code
     """#
     emit(template)
@@ -28,10 +28,10 @@ func generateParser() {
         .sorted { $0.key.count > $1.key.count
             || $0.key.count == $1.key.count && $0.key < $1.key }
     for n in sortedTerminals {
-        if n.value.regular {
-            emit("\"", n.key.escapesAdded, "\":\t(#\"", n.value.pattern, "\"#,\t", n.value.regular, ",\t", n.value.muted, "),")
+        if n.value.regex {
+            emit("\"", n.key.escapesAdded, "\":\t(#\"", n.value.pattern, "\"#,\t", n.value.regex, ",\t", n.value.muted, "),")
         } else {
-            emit("\"", n.key.escapesAdded, "\":\t(\"", n.value.pattern.escapesAdded, "\",\t", n.value.regular, ",\t", n.value.muted, "),")
+            emit("\"", n.key.escapesAdded, "\":\t(\"", n.value.pattern.escapesAdded, "\",\t", n.value.regex, ",\t", n.value.muted, "),")
         }
     }
     emit(dent: .LN, "]")

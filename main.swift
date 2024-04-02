@@ -7,7 +7,7 @@
 
 import Foundation
 
-var trace = false
+var trace = true
 var traceIndent = 0
 func trace(_ items: Any..., terminator term: String = "") {
     if trace {
@@ -21,8 +21,9 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     let inputFileURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
     //        .appendingPathComponent("TortureSyntax")
-//        .appendingPathComponent("test")
-                    .appendingPathComponent("apusNoAction")
+        .appendingPathComponent("test")
+//        .appendingPathComponent("apus")
+//        .appendingPathComponent("apusNoAction")
     //        .appendingPathComponent("apusAmbiguous")
         .appendingPathExtension("apus")
     
@@ -68,6 +69,8 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     return root
 }
 
+//testNewScanner()
+
 enum ParseFailure: Error { case unexpectedToken, didNotReachEndOfInput }
 
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
@@ -90,13 +93,13 @@ var currentStack = Vertex(slot: currentSlot, index: currentIndex)
 
 addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
 
-var LL1 = false
+var isAmbiguous = true
 var failedParses = 0
 var successfullParses = 0
 var addedDescriptors = 0
 
 for m in messages {
-    trace = false
+    trace = true
     initScanner(fromString: m, patterns: terminals)
     
     //        grammarRoot.resetParseResults()
@@ -131,17 +134,13 @@ func parseMessage() {
             
             trace("parse node", currentSlot.kindName)
             
-            if currentSlot.expected(token) == false {
+            if currentSlot.isExpecting(token) == false {
                 throw ParseFailure.unexpectedToken
             }
             
             // switch to .LL1 mode if only one path is possible
-            if currentSlot.ambiguous.contains(token.type) {
-                LL1 = false
-            } else {
-                LL1 = true
-            }
-            print("LL1", LL1)
+            isAmbiguous = currentSlot.ambiguous.contains(token.type)
+            print("LL1", !isAmbiguous)
             
             switch currentSlot.kind {
                 
@@ -149,44 +148,45 @@ func parseMessage() {
                 for child in children.reversed() {
                     create(slot: child)
                 }
+                // TODO: something to gather all the extents of its children
                 
             case .ALT(let children):
                 for child in children where child.first.contains(token.type) {
-                    if LL1 {
-                        create(slot: child)
-                        break
-                    } else {
+                    if isAmbiguous {
                         let saved = currentStack
                         create(slot: child)
                         addDescriptor(slot: child, stack: saved, index: currentIndex)
                         currentStack = saved
+                    } else {
+                        create(slot: child)
+                        break
                     }
                 }
                 
             case .OPT(let child):
                 if child.first.contains(token.type) {
-                    if LL1 {
-                        create(slot: child)
-                    } else {
+                    if isAmbiguous {
                         let saved = currentStack
                         create(slot: child)
                         addDescriptor(slot: child, stack: saved, index: currentIndex)
                         currentStack = saved
+                    } else {
+                        create(slot: child)
                     }
                 }
 
            case .REP(let child):
                 if child.first.contains(token.type) {
-                    if LL1 {
-                        create(slot: currentSlot)
-                        create(slot: child)
-                    } else {
+                    if isAmbiguous {
                         let saved = currentStack
                         create(slot: currentSlot)
                         let intermediate = currentStack
                         create(slot: child)
                         addDescriptor(slot: child, stack: intermediate, index: currentIndex)
                         currentStack = saved
+                    } else {
+                        create(slot: currentSlot)
+                        create(slot: child)
                     }
                 }
                 
@@ -219,4 +219,3 @@ func parseMessage() {
     )
 }
 
-testNewScanner()

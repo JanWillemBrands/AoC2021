@@ -2,15 +2,15 @@ whitespace  : /\s+/ .
 singleLine  : /\/\/.*/ .
 multiLine   : /\/\*(?s).*?\*\// .
 
-identifier  = /[\p{L}\p{N}\p{Pc}]+/ .   // ідентифікатор
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .  // आक्षरिक
-regex       = /\/(?:[^\/\\]|\\.)*\// .  // 正規表現
-action      = /@(?:[^@\\]|\\.)*@/ .     // פעולה
-message     = /\¶(?:[^\¶\\]|\\.)*/ .    // رسالة
+ідентифікатор  = /[\p{L}\p{N}\p{Pc}]+/ .  // identifier
+आक्षरिक     = /\"(?:[^\"\\]|\\.)*\"/ .      // literal
+正規表現       = /\/(?:[^\/\\]|\\.)*\// .   // regex
+action      = /@(?:[^@\\]|\\.)*@/ .         // פעולה
+message     = /\¶(?:[^\¶\\]|\\.)*/ .        // رسالة
 
 S     = { production } { message } .
               
-production  = identifier ( ":" | "=" ) selection "." .
+production  = ідентифікатор ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .
 sequence    = term { term } .
 term        = terminal
@@ -22,22 +22,22 @@ term        = terminal
                             | ")*"
                             | ")+"
                             ) .
-terminal    = identifier | literal | regex | action .
+terminal    = ідентифікатор | आक्षरिक | 正規表現 | action .
 
 ¶
 whitespace  : /\s+/ .
 singleLine  : /\/\/.*/ .
 multiLine   : /\/\*(?s).*?\*\// .
 
-identifier  = /[\p{L}\p{N}\p{Pc}]+/ .
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .
-regex       = /\/(?:[^\/\\]|\\.)*\// .
+ідентифікатор  = /[\p{L}\p{N}\p{Pc}]+/ .
+आक्षरिक     = /\"(?:[^\"\\]|\\.)*\"/ .
+正規表現       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
 message     = /\¶(?:[^\¶\\]|\\.)*/ .
 
 S     = { production } { message } .
               
-production  = identifier ( ":" | "=" ) selection "." .
+production  = ідентифікатор ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .
 sequence    = term { term } .
 term        = terminal
@@ -49,4 +49,4 @@ term        = terminal
                             | ")*"
                             | ")+"
                             ) .
-terminal    = identifier | literal | regex | action .
+terminal    = ідентифікатор | आक्षरिक | 正規表現 | action .

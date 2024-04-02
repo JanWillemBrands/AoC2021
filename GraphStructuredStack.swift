@@ -93,7 +93,7 @@ var remainder: [Descriptor] = []
 //var unique: Set<Descriptor> = []
 //var popped: Set<Poppy> = []
 
-var currentYield_Cn_ϒ: Set<BiRange> = []
+var currentYield_Cn_ϒ_𝛶  : Set<BiRange> = []
 
 // creates a GSS vertex v, if it doesn't exist already
 // add an edge from v to the current stack top
@@ -119,7 +119,7 @@ func create(slot: GrammarNode) {
 
     // distributed popped
     for p in v.popped {
-        trace("createadd")
+        trace("create add")
         addDescriptor(slot: slot, stack: currentStack, index: p)
     }
     currentStack = v

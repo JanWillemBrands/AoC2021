@@ -1,13 +1,12 @@
-whitespace  : '\s+' ;
-singleLine  : '//.*' ;
-multiLine   : '(?s)(/\*).*?(\*/)' ;
+whitespace  : /\s+/ .
+singleLine  : /\/\/.*/ .
+multiLine   : /\/\*(?s).*?\*\// .
 
-name        = '[\p{L}\p{N}\p{Pc}]+' ;
-regular     = '\'(\\\'|[^\']+?)*\'' ;
-action      = '@(\\@|[^@]+?)*@' ;
-literal     = '\"(\\"|[^\"]+?)*\"' ;
-
-message     = '\¶(\\\¶|[^\¶])+' .
+identifier  = /[\p{L}\p{N}\p{Pc}]+/ .
+literal     = /\"(?:[^\"\\]|\\.)*\"/ .
+regex       = /\/(?:[^\/\\]|\\.)*\// .
+action      = /@(?:[^@\\]|\\.)*@/ .
+message     = /\¶(?:[^\¶\\]|\\.)*/ .
 
 S     = { production } { input } .
               
@@ -19,7 +18,74 @@ input       = message               @let message = token.image@
 production  =                       @var node: Node@
                                     @var muted = false@
                                     @var terminalAlias: String?@
-                name                @let nonTerminalName = token.image@
+                identifier          @let nonTerminalName = token.image@
+                ( ":"               @muted = true@
+                                    @terminalAlias = nonTerminalName@
+                    ( regex         @node = regular()@
+                    | literal       @node = literal()@
+                    )
+                | "="               @muted = false@
+                    ( regex         @terminalAlias = nonTerminalName@
+                                    @node = regular()@
+                    | selection     @node = selection()@
+                    )
+                )
+                                    @terminalAlias = nil@
+                ( "." | ";" )
+            .
+selection   =                       @var node: Node@
+            sequence                @node = sequence()@
+            { "|" sequence          @node = Node(.ALT(left: node, right: sequence()))@
+            } .
+sequence    =                       @var node: Node@
+            @node = @ term          @node = term()@
+            { term                  @node = Node(.SEQ(head: node, tail: term()))@
+            } .
+term        =                       @var node: Node@
+            (   terminal            @node = terminal()@
+            | "[" selection         @node = Node(.OPT(body: node))@
+                "]"
+            | "{" selection         @node = Node(.REP(body: node))@
+                "}"
+            | "<" selection         @node = Node(.SEQ(head: node,
+                                                      tail: Node(.REP(body: node))))@
+                ">"
+            | "(" selection         @node = selection()@
+                ( ")"
+                | ")?"              @node = Node(.OPT(body: node))@
+                | ")*"              @node = Node(.REP(body: node))@
+                | ")+"              @node = Node(.SEQ(head: node,
+                                                            tail: Node(.REP(body: node))))@
+                )
+             ) .
+terminal    = identifier            @node = Node(.NTM(name: token.image))@
+            | literal               @node = _literal()@
+            | action                @node = Node(.TRM(type: "action"))@
+                                    @actionList[node] = token.stripped@
+            .
+
+¶
+whitespace  : /\s+/ .
+singleLine  : /\/\/.*/ .
+multiLine   : /\/\*(?s).*?\*\// .
+
+identifier  = /[\p{L}\p{N}\p{Pc}]+/ .
+literal     = /\"(?:[^\"\\]|\\.)*\"/ .
+regex       = /\/(?:[^\/\\]|\\.)*\// .
+action      = /@(?:[^@\\]|\\.)*@/ .
+message     = /\¶(?:[^\¶\\]|\\.)*/ .
+
+S     = { production } { input } .
+              
+input       = message               @let message = token.image@
+                                    @   .dropFirst()@
+                                    @   .dropLast()@
+                                    @messages.append(String(message))@
+            .
+production  =                       @var node: Node@
+                                    @var muted = false@
+                                    @var terminalAlias: String?@
+                identifier                @let nonTerminalName = token.image@
                 ( ":"               @muted = true@
                                     @terminalAlias = nonTerminalName@
                     ( regular       @node = regular()@
@@ -59,44 +125,8 @@ term        =                       @var node: Node@
                                                             tail: Node(.REP(body: node))))@
                 )
              ) .
-terminal    = name                  @node = Node(.NTM(name: token.image))@
+terminal    = identifier                  @node = Node(.NTM(name: token.image))@
             | literal               @node = _literal()@
             | action                @node = Node(.TRM(type: "action"))@
                                     @actionList[node] = token.stripped@
             .
-
-¶
-S = "hup" .
-¶
-whitespace  : '\s+' ;
-singleLine  : '//.*' ;
-multiLine   : '(?s)(/\*).*?(\*/)' ;
-
-name        = '[\p{L}\p{N}\p{Pc}]+' ;
-regular     = '\'(\\\'|[^\']+?)*\'' ;
-action      = '@(\\@|[^@]+?)*@' ;
-literal     = '\"(\\"|[^\"]+?)*\"' ;
-
-message     = '\¶(\\\¶|[^\¶])+' .
-
-S     = { production } { input } .
-              
-input       = message .
-production  = name
-                ( ":" ( regular | literal )
-                | "=" ( regular | selection )
-                )
-                ( "." | ";" ) .
-selection   = sequence { "|" sequence } .
-sequence    = term { term } .
-term        = terminal
-            | "[" selection "]"
-            | "{" selection "}"
-            | "<" selection ">"
-            | "(" selection
-                ( ")"
-                | ")?"
-                | ")*"
-                | ")+"
-                ) .
-terminal    = name | literal | action .

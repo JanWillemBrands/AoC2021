@@ -26,7 +26,7 @@ func initParser() {
 func _parseGrammar() {
     trace("_parseGrammar", token)
     next()
-    while ["name",].contains(token.type) {
+    while ["identifier",].contains(token.type) {
         _production()
     }
     while token.type != "" {
@@ -36,15 +36,15 @@ func _parseGrammar() {
 
 func _production() {
     trace("_production", token)
-    expect(["name"])
+    expect(["identifier"])
     let nonTerminalName = token.image
     next()
     var node: GrammarNode
     if token.type == "=" {
         next()
-        if token.type == "regular" {
+        if token.type == "regex" {
             terminalAlias = nonTerminalName
-            node = _regular()
+            node = _regex()
             terminalAlias = nil
             next()
         } else {
@@ -55,8 +55,8 @@ func _production() {
         next()
         muted = true
         terminalAlias = nonTerminalName
-        if token.type == "regular" {
-            node = _regular()
+        if token.type == "regex" {
+            node = _regex()
         } else {
             expect(["literal"])
             node = _literal()
@@ -99,7 +99,7 @@ func _factor() -> GrammarNode {
     trace("_factor", token)
     var nodes: [GrammarNode] = []
     nodes.append(_term())
-    while ["literal", "name", "action", "(", "[", "{", "<", ].contains(token.type) {
+    while ["literal", "identifier", "action", "(", "[", "{", "<", ].contains(token.type) {
         nodes.append(_term())
     }
     if nodes.count == 1 {
@@ -109,7 +109,7 @@ func _factor() -> GrammarNode {
     }
 }
 
-func _regular() -> GrammarNode {
+func _regex() -> GrammarNode {
     let name = terminalAlias ?? token.image
     if let definition = terminals[name] {
         if definition.muted != muted {
@@ -117,7 +117,7 @@ func _regular() -> GrammarNode {
         }
     }
     terminals[name] = (token.stripped, true, muted)
-    trace("_regular name:", name, "guts:", token.stripped)
+    trace("_regex name:", name, "guts:", token.stripped)
     return GrammarNode(.TRM(type: name))
 }
 
@@ -137,7 +137,7 @@ func _term() -> GrammarNode {
     trace("_term", token)
     var node: GrammarNode
     switch token.type {
-    case "name":
+    case "identifier":
         node = GrammarNode(.NTR(name: token.stripped))
     case "literal":
         node = _literal()
@@ -174,7 +174,7 @@ func _term() -> GrammarNode {
         node = GrammarNode(.SEQ(children: [node, repetition]))
         expect([">"])
     default:
-        expect(["name", "literal", "action", "(", "[", "{", "<"])
+        expect(["identifier", "literal", "action", "(", "[", "{", "<"])
         exit(3)
     }
     next()

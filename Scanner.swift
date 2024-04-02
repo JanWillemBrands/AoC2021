@@ -17,7 +17,7 @@ var input: String = ""
 
 var token = Token()
 
-typealias TokenPattern = (pattern: String, regular: Bool, muted: Bool)
+typealias TokenPattern = (pattern: String, regex: Bool, muted: Bool)
 var tokenPatterns: [String:TokenPattern] = [:]
 
 func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) {
@@ -36,33 +36,16 @@ func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
     currentIndex(to: input.startIndex)
 }
 
-// TODO: future defs
-//let whitespace  = /\s+/                         // any regex whitespace
-//let singleLine  = /\/\/.*/                      // anything on the same line after //
-//let multiLine   = /(?s)\/\*.*?\*\//             // anything on multiple lines between /* and */
-//
-//let identifier  = /[\p{L}\p{N}\p{Pc}]+/         // one or more letters or numbers or punctuation in any script
-//let i           = /a-zA-Z[_a-zA-Z0-9]*/         // a letters followed by zero or more letters or digits or underscores
-//
-//let regex       = /\/[^\/]*\//                  // anything between /, no escape for //
-//let action      = /@[^@]*@/                     // anything between @, no escape for /@
-//
-//let keyword     = /"(\"|[^"]+?)*\"/
-//let k           = /"[^"\\]*(?:\\.[^"\\]*)*"/    // anything between ", with escapes for /" and //
-//
-//let testInput   = /¶(¶|[^¶])+/
-
-
 // handwritten parser: BE CAREFUL!
 let handwrittenTokenPatterns: [String:TokenPattern] = [
-    "singleLine":   (#"//.*"#,                  true,  true),
     "whitespace":   (#"\s+"#,                   true,  true),
-    "multiLine":    (#"(?s)(/\*).*?(\*/)"#,     true,  true),
-    "literal":      (#""(\\"|[^"]+?)*""#,       true,  false),
-    "message":      (#"¶(\\\¶|[^¶])+"#,         true,  false),
-    "regular":      (#"'(\\'|[^']+?)*'"#,       true,  false),
-    "action":       (#"@(\\@|[^@]+?)*@"#,       true,  false),
-    "name":         (#"[\p{L}\p{N}\p{Pc}]+"#,   true,  false),
+    "singleLine":   (#"//.*"#,                  true,  true),
+    "multiLine":    (#"/\*(?s).*?\*/"#,         true,  true),
+    "literal":      (#""(?:[^"\\]|\\.)*""#,     true,  false),
+    "message":      (#"¶(?:[^¶\\]|\\.)*"#,      true,  false),
+    "regex":        (#"/(?:[^\/\\]|\\.)*/"#,    true,  false),
+    "action":       (#"@(?:[^@\\]|\\.)*@"#,     true,  false),
+    "identifier":   (#"[\p{L}\p{N}\p{Pc}]+"#,   true,  false),
     ".":            (".",                       false, false),
     ";":            (";",                       false, false),
     ":":            (":",                       false, false),
@@ -90,9 +73,10 @@ struct Token {
         case "literal":
             return String(image.dropFirst().dropLast())
                 .escapesRemoved
-        case "regular":
+        case "regex":
             return image.dropFirst().dropLast()
-                .replacingOccurrences(of: "\\'", with: "'")
+                .replacingOccurrences(of: "\\/", with: "/")
+//                .replacingOccurrences(of: "\\'", with: "'")
         case "action":
             return image.dropFirst().dropLast()
                 .replacingOccurrences(of: "\\@", with: "@")
@@ -129,7 +113,7 @@ func next() {
         longestMatch = remainder.lowerBound ..< remainder.lowerBound
         for pattern in tokenPatterns {
             var m: Range<String.Index>?
-            if pattern.value.regular {
+            if pattern.value.regex {
                 m = input.range(of: pattern.value.pattern, options: [.regularExpression, .anchored], range: remainder)
             } else {
                 m = input.range(of: pattern.value.pattern, options: [.anchored], range: remainder)
@@ -139,7 +123,7 @@ func next() {
                     longestMatch = match
                     longestMatchIsMuted = pattern.value.muted
                     longestMatchType = pattern.key
-                } else if match.upperBound == longestMatch.upperBound && !pattern.value.regular {
+                } else if match.upperBound == longestMatch.upperBound && !pattern.value.regex {
                     longestMatch = match
                     longestMatchIsMuted = pattern.value.muted
                     longestMatchType = pattern.key

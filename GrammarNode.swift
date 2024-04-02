@@ -48,7 +48,7 @@ final class GrammarNode {
     init(_ kind: Kind) {
         self.kind = kind
     }
-
+    
     var first:      Set<String> = []
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
@@ -60,7 +60,7 @@ final class GrammarNode {
 }
 
 extension GrammarNode {
-    func expected(_ token: Token) -> Bool {
+    func isExpecting(_ token: Token) -> Bool {
         if first.contains(token.type) {
             return true
         } else if first.contains("") && follow.contains(token.type) {
@@ -191,8 +191,6 @@ extension GrammarNode {
         self.number = GrammarNode.count
         GrammarNode.count += 1
         
-//        var ambiguous: Set<String> = []
-        
         switch kind {
         case .SEQ(let children):
             for child in children {
@@ -225,7 +223,7 @@ extension GrammarNode {
         
         ambiguous.remove("")    // to handle both uses of "" in first (as ε, ϵ, epsilon) and in follow (as $, EOF)
         if !ambiguous.isEmpty {
-            if LL1 {
+            if isAmbiguous {
                 trace("^ ERROR: node is not LL1, ambiguous set:", ambiguous)
                 exit(1)
             } else {
@@ -237,8 +235,9 @@ extension GrammarNode {
 
 extension GrammarNode {
     func resetParseResults() {
-//        seen_U = []
-//        done_P = []
+        //        seen_U = []
+        //        done_P = []
+        //        var ambiguous: Set<String> = []
         yield = Extents()
         switch kind {
         case .SEQ(let children):
@@ -290,8 +289,14 @@ extension GrammarNode {
         case .NTR(let name, _):
             s.append(name)
         case .TRM(let type):
-            let image = "\\\"" + (terminals[type]?.0 ?? "") + "\\\""
-            s.append(image)
+            if let t = terminals[type] {
+                let pattern = t.pattern
+                if t.regex {
+                    s.append(pattern)
+                } else {
+                    s.append("\\\"" + pattern + "\\\"")
+                }
+            }
         }
         return s
     }
