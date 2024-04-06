@@ -8,7 +8,7 @@
 import Foundation
 
 extension String {
-    var validSwiftIdentifier: String {
+    public var validSwiftIdentifier: String {
         var valid = ""
         for c in self {
             if c.isLetter || c.isNumber {
@@ -26,17 +26,20 @@ extension String {
             }
         }
         valid = valid.replacingOccurrences(of: " ", with: "")
+        valid = valid.replacingOccurrences(of: "-", with: "")
         if let first = valid.first {
             if first.isNumber {
                 valid = "_" + valid
+            } else {
+                valid = first.lowercased() + valid.dropFirst()
             }
         } else {
-            valid = "_"
+            valid = "XXX"
         }
+        assert(valid.contains("XXX") == false, "'XXX' may be a substitution for an invalid part of a Swift Identifier")
         return valid
     }
 }
-
 
 // https://www.unicode.org/Public/draft/UCD/ucd/NameAliases.txt
 fileprivate let nameAliases: [UnicodeScalar:String] = [
@@ -76,7 +79,6 @@ fileprivate let nameAliases: [UnicodeScalar:String] = [
     
     "\u{007F}" : "DEL",
 ]
-
 
 /*
  # https://www.unicode.org/Public/13.0.0/ucd/NameAliases.txt

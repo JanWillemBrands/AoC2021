@@ -2,11 +2,11 @@ whitespace  : /\s+/ .
 singleLine  : /\/\/.*/ .
 multiLine   : /\/\*(?s).*?\*\// .
 
-identifier  = /[\p{L}\p{N}\p{Pc}]+/ .   // ідентифікатор
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .  // आक्षरिक
-regex       = /\/(?:[^\/\\]|\\.)*\// .  // 正規表現
-action      = /@(?:[^@\\]|\\.)*@/ .     // פעולה
-message     = /\¶(?:[^\¶\\]|\\.)*/ .    // رسالة
+identifier  = /\p{ID_Start}\p{ID_Continue}*/ .
+literal     = /\"(?:[^\"\\]|\\.)*\"/ .
+regex       = /\/(?:[^\/\\]|\\.)*\// .
+action      = /@(?:[^@\\]|\\.)*@/ .
+message     = /¶(?:[^¶\\]|\\.)*/ .
 
 S     = { production } { message } .
               
@@ -29,7 +29,7 @@ whitespace  : /\s+/ .
 singleLine  : /\/\/.*/ .
 multiLine   : /\/\*(?s).*?\*\// .
 
-identifier  = /[\p{L}\p{N}\p{Pc}]+/ .
+identifier  = /\p{ID_Start}\p{ID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .

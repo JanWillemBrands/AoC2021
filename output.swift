@@ -11,6 +11,9 @@ let tokenPatterns: [String:TokenPattern] = [
     "c":	("c",	false,	false),
     "d":	("d",	false,	false),
 ]
+func whitespace() {
+    next()
+}
 func S() {
     switch token.type {
     case "a":
@@ -30,8 +33,5 @@ func singleLine() {
     next()
 }
 func multiLine() {
-    next()
-}
-func whitespace() {
     next()
 }

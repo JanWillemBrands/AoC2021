@@ -83,6 +83,8 @@ guard let grammarRoot = parseGrammar(startSymbol: startSymbol) else {
 
 // the first character of the current token
 var currentIndex = input.startIndex
+// the index of the current token
+var tokenIndex = 0
 
 // the GrammarNode being processed
 var currentSlot = grammarRoot

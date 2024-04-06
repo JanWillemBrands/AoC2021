@@ -9,6 +9,16 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 361.15)">
 <title>G</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-361.15 1458,-361.15 1458,4 -4,4"/>
+<g id="clust1" class="cluster">
+<title>GSS</title>
+<polygon fill="none" stroke="black" points="8,-8 8,-341.14 366,-341.14 366,-8 8,-8"/>
+<text text-anchor="start" x="16" y="-327.64" font-family="Menlo" font-size="10.00" fill="green">↵abcd↵</text>
+</g>
+<g id="clust2" class="cluster">
+<title>S</title>
+<polygon fill="none" stroke="black" points="374,-64.75 374,-345.44 924,-345.44 924,-64.75 374,-64.75"/>
+<text text-anchor="start" x="382" y="-331.94" font-family="Menlo" font-size="10.00">S = ( &quot;a&quot; &quot;b&quot; &quot;c&quot; | &quot;a&quot; &quot;b&quot; &quot;c&quot; ) &quot;d&quot;</text>
+</g>
 <g id="clust3" class="cluster">
 <title>multiLine</title>
 <polygon fill="none" stroke="black" points="932,-275.63 932,-349.15 1098,-349.15 1098,-275.63 932,-275.63"/>
@@ -23,16 +33,6 @@
 <title>whitespace</title>
 <polygon fill="none" stroke="black" points="1280,-275.63 1280,-349.15 1446,-349.15 1446,-275.63 1280,-275.63"/>
 <text text-anchor="start" x="1288" y="-335.65" font-family="Menlo" font-size="10.00">whitespace = \s+</text>
-</g>
-<g id="clust1" class="cluster">
-<title>GSS</title>
-<polygon fill="none" stroke="black" points="8,-8 8,-341.14 366,-341.14 366,-8 8,-8"/>
-<text text-anchor="start" x="16" y="-327.64" font-family="Menlo" font-size="10.00" fill="green">↵abcd↵</text>
-</g>
-<g id="clust2" class="cluster">
-<title>S</title>
-<polygon fill="none" stroke="black" points="374,-64.75 374,-345.44 924,-345.44 924,-64.75 374,-64.75"/>
-<text text-anchor="start" x="382" y="-331.94" font-family="Menlo" font-size="10.00">S = ( &quot;a&quot; &quot;b&quot; &quot;c&quot; | &quot;a&quot; &quot;b&quot; &quot;c&quot; ) &quot;d&quot;</text>
 </g>
 <!-- K1 -->
 <g id="node1" class="node">

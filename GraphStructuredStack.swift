@@ -7,9 +7,15 @@
 
 final class Vertex: Hashable, CustomStringConvertible, Comparable {
     var slot: GrammarNode
-    var index: String.Index
+    var index: Int
+//    var index: String.Index
+//
+//    init(slot: GrammarNode, index: String.Index) {
+//        self.slot = slot
+//        self.index = index
+//    }
     
-    init(slot: GrammarNode, index: String.Index) {
+    init(slot: GrammarNode, index: Int) {
         self.slot = slot
         self.index = index
     }
