@@ -61,9 +61,9 @@ final class GrammarNode {
 
 extension GrammarNode {
     func isExpecting(_ token: Token) -> Bool {
-        if first.contains(token.type) {
+        if first.contains(token.kind) {
             return true
-        } else if first.contains("") && follow.contains(token.type) {
+        } else if first.contains("") && follow.contains(token.kind) {
             return true
         } else {
             var expected = first
@@ -290,12 +290,7 @@ extension GrammarNode {
             s.append(name)
         case .TRM(let type):
             if let t = terminals[type] {
-                let pattern = t.pattern
-                if t.regex {
-                    s.append(pattern)
-                } else {
-                    s.append("\\\"" + pattern + "\\\"")
-                }
+                s.append(t.source)
             }
         }
         return s

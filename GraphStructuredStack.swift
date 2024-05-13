@@ -20,7 +20,7 @@ final class Vertex: Hashable, CustomStringConvertible, Comparable {
         self.index = index
     }
     
-    var popped: Set<String.Index> = []
+    var popped: Set<Int> = []
     var unique: Set<SlotIndexPair> = []
 
     static func == (lhs: Vertex, rhs: Vertex) -> Bool {
@@ -31,7 +31,8 @@ final class Vertex: Hashable, CustomStringConvertible, Comparable {
         hasher.combine(index)
     }
     var description: String {
-        slot.description + index.inputPosition
+        slot.description + index.description
+//        slot.description + index.inputPosition
     }
     static func < (lhs: Vertex, rhs: Vertex) -> Bool {
         lhs.description < rhs.description
@@ -62,13 +63,13 @@ final class Edge: Hashable, CustomStringConvertible, Comparable {
 struct Descriptor: Hashable {
     var slot: GrammarNode
     var stack: Vertex
-    var index: String.Index
+    var index: Int
     var yield: Set<BiRange> = []
 }
 
 struct SlotIndexPair: Hashable {
     var slot: GrammarNode
-    var index: String.Index
+    var index: Int
 }
 
 // global popped
@@ -168,16 +169,16 @@ func pop() {
     }
 }
 
-func addDescriptor(slot: GrammarNode, stack: Vertex, index: String.Index) {
+func addDescriptor(slot: GrammarNode, stack: Vertex, index: Int) {
     // distributed unique
     if stack.unique.insert(SlotIndexPair(slot: slot, index: index)).inserted {
     // global unique
     // if unique.insert(Descriptor(slot: slot, stack: stack, index: index)).inserted {
         remainder.append(Descriptor(slot: slot, stack: stack, index: index))
-        trace("add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index.inputPosition))")
+        trace("add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index))")
         addedDescriptors += 1
     } else {
-        trace("not add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index.inputPosition))")
+        trace("not add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index))")
     }
 }
 

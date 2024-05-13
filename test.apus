@@ -75,10 +75,10 @@ multiLine   : /\/\*(?s).*?\*\// .
 
 //S = "a" S "d" | "a" S | "".           // PASS c Cappers thesis Γ5 but fail since only one match
 
-//S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
+S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
 
-S = ( "a" "b" "c" | "a" "b" "c" ) "d".                  // PASS c but unnecessary desriptors and pops
+//S = ( "a" "b" "c" | "a" "b" "c" ) "d".                  // PASS c but unnecessary desriptors and pops
 
 
 ¶
-abcd
+aab

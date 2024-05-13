@@ -27,11 +27,11 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     //        .appendingPathComponent("apusAmbiguous")
         .appendingPathExtension("apus")
     
-    initScanner(fromFile: inputFileURL, patterns: handwrittenTokenPatterns)
+    initScanner(fromFile: inputFileURL, patterns: apusTerminals)
     
     initParser()
     
-    _parseGrammar()
+    parseApusGrammar()
     
     trace("terminals:")
     for terminal in terminals {
@@ -81,19 +81,13 @@ guard let grammarRoot = parseGrammar(startSymbol: startSymbol) else {
     exit(5)
 }
 
-// the first character of the current token
-var currentIndex = input.startIndex
-// the index of the current token
-var tokenIndex = 0
-
 // the GrammarNode being processed
 var currentSlot = grammarRoot
 
 // the top of one of the stacks in the Graph Structured Stack
-let gssRoot = Vertex(slot: currentSlot, index: currentIndex)
 var currentStack = Vertex(slot: currentSlot, index: currentIndex)
 
-addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
+//addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
 
 var isAmbiguous = true
 var failedParses = 0
@@ -101,12 +95,15 @@ var successfullParses = 0
 var addedDescriptors = 0
 
 for m in messages {
-    trace = true
+    trace = false
     initScanner(fromString: m, patterns: terminals)
-    
-    //        grammarRoot.resetParseResults()
+    // TODO: reset parser after every message     grammarRoot.resetParseResults()
     // TODO: set startSymbol depending on the message
     
+    currentSlot = grammarRoot
+    currentStack = Vertex(slot: currentSlot, index: currentIndex)
+    addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
+
     trace = true
     failedParses = 0
     successfullParses = 0
@@ -126,10 +123,12 @@ func parseMessage() {
     
     while !remainder.isEmpty {
         let d = remainder.removeLast()
-        trace("get Descriptor(slot: \(d.slot.description), stack: \(d.stack.description), index: \(d.index.inputPosition))")
+        trace("get Descriptor(slot: \(d.slot.description), stack: \(d.stack.description), index: \(d.index))")
         currentStack = d.stack
-        currentIndex(to: d.index)
-        next()
+//        currentIndex(to: d.index)
+        currentIndex = d.index
+//        token = tokens[currentIndex]
+//        next()
         currentSlot = d.slot
         
         do {
@@ -141,8 +140,7 @@ func parseMessage() {
             }
             
             // switch to .LL1 mode if only one path is possible
-            isAmbiguous = currentSlot.ambiguous.contains(token.type)
-            print("LL1", !isAmbiguous)
+            isAmbiguous = currentSlot.ambiguous.contains(token.kind)
             
             switch currentSlot.kind {
                 
@@ -153,7 +151,7 @@ func parseMessage() {
                 // TODO: something to gather all the extents of its children
                 
             case .ALT(let children):
-                for child in children where child.first.contains(token.type) {
+                for child in children where child.first.contains(token.kind) {
                     if isAmbiguous {
                         let saved = currentStack
                         create(slot: child)
@@ -166,7 +164,7 @@ func parseMessage() {
                 }
                 
             case .OPT(let child):
-                if child.first.contains(token.type) {
+                if child.first.contains(token.kind) {
                     if isAmbiguous {
                         let saved = currentStack
                         create(slot: child)
@@ -178,7 +176,7 @@ func parseMessage() {
                 }
 
            case .REP(let child):
-                if child.first.contains(token.type) {
+                if child.first.contains(token.kind) {
                     if isAmbiguous {
                         let saved = currentStack
                         create(slot: currentSlot)

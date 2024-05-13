@@ -9,13 +9,13 @@ import Foundation
 
 // S = "a" S "b" | "a" A "c" | "a".
 
-var R: [Int] = [1,2,3]
+var remainder: [Int] = [1,2,3]
 
 func S() {
     
     enum State : CaseIterable { case A,B,C,D,E,F,G,H,I,J }
-    while !R.isEmpty {
-        let L = R.removeLast()
+    while !remainder.isEmpty {
+        let L = remainder.removeLast()
         var state = State.allCases.randomElement()!
         switch state {
         case .A:

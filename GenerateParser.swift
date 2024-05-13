@@ -18,22 +18,34 @@ func generateParser() {
     let template = #"""
     //: start of template code
     import Foundation
-    typealias TokenPattern = (image: String, regex: Bool, muted: Bool)
+    import RegexBuilder
+    
+    var input = ""
+    
+    typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
     //: start of generated code
     """#
     emit(template)
     
+    // TODO: check escapes etc.
     emit(dent: .NR, "let tokenPatterns: [String:TokenPattern] = [")
-    let sortedTerminals = terminals
-        .sorted { $0.key.count > $1.key.count
-            || $0.key.count == $1.key.count && $0.key < $1.key }
-    for n in sortedTerminals {
-        if n.value.regex {
-            emit("\"", n.key.escapesAdded, "\":\t(#\"", n.value.pattern, "\"#,\t", n.value.regex, ",\t", n.value.muted, "),")
+    for (kind, pattern) in terminals {
+        if pattern.isKeyword {
+            emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, ",\tRegex { \"", pattern.regex, "\" },\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
         } else {
-            emit("\"", n.key.escapesAdded, "\":\t(\"", n.value.pattern.escapesAdded, "\",\t", n.value.regex, ",\t", n.value.muted, "),")
+            emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, ",\t", pattern.regex, ",\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
         }
     }
+//    let sortedTerminals = term inals
+//        .sorted { $0.key.count > $1.key.count
+//            || $0.key.count == $1.key.count && $0.key < $1.key }
+//    for n in sortedTerminals {
+//        if n.value.isKeyword {
+//            emit("\"", n.key.escapesAdded, "\":\t(\"", n.value.pattern.escapesAdded, "\",\t", n.value.regex, ",\t", n.value.isSkip, "),")
+//        } else {
+//            emit("\"", n.key.escapesAdded, "\":\t(#\"", n.value.pattern, "\"#,\t", n.value.regex, ",\t", n.value.isSkip, "),")
+//        }
+//    }
     emit(dent: .LN, "]")
     
     for (var name, node) in nonTerminals {
@@ -95,21 +107,21 @@ func generate(_ node: GrammarNode) {
     }
 }
 
-var outputIndent = 0
+var indentation = 0
+// IndentMode specifies the increase or decrease of indentation before and after emitting the items
 enum IndentMode { case NN, LN, NR, LR, RL }
 
 func emit(dent: IndentMode = .NN, _ items: Any..., terminator: String = "\n") {
-    
     switch dent {
     case .NN: break
-    case .LN: outputIndent -= 1
+    case .LN: indentation -= 1
     case .NR: break
-    case .LR: outputIndent -= 1
-    case .RL: outputIndent += 1
+    case .LR: indentation -= 1
+    case .RL: indentation += 1
     }
     
-    for _ in 0 ..< outputIndent {
-        parserContent.append("    ")
+    for _ in 0 ..< indentation {
+        parserContent.append("\t")
     }
     for item in items {
         parserContent.append("\(item)")
@@ -119,8 +131,8 @@ func emit(dent: IndentMode = .NN, _ items: Any..., terminator: String = "\n") {
     switch dent {
     case .NN: break
     case .LN: break
-    case .NR: outputIndent += 1
-    case .LR: outputIndent += 1
-    case .RL: outputIndent -= 1
+    case .NR: indentation += 1
+    case .LR: indentation += 1
+    case .RL: indentation -= 1
     }
 }

@@ -1,37 +1,41 @@
 //: start of template code
 import Foundation
-typealias TokenPattern = (image: String, regex: Bool, muted: Bool)
+import RegexBuilder
+
+var input = ""
+
+typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
 //: start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-    "singleLine":	(#"//.*"#,	true,	true),
-    "whitespace":	(#"\s+"#,	true,	true),
-    "multiLine":	(#"/\*(?s).*?\*/"#,	true,	true),
-    "a":	("a",	false,	false),
-    "b":	("b",	false,	false),
-    "c":	("c",	false,	false),
-    "d":	("d",	false,	false),
+	"multiLine":	("/\\/\\*(?s).*?\\*\\//,	Regex<Substring>(program: _StringProcessing.Regex<Swift.Substring>.Program),	false,	true),
+	"b":	("\"b\",	Regex { "Regex<Substring>(program: _StringProcessing.Regex<Swift.Substring>.Program)" },	true,	false),
+	"singleLine":	("/\\/\\/.*/,	Regex<Substring>(program: _StringProcessing.Regex<Swift.Substring>.Program),	false,	true),
+	"whitespace":	("/\\s+/,	Regex<Substring>(program: _StringProcessing.Regex<Swift.Substring>.Program),	false,	true),
+	"a":	("\"a\",	Regex { "Regex<Substring>(program: _StringProcessing.Regex<Swift.Substring>.Program)" },	true,	false),
+	"d":	("\"d\",	Regex { "Regex<Substring>(program: _StringProcessing.Regex<Swift.Substring>.Program)" },	true,	false),
 ]
 func whitespace() {
-    next()
+	next()
 }
 func S() {
-    switch token.type {
-    case "a":
-        next()
-        next()
-        next()
-    case "a":
-        next()
-        next()
-        next()
-    default:
-        expect(["a"])
-    }
-    next()
-}
-func singleLine() {
-    next()
+	switch token.type {
+	case "a":
+		next()
+		S()
+		next()
+	case "a":
+		next()
+		S()
+		next()
+	case "a":
+		next()
+	default:
+		expect(["a"])
+	}
 }
 func multiLine() {
-    next()
+	next()
+}
+func singleLine() {
+	next()
 }

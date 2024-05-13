@@ -10,7 +10,6 @@
 		4E333D712629D60000640821 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D632629D5E400640821 /* main.swift */; };
 		4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */; };
 		4E333D752629D60A00640821 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D672629D5E400640821 /* StringExtensions.swift */; };
-		4EA293982BAACDE40014546F /* UnicodeNameAliases.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA293972BAACDE40014546F /* UnicodeNameAliases.swift */; };
 		4EB4DE422B91CDDA00BA9A88 /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */; };
 		4EB4DE462B91D30600BA9A88 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE452B91D30600BA9A88 /* Parser.swift */; };
 		4EB4DE482B91D3C400BA9A88 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE472B91D3C400BA9A88 /* GenerateParser.swift */; };
@@ -31,7 +30,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4E0781F42BB6C3F600B16B95 /* NewScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewScanner.swift; sourceTree = "<group>"; };
 		4E333D622629D5E400640821 /* apus.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
 		4E333D632629D5E400640821 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		4E333D642629D5E400640821 /* output.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = output.swift; sourceTree = "<group>"; };
@@ -40,8 +38,8 @@
 		4E333D6A2629D5E500640821 /* test.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = test.apus; sourceTree = "<group>"; };
 		4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphStructuredStack.swift; sourceTree = "<group>"; };
 		4E333D6C2629D5E500640821 /* apusNoAction.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusNoAction.apus; sourceTree = "<group>"; };
+		4E450E682BE8007F0077E275 /* playground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = playground.swift; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
-		4EA293972BAACDE40014546F /* UnicodeNameAliases.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnicodeNameAliases.swift; sourceTree = "<group>"; };
 		4EA293992BAACF9A0014546F /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
 		4EA8E8272B9B47F0002A5C51 /* Empty.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Empty.txt; sourceTree = "<group>"; };
 		4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
@@ -85,12 +83,11 @@
 				4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */,
 				4E333D632629D5E400640821 /* main.swift */,
 				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
-				4E0781F42BB6C3F600B16B95 /* NewScanner.swift */,
 				4E333D642629D5E400640821 /* output.swift */,
 				4EB4DE452B91D30600BA9A88 /* Parser.swift */,
+				4E450E682BE8007F0077E275 /* playground.swift */,
 				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
 				4E333D672629D5E400640821 /* StringExtensions.swift */,
-				4EA293972BAACDE40014546F /* UnicodeNameAliases.swift */,
 				4EA8E8272B9B47F0002A5C51 /* Empty.txt */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 			);
@@ -166,7 +163,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4EA293982BAACDE40014546F /* UnicodeNameAliases.swift in Sources */,
 				4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */,
 				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
 				4E333D712629D60000640821 /* main.swift in Sources */,
