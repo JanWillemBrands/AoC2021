@@ -7,33 +7,6 @@
 
 import Foundation
 
-struct Extents: CustomStringConvertible {
-    var ranges: Set<Range<String.Index>> = []
-    
-    mutating func insert(_ range: Range<String.Index>) {
-        ranges.insert(range)
-    }
-    
-    func envelop() -> Range<String.Index>? {
-        if ranges.isEmpty {
-            return nil
-        } else {
-            return ranges.reduce(ranges.first!) { x, y in
-                min(x.lowerBound, y.lowerBound) ..< max(x.upperBound, y.upperBound)
-            }
-        }
-    }
-    
-    var description: String {
-        var s = ""
-        for r in ranges {
-            s.append(r.lowerBound.inputPosition + ":" + r.upperBound.inputPosition + " ")
-        }
-        if s.count > 0 { s.removeLast(1) }
-        return s
-    }
-}
-
 final class GrammarNode {
     enum Kind {
         case SEQ(children: [GrammarNode])
@@ -53,7 +26,7 @@ final class GrammarNode {
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
     
-    var yield = Extents()
+    var yield: Set<Split> = []
     
     static var count = 0
     var number = 0
@@ -167,7 +140,7 @@ extension GrammarNode {
                 production.follow.formUnion(follow)
             } else {
                 print("error: '\(name)' has not been defined as a grammar rule")
-                exit(2)
+                exit(4)
             }
             
         case .TRM(let type):
@@ -225,7 +198,7 @@ extension GrammarNode {
         if !ambiguous.isEmpty {
             if isAmbiguous {
                 trace("^ ERROR: node is not LL1, ambiguous set:", ambiguous)
-                exit(1)
+                exit(3)
             } else {
                 trace("^ warning: processing may be slower due to ambiguity of set:", ambiguous)
             }
@@ -238,7 +211,7 @@ extension GrammarNode {
         //        seen_U = []
         //        done_P = []
         //        var ambiguous: Set<String> = []
-        yield = Extents()
+        yield = []
         switch kind {
         case .SEQ(let children):
             for child in children {

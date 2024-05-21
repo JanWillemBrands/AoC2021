@@ -1,7 +1,5 @@
-whitespace  : /\s+/ .
-singleLine  : /\/\/.*/ .
-multiLine   : /\/\*(?s).*?\*\// .
-
+whitespace : /\s+/.
+comment    : /\/\/.*/.
 
 //S = X X X.                    // PASS c
 //X = "x".
@@ -75,10 +73,15 @@ multiLine   : /\/\*(?s).*?\*\// .
 
 //S = "a" S "d" | "a" S | "".           // PASS c Cappers thesis Γ5 but fail since only one match
 
-S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
+//S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
 
 //S = ( "a" "b" "c" | "a" "b" "c" ) "d".                  // PASS c but unnecessary desriptors and pops
 
+//S = "a" A B | "a" A "b". A = ["a" | "c"]. B = ["b" | B "c"].    // Binsbergen Γ1
 
-¶
-aab
+//S = ( ("a" | "a" ) | "a" ) | "a".    // the ebnf reconstruction eliminates the intermediate ALT nodes
+//S = ( ( ( "a" ) "a" ) "a" ) "a".    // the ebnf reconstruction eliminates the intermediate SEQ nodes
+
+//S = {"x"}{"x"}.
+S = "a" B "c" | "a" B "c". B = "b".
+¶abc

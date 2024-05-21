@@ -34,13 +34,13 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     parseApusGrammar()
     
     trace("terminals:")
-    for terminal in terminals {
-        trace("\t", terminal.key, "\t", terminal.value)
+    for (name, tokenPattern) in terminals {
+        trace("\t", name, "\t", tokenPattern.source)
     }
     
     trace("nonTerminals:")
-    for nonTerminal in nonTerminals {
-        trace("\t", nonTerminal.key, "\t", nonTerminal.value)
+    for (name, grammarNode) in nonTerminals {
+        trace("\t", name, "\t", grammarNode.kind)
     }
     
     guard let root = nonTerminals[startSymbol] else { return nil }
@@ -78,7 +78,7 @@ enum ParseFailure: Error { case unexpectedToken, didNotReachEndOfInput }
 let startSymbol = "S"
 guard let grammarRoot = parseGrammar(startSymbol: startSymbol) else {
     print("ERROR: Start Symbol '\(startSymbol)' not found")
-    exit(5)
+    exit(1)
 }
 
 // the GrammarNode being processed
@@ -194,15 +194,16 @@ func parseMessage() {
                 create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
                 
             case .TRM(_):
-                currentSlot.yield.insert(token.range)
-                next()
+                currentSlot.yield.insert(Split(token.range.lowerBound, token.range.lowerBound, token.range.upperBound))
+                next() 
             }
             
+            // TODO: update success criteria
             if token.range.upperBound == input.endIndex {
                 successfullParses += 1
                 trace("HURRAH", terminator: "\n")
             }
-            
+             
             pop()
             
         } catch let error {

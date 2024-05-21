@@ -41,10 +41,12 @@ func generateDiagrams() {
     if graph.count > 1 {
         for (key, value) in graph.sorted(by: { $0.key > $1.key }) {
             if value.isEmpty {
-                diagramContent.append("\n    \"\(key)\" -> \"#\"")
+                diagramContent.append("\n    \"\(key)\" -> \"#\"") // use '#' or '●○' as the root label?
             } else {
                 for element in value {
-                    diagramContent.append("\n    \"\(key)\" -> \"\(element.towards.description)\"") // "●○"
+                    let poppedIndexes = element.towards.popped.sorted().description.dropFirst().dropLast()
+                    diagramContent.append("\n    \(key) [label = <\(key)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+                    diagramContent.append("\n    \(key) -> \(element.towards.description)")
                 }
             }
         }
@@ -72,37 +74,40 @@ func generateDiagrams() {
         try diagramContent.write(to: diagramFileURL, atomically: true, encoding: .utf8)
     } catch {
         print("error: could not write to \(diagramFileURL.absoluteString)")
-        exit(1)
+        exit(6)
     }
 }
 
 func addDiagramOf(_ slot: GrammarNode) {
+    let sortedYield = slot.yield.sorted(by: { lhs, rhs in lhs.i < rhs.i }).description.dropFirst().dropLast()
+    let yieldInfo = "<br/><font color=\"gray\" point-size=\"8.0\"> \(sortedYield)</font>"
+
     switch slot.kind {
     case .SEQ(let children):
-        diagramContent.append("\n    \(slot) [label = <\(slot): SEQ>]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): SEQ\(yieldInfo)>]")
         for child in children {
             diagramContent.append("\n    \(slot) -> \(child)")
             addDiagramOf(child)
         }
     case .ALT(let children):
-        diagramContent.append("\n    \(slot) [label = <\(slot): ALT>]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): ALT\(yieldInfo)>]")
         for child in children {
             diagramContent.append("\n    \(slot) -> \(child)")
             addDiagramOf(child)
         }
     case .OPT(let child):
-        diagramContent.append("\n    \(slot) [label = <\(slot): OPT>]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): OPT\(yieldInfo)>]")
         diagramContent.append("\n    \(slot) -> \(child)")
         addDiagramOf(child)
     case .REP(let child):
-        diagramContent.append("\n    \(slot) [label = <\(slot): REP>]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): REP\(yieldInfo)>]")
         diagramContent.append("\n    \(slot) -> \(child)")
         addDiagramOf(child)
     case .NTR(let name, let link):
-        diagramContent.append("\n    \(slot) [label = <\(slot): \(name)>]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): \(name)\(yieldInfo)>]")
         nonterminalLinks.append((slot, link!))
     case .TRM(let type):
-        diagramContent.append("\n    \(slot) [label = <\(slot): \"\(type.escapesRemoved.graphvizHTML)\"<br/><font color=\"gray\" point-size=\"8.0\"> \(slot.yield)</font>>]")
+        diagramContent.append("\n    \(slot) [label = <\(slot): \"\(type.escapesRemoved.graphvizHTML)\"\(yieldInfo)>]")
     }
 }
 

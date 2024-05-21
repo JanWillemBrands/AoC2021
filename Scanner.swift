@@ -107,7 +107,7 @@ func next() {
 
 var tokens: [Token] = []
 
-// the index of the current Token
+// the index of the current active token
 var currentIndex = -1
 
 var token: Token {
@@ -134,7 +134,7 @@ func initScanner(fromString inputString: String, patterns: [String:TokenPattern]
 func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
     guard let inputFileContent = try? String(contentsOf: inputFileURL, encoding: .utf8) else {
         print("error: could not read from \(inputFileURL.absoluteString)")
-        exit(1)
+        exit(2)
     }
     tokenPatterns = patterns
     input = inputFileContent
@@ -161,6 +161,7 @@ func expect(_ expectedTokens: Set<String>) {
             print("^", terminator: "")
         }
         print()
+        exit(10)
     }
 }
 

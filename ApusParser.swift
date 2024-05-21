@@ -1,5 +1,5 @@
 //
-//  Parser.swift
+//  ApusParser.swift
 //  Advent
 //
 //  Created by Johannes Brands on 01/03/2024.
@@ -25,11 +25,11 @@ func initParser() {
 
 func parseApusGrammar() {
     trace("parseGrammar", token)
-//    next()
     expect(["identifier", "message"])
     while token.kind == "identifier" {
         production()
     }
+    // TODO: change ¶ into $ to match ART
     expect(["message"])
     while token.kind == "message" {
         message()
@@ -124,7 +124,7 @@ func regex() -> GrammarNode {
         trace("regex name:", name, "image", token.image)
     } catch {
         print("ERROR: \(token.image) is not a valid /regex/")
-        exit(4)
+        exit(9)
     }
     return GrammarNode(.TRM(type: name))
 }
@@ -143,7 +143,7 @@ func literal() -> GrammarNode {
         trace("literal name:", name, "image:", token.image)
     } catch {
         print("ERROR: \(token.image) is not a valid \"literal\"")
-        exit(4)
+        exit(8)
     }
     return GrammarNode(.TRM(type: name))
 }
@@ -216,7 +216,7 @@ func term() -> GrammarNode {
         expect([">"])
     default:
         expect(["identifier", "literal", "action", "(", "[", "{", "<"])
-        exit(3)
+        exit(7)
     }
     next()
     return node

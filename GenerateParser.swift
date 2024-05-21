@@ -23,29 +23,20 @@ func generateParser() {
     var input = ""
     
     typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
+    
     //: start of generated code
     """#
     emit(template)
     
     // TODO: check escapes etc.
     emit(dent: .NR, "let tokenPatterns: [String:TokenPattern] = [")
-    for (kind, pattern) in terminals {
+    for (kind, pattern) in terminals.sorted(by: { !$0.value.isKeyword && $1.value.isKeyword } ) {
         if pattern.isKeyword {
-            emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, ",\tRegex { \"", pattern.regex, "\" },\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
+            emit("\"", kind, "\":\t(", pattern.source, ",\tRegex { ", pattern.source, " },\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
         } else {
-            emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, ",\t", pattern.regex, ",\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
+            emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, "\",\t", pattern.source, ",\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
         }
     }
-//    let sortedTerminals = term inals
-//        .sorted { $0.key.count > $1.key.count
-//            || $0.key.count == $1.key.count && $0.key < $1.key }
-//    for n in sortedTerminals {
-//        if n.value.isKeyword {
-//            emit("\"", n.key.escapesAdded, "\":\t(\"", n.value.pattern.escapesAdded, "\",\t", n.value.regex, ",\t", n.value.isSkip, "),")
-//        } else {
-//            emit("\"", n.key.escapesAdded, "\":\t(#\"", n.value.pattern, "\"#,\t", n.value.regex, ",\t", n.value.isSkip, "),")
-//        }
-//    }
     emit(dent: .LN, "]")
     
     for (var name, node) in nonTerminals {
@@ -61,7 +52,7 @@ func generateParser() {
         try parserContent.write(to: parserFileURL, atomically: true, encoding: .utf8)
     } catch {
         print("error: could not write to \(parserFileURL.absoluteString)")
-        exit(1)
+        exit(5)
     }
 }
 
@@ -107,10 +98,10 @@ func generate(_ node: GrammarNode) {
     }
 }
 
-var indentation = 0
 // IndentMode specifies the increase or decrease of indentation before and after emitting the items
 enum IndentMode { case NN, LN, NR, LR, RL }
 
+var indentation = 0
 func emit(dent: IndentMode = .NN, _ items: Any..., terminator: String = "\n") {
     switch dent {
     case .NN: break
