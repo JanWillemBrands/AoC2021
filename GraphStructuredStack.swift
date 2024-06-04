@@ -97,7 +97,7 @@ func pop() {
 }
 
 func addDescriptor(slot: GrammarNode, stack: Vertex, index: Int) {
-    if stack.unique.insert(SlotIndex(slot: slot, index: index)).inserted {
+    if index < tokens.count && stack.unique.insert(SlotIndex(slot: slot, index: index)).inserted {
         remainder.append(Descriptor(slot: slot, stack: stack, index: index))
         trace("add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index))")
         addedDescriptors += 1

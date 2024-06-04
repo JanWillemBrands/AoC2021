@@ -10,12 +10,12 @@
 		4E333D712629D60000640821 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D632629D5E400640821 /* main.swift */; };
 		4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */; };
 		4E333D752629D60A00640821 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D672629D5E400640821 /* StringExtensions.swift */; };
+		4E34DF7D2C0354E400B2881E /* ART.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE422A22BFB319500D99368 /* ART.swift */; };
 		4EB4DE422B91CDDA00BA9A88 /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */; };
 		4EB4DE462B91D30600BA9A88 /* ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE452B91D30600BA9A88 /* ApusParser.swift */; };
 		4EB4DE482B91D3C400BA9A88 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE472B91D3C400BA9A88 /* GenerateParser.swift */; };
 		4EB4DE4A2B91D81C00BA9A88 /* GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE492B91D81C00BA9A88 /* GenerateDiagrams.swift */; };
 		4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */; };
-		4EE422A32BFB319500D99368 /* ART.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE422A22BFB319500D99368 /* ART.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -39,6 +39,9 @@
 		4E333D6A2629D5E500640821 /* test.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = test.apus; sourceTree = "<group>"; };
 		4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphStructuredStack.swift; sourceTree = "<group>"; };
 		4E333D6C2629D5E500640821 /* apusNoAction.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusNoAction.apus; sourceTree = "<group>"; };
+		4E34DF7E2C08042C00B2881E /* apusNoActionKLN.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusNoActionKLN.txt; sourceTree = "<group>"; };
+		4E34DF7F2C08A1C400B2881E /* ART.gv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
+		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
 		4E450E682BE8007F0077E275 /* playground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = playground.swift; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
 		4EA293992BAACF9A0014546F /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
@@ -70,16 +73,19 @@
 		CB6B730C257EA9F400B929C6 = {
 			isa = PBXGroup;
 			children = (
-				4EE422A22BFB319500D99368 /* ART.swift */,
 				4E333D622629D5E400640821 /* apus.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
 				4E333D6C2629D5E500640821 /* apusNoAction.apus */,
 				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
 				4E333D692629D5E500640821 /* TortureSyntax.apus */,
-				4EC9D6F42B977927002BA303 /* postRunActions.log */,
+				4E34DF7F2C08A1C400B2881E /* ART.gv */,
 				4ECF78982BF8C3CE00B9F1F4 /* diagram.gv */,
+				4EC9D6F42B977927002BA303 /* postRunActions.log */,
+				4E34DF802C08A71000B2881E /* ART.svg */,
 				4EBBDFF52B935BB90049A17F /* diagram.svg */,
+				4EB4DE452B91D30600BA9A88 /* ApusParser.swift */,
+				4EE422A22BFB319500D99368 /* ART.swift */,
 				4EB4DE492B91D81C00BA9A88 /* GenerateDiagrams.swift */,
 				4EB4DE472B91D3C400BA9A88 /* GenerateParser.swift */,
 				4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */,
@@ -87,10 +93,10 @@
 				4E333D632629D5E400640821 /* main.swift */,
 				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
 				4E333D642629D5E400640821 /* output.swift */,
-				4EB4DE452B91D30600BA9A88 /* ApusParser.swift */,
 				4E450E682BE8007F0077E275 /* playground.swift */,
 				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
 				4E333D672629D5E400640821 /* StringExtensions.swift */,
+				4E34DF7E2C08042C00B2881E /* apusNoActionKLN.txt */,
 				4EA8E8272B9B47F0002A5C51 /* Empty.txt */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 			);
@@ -166,7 +172,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4EE422A32BFB319500D99368 /* ART.swift in Sources */,
+				4E34DF7D2C0354E400B2881E /* ART.swift in Sources */,
 				4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */,
 				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
 				4E333D712629D60000640821 /* main.swift in Sources */,

@@ -20,6 +20,9 @@ final class GrammarNode {
     
     init(_ kind: Kind) {
         self.kind = kind
+//        self.number = GrammarNode.count
+//        GrammarNode.count += 1
+//        print("created", kind, "nbr", number)
     }
     
     var first:      Set<String> = []
@@ -39,11 +42,12 @@ extension GrammarNode {
         } else if first.contains("") && follow.contains(token.kind) {
             return true
         } else {
-            var expected = first
-            if expected.remove("") == "" {
-                expected.formUnion(follow)
-            }
-            expect(expected)
+            // TODO: invent some error message relevant to GLL parsing
+//            var expected = first
+//            if expected.remove("") == "" {
+//                expected.formUnion(follow)
+//            }
+//            expect(expected)
             return false
         }
     }
@@ -152,16 +156,10 @@ extension GrammarNode {
 
 extension GrammarNode {
     final func detectAmbiguity() {
-        trace(kind)
-        traceIndent += 4
-        trace("first ", first.sorted())
-        trace("follow", follow.sorted())
-        traceIndent -= 4
-        
         traceIndent += 1
         
-        // manually assign the node number here so that the entire tree gets a top-down-left-to-right numbering sequence
-        self.number = GrammarNode.count
+        // manually assign the node number, so that the entire tree gets a top-down-left-to-right numbering sequence
+        number = GrammarNode.count
         GrammarNode.count += 1
         
         switch kind {
@@ -170,34 +168,40 @@ extension GrammarNode {
                 child.detectAmbiguity()
             }
         case .ALT(let children):
-            var occurance: [String:Int] = [:]
+            var occurances: [String:Int] = [:]
             for child in children {
-                for token in child.first {
-                    occurance[token] = (occurance[token] ?? 0) + 1
-                    child.detectAmbiguity()
+                child.detectAmbiguity()
+                for element in child.first {
+                    occurances[element, default: 0] += 1
                 }
             }
-            for key in occurance.keys where (occurance[key] ?? 0) > 1 {
-                ambiguous.insert(key)
+            for element in occurances.keys where occurances[element, default: 0] > 1 {
+                ambiguous.insert(element)
             }
         case .OPT(let child):
-            ambiguous = child.first.intersection(follow)
             child.detectAmbiguity()
+            ambiguous = child.first.intersection(follow)
         case .REP(let child):
-            ambiguous = child.first.intersection(follow)
             child.detectAmbiguity()
+            ambiguous = child.first.intersection(follow)
         case .NTR(_, _):
-            if first.contains("") {
-                ambiguous = first.intersection(follow)
-            }
-        case .TRM(_): break
+            break
+        case .TRM(_):
+            break
         }
         traceIndent -= 1
+        
+        trace(kind)
+        traceIndent += 4
+        trace("first    ", first.sorted())
+        trace("follow   ", follow.sorted())
+        trace("ambiguous", ambiguous.sorted())
+        traceIndent -= 4
         
         ambiguous.remove("")    // to handle both uses of "" in first (as ε, ϵ, epsilon) and in follow (as $, EOF)
         if !ambiguous.isEmpty {
             if isAmbiguous {
-                trace("^ ERROR: node is not LL1, ambiguous set:", ambiguous)
+                trace("^ error: node is not LL1, ambiguous set:", ambiguous)
                 exit(3)
             } else {
                 trace("^ warning: processing may be slower due to ambiguity of set:", ambiguous)

@@ -24,7 +24,7 @@ func initParser() {
 }
 
 func parseApusGrammar() {
-    trace("parseGrammar", token)
+    trace("parseApusGrammar", token)
     expect(["identifier", "message"])
     while token.kind == "identifier" {
         production()
@@ -49,7 +49,12 @@ func production() {
             terminalAlias = nil
             next()
         } else {
-            node = selection()
+            node = alternates()
+            if let existing = nonTerminals[nonTerminalName] {
+                nonTerminals[nonTerminalName] = GrammarNode(.ALT(children: [existing, node]))
+            } else {
+                nonTerminals[nonTerminalName] = node
+            }
         }
     } else {
         expect([":"])
@@ -66,11 +71,12 @@ func production() {
         terminalAlias = nil
         next()
     }
-    if let existing = nonTerminals[nonTerminalName] {
-        nonTerminals[nonTerminalName] = GrammarNode(.ALT(children: [existing, node]))
-    } else {
-        nonTerminals[nonTerminalName] = node
-    }
+    // TODO:  this causes the terminals to end up in the nonterminals
+//    if let existing = nonTerminals[nonTerminalName] {
+//        nonTerminals[nonTerminalName] = GrammarNode(.ALT(children: [existing, node]))
+//    } else {
+//        nonTerminals[nonTerminalName] = node
+//    }
     expect(["."])
     next()
 }
@@ -81,13 +87,13 @@ func message() {
     next()
 }
 
-func selection() -> GrammarNode {
-    trace("selection", token)
+func alternates() -> GrammarNode {
+    trace("alternates", token)
     var nodes: [GrammarNode] = []
-    nodes.append(factor())
+    nodes.append(sequence())
     while token.kind == "|" {
         next()
-        nodes.append(factor())
+        nodes.append(sequence())
     }
     if nodes.count == 1 {
         return nodes[0]
@@ -96,11 +102,11 @@ func selection() -> GrammarNode {
     }
 }
 
-func factor() -> GrammarNode {
-    trace("factor", token)
+func sequence() -> GrammarNode {
+    trace("sequence", token)
     var nodes: [GrammarNode] = []
     nodes.append(term())
-    while ["literal", "identifier", "action", "leftParenthesis", "[", "{", "<"].contains(token.kind) {
+    while ["literal", "identifier", "regex", "action", "(", "[", "{", "<"].contains(token.kind) {
         nodes.append(term())
     }
     if nodes.count == 1 {
@@ -111,7 +117,9 @@ func factor() -> GrammarNode {
 }
 
 func regex() -> GrammarNode {
-    let name = terminalAlias ?? String(token.image)
+    // TODO: insert lineposition name?
+    let name = terminalAlias ?? input.linePosition(of: token.range.lowerBound)
+//    let name = terminalAlias ?? String(token.image)
     if let definition = terminals[name] {
         if definition.isSkip != skip {
             print("warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
@@ -119,11 +127,10 @@ func regex() -> GrammarNode {
     }
     do {
         let r = try Regex<Substring>(String(token.stripped))
-        print("success", token.image)
         terminals[name] = (String(token.image), r, false, skip)
         trace("regex name:", name, "image", token.image)
     } catch {
-        print("ERROR: \(token.image) is not a valid /regex/")
+        print("error: \(token.image) is not a valid /regex/")
         exit(9)
     }
     return GrammarNode(.TRM(type: name))
@@ -138,42 +145,15 @@ func literal() -> GrammarNode {
     }
     do {
         let r = try Regex<Substring>(String(token.stripped))
-        print("success", token.image)
         terminals[name] = (String(token.image), r, true, skip)
         trace("literal name:", name, "image:", token.image)
     } catch {
-        print("ERROR: \(token.image) is not a valid \"literal\"")
+        print("error: \(token.image) is not a valid \"literal\"")
         exit(8)
     }
     return GrammarNode(.TRM(type: name))
 }
 
-//func regex() -> GrammarNode {
-//    let name = terminalAlias ?? String(token.image)
-//    if let definition = terminals[name] {
-//        if definition.muted != muted {
-//            print("warning: redefinition of \(name) as\(muted ? " " : " not ")muted")
-//        }
-//    }
-//    // TODO: add new regexes to the back of the terminal list
-//    terminals[name] = (token.stripped, true, muted)
-//    trace("regex name:", name, "guts:", token.stripped)
-//    return GrammarNode(.TRM(type: name))
-//}
-//
-//func literal() -> GrammarNode {
-//    let name = terminalAlias ?? token.stripped
-//    if let definition = terminals[name] {
-//        if definition.muted != muted {
-//            print("warning: redefinition of \(name) as\(muted ? " " : " not ")muted")
-//        }
-//    }
-//    // TODO: add new literals to the front of the terminal list
-//    terminals[name] = (token.stripped, false, muted)
-//    trace("literal name:", name, "guts:", token.stripped)
-//    return GrammarNode(.TRM(type: name))
-//}
-//
 func term() -> GrammarNode {
     trace("term", token)
     var node: GrammarNode
@@ -182,12 +162,15 @@ func term() -> GrammarNode {
         node = GrammarNode(.NTR(name: token.stripped))
     case "literal":
         node = literal()
+    case "regex":
+        // TODO: add support for anonymous regexes
+        node = regex()
     case "action":
         node = GrammarNode(.TRM(type: "action"))
         actionList[node] = token.stripped
     case "(":
         next()
-        node = selection()
+        node = alternates()
         switch token.kind {
         case ")": break
         case ")?":
@@ -202,22 +185,42 @@ func term() -> GrammarNode {
         }
     case "[":
         next()
-        node = GrammarNode(.OPT(child: selection()))
+        node = GrammarNode(.OPT(child: alternates()))
         expect(["]"])
     case "{":
         next()
-        node = GrammarNode(.REP(child: selection()))
+        node = GrammarNode(.REP(child: alternates()))
         expect(["}"])
     case "<":
         next()
-        node = selection()
+        node = alternates()
         let repetition = GrammarNode(.REP(child: node))
         node = GrammarNode(.SEQ(children: [node, repetition]))
         expect([">"])
     default:
-        expect(["identifier", "literal", "action", "(", "[", "{", "<"])
+        expect(["identifier", "literal", "regex", "action", "(", "[", "{", "<"])
         exit(7)
     }
     next()
     return node
 }
+
+func expect(_ expectedTokens: Set<String>) {
+    trace("expect '\(token.kind)' to be in", expectedTokens)
+    if !expectedTokens.contains(token.kind) {
+        print("error: found '\(token.kind)' but expected one of \(expectedTokens)")
+        print(token.image, token.image.endIndex > input.endIndex )
+        let lineRange = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
+        print(input[lineRange], terminator: "")
+        let before = lineRange.lowerBound ..< token.image.startIndex
+        for _ in 0 ..< input[before].count {
+            print("~", terminator: "")
+        }
+        for _ in 0 ..< token.image.count {
+            print("^", terminator: "")
+        }
+        print()
+        exit(10)
+    }
+}
+

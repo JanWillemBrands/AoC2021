@@ -1,11 +1,38 @@
 
+// the programmer name of each token kind in the apus language
+//let _fullStop = 0
+//let _semicolon = 1
+//let _colon = 2
+//let _equalsSign = 3
+//let _verticalLine = 4
+//let _leftParenthesis = 5
+//let _rightParenthesis = 6
+//let _leftSquareBracket = 7
+//let _rightSquareBracket = 8
+//let _leftCurlyBracket = 9
+//let _rightCurlyBracket = 10
+//let _lessThanSign = 11
+//let _greaterThanSign = 12
+//let _rightParenthesisQuestionMark = 13
+//let _rightParenthesisAsterisk = 14
+//let _rightParenthesisPlusSign = 15
+//let _whitespace = 16
+//let _linecomment = 17
+//let _blockcomment = 18
+//let _identifier = 19
+//let _literal = 20
+//let _regex = 21
+//let _action = 22
+//let _message = 23
+
+
 import Foundation
 import RegexBuilder
 
 enum TokenKind: Int, CustomStringConvertible, CaseIterable {
-    case fullStop, semicolon, colon, equalsSign, verticalLine, leftParenthesis, rightParenthesis, leftSquareBracket, rightSquareBracket, leftCurlyBracket, rightCurlyBracket, lessThanSign, greaterThanSign, rightParenthesisQuestionMark, rightParenthesisAsterisk, rightParenthesisPlusSign, whitespace, lineComment, blockComment, identifier, literal, regex, action, message
+    case fullStop, semicolon, colon, equalsSign, verticalLine, leftParenthesis, rightParenthesis, leftSquareBracket, rightSquareBracket, leftCurlyBracket, rightCurlyBracket, lessThanSign, greaterThanSign, rightParenthesisQuestionMark, rightParenthesisAsterisk, rightParenthesisPlusSign, whitespace, linecomment, blockcomment, identifier, literal, regex, action, message
     var description: String {
-        [".", ";", ":", "=", "|", "(", ")", "[", "]", "{", "}", "<", ">", ")?", ")*", ")+", "whitespace", "lineComment", "blockComment", "identifier", "literal", "regex", "action", "message"][self.rawValue]
+        [".", ";", ":", "=", "|", "(", ")", "[", "]", "{", "}", "<", ">", ")?", ")*", ")+", "whitespace", "linecomment", "blockcomment", "identifier", "literal", "regex", "action", "message"][self.rawValue]
     }
 }
 
@@ -37,13 +64,13 @@ let whitespaceRegex = Regex {
         .whitespace
     }
 }
-let lineCommentRegex = Regex {
+let linecommentRegex = Regex {
     "//"
     ZeroOrMore {
         .anyNonNewline
     }
 }
-let blockCommentRegex = Regex {
+let blockcommentRegex = Regex {
     "/*"
     ZeroOrMore(.reluctant) {
         .any
@@ -125,8 +152,8 @@ let tokenRegexes: [TokenRegex] = [
     (.rightParenthesisAsterisk,     Regex { ")*" } ),
     (.rightParenthesisPlusSign,     Regex { ")+" } ),
     (.whitespace,                   /\s+/ ),
-    (.lineComment,                  /\/\/.*/ ),
-    (.blockComment,                 /\/\*(?s).*?\*\// ),
+    (.linecomment,                  /\/\/.*/ ),
+    (.blockcomment,                 /\/\*(?s).*?\*\// ),
     (.identifier,                   /\p{XID_Start}\p{XID_Continue}*/ ),
     (.literal,                      /\"(?:[^\"\\]|\\.)*\"/ ),
     (.regex,                        /\/(?:[^\/\\]|\\.)*\// ),
@@ -156,7 +183,7 @@ func scanTokens() {
             tokens.append(token)
             matchStart = matchEnd
         } else {
-            print("ERROR")
+            print("error")
             matchStart = text.endIndex
         }
     }

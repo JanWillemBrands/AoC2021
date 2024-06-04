@@ -1,79 +1,57 @@
 digraph G {
   fontname = Menlo
   fontsize = 10
-  node [fontname = Menlo, fontsize = 10]
-  edge [fontname = Menlo, fontsize = 10]
+      node [fontname = Menlo, fontsize = 10, color = gray]
+      edge [fontname = Menlo, fontsize = 10, color = gray, arrowsize = 0.5]
+
   graph [ordering = out]
   subgraph GSS {
     cluster = true
-    label = <abc↵> fontcolor = green
+    label = <↵ad↵> fontcolor = red
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    J0 [label = <J0<br/><font color="gray" point-size="8.0"> 0, 4</font>>]
-    J0 -> B0
-    I0 [label = <I0<br/><font color="gray" point-size="8.0"> 2</font>>]
-    I0 -> J0
-    H0 [label = <H0<br/><font color="gray" point-size="8.0"> 1</font>>]
-    H0 -> I0
-    G0 [label = <G0<br/><font color="gray" point-size="8.0"> 0, 4</font>>]
-    G0 -> B0
-    F0 [label = <F0<br/><font color="gray" point-size="8.0"> 0, 4</font>>]
-    F0 -> B0
-    E0 [label = <E0<br/><font color="gray" point-size="8.0"> 2</font>>]
-    E0 -> F0
-    D0 [label = <D0<br/><font color="gray" point-size="8.0"> 1</font>>]
-    D0 -> E0
-    C0 [label = <C0<br/><font color="gray" point-size="8.0"> 0, 4</font>>]
-    C0 -> B0
-    A1 [label = <A1<br/><font color="gray" point-size="8.0"> 2</font>>]
-    A1 -> F0
-    A1 [label = <A1<br/><font color="gray" point-size="8.0"> 2</font>>]
-    A1 -> J0
-  }
-  subgraph B {
-    cluster = true
-    label = <B = "b">
-    labeljust = l
-    node [shape = ellipse, height = 0]
-    A [label = <A: "b"<br/><font color="gray" point-size="8.0"> 1:1:2</font>>]
+    H1 [label = <H1<br/><font color="gray" point-size="8.0"> 4</font>>]
+    H1 -> A1
+    D1 [label = <D1<br/><font color="gray" point-size="8.0"> 2</font>>]
+    D1 -> H1
+    C1 [label = <C1<br/><font color="gray" point-size="8.0"> 2</font>>]
+    C1 -> D1
+    B1 [label = <B1<br/><font color="gray" point-size="8.0"> 4</font>>]
+    B1 -> A1
   }
   subgraph S {
     cluster = true
-    label = <S = "a" B "c" | "a" B "c">
+    label = <S = "a" [ "b" | "c" ] "d" | "k" [ "l" | "m" ] "n">
     labeljust = l
     node [shape = ellipse, height = 0]
-    B [label = <B: ALT<br/><font color="gray" point-size="8.0"> </font>>]
+    A [label = <A: ALT<br/><font color="gray" point-size="8.0"> </font>>]
+    A -> B
+    B [label = <B: SEQ<br/><font color="gray" point-size="8.0"> </font>>]
     B -> C
-    C [label = <C: SEQ<br/><font color="gray" point-size="8.0"> </font>>]
-    C -> D
-    D [label = <D: "a"<br/><font color="gray" point-size="8.0"> 0:0:1</font>>]
-    C -> E
-    E [label = <E: B<br/><font color="gray" point-size="8.0"> </font>>]
-    C -> F
-    F [label = <F: "c"<br/><font color="gray" point-size="8.0"> 2:2:3</font>>]
-    B -> G
-    G [label = <G: SEQ<br/><font color="gray" point-size="8.0"> </font>>]
-    G -> H
-    H [label = <H: "a"<br/><font color="gray" point-size="8.0"> 0:0:1</font>>]
-    G -> I
-    I [label = <I: B<br/><font color="gray" point-size="8.0"> </font>>]
-    G -> J
-    J [label = <J: "c"<br/><font color="gray" point-size="8.0"> 2:2:3</font>>]
+    C [label = <C: "a"<br/><font color="gray" point-size="8.0"> 1:1:2</font>>]
+    B -> D
+    D [label = <D: OPT<br/><font color="gray" point-size="8.0"> </font>>]
+    D -> E
+    E [label = <E: ALT<br/><font color="gray" point-size="8.0"> </font>>]
+    E -> F
+    F [label = <F: "b"<br/><font color="gray" point-size="8.0"> </font>>]
+    E -> G
+    G [label = <G: "c"<br/><font color="gray" point-size="8.0"> </font>>]
+    B -> H
+    H [label = <H: "d"<br/><font color="gray" point-size="8.0"> 2:2:3</font>>]
+    A -> I
+    I [label = <I: SEQ<br/><font color="gray" point-size="8.0"> </font>>]
+    I -> J
+    J [label = <J: "k"<br/><font color="gray" point-size="8.0"> </font>>]
+    I -> K
+    K [label = <K: OPT<br/><font color="gray" point-size="8.0"> </font>>]
+    K -> L
+    L [label = <L: ALT<br/><font color="gray" point-size="8.0"> </font>>]
+    L -> M
+    M [label = <M: "l"<br/><font color="gray" point-size="8.0"> </font>>]
+    L -> N
+    N [label = <N: "m"<br/><font color="gray" point-size="8.0"> </font>>]
+    I -> O
+    O [label = <O: "n"<br/><font color="gray" point-size="8.0"> </font>>]
   }
-  subgraph comment {
-    cluster = true
-    label = <comment = /\/\/.*/>
-    labeljust = l
-    node [shape = ellipse, height = 0]
-    K [label = <K: "comment"<br/><font color="gray" point-size="8.0"> </font>>]
-  }
-  subgraph whitespace {
-    cluster = true
-    label = <whitespace = /\s+/>
-    labeljust = l
-    node [shape = ellipse, height = 0]
-    L [label = <L: "whitespace"<br/><font color="gray" point-size="8.0"> </font>>]
-  }
-  E -> A [style = dotted, constraint = false]
-  I -> A [style = dotted, constraint = false]
 }

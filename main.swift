@@ -33,6 +33,28 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     
     parseApusGrammar()
     
+    // NEW ART
+    currentIndex = 0
+    print(token)
+    _initParser()
+    _parseApusGrammar()
+    trace("_terminals:")
+    for (name, tokenPattern) in _terminals {
+        trace("\t", name, "\t", tokenPattern.source)
+    }
+    
+    trace("_nonTerminals:")
+    for (name, node) in _nonTerminals {
+        trace("\t", name, "\t", node.kind)
+    }
+
+    for (name, node) in _nonTerminals {
+        trace("rule: \(name)")
+        node.dump()
+    }
+    _generateDiagrams()
+    // NEW ART
+
     trace("terminals:")
     for (name, tokenPattern) in terminals {
         trace("\t", name, "\t", tokenPattern.source)
@@ -77,7 +99,7 @@ enum ParseFailure: Error { case unexpectedToken, didNotReachEndOfInput }
 // this uses a handbuilt recursive descent parser
 let startSymbol = "S"
 guard let grammarRoot = parseGrammar(startSymbol: startSymbol) else {
-    print("ERROR: Start Symbol '\(startSymbol)' not found")
+    print("error: Start Symbol '\(startSymbol)' not found")
     exit(1)
 }
 
@@ -95,7 +117,7 @@ var successfullParses = 0
 var addedDescriptors = 0
 
 for m in messages {
-    trace = false
+    trace = true
     initScanner(fromString: m, patterns: terminals)
     // TODO: reset parser after every message     grammarRoot.resetParseResults()
     // TODO: set startSymbol depending on the message
@@ -118,6 +140,9 @@ generateParser()
 
 trace = false
 generateDiagrams()
+//NEW ART
+//_generateDiagrams()
+//NEW ART
 
 func parseMessage() {
     
@@ -139,7 +164,7 @@ func parseMessage() {
                 throw ParseFailure.unexpectedToken
             }
             
-            // switch to .LL1 mode if only one path is possible
+            // switch to .LL1 mode if only one single path is possible
             isAmbiguous = currentSlot.ambiguous.contains(token.kind)
             
             switch currentSlot.kind {

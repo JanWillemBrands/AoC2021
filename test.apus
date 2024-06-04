@@ -28,6 +28,9 @@ comment    : /\/\/.*/.
 //S = "a" "b".                  // PASS c
 //S = "a" "".                   // PASS c
 
+//S = "a" /u+/ "b".             // pass auuub
+//S = /u+/ "b".                 // fail uuub (first regex in production means "named regex"")
+
 //S = ["x"].                    // PASS c
 //S = "x" | "".                 // PASS but on ""   matched: 2   failed: 0   gss size: 2
 //S = ["x"] "a".                // PASS
@@ -83,5 +86,11 @@ comment    : /\/\/.*/.
 //S = ( ( ( "a" ) "a" ) "a" ) "a".    // the ebnf reconstruction eliminates the intermediate SEQ nodes
 
 //S = {"x"}{"x"}.
-S = "a" B "c" | "a" B "c". B = "b".
-¶abc
+//S = "a" B "c" | "a" B "c". B = "b".
+//S = "x" | S S | S S S.          // torture from ART
+//S = "x" | { "x" "x" } | { "x" "x" "x" }.
+//S = A "b" | A "c". A = ["a"].
+S = "a" [ "b" | "c" ] "d" . S = "k" [ "l" | "m" ] "n".
+//S = A "b" | A "c". A = "a" | "".
+¶
+ad

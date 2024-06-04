@@ -1,6 +1,6 @@
-whitespace  : /\s+/ .
-singleLine  : /\/\/.*/ .
-multiLine   : /\/\*(?s).*?\*\// .
+whitespace   : /\s+/ .
+linecomment  : /\/\/.*/ .
+blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{ID_Start}\p{ID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
@@ -8,20 +8,16 @@ regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
 message     = /¶(?:[^¶\\]|\\.)*/ .
 
-S     = { production } { message } .
+S           = { rule } { message } .
               
-production  = identifier ( ":" | "=" ) alternates "." .
+rule        = identifier ( ":" | "=" ) alternates "." .
 alternates  = sequence { "|" sequence } .
-sequence    = term { term } .
+sequence    = < term [ "?" | "*" | "+" ] > .
 term        = terminal
             | "[" selection "]"
             | "{" selection "}"
             | "<" selection ">"
-            | "(" selection ( ")"
-                            | ")?"
-                            | ")*"
-                            | ")+"
-                            ) .
+            | "(" selection ")" .
 terminal    = identifier | literal | regex | action .
 
 ¶

@@ -10,8 +10,7 @@ import Foundation
 extension String {
     
     var escapesAdded: String {
-        self
-            .unicodeScalars
+        self.unicodeScalars
             .reduce("") { $0 + $1.escaped(asASCII: false)}
     }
     

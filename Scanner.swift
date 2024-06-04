@@ -87,8 +87,7 @@ func scanTokens() {
             tokens.append(token)
             matchStart = matchEnd
         } else {
-            print("ERROR illegal characters", input[matchStart...])
-            matchStart = input.endIndex
+            scanError(position: matchStart)
         }
     }
 }
@@ -101,7 +100,7 @@ func next() {
     if currentIndex >= tokens.count {
         print("end of file reached")
     } else {
-        print("next", token.image, token.kind)
+        trace("next", token.image, token.kind)
     }
 }
 
@@ -146,34 +145,16 @@ func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
 
 // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern
 
-func expect(_ expectedTokens: Set<String>) {
-    trace("expect '\(token.kind)' to be in", expectedTokens)
-    if !expectedTokens.contains(token.kind) {
-        print("error: found '\(token.kind)' but expected one of \(expectedTokens)")
-        print(token.image, token.image.endIndex > input.endIndex )
-        let lineRange = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
-        print(input[lineRange], terminator: "")
-        let before = lineRange.lowerBound ..< token.image.startIndex
-        for _ in 0 ..< input[before].count {
-            print("~", terminator: "")
-        }
-        for _ in 0 ..< token.image.count {
-            print("^", terminator: "")
-        }
-        print()
-        exit(10)
-    }
-}
-
-func reportError(range: Range<String.Index>) {
-    print("error: input does not match any symbol in the grammar")
-    let lineRange = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
-    print(String(input[lineRange]).escapesAdded)
-    let before = lineRange.lowerBound ..< token.image.startIndex
+func scanError(position: String.Index) {
+    print("error: input characters do not match any symbol in the grammar")
+    let lineRange = input.lineRange(for: position ..< input.index(after: position))
+    print(input[lineRange], terminator: "")
+    let before = lineRange.lowerBound ..< position
     for _ in 0 ..< input[before].count {
         print(" ", terminator: "")
     }
     print("^~~~~~~~")
+    exit(11)
 }
 
 
@@ -251,31 +232,3 @@ let messageRegex = Regex {
         }
     }
 }
-
-// the programmer name of each token kind in the apus language
-//let _fullStop = 0
-//let _semicolon = 1
-//let _colon = 2
-//let _equalsSign = 3
-//let _verticalLine = 4
-//let _leftParenthesis = 5
-//let _rightParenthesis = 6
-//let _leftSquareBracket = 7
-//let _rightSquareBracket = 8
-//let _leftCurlyBracket = 9
-//let _rightCurlyBracket = 10
-//let _lessThanSign = 11
-//let _greaterThanSign = 12
-//let _rightParenthesisQuestionMark = 13
-//let _rightParenthesisAsterisk = 14
-//let _rightParenthesisPlusSign = 15
-//let _whitespace = 16
-//let _linecomment = 17
-//let _blockcomment = 18
-//let _identifier = 19
-//let _literal = 20
-//let _regex = 21
-//let _action = 22
-//let _message = 23
-
-
