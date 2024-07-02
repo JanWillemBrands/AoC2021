@@ -5,51 +5,24 @@ digraph G {
   edge [fontname = Menlo, fontsize = 10, color = gray, arrowsize = 0.3]
   graph [ordering = out, ranksep = 0.2]
   rankdir = "TB"
+  subgraph clusterS {
     node [shape = box]
-    label = <S = a [ b | c ] d | k [ l | m ] n .>
-    13 [label = <13<br/><font color="gray" point-size="8.0"> N S</font>>]
-    13 -> 2 {rank = same; 13; 2;}
-    2 [label = <2<br/><font color="gray" point-size="8.0"> ALT </font>>]
-    2 -> 14 {rank = same; 2; 14;}
-    14 [label = <14<br/><font color="gray" point-size="8.0"> ALT </font>>]
-    14 -> 15
-    15 [label = <15<br/><font color="gray" point-size="8.0"> T k</font>>]
-    15 -> 22
-    22 [label = <22<br/><font color="gray" point-size="8.0"> OPT </font>>]
-    22 -> 16 {rank = same; 22; 16;}
-    16 [label = <16<br/><font color="gray" point-size="8.0"> ALT </font>>]
-    16 -> 19 {rank = same; 16; 19;}
-    19 [label = <19<br/><font color="gray" point-size="8.0"> ALT </font>>]
-    19 -> 20
-    20 [label = <20<br/><font color="gray" point-size="8.0"> T m</font>>]
-    20 -> 21
-    21 [label = <21<br/><font color="gray" point-size="8.0"> END </font>>]
-    16 -> 17
-    17 [label = <17<br/><font color="gray" point-size="8.0"> T l</font>>]
-    17 -> 18
-    18 [label = <18<br/><font color="gray" point-size="8.0"> END </font>>]
-    22 -> 23
-    23 [label = <23<br/><font color="gray" point-size="8.0"> T n</font>>]
-    23 -> 24
-    24 [label = <24<br/><font color="gray" point-size="8.0"> END </font>>]
-    2 -> 3
-    3 [label = <3<br/><font color="gray" point-size="8.0"> T a</font>>]
-    3 -> 10
-    10 [label = <10<br/><font color="gray" point-size="8.0"> OPT </font>>]
-    10 -> 4 {rank = same; 10; 4;}
-    4 [label = <4<br/><font color="gray" point-size="8.0"> ALT </font>>]
-    4 -> 7 {rank = same; 4; 7;}
-    7 [label = <7<br/><font color="gray" point-size="8.0"> ALT </font>>]
-    7 -> 8
-    8 [label = <8<br/><font color="gray" point-size="8.0"> T c</font>>]
-    8 -> 9
-    9 [label = <9<br/><font color="gray" point-size="8.0"> END </font>>]
-    4 -> 5
-    5 [label = <5<br/><font color="gray" point-size="8.0"> T b</font>>]
-    5 -> 6
-    6 [label = <6<br/><font color="gray" point-size="8.0"> END </font>>]
-    10 -> 11
-    11 [label = <11<br/><font color="gray" point-size="8.0"> T d</font>>]
-    11 -> 12
-    12 [label = <12<br/><font color="gray" point-size="8.0"> END </font>>]
+    label = <S = [ "x" ] .>
+    labeljust = l
+    8 [label = <8<br/>N S<br/>fi ["", "x"]<br/>fo [""]>]
+    8 -> 2 {rank = same; 8; 2;}
+    2 [label = <2<br/>ALT <br/>fi ["", "x"]<br/>fo [""]>]
+    2 -> 6 [weight=100]
+    6 [label = <6<br/>OPT <br/>fi ["", "x"]<br/>fo [""]>]
+    6 -> 3 {rank = same; 6; 3;}
+    3 [label = <3<br/>ALT <br/>fi ["x"]<br/>fo [""]>]
+    3 -> 4 [weight=100]
+    4 [label = <4<br/>T "x"<br/>fi ["x"]<br/>fo []>]
+    4 -> 5 [weight=100]
+    5 [label = <5<br/>END <br/>fi [""]<br/>fo []>]
+    6 -> 7 [weight=100]
+    7 [label = <7<br/>END <br/>fi [""]<br/>fo [""]>]
+  }
+  5:e -> 3 [style = dotted, constraint = false]
+  7:e -> 2 [style = dotted, constraint = false]
 }

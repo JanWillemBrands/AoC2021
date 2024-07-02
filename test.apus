@@ -90,7 +90,13 @@ comment    : /\/\/.*/.
 //S = "x" | S S | S S S.          // torture from ART
 //S = "x" | { "x" "x" } | { "x" "x" "x" }.
 //S = A "b" | A "c". A = ["a"].
-S = "a" [ "b" | "c" ] "d" . S = "k" [ "l" | "m" ] "n".
+//S = "a" [ "b" | "c" ] "d" . S = "k" [ "l" | "m" ] "n".
 //S = A "b" | A "c". A = "a" | "".
+//S = A "b" | A "c".  A = "a".
+//S = ["a"] ["b"] ["c"].
+//S = A B C. A = ["a"]. B = ["b"]. C = ["c"].
+//S = "" "" "a".
+//S = S "x" | "".
+S = ["x"].
 ¶
-ad
+x

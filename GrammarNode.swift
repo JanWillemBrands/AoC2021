@@ -96,7 +96,7 @@ extension GrammarNode: CustomStringConvertible {
 }
 
 extension GrammarNode {
-    final func populateFirstFollowSets() -> Int {
+    func populateFirstFollowSets() -> Int {
         var sizeofSets = 0
         
         switch kind {
@@ -107,13 +107,13 @@ extension GrammarNode {
                 sizeofSets += child.populateFirstFollowSets()
                 f = child.first
                 if f.contains("") {
-                    f.subtract([""])
+                    f.remove("")
                     f.formUnion(child.follow)
                 }
             }
             first = children.first!.first
             if first.contains("") {
-                first.subtract([""])
+                first.remove("")
                 first.formUnion(children.first!.follow)
             }
             
@@ -155,9 +155,17 @@ extension GrammarNode {
 }
 
 extension GrammarNode {
-    final func detectAmbiguity() {
+    func detectAmbiguity() {
         traceIndent += 1
+ 
+        trace(kind)
+        traceIndent += 4
+        trace("first    ", first.sorted())
+        trace("follow   ", follow.sorted())
+        trace("ambiguous", ambiguous.sorted())
+        traceIndent -= 4
         
+
         // manually assign the node number, so that the entire tree gets a top-down-left-to-right numbering sequence
         number = GrammarNode.count
         GrammarNode.count += 1
@@ -190,13 +198,6 @@ extension GrammarNode {
             break
         }
         traceIndent -= 1
-        
-        trace(kind)
-        traceIndent += 4
-        trace("first    ", first.sorted())
-        trace("follow   ", follow.sorted())
-        trace("ambiguous", ambiguous.sorted())
-        traceIndent -= 4
         
         ambiguous.remove("")    // to handle both uses of "" in first (as ε, ϵ, epsilon) and in follow (as $, EOF)
         if !ambiguous.isEmpty {

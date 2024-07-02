@@ -7,51 +7,17 @@ digraph G {
   graph [ordering = out]
   subgraph GSS {
     cluster = true
-    label = <↵ad↵> fontcolor = red
+    label = <↵x↵> fontcolor = red
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    H1 [label = <H1<br/><font color="gray" point-size="8.0"> 4</font>>]
-    H1 -> A1
-    D1 [label = <D1<br/><font color="gray" point-size="8.0"> 2</font>>]
-    D1 -> H1
-    C1 [label = <C1<br/><font color="gray" point-size="8.0"> 2</font>>]
-    C1 -> D1
-    B1 [label = <B1<br/><font color="gray" point-size="8.0"> 4</font>>]
-    B1 -> A1
   }
   subgraph S {
     cluster = true
-    label = <S = "a" [ "b" | "c" ] "d" | "k" [ "l" | "m" ] "n">
+    label = <S = [ "x" ]>
     labeljust = l
     node [shape = ellipse, height = 0]
-    A [label = <A: ALT<br/><font color="gray" point-size="8.0"> </font>>]
+    A [label = <A: OPT<br/><font color="gray" point-size="8.0"> </font>>]
     A -> B
-    B [label = <B: SEQ<br/><font color="gray" point-size="8.0"> </font>>]
-    B -> C
-    C [label = <C: "a"<br/><font color="gray" point-size="8.0"> 1:1:2</font>>]
-    B -> D
-    D [label = <D: OPT<br/><font color="gray" point-size="8.0"> </font>>]
-    D -> E
-    E [label = <E: ALT<br/><font color="gray" point-size="8.0"> </font>>]
-    E -> F
-    F [label = <F: "b"<br/><font color="gray" point-size="8.0"> </font>>]
-    E -> G
-    G [label = <G: "c"<br/><font color="gray" point-size="8.0"> </font>>]
-    B -> H
-    H [label = <H: "d"<br/><font color="gray" point-size="8.0"> 2:2:3</font>>]
-    A -> I
-    I [label = <I: SEQ<br/><font color="gray" point-size="8.0"> </font>>]
-    I -> J
-    J [label = <J: "k"<br/><font color="gray" point-size="8.0"> </font>>]
-    I -> K
-    K [label = <K: OPT<br/><font color="gray" point-size="8.0"> </font>>]
-    K -> L
-    L [label = <L: ALT<br/><font color="gray" point-size="8.0"> </font>>]
-    L -> M
-    M [label = <M: "l"<br/><font color="gray" point-size="8.0"> </font>>]
-    L -> N
-    N [label = <N: "m"<br/><font color="gray" point-size="8.0"> </font>>]
-    I -> O
-    O [label = <O: "n"<br/><font color="gray" point-size="8.0"> </font>>]
+    B [label = <B: "x"<br/><font color="gray" point-size="8.0"> 1:1:2</font>>]
   }
 }

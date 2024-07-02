@@ -11,6 +11,7 @@
 		4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */; };
 		4E333D752629D60A00640821 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D672629D5E400640821 /* StringExtensions.swift */; };
 		4E34DF7D2C0354E400B2881E /* ART.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE422A22BFB319500D99368 /* ART.swift */; };
+		4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E94E9942C2913F600746EB7 /* SymbolTable.swift */; };
 		4EB4DE422B91CDDA00BA9A88 /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */; };
 		4EB4DE462B91D30600BA9A88 /* ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE452B91D30600BA9A88 /* ApusParser.swift */; };
 		4EB4DE482B91D3C400BA9A88 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE472B91D3C400BA9A88 /* GenerateParser.swift */; };
@@ -44,6 +45,7 @@
 		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
 		4E450E682BE8007F0077E275 /* playground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = playground.swift; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
+		4E94E9942C2913F600746EB7 /* SymbolTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolTable.swift; sourceTree = "<group>"; };
 		4EA293992BAACF9A0014546F /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
 		4EA8E8272B9B47F0002A5C51 /* Empty.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Empty.txt; sourceTree = "<group>"; };
 		4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
@@ -88,6 +90,7 @@
 				4EE422A22BFB319500D99368 /* ART.swift */,
 				4EB4DE492B91D81C00BA9A88 /* GenerateDiagrams.swift */,
 				4EB4DE472B91D3C400BA9A88 /* GenerateParser.swift */,
+				4E94E9942C2913F600746EB7 /* SymbolTable.swift */,
 				4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */,
 				4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */,
 				4E333D632629D5E400640821 /* main.swift */,
@@ -174,6 +177,7 @@
 			files = (
 				4E34DF7D2C0354E400B2881E /* ART.swift in Sources */,
 				4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */,
+				4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */,
 				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
 				4E333D712629D60000640821 /* main.swift in Sources */,
 				4EB4DE422B91CDDA00BA9A88 /* GrammarNode.swift in Sources */,

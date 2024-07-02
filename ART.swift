@@ -7,23 +7,60 @@
 
 import Foundation
 
-final class GNode: Hashable {
-    let ni: Int
+//enum GKind { case EOS, T, EPS, N, ALT, END }
+enum GKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
+
+final class GNode {
     let kind: GKind
     let str: String
-    var alt, seq: GNode?
-    
-    static var gCount = 0
-    
+    var alt: GNode? {
+        didSet {
+            assert(alt?.kind == .ALT, "alt should point to .ALT node")
+        }
+    }
+    var seq: GNode?
+    {
+       didSet {
+           assert(seq?.kind != .ALT, "seq should never point to .ALT node")
+       }
+   }
     init(kind: GKind, str: String, alt: GNode? = nil, seq: GNode? = nil) {
-        self.ni = GNode.gCount
-        GNode.gCount += 1
+        self.number = GNode.count
+        GNode.count += 1
         self.kind = kind
         self.str = str
         self.alt = alt
         self.seq = seq
     }
     
+    var first:      Set<String> = []
+    var follow:     Set<String> = []
+    var ambiguous:  Set<String> = []
+    static var sizeofSets = 0
+
+    static var count = 0
+    let number: Int
+}
+
+extension GNode {
+    func isExpecting(_ token: Token) -> Bool {
+        if first.contains(token.kind) {
+            return true
+        } else if first.contains("") && follow.contains(token.kind) {
+            return true
+        } else {
+            // TODO: invent some error message relevant to GLL parsing
+            //            var expected = first
+            //            if expected.remove("") == "" {
+            //                expected.formUnion(follow)
+            //            }
+            //            expect(expected)
+            return false
+        }
+    }
+}
+
+extension GNode: Hashable {
     static func == (lhs: GNode, rhs: GNode) -> Bool {
         ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
     }
@@ -32,27 +69,175 @@ final class GNode: Hashable {
     }
 }
 
-var indent = 0
-func tab() { for _ in 0..<indent { print(" ", terminator: "")}}
+extension GNode: CustomStringConvertible {
+    // generate labels like A, B, C, ... AA, AB, AC, ...
+    var description: String {
+        let latin = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        func toLatin(_ n: Int) -> String {
+            let letter = String(latin[n % 26])
+            if n < 26 {
+                return letter
+            } else {
+                return toLatin(n / 26 - 1) + letter
+            }
+        }
+        return toLatin(self.number)
+    }
+    
+    var description_: String {
+        let greek = Array("αβγδεζηθικλμνξοπρστυφχωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ")
+        func toGreek(_ n: Int) -> String {
+            let letter = String(greek[n % 24])
+            if n < 24 {
+                return letter
+            } else {
+                return toGreek(n / 24 - 1) + letter
+            }
+        }
+        return toGreek(self.number)
+    }
+    
+    var kindName: String {
+        "." + String(describing: self.kind).prefix(3)
+    }
+}
+
 extension GNode {
-    func dump() {
-        tab()
-        print(kind, str)
+    func __populateFirstFollowSets() {
+        switch kind {
+        case .EOS, .T, .TI, .C, .B:
+            first = [str]
+            handleSeq()
+        case .EPS:
+            first = [""]
+            handleSeq()
+        case .N:
+            handleNonTerminal()
+        case .ALT:
+            handleAlt()
+            print("ALT", number ,follow)
+        case .END:
+            // the first of an .END is the follow of the .ALT that started the sequence
+//            first = alt?.follow ?? []
+            // TODO: find out is this first hack is safe in all cases
+            first = [""]
+            // the follow of .END is the follow of the .ALT that started it
+            follow = alt?.follow ?? []
+            print("END", number, follow)
+        case .DO, .OPT, .POS, .KLN:
+            handleBrackets()
+        }
+        GNode.sizeofSets += first.count + follow.count
+    }
+    
+    private func handleSeq() {
+        if let seq {
+            seq.__populateFirstFollowSets()
+            updateFollow(with: seq)
+        }
+    }
+    
+    private func handleNonTerminal() {
+        // a rhs nonterminal instance is part of a sequence
+        if let seq {
+            // find the lhs nonterminal production rule that corresponds to this rhs nonterminal instance
+            if let production = _nonTerminals[str] {
+                // TODO: doublecheck if this .alt assignment is correct
+                alt = production.alt
+                // rhs first is first of lhs production rule
+                first = production.first
+                // TODO: doublecheck that this follow union is necessary (does a lhs nonterminal need a follow set?)
+//                 production.follow.formUnion(follow)
+            } else {
+                print("error: '\(str)' has not been defined as a grammar rule")
+                exit(4)
+            }
+            seq.__populateFirstFollowSets()
+            // follow set is just like for any terminal
+            updateFollow(with: seq)
+            
+            // a lhs nonterminal defines a production rule and is NOT part of a sequence
+        } else {
+            // the first set of a lhs nonterminal production rule is the union of first sets of all its .alt's
+            processAlternatives()
+            // the follow set of a lhs nonterminal production rule is [“”] if startsymbol, and [] otherwise.
+            // both have already been set before calling populateFirstFollowSets.
+        }
+    }
+    
+    private func handleAlt() {
+        if let seq {
+            seq.__populateFirstFollowSets()
+            first = seq.first
+            if first.contains("") {
+                first.remove("")
+                first.formUnion(seq.follow)
+            }
+        }
+    }
+    
+    private func handleBrackets() {
+        processAlternatives()
+        if kind == .OPT || kind == .KLN {
+            first.insert("")
+        }
+        if let seq {
+            seq.__populateFirstFollowSets()
+            updateFollow(with: seq)
+        }
+    }
+    
+    private func processAlternatives() {
+        // the first set of a lhs nonterminal production rule, or a bracketed expression, is the union of first sets of all its .alt's
+        var currentAlt = alt
+        while let altNode = currentAlt {
+            altNode.__populateFirstFollowSets()
+            first.formUnion(altNode.first)
+            altNode.follow = follow
+            currentAlt = altNode.alt
+        }
+    }
+
+    private func updateFollow(with node: GNode) {
+        follow = node.first
+        if follow.contains("") {
+            follow.remove("")
+            follow.formUnion(node.follow)
+        }
+    }
+}
+
+extension GNode {
+    func detectAmbiguity() {
+        
+        if kind == .N, seq == nil {
+            trace("_RULE:", str)
+        }
+        traceIndent += 2
+        trace(kind)
+        traceIndent += 2
+        trace("first    ", first.sorted())
+        trace("follow   ", follow.sorted())
+        trace("ambiguous", ambiguous.sorted())
+        traceIndent -= 4
+        
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
-            seq?.dump()
-        case .N, .ALT, .DO, .OPT, .POS, .KLN:
-            seq?.dump()
-            indent += 2
-            alt?.dump()
+            seq?.detectAmbiguity()
+        case .N:
+            if let seq { // rhs
+                seq.detectAmbiguity()
+            } else { // lhs
+                alt?.detectAmbiguity()
+            }
+        case .ALT, .DO, .OPT, .POS, .KLN:
+            seq?.detectAmbiguity()
+            alt?.detectAmbiguity()
         case .END:
             break
         }
     }
 }
-
-//enum GKind { case EOS, T, EPS, N, ALT, END }
-enum GKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
 var _skip = false
 
@@ -62,7 +247,7 @@ var _nonTerminals: [String:GNode] = [:]
 var _terminals: [String:TokenPattern] = [:]
 var _messages: [String] = []
 
-var rules: [GNode] = []
+//var rules: [GNode] = []
 
 func _initParser() {
     _terminals = [:]
@@ -124,16 +309,16 @@ func _production() {
         next()
     }
     // TODO: do we really want regex and literal terminals also listed as nonTerminals?
-//    if let existing = _nonTerminals[nonTerminalName] {
-//        // add this production to the end of the existing ALT list
-//        var current = existing
-//        while let next = current.alt {
-//            current = next
-//        }
-//        current.alt = node
-//    } else {
-//        _nonTerminals[nonTerminalName] = node
-//    }
+    //    if let existing = _nonTerminals[nonTerminalName] {
+    //        // add this production to the end of the existing ALT list
+    //        var current = existing
+    //        while let next = current.alt {
+    //            current = next
+    //        }
+    //        current.alt = node
+    //    } else {
+    //        _nonTerminals[nonTerminalName] = node
+    //    }
     expect(["."])
     next()
 }
@@ -174,8 +359,8 @@ func _regex() -> GNode {
     trace("regex", token)
     // TODO: insert lineposition name?
     let name = _terminalAlias ?? input.linePosition(of: token.range.lowerBound)
-
-//    let name = _terminalAlias ?? String(token.image)
+    
+    //    let name = _terminalAlias ?? String(token.image)
     if _terminals[name] != nil {
         print("warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
     }
@@ -260,7 +445,7 @@ func _generateDiagrams() {
         .deletingLastPathComponent()
         .appendingPathComponent("ART")
         .appendingPathExtension("gv")
-
+    
     var d = #"""
         digraph G {
           fontname = Menlo
@@ -272,14 +457,21 @@ func _generateDiagrams() {
         """#
     
     var crosslinks: [(from: GNode, to: GNode)] = []
-
+    
     func draw(node: GNode) {
-        d.append("\n    \(node.ni) [label = <\(node.ni)<br/><font color=\"gray\" point-size=\"8.0\"> \(node.kind) \(node.str)</font>>]")
+        var str = node.str
+        if node.kind == .T {
+            str = "\"" + str + "\""
+        }
+//        d.append("\n    \(node.number) [label = <\(node.number)<br/><font color=\"gray\" point-size=\"8.0\"> \(node.kind) \(str)</font>>]")
+        d.append("\n    \(node.number) [label = <\(node.number)<br/>\(node.kind) \(str)<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())>]")
         if let alt = node.alt {
             if node.kind == .END {
                 crosslinks.append((from: node, to: alt))
+            } else if node.kind == .N && node.seq != nil { // rhs nonterminal
+                crosslinks.append((from: node, to: alt))
             } else {
-                d.append("\n    \(node.ni) -> \(alt.ni) {rank = same; \(node.ni); \(alt.ni);}")
+                d.append("\n    \(node.number) -> \(alt.number) {rank = same; \(node.number); \(alt.number);}")
                 draw(node: alt)
             }
         }
@@ -287,22 +479,25 @@ func _generateDiagrams() {
             if node.kind == .END {
                 crosslinks.append((from: node, to: seq))
             } else {
-                d.append("\n    \(node.ni) -> \(seq.ni)")
+                d.append("\n    \(node.number) -> \(seq.number) [weight=100]")
                 draw(node: seq)
             }
         }
     }
-
+    
     for (name, node) in _nonTerminals {
+        d.append("\n  subgraph cluster\(name) {")
+//        d.append("\n    cluster = true")
         d.append("\n    node [shape = box]")
-//        d.append("\n    label = \(name)")
-        d.append("\n    label = <\(name) =\(node.alt!.ebnf().graphvizHTML).>")
+        d.append("\n    label = <\(node.ebnf().graphvizHTML)>")
+        d.append("\n    labeljust = l")
         draw(node: node)
+        d.append("\n  }")
     }
     
-//    for (from, to) in crosslinks {
-//        d.append("\n  \(from.ni):e -> \(to.ni):e [style = dotted, constraint = false]")
-//    }
+    for (from, to) in crosslinks {
+        d.append("\n  \(from.number):e -> \(to.number) [style = dotted, constraint = false]")
+    }
     
     d.append("\n}")
     
@@ -320,8 +515,8 @@ func _generateDiagrams() {
 //enum SwiftKind { case endOfString, terminal, epsilon, nonterminal, alternate, end, one, zeroOrOne, oneOrMore, zeroOrMore}
 /*
  EOS    end of string ("$")
- T      terminal (singleton case sensitive)
- TI     terminal (singleton case insensitive
+ T      terminal (singleton, case sensitive)
+ TI     terminal (singleton, case insensitive
  C      terminal character
  B      terminal builtin (whitespace, comment, etc)
  EPS    empty string ("#")
@@ -333,9 +528,9 @@ func _generateDiagrams() {
  POS    one or more <>
  KLN    zero or more (Kleene) {}
  
- END.seq references start of this production
- END.alt references start of alternate
- Extends naturally to EBNF brackets if END.alt references the enclosing bracket
+ END.seq references start of production 'N'
+ END.alt references start of alternate 'ALT'
+ Extends naturally to EBNF brackets if END.alt references the enclosing bracket 'DO', 'OPT', 'POS', or 'KLN'
  */
 
 extension GNode {
@@ -343,42 +538,39 @@ extension GNode {
         var s = ""
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
-            s.append(str)
+            s += "\"" + str + "\" "
+            if let seq { s += seq.ebnf() }
             // TODO: fix a better string for terminals
-//            if let t = _terminals[kind] {
-//                s.append(t.source)
-//            }
+            //            if let t = _terminals[kind] {
+            //                s.append(t.source)
+            //            }
         case .N:
-            s.append(str)
+            if let seq { // rhs
+                s += str + " " + seq.ebnf()
+            } else { // lhs
+                if let alt {
+                    s += str + " = " + alt.ebnf() + "."
+                }
+            }
         case .ALT:
-            break
+            if let seq { s += seq.ebnf() }
+            if let alt { s +=  "| " + alt.ebnf() }
         case .END:
             break
         case .DO:
-            s.append("(")
-            if let alt { s.append(alt.ebnf()) }
-            s.append(")")
+            if let alt { s += "( " + alt.ebnf() + ") " }
+            if let seq { s += seq.ebnf() }
         case .OPT:
-            s.append("[")
-            if let alt { s.append(alt.ebnf()) }
-            s.append("]")
+            if let alt { s += "[ " + alt.ebnf() + "] " }
+            if let seq { s += seq.ebnf() }
         case .POS:
-            s.append("<")
-            if let alt { s.append(alt.ebnf()) }
-            s.append(">")
+            if let alt { s += "< " + alt.ebnf() + "> " }    
+            if let seq { s += seq.ebnf() }
         case .KLN:
-            s.append("{")
-            if let alt { s.append(alt.ebnf()) }
-            s.append("}")
-        }
-        if let seq {
-            s.append(" ")
-            s.append(seq.ebnf())
-        }
-        if let alt, case .ALT = kind {
-            s.append("|")
-            s.append(alt.ebnf())
+            if let alt { s += "{ " + alt.ebnf() + "} " }
+            if let seq { s += seq.ebnf() }
         }
         return s
     }
 }
+

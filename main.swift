@@ -38,23 +38,42 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     print(token)
     _initParser()
     _parseApusGrammar()
+    
     trace("_terminals:")
     for (name, tokenPattern) in _terminals {
         trace("\t", name, "\t", tokenPattern.source)
     }
-    
     trace("_nonTerminals:")
     for (name, node) in _nonTerminals {
         trace("\t", name, "\t", node.kind)
     }
+    guard let root = _nonTerminals[startSymbol] else { return nil }
+    
+    root.follow.insert("")
+    trace("_start symbol '\(startSymbol)' first:", root.first, "follow:", root.follow)
+    
+    var _oldSize = 0
+    var _newSize = 0
+    repeat {
+        _oldSize = _newSize
+        _newSize = 0
+        for nt in _nonTerminals {
+            GNode.sizeofSets = 0
+            nt.value.__populateFirstFollowSets()
+            _newSize = GNode.sizeofSets
+//            _newSize += nt.value._populateFirstFollowSets()
+        }
+        trace("first & follow", _newSize)
+    } while _newSize != _oldSize
+    
 
-    for (name, node) in _nonTerminals {
-        trace("rule: \(name)")
-        node.dump()
+    for (_, node) in _nonTerminals {
+        node.detectAmbiguity()
     }
     _generateDiagrams()
     // NEW ART
 
+    currentIndex = 0
     trace("terminals:")
     for (name, tokenPattern) in terminals {
         trace("\t", name, "\t", tokenPattern.source)
@@ -140,9 +159,6 @@ generateParser()
 
 trace = false
 generateDiagrams()
-//NEW ART
-//_generateDiagrams()
-//NEW ART
 
 func parseMessage() {
     
