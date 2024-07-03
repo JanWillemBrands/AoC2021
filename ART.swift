@@ -115,7 +115,6 @@ extension GNode {
             handleNonTerminal()
         case .ALT:
             handleAlt()
-            print("ALT", number ,follow)
         case .END:
             // the first of an .END is the follow of the .ALT that started the sequence
 //            first = alt?.follow ?? []
@@ -123,11 +122,11 @@ extension GNode {
             first = [""]
             // the follow of .END is the follow of the .ALT that started it
             follow = alt?.follow ?? []
-            print("END", number, follow)
         case .DO, .OPT, .POS, .KLN:
             handleBrackets()
         }
         GNode.sizeofSets += first.count + follow.count
+        print(kind, number, follow)
     }
     
     private func handleSeq() {
@@ -140,6 +139,9 @@ extension GNode {
     private func handleNonTerminal() {
         // a rhs nonterminal instance is part of a sequence
         if let seq {
+            seq.__populateFirstFollowSets()
+            // follow set is just like for any terminal
+            updateFollow(with: seq)
             // find the lhs nonterminal production rule that corresponds to this rhs nonterminal instance
             if let production = _nonTerminals[str] {
                 // TODO: doublecheck if this .alt assignment is correct
@@ -152,9 +154,6 @@ extension GNode {
                 print("error: '\(str)' has not been defined as a grammar rule")
                 exit(4)
             }
-            seq.__populateFirstFollowSets()
-            // follow set is just like for any terminal
-            updateFollow(with: seq)
             
             // a lhs nonterminal defines a production rule and is NOT part of a sequence
         } else {
@@ -169,7 +168,7 @@ extension GNode {
         if let seq {
             seq.__populateFirstFollowSets()
             first = seq.first
-            if first.contains("") {
+            if first.contains("") && !seq.follow.isEmpty{
                 first.remove("")
                 first.formUnion(seq.follow)
             }
@@ -200,7 +199,7 @@ extension GNode {
 
     private func updateFollow(with node: GNode) {
         follow = node.first
-        if follow.contains("") {
+        if follow.contains("") && !node.follow.isEmpty{
             follow.remove("")
             follow.formUnion(node.follow)
         }
@@ -208,18 +207,12 @@ extension GNode {
 }
 
 extension GNode {
+    
+    // TODO: doublecheck the role of "" in first/follow/ambiguity
     func detectAmbiguity() {
-        
         if kind == .N, seq == nil {
             trace("_RULE:", str)
         }
-        traceIndent += 2
-        trace(kind)
-        traceIndent += 2
-        trace("first    ", first.sorted())
-        trace("follow   ", follow.sorted())
-        trace("ambiguous", ambiguous.sorted())
-        traceIndent -= 4
         
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
@@ -227,16 +220,52 @@ extension GNode {
         case .N:
             if let seq { // rhs
                 seq.detectAmbiguity()
+                if first.contains("") {
+                    ambiguous = first.intersection(follow)
+                }
             } else { // lhs
-                alt?.detectAmbiguity()
+                handleAlternatesAmbiguity()
             }
-        case .ALT, .DO, .OPT, .POS, .KLN:
+        case .ALT:
             seq?.detectAmbiguity()
-            alt?.detectAmbiguity()
+            if first.contains("") {
+                ambiguous = first.intersection(follow)
+            }
+        case .DO, .POS, .OPT, .KLN:
+            seq?.detectAmbiguity()
+            handleAlternatesAmbiguity()
         case .END:
             break
         }
+        traceIndent += 2
+        trace(kind, number)
+        traceIndent += 2
+        trace("first    ", first.sorted())
+        trace("follow   ", follow.sorted())
+        trace("ambiguous", ambiguous.sorted())
+        traceIndent -= 4
+
     }
+    
+    private func handleAlternatesAmbiguity() {
+        var occurances: [String:Int] = [:]
+        var currentAlt = self.alt
+        while let altNode = currentAlt {
+            currentAlt?.detectAmbiguity()
+            for element in altNode.first {
+                occurances[element, default: 0] += 1
+            }
+            currentAlt = altNode.alt
+        }
+        for (element, count) in occurances where count > 1 {
+            ambiguous.insert(element)
+        }
+        if first.contains("") {
+            let overlapFirstFollow = first.intersection(follow)
+            ambiguous = ambiguous.union(overlapFirstFollow)
+        }
+    }
+    
 }
 
 var _skip = false
@@ -464,7 +493,7 @@ func _generateDiagrams() {
             str = "\"" + str + "\""
         }
 //        d.append("\n    \(node.number) [label = <\(node.number)<br/><font color=\"gray\" point-size=\"8.0\"> \(node.kind) \(str)</font>>]")
-        d.append("\n    \(node.number) [label = <\(node.number)<br/>\(node.kind) \(str)<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())>]")
+        d.append("\n    \(node.number) [label = <\(node.number)<br/>\(node.kind) \(str)<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())<br/>am \(node.ambiguous.sorted())>]")
         if let alt = node.alt {
             if node.kind == .END {
                 crosslinks.append((from: node, to: alt))

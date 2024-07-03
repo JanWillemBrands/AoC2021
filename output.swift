@@ -8,12 +8,13 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 
 //: start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"x":	("x",	Regex { "x" },	true,	false),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
+	"a":	("a",	Regex { "a" },	true,	false),
+	"":	("",	Regex { "" },	true,	false),
 ]
 func S() {
-	if ["x"].contains(token.type) {
-		next()
-	}
+	next()
+	next()
+	next()
 }

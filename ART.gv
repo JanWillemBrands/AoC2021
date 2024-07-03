@@ -7,22 +7,19 @@ digraph G {
   rankdir = "TB"
   subgraph clusterS {
     node [shape = box]
-    label = <S = [ "x" ] .>
+    label = <S = "" "" "a" .>
     labeljust = l
-    8 [label = <8<br/>N S<br/>fi ["", "x"]<br/>fo [""]>]
-    8 -> 2 {rank = same; 8; 2;}
-    2 [label = <2<br/>ALT <br/>fi ["", "x"]<br/>fo [""]>]
-    2 -> 6 [weight=100]
-    6 [label = <6<br/>OPT <br/>fi ["", "x"]<br/>fo [""]>]
-    6 -> 3 {rank = same; 6; 3;}
-    3 [label = <3<br/>ALT <br/>fi ["x"]<br/>fo [""]>]
+    7 [label = <7<br/>N S<br/>fi ["a"]<br/>fo [""]<br/>am []>]
+    7 -> 2 {rank = same; 7; 2;}
+    2 [label = <2<br/>ALT <br/>fi ["a"]<br/>fo [""]<br/>am []>]
+    2 -> 3 [weight=100]
+    3 [label = <3<br/>T ""<br/>fi [""]<br/>fo ["a"]<br/>am []>]
     3 -> 4 [weight=100]
-    4 [label = <4<br/>T "x"<br/>fi ["x"]<br/>fo []>]
+    4 [label = <4<br/>T ""<br/>fi [""]<br/>fo ["a"]<br/>am []>]
     4 -> 5 [weight=100]
-    5 [label = <5<br/>END <br/>fi [""]<br/>fo []>]
-    6 -> 7 [weight=100]
-    7 [label = <7<br/>END <br/>fi [""]<br/>fo [""]>]
+    5 [label = <5<br/>T "a"<br/>fi ["a"]<br/>fo [""]<br/>am []>]
+    5 -> 6 [weight=100]
+    6 [label = <6<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
   }
-  5:e -> 3 [style = dotted, constraint = false]
-  7:e -> 2 [style = dotted, constraint = false]
+  6:e -> 2 [style = dotted, constraint = false]
 }

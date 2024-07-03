@@ -57,15 +57,13 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     repeat {
         _oldSize = _newSize
         _newSize = 0
-        for nt in _nonTerminals {
+        for (name, node) in _nonTerminals {
             GNode.sizeofSets = 0
-            nt.value.__populateFirstFollowSets()
-            _newSize = GNode.sizeofSets
-//            _newSize += nt.value._populateFirstFollowSets()
+            node.__populateFirstFollowSets()
+            _newSize += GNode.sizeofSets
         }
         trace("first & follow", _newSize)
     } while _newSize != _oldSize
-    
 
     for (_, node) in _nonTerminals {
         node.detectAmbiguity()
