@@ -115,18 +115,27 @@ extension GNode {
             handleNonTerminal()
         case .ALT:
             handleAlt()
-        case .END:
-            // the first of an .END is the follow of the .ALT that started the sequence
-//            first = alt?.follow ?? []
-            // TODO: find out is this first hack is safe in all cases
-            first = [""]
-            // the follow of .END is the follow of the .ALT that started it
-            follow = alt?.follow ?? []
-        case .DO, .OPT, .POS, .KLN:
+        case .DO:
             handleBrackets()
+        case .OPT:
+            handleBrackets()
+            first.insert("")
+        case .KLN:
+            handleBrackets()
+            first.insert("")
+            // TODO: not sure following is right, even though it is in ART...
+            // /Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
+            follow.formUnion(first)
+        case .POS:
+            handleBrackets()
+            // TODO: not sure following is right
+            follow.formUnion(first.subtracting([""]))
+        case .END:
+            first = [""]
+            // the follow of .END is the follow of the .SEQ that started it
+            follow = seq?.follow ?? []
         }
         GNode.sizeofSets += first.count + follow.count
-        print(kind, number, follow)
     }
     
     private func handleSeq() {
@@ -137,10 +146,8 @@ extension GNode {
     }
     
     private func handleNonTerminal() {
-        // a rhs nonterminal instance is part of a sequence
-        if let seq {
+        if let seq { // a rhs nonterminal instance is part of a sequence
             seq.__populateFirstFollowSets()
-            // follow set is just like for any terminal
             updateFollow(with: seq)
             // find the lhs nonterminal production rule that corresponds to this rhs nonterminal instance
             if let production = _nonTerminals[str] {
@@ -154,10 +161,7 @@ extension GNode {
                 print("error: '\(str)' has not been defined as a grammar rule")
                 exit(4)
             }
-            
-            // a lhs nonterminal defines a production rule and is NOT part of a sequence
-        } else {
-            // the first set of a lhs nonterminal production rule is the union of first sets of all its .alt's
+        } else { // a lhs nonterminal defines a production rule and is NOT part of a sequence
             processAlternatives()
             // the follow set of a lhs nonterminal production rule is [“”] if startsymbol, and [] otherwise.
             // both have already been set before calling populateFirstFollowSets.
@@ -177,9 +181,6 @@ extension GNode {
     
     private func handleBrackets() {
         processAlternatives()
-        if kind == .OPT || kind == .KLN {
-            first.insert("")
-        }
         if let seq {
             seq.__populateFirstFollowSets()
             updateFollow(with: seq)

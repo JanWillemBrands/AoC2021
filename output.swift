@@ -11,7 +11,11 @@ let tokenPatterns: [String:TokenPattern] = [
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"a":	("a",	Regex { "a" },	true,	false),
+	"b":	("b",	Regex { "b" },	true,	false),
 ]
 func S() {
+	while ["a"].contains(token.type) {
+		next()
+	}
 	next()
 }

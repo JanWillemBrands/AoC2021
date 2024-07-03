@@ -7,40 +7,26 @@ digraph G {
   rankdir = "TB"
   subgraph clusterS {
     node [shape = box]
-    label = <S = ( ( ( "a" ) ) ) .>
+    label = <S = { "a" } "b" .>
     labeljust = l
-    14 [label = <14<br/>N S<br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    14 -> 2 {rank = same; 14; 2;}
-    2 [label = <2<br/>ALT <br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    2 -> 12 [weight=100]
-    12 [label = <12<br/>DO <br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    12 -> 3 {rank = same; 12; 3;}
-    3 [label = <3<br/>ALT <br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    3 -> 10 [weight=100]
-    10 [label = <10<br/>DO <br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    10 -> 4 {rank = same; 10; 4;}
-    4 [label = <4<br/>ALT <br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    4 -> 8 [weight=100]
-    8 [label = <8<br/>DO <br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    8 -> 5 {rank = same; 8; 5;}
-    5 [label = <5<br/>ALT <br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    5 -> 6 [weight=100]
-    6 [label = <6<br/>T "a"<br/>fi ["a"]<br/>fo [""]<br/>am []>]
+    9 [label = <9<br/>N S<br/>fi ["", "a", "b"]<br/>fo [""]<br/>am [""]>]
+    9 -> 2 {rank = same; 9; 2;}
+    2 [label = <2<br/>ALT <br/>fi ["", "a", "b"]<br/>fo [""]<br/>am [""]>]
+    2 -> 6 [weight=100]
+    6 [label = <6<br/>KLN <br/>fi ["", "a"]<br/>fo ["", "a", "b"]<br/>am ["", "a"]>]
+    6 -> 3 {rank = same; 6; 3;}
+    3 [label = <3<br/>ALT <br/>fi ["a"]<br/>fo ["", "a", "b"]<br/>am []>]
+    3 -> 4 [weight=100]
+    4 [label = <4<br/>T "a"<br/>fi ["a"]<br/>fo ["", "a", "b"]<br/>am []>]
+    4 -> 5 [weight=100]
+    5 [label = <5<br/>END <br/>fi [""]<br/>fo ["", "a", "b"]<br/>am []>]
     6 -> 7 [weight=100]
-    7 [label = <7<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
-    8 -> 9 [weight=100]
-    9 [label = <9<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
-    10 -> 11 [weight=100]
-    11 [label = <11<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
-    12 -> 13 [weight=100]
-    13 [label = <13<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    7 [label = <7<br/>T "b"<br/>fi ["b"]<br/>fo [""]<br/>am []>]
+    7 -> 8 [weight=100]
+    8 [label = <8<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
   }
-  7:e -> 5 [style = dotted, color = red, constraint = false]
-  7:e -> 8 [style = dotted, color = red, constraint = false]
-  9:e -> 4 [style = dotted, color = red, constraint = false]
-  9:e -> 10 [style = dotted, color = red, constraint = false]
-  11:e -> 3 [style = dotted, color = red, constraint = false]
-  11:e -> 12 [style = dotted, color = red, constraint = false]
-  13:e -> 2 [style = dotted, color = red, constraint = false]
-  13:e -> 14 [style = dotted, color = red, constraint = false]
+  5:e -> 3 [style = dotted, color = red, constraint = false]
+  5:e -> 6 [style = dotted, color = red, constraint = false]
+  8:e -> 2 [style = dotted, color = red, constraint = false]
+  8:e -> 9 [style = dotted, color = red, constraint = false]
 }
