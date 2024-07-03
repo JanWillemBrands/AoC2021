@@ -207,6 +207,30 @@ extension GNode {
 }
 
 extension GNode {
+    func resolveEndNodeLinks(parent: GNode?, alternate: GNode?) {
+        switch kind {
+        case .EOS, .T, .TI, .C, .B, .EPS:
+            seq?.resolveEndNodeLinks(parent: parent, alternate: alternate)
+        case .N:
+            if let seq { // rhs
+                seq.resolveEndNodeLinks(parent: parent, alternate: alternate)
+            } else { // lhs
+                alt?.resolveEndNodeLinks(parent: self, alternate: alternate)
+            }
+        case .ALT:
+            seq?.resolveEndNodeLinks(parent: parent, alternate: self)
+            alt?.resolveEndNodeLinks(parent: parent, alternate: alternate)
+        case .DO, .POS, .OPT, .KLN:
+            alt?.resolveEndNodeLinks(parent: self, alternate: alternate)
+            seq?.resolveEndNodeLinks(parent: parent, alternate: alternate)
+        case .END:
+            seq = parent
+            alt = alternate
+        }
+    }
+}
+
+extension GNode {
     
     // TODO: doublecheck the role of "" in first/follow/ambiguity
     func detectAmbiguity() {
@@ -380,7 +404,8 @@ func _sequence() -> GNode {
         tmp = tmp.seq!
     }
     tmp.seq = GNode(kind: .END, str: "")
-    tmp.seq?.alt = startOfSequence
+    // TODO: need to set the .seq of the .END node to the enclosing nonterminal or bracket, but .alt could be done here
+    // tmp.seq?.alt = startOfSequence
     return startOfSequence
 }
 
@@ -525,7 +550,7 @@ func _generateDiagrams() {
     }
     
     for (from, to) in crosslinks {
-        d.append("\n  \(from.number):e -> \(to.number) [style = dotted, constraint = false]")
+        d.append("\n  \(from.number):e -> \(to.number) [style = dotted, color = red, constraint = false]")
     }
     
     d.append("\n}")

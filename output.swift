@@ -8,13 +8,10 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 
 //: start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
+	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"a":	("a",	Regex { "a" },	true,	false),
-	"":	("",	Regex { "" },	true,	false),
 ]
 func S() {
-	next()
-	next()
 	next()
 }

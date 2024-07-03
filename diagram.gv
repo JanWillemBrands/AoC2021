@@ -7,27 +7,15 @@ digraph G {
   graph [ordering = out]
   subgraph GSS {
     cluster = true
-    label = <↵a↵> fontcolor = red
+    label = <↵a↵> fontcolor = green
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    D1 [label = <D1<br/><font color="gray" point-size="8.0"> </font>>]
-    D1 -> A1
-    C1 [label = <C1<br/><font color="gray" point-size="8.0"> </font>>]
-    C1 -> D1
-    B1 [label = <B1<br/><font color="gray" point-size="8.0"> 3</font>>]
-    B1 -> C1
   }
   subgraph S {
     cluster = true
-    label = <S = "" "" "a">
+    label = <S = "a">
     labeljust = l
     node [shape = ellipse, height = 0]
-    A [label = <A: SEQ<br/><font color="gray" point-size="8.0"> </font>>]
-    A -> B
-    B [label = <B: ""<br/><font color="gray" point-size="8.0"> 1:1:2</font>>]
-    A -> C
-    C [label = <C: ""<br/><font color="gray" point-size="8.0"> </font>>]
-    A -> D
-    D [label = <D: "a"<br/><font color="gray" point-size="8.0"> </font>>]
+    A [label = <A: "a"<br/><font color="gray" point-size="8.0"> 1:1:2</font>>]
   }
 }

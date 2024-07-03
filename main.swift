@@ -49,15 +49,19 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
     }
     guard let root = _nonTerminals[startSymbol] else { return nil }
     
+    for (name, node) in _nonTerminals {
+        trace("Processing END nodes for:", name)
+        node.resolveEndNodeLinks(parent: node, alternate: node.alt)
+    }
+    
     root.follow.insert("")
     trace("_start symbol '\(startSymbol)' first:", root.first, "follow:", root.follow)
-    
     var _oldSize = 0
     var _newSize = 0
     repeat {
         _oldSize = _newSize
         _newSize = 0
-        for (name, node) in _nonTerminals {
+        for (_, node) in _nonTerminals {
             GNode.sizeofSets = 0
             node.__populateFirstFollowSets()
             _newSize += GNode.sizeofSets
@@ -65,7 +69,8 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
         trace("first & follow", _newSize)
     } while _newSize != _oldSize
 
-    for (_, node) in _nonTerminals {
+    for (name, node) in _nonTerminals {
+        trace("Detecting ambiguity for:", name)
         node.detectAmbiguity()
     }
     _generateDiagrams()
