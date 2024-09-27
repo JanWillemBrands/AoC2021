@@ -1,33 +1,33 @@
 digraph G {
   fontname = Menlo
   fontsize = 10
-      node [fontname = Menlo, fontsize = 10, color = gray]
-      edge [fontname = Menlo, fontsize = 10, color = gray, arrowsize = 0.5]
+  node [fontname = Menlo, fontsize = 10, color = gray]
+  edge [fontname = Menlo, fontsize = 10, color = gray, arrowsize = 0.5]
 
   graph [ordering = out]
   subgraph GSS {
     cluster = true
-    label = <↵ab↵> fontcolor = red
+    label = <↵a↵> fontcolor = red
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    D1 [label = <D1<br/><font color="gray" point-size="8.0"> 4</font>>]
-    D1 -> A1
-    C1 [label = <C1<br/><font color="gray" point-size="8.0"> 2</font>>]
-    C1 -> B1
-    B1 [label = <B1<br/><font color="gray" point-size="8.0"> 2</font>>]
-    B1 -> D1
+    C1 [label = <C1<br/><font color="gray" point-size="8.0"> 3</font>>]
+    C1 -> A1
+    B1 [label = <B1<br/><font color="gray" point-size="8.0"> 3</font>>]
+    B1 -> A1
   }
   subgraph S {
     cluster = true
-    label = <S = { "a" } "b">
+    label = <S = "a" | "b" | "c">
     labeljust = l
     node [shape = ellipse, height = 0]
-    A [label = <A: SEQ<br/><font color="gray" point-size="8.0"> </font>>]
+    A [label = <A: ALT<br/><font color="gray" point-size="8.0"> </font>>]
     A -> B
-    B [label = <B: REP<br/><font color="gray" point-size="8.0"> </font>>]
+    B [label = <B: ALT<br/><font color="gray" point-size="8.0"> </font>>]
     B -> C
     C [label = <C: "a"<br/><font color="gray" point-size="8.0"> 1:1:2</font>>]
-    A -> D
-    D [label = <D: "b"<br/><font color="gray" point-size="8.0"> 2:2:3</font>>]
+    B -> D
+    D [label = <D: "b"<br/><font color="gray" point-size="8.0"> </font>>]
+    A -> E
+    E [label = <E: "c"<br/><font color="gray" point-size="8.0"> </font>>]
   }
 }

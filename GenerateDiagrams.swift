@@ -20,8 +20,8 @@ func generateDiagrams() {
     digraph G {
       fontname = Menlo
       fontsize = 10
-          node [fontname = Menlo, fontsize = 10, color = gray]
-          edge [fontname = Menlo, fontsize = 10, color = gray, arrowsize = 0.5]
+      node [fontname = Menlo, fontsize = 10, color = gray]
+      edge [fontname = Menlo, fontsize = 10, color = gray, arrowsize = 0.5]
     
       graph [ordering = out]
     """#

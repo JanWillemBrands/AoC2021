@@ -7,26 +7,40 @@ digraph G {
   rankdir = "TB"
   subgraph clusterS {
     node [shape = box]
-    label = <S = { "a" } "b" .>
+    label = <S = ( "a" | "b" ) | "c" .>
     labeljust = l
-    9 [label = <9<br/>N S<br/>fi ["", "a", "b"]<br/>fo [""]<br/>am [""]>]
-    9 -> 2 {rank = same; 9; 2;}
-    2 [label = <2<br/>ALT <br/>fi ["", "a", "b"]<br/>fo [""]<br/>am [""]>]
-    2 -> 6 [weight=100]
-    6 [label = <6<br/>KLN <br/>fi ["", "a"]<br/>fo ["", "a", "b"]<br/>am ["", "a"]>]
-    6 -> 3 {rank = same; 6; 3;}
-    3 [label = <3<br/>ALT <br/>fi ["a"]<br/>fo ["", "a", "b"]<br/>am []>]
-    3 -> 4 [weight=100]
-    4 [label = <4<br/>T "a"<br/>fi ["a"]<br/>fo ["", "a", "b"]<br/>am []>]
-    4 -> 5 [weight=100]
-    5 [label = <5<br/>END <br/>fi [""]<br/>fo ["", "a", "b"]<br/>am []>]
-    6 -> 7 [weight=100]
+    14 [label = <14<br/>N S<br/>fi ["a", "b", "c"]<br/>fo [""]<br/>am []>]
+    rank = same {14 -> 2}
+    2 [label = <2<br/>ALT <br/>fi ["a", "b"]<br/>fo [""]<br/>am []>]
+    2 -> 9 [weight=100000000]
+    9 [label = <9<br/>DO <br/>fi ["a", "b"]<br/>fo [""]<br/>am []>]
+    9 -> 10 [weight=100000000]
+    10 [label = <10<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    rank = same {9 -> 3}
+    3 [label = <3<br/>ALT <br/>fi ["a"]<br/>fo [""]<br/>am []>]
+    3 -> 4 [weight=100000000]
+    4 [label = <4<br/>T "a"<br/>fi ["a"]<br/>fo [""]<br/>am []>]
+    4 -> 5 [weight=100000000]
+    5 [label = <5<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    rank = same {3 -> 6}
+    6 [label = <6<br/>ALT <br/>fi ["b"]<br/>fo [""]<br/>am []>]
+    6 -> 7 [weight=100000000]
     7 [label = <7<br/>T "b"<br/>fi ["b"]<br/>fo [""]<br/>am []>]
-    7 -> 8 [weight=100]
+    7 -> 8 [weight=100000000]
     8 [label = <8<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    rank = same {2 -> 11}
+    11 [label = <11<br/>ALT <br/>fi ["c"]<br/>fo [""]<br/>am []>]
+    11 -> 12 [weight=100000000]
+    12 [label = <12<br/>T "c"<br/>fi ["c"]<br/>fo [""]<br/>am []>]
+    12 -> 13 [weight=100000000]
+    13 [label = <13<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
   }
-  5:e -> 3 [style = dotted, color = red, constraint = false]
-  5:e -> 6 [style = dotted, color = red, constraint = false]
-  8:e -> 2 [style = dotted, color = red, constraint = false]
-  8:e -> 9 [style = dotted, color = red, constraint = false]
+  10:s -> 14 [style = dotted, color = red, constraint = false]
+  10:s -> 2 [style = dotted, color = red, constraint = false]
+  5:s -> 9 [style = dotted, color = red, constraint = false]
+  5:s -> 3 [style = dotted, color = red, constraint = false]
+  8:s -> 9 [style = dotted, color = red, constraint = false]
+  8:s -> 6 [style = dotted, color = red, constraint = false]
+  13:s -> 14 [style = dotted, color = red, constraint = false]
+  13:s -> 11 [style = dotted, color = red, constraint = false]
 }

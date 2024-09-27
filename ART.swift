@@ -7,7 +7,6 @@
 
 import Foundation
 
-//enum GKind { case EOS, T, EPS, N, ALT, END }
 enum GKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
 final class GNode {
@@ -15,13 +14,13 @@ final class GNode {
     let str: String
     var alt: GNode? {
         didSet {
-            assert(alt?.kind == .ALT, "alt should point to .ALT node")
+            assert(alt?.kind == .ALT, "alt should always point to an .ALT node")
         }
     }
     var seq: GNode?
     {
        didSet {
-           assert(seq?.kind != .ALT, "seq should never point to .ALT node")
+           assert(seq?.kind != .ALT, "seq should never point to an .ALT node")
        }
    }
     init(kind: GKind, str: String, alt: GNode? = nil, seq: GNode? = nil) {
@@ -40,6 +39,10 @@ final class GNode {
 
     static var count = 0
     let number: Int
+    
+    // track the node row/col position for proper alignment in GraphViz grid
+    var altPos = 0
+    var seqPos = 0
 }
 
 extension GNode {
@@ -118,11 +121,11 @@ extension GNode {
         case .DO:
             handleBrackets()
         case .OPT:
-            handleBrackets()
             first.insert("")
+            handleBrackets()
         case .KLN:
-            handleBrackets()
             first.insert("")
+            handleBrackets()
             // TODO: not sure following is right, even though it is in ART...
             // /Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
             follow.formUnion(first)
@@ -149,14 +152,13 @@ extension GNode {
         if let seq { // a rhs nonterminal instance is part of a sequence
             seq.__populateFirstFollowSets()
             updateFollow(with: seq)
-            // find the lhs nonterminal production rule that corresponds to this rhs nonterminal instance
             if let production = _nonTerminals[str] {
                 // TODO: doublecheck if this .alt assignment is correct
                 alt = production.alt
                 // rhs first is first of lhs production rule
                 first = production.first
-                // TODO: doublecheck that this follow union is necessary (does a lhs nonterminal need a follow set?)
-//                 production.follow.formUnion(follow)
+                // TODO:  ????
+//                production.follow.formUnion(follow)
             } else {
                 print("error: '\(str)' has not been defined as a grammar rule")
                 exit(4)
@@ -488,7 +490,7 @@ func _term() -> GNode {
         node = GNode(kind: .POS, str: "", alt: _alternates())
         expect([">"])
     default:
-        expect(["identifier", "literal", "(", "[", "{", "<"])
+        expect(["identifier", "literal", "regex", "(", "[", "{", "<"])
         exit(7)
     }
     next()
@@ -510,9 +512,10 @@ func _generateDiagrams() {
           graph [ordering = out, ranksep = 0.2]
           rankdir = "TB"
         """#
-    
-    var crosslinks: [(from: GNode, to: GNode)] = []
-    
+
+    var endlinks: [(from: GNode, to: GNode)] = []
+    var ntrlinks: [(from: GNode, to: GNode)] = []
+
     func draw(node: GNode) {
         var str = node.str
         if node.kind == .T {
@@ -520,22 +523,27 @@ func _generateDiagrams() {
         }
 //        d.append("\n    \(node.number) [label = <\(node.number)<br/><font color=\"gray\" point-size=\"8.0\"> \(node.kind) \(str)</font>>]")
         d.append("\n    \(node.number) [label = <\(node.number)<br/>\(node.kind) \(str)<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())<br/>am \(node.ambiguous.sorted())>]")
-        if let alt = node.alt {
-            if node.kind == .END {
-                crosslinks.append((from: node, to: alt))
-            } else if node.kind == .N && node.seq != nil { // rhs nonterminal
-                crosslinks.append((from: node, to: alt))
-            } else {
-                d.append("\n    \(node.number) -> \(alt.number) {rank = same; \(node.number); \(alt.number);}")
-                draw(node: alt)
-            }
-        }
         if let seq = node.seq {
             if node.kind == .END {
-                crosslinks.append((from: node, to: seq))
+                endlinks.append((from: node, to: seq))
             } else {
-                d.append("\n    \(node.number) -> \(seq.number) [weight=100]")
+                d.append("\n    \(node.number) -> \(seq.number) [weight=100000000]")
+                seq.altPos = node.altPos
+                seq.seqPos = node.seqPos + 1
                 draw(node: seq)
+            }
+        }
+        if let alt = node.alt {
+            // .alt can only point to an ALT node
+            if node.kind == .END {
+                endlinks.append((from: node, to: alt))
+            } else if node.kind == .N && node.seq != nil { // rhs nonterminal
+                ntrlinks.append((from: node, to: alt))
+            } else {
+                d.append("\n    rank = same {\(node.number) -> \(alt.number)}")
+                alt.altPos = node.altPos + 1
+                alt.seqPos = node.seqPos
+                draw(node: alt)
             }
         }
     }
@@ -550,10 +558,13 @@ func _generateDiagrams() {
         d.append("\n  }")
     }
     
-    for (from, to) in crosslinks {
-        d.append("\n  \(from.number):e -> \(to.number) [style = dotted, color = red, constraint = false]")
+    for (from, to) in endlinks {
+        d.append("\n  \(from.number):s -> \(to.number) [style = dotted, color = red, constraint = false]")
     }
-    
+    for (from, to) in ntrlinks {
+        d.append("\n  \(from.number):e -> \(to.number) [style = dotted, color = blue, constraint = false]")
+    }
+
     d.append("\n}")
     
     do {
@@ -565,7 +576,7 @@ func _generateDiagrams() {
 }
 
 //enum GKind { case EOS, T, EPS, N, ALT, END }
-//enum GKind2 { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
+//enum GKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 //enum ApusKind { case EOS, TRM, EPS, NTR, ALT, END, ONE, ZOO, OOM, ZOM }
 //enum SwiftKind { case endOfString, terminal, epsilon, nonterminal, alternate, end, one, zeroOrOne, oneOrMore, zeroOrMore}
 /*
@@ -595,10 +606,6 @@ extension GNode {
         case .EOS, .T, .TI, .C, .B, .EPS:
             s += "\"" + str + "\" "
             if let seq { s += seq.ebnf() }
-            // TODO: fix a better string for terminals
-            //            if let t = _terminals[kind] {
-            //                s.append(t.source)
-            //            }
         case .N:
             if let seq { // rhs
                 s += str + " " + seq.ebnf()
