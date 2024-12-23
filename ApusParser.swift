@@ -51,6 +51,7 @@ func production() {
         } else {
             node = alternates()
             if let existing = nonTerminals[nonTerminalName] {
+                // add this production to the end of the existing ALT list
                 nonTerminals[nonTerminalName] = GrammarNode(.ALT(children: [existing, node]))
             } else {
                 nonTerminals[nonTerminalName] = node
@@ -71,6 +72,7 @@ func production() {
         terminalAlias = nil
         next()
     }
+    // TODO: do we really want regex and literal terminals also listed as nonTerminals?
     // TODO:  this causes the terminals to end up in the nonterminals
 //    if let existing = nonTerminals[nonTerminalName] {
 //        nonTerminals[nonTerminalName] = GrammarNode(.ALT(children: [existing, node]))
@@ -137,6 +139,7 @@ func regex() -> GrammarNode {
 }
 
 func literal() -> GrammarNode {
+    trace("literal", token)
     let name = terminalAlias ?? token.stripped
     if let definition = terminals[name] {
         if definition.isSkip != skip {
@@ -204,23 +207,3 @@ func term() -> GrammarNode {
     next()
     return node
 }
-
-func expect(_ expectedTokens: Set<String>) {
-    trace("expect '\(token.kind)' to be in", expectedTokens)
-    if !expectedTokens.contains(token.kind) {
-        print("error: found '\(token.kind)' but expected one of \(expectedTokens)")
-        print(token.image, token.image.endIndex > input.endIndex )
-        let lineRange = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
-        print(input[lineRange], terminator: "")
-        let before = lineRange.lowerBound ..< token.image.startIndex
-        for _ in 0 ..< input[before].count {
-            print("~", terminator: "")
-        }
-        for _ in 0 ..< token.image.count {
-            print("^", terminator: "")
-        }
-        print()
-        exit(10)
-    }
-}
-

@@ -8,7 +8,7 @@ regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
 message     = /¶(?:[^¶\\]|\\.)*/ .
 
-S     = { production } { message } .
+S           = { production } { message } .
               
 production  = identifier ( ":" | "=" ) alternates "." .
 alternates  = sequence { "|" sequence } .
@@ -35,7 +35,7 @@ regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
 message     = /\¶(?:[^\¶\\]|\\.)*/ .
 
-S     = { production } { message } .
+S           = { production } { message } .
               
 production  = identifier ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .

@@ -7,10 +7,10 @@
 
 import Foundation
 
-enum GKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
+enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
 final class _GrammarNode {
-    let kind: GKind
+    let kind: GrammarNodeKind
     let str: String
     var alt: _GrammarNode? {
         didSet {
@@ -22,7 +22,7 @@ final class _GrammarNode {
             assert(seq?.kind != .ALT, "seq should never point to an .ALT node")
         }
     }
-    init(kind: GKind, str: String, alt: _GrammarNode? = nil, seq: _GrammarNode? = nil) {
+    init(kind: GrammarNodeKind, str: String, alt: _GrammarNode? = nil, seq: _GrammarNode? = nil) {
         self.kind = kind
         self.str = str
         self.alt = alt
@@ -36,8 +36,12 @@ final class _GrammarNode {
     var ambiguous:  Set<String> = []
     static var sizeofSets = 0
     
+    // TODO: remove or keep in DEBUG mode only
     static var count = 0
     let number: Int
+    
+    var cell = Cell(r: 0, c: 0)
+
 }
 
 extension _GrammarNode {
@@ -103,16 +107,23 @@ extension _GrammarNode: CustomStringConvertible {
 extension _GrammarNode {
     func __populateFirstFollowSets() {
         switch kind {
-        case .EOS, .T, .TI, .C, .B:
+        case .EOS, .T, .TI, .C, .B, .EPS:
             first = [str]
-            handleSeq()
-        case .EPS:
-            first = [""]
-            handleSeq()
+            if let seq {
+                seq.__populateFirstFollowSets()
+                updateFollow(with: seq)
+            }
         case .N:
             handleNonTerminal()
         case .ALT:
-            handleAlt()
+            if let seq {
+                seq.__populateFirstFollowSets()
+                first = seq.first
+                if first.contains("") && !seq.follow.isEmpty{
+                    first.remove("")
+                    first.formUnion(seq.follow)
+                }
+            }
         case .DO:
             handleBrackets()
         case .OPT:
@@ -122,11 +133,17 @@ extension _GrammarNode {
             first.insert("")
             handleBrackets()
             // TODO: not sure following is right, even though it is in ART...
-            // /Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
-            follow.formUnion(first)
+            // it complicates ambiguous because it's longer overlap(first, follow)
+            // file://Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
+            // For closure nodes, fold first into follow
+            // if (root.elm.kind == GrammarKind.POS || root.elm.kind == GrammarKind.KLN) changed |= root.instanceFollow.addAll(removeEpsilon(root.instanceFirst));
+            follow.formUnion(first.subtracting([""]))
         case .POS:
             handleBrackets()
-            // TODO: not sure following is right
+            // TODO: not sure following is right, even though it is in ART...
+            // file://Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
+            // For closure nodes, fold first into follow
+            // if (root.elm.kind == GrammarKind.POS || root.elm.kind == GrammarKind.KLN) changed |= root.instanceFollow.addAll(removeEpsilon(root.instanceFirst));
             follow.formUnion(first.subtracting([""]))
         case .END:
             first = [""]
@@ -134,13 +151,6 @@ extension _GrammarNode {
             follow = seq?.follow ?? []
         }
         _GrammarNode.sizeofSets += first.count + follow.count
-    }
-    
-    private func handleSeq() {
-        if let seq {
-            seq.__populateFirstFollowSets()
-            updateFollow(with: seq)
-        }
     }
     
     private func handleNonTerminal() {
@@ -162,17 +172,6 @@ extension _GrammarNode {
             processAlternatives()
             // the follow set of a lhs nonterminal production rule is [“”] if startsymbol, and [] otherwise.
             // both have already been set before calling populateFirstFollowSets.
-        }
-    }
-    
-    private func handleAlt() {
-        if let seq {
-            seq.__populateFirstFollowSets()
-            first = seq.first
-            if first.contains("") && !seq.follow.isEmpty{
-                first.remove("")
-                first.formUnion(seq.follow)
-            }
         }
     }
     
@@ -259,6 +258,7 @@ extension _GrammarNode {
         case .END:
             break
         }
+        ambiguous.remove("")    // to handle both uses of "" in first (as ε, ϵ, epsilon) and in follow (as $, EOF)
         traceIndent += 2
         trace(kind, number)
         traceIndent += 2

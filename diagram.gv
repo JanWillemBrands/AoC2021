@@ -7,27 +7,41 @@ digraph G {
   graph [ordering = out]
   subgraph GSS {
     cluster = true
-    label = <↵a↵> fontcolor = red
+    label = <↵ab↵> fontcolor = red
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    C1 [label = <C1<br/><font color="gray" point-size="8.0"> 3</font>>]
-    C1 -> A1
-    B1 [label = <B1<br/><font color="gray" point-size="8.0"> 3</font>>]
-    B1 -> A1
+    G1 [label = <G1<br/><font color="gray" point-size="8.0"> </font>>]
+    G1 -> A1
+    F1 [label = <F1<br/><font color="gray" point-size="8.0"> </font>>]
+    F1 -> G1
+    E1 [label = <E1<br/><font color="gray" point-size="8.0"> </font>>]
+    E1 -> F1
+    D1 [label = <D1<br/><font color="gray" point-size="8.0"> </font>>]
+    D1 -> E1
+    C1 [label = <C1<br/><font color="gray" point-size="8.0"> 2</font>>]
+    C1 -> B1
+    B1 [label = <B1<br/><font color="gray" point-size="8.0"> </font>>]
+    B1 -> D1
   }
   subgraph S {
     cluster = true
-    label = <S = "a" | "b" | "c">
+    label = <S = { "a" } "x" "y" "z" { "b" }>
     labeljust = l
     node [shape = ellipse, height = 0]
-    A [label = <A: ALT<br/><font color="gray" point-size="8.0"> </font>>]
+    A [label = <A: SEQ<br/>fi ["a", "x"]<br/>fo [""]<br/>am []>]
     A -> B
-    B [label = <B: ALT<br/><font color="gray" point-size="8.0"> </font>>]
+    B [label = <B: REP<br/>fi ["", "a"]<br/>fo ["x"]<br/>am []>]
     B -> C
-    C [label = <C: "a"<br/><font color="gray" point-size="8.0"> 1:1:2</font>>]
-    B -> D
-    D [label = <D: "b"<br/><font color="gray" point-size="8.0"> </font>>]
+    C [label = <C: "a"<br/>fi ["a"]<br/>fo ["a", "x"]<br/>am []>]
+    A -> D
+    D [label = <D: "x"<br/>fi ["x"]<br/>fo ["y"]<br/>am []>]
     A -> E
-    E [label = <E: "c"<br/><font color="gray" point-size="8.0"> </font>>]
+    E [label = <E: "y"<br/>fi ["y"]<br/>fo ["z"]<br/>am []>]
+    A -> F
+    F [label = <F: "z"<br/>fi ["z"]<br/>fo ["", "b"]<br/>am []>]
+    A -> G
+    G [label = <G: REP<br/>fi ["", "b"]<br/>fo [""]<br/>am []>]
+    G -> H
+    H [label = <H: "b"<br/>fi ["b"]<br/>fo ["", "b"]<br/>am []>]
   }
 }

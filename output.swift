@@ -8,26 +8,22 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 
 //: start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"b":	("b",	Regex { "b" },	true,	false),
-	"c":	("c",	Regex { "c" },	true,	false),
+	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
+	"y":	("y",	Regex { "y" },	true,	false),
+	"z":	("z",	Regex { "z" },	true,	false),
 	"a":	("a",	Regex { "a" },	true,	false),
+	"x":	("x",	Regex { "x" },	true,	false),
+	"b":	("b",	Regex { "b" },	true,	false),
 ]
 func S() {
-	switch token.type {
-	case "a", "b":
-		switch token.type {
-		case "a":
-			next()
-		case "b":
-			next()
-		default:
-			expect(["a", "b"])
-		}
-	case "c":
+	while ["a"].contains(token.type) {
 		next()
-	default:
-		expect(["a", "b", "c"])
+	}
+	next()
+	next()
+	next()
+	while ["b"].contains(token.type) {
+		next()
 	}
 }

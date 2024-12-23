@@ -7,40 +7,77 @@ digraph G {
   rankdir = "TB"
   subgraph clusterS {
     node [shape = box]
-    label = <S = ( "a" | "b" ) | "c" .>
+    label = <S = { "a" } "x" "y" "z" { "b" } .>
     labeljust = l
-    14 [label = <14<br/>N S<br/>fi ["a", "b", "c"]<br/>fo [""]<br/>am []>]
-    rank = same {14 -> 2}
-    2 [label = <2<br/>ALT <br/>fi ["a", "b"]<br/>fo [""]<br/>am []>]
-    2 -> 9 [weight=100000000]
-    9 [label = <9<br/>DO <br/>fi ["a", "b"]<br/>fo [""]<br/>am []>]
-    9 -> 10 [weight=100000000]
-    10 [label = <10<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
-    rank = same {9 -> 3}
-    3 [label = <3<br/>ALT <br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    3 -> 4 [weight=100000000]
-    4 [label = <4<br/>T "a"<br/>fi ["a"]<br/>fo [""]<br/>am []>]
-    4 -> 5 [weight=100000000]
-    5 [label = <5<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
-    rank = same {3 -> 6}
-    6 [label = <6<br/>ALT <br/>fi ["b"]<br/>fo [""]<br/>am []>]
-    6 -> 7 [weight=100000000]
-    7 [label = <7<br/>T "b"<br/>fi ["b"]<br/>fo [""]<br/>am []>]
-    7 -> 8 [weight=100000000]
-    8 [label = <8<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
-    rank = same {2 -> 11}
-    11 [label = <11<br/>ALT <br/>fi ["c"]<br/>fo [""]<br/>am []>]
-    11 -> 12 [weight=100000000]
-    12 [label = <12<br/>T "c"<br/>fi ["c"]<br/>fo [""]<br/>am []>]
-    12 -> 13 [weight=100000000]
-    13 [label = <13<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    R0C0 [label = <R0C0<br/>N S<br/>fi ["a", "x"]<br/>fo [""]<br/>am []>]
+    R0C1 [label = <R0C1<br/>ALT <br/>fi ["a", "x"]<br/>fo [""]<br/>am []>]
+    R1C1 [label = <R1C1<br/>KLN <br/>fi ["", "a"]<br/>fo ["a", "x"]<br/>am ["a"]>]
+    R2C1 [label = <R2C1<br/>T "x"<br/>fi ["x"]<br/>fo ["y"]<br/>am []>]
+    R3C1 [label = <R3C1<br/>T "y"<br/>fi ["y"]<br/>fo ["z"]<br/>am []>]
+    R4C1 [label = <R4C1<br/>T "z"<br/>fi ["z"]<br/>fo ["", "b"]<br/>am []>]
+    R5C1 [label = <R5C1<br/>KLN <br/>fi ["", "b"]<br/>fo ["", "b"]<br/>am ["b"]>]
+    R6C1 [label = <R6C1<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    R5C1:s -> R6C1 [weight=100000000]
+    R5C2 [label = <R5C2<br/>ALT <br/>fi ["b"]<br/>fo ["", "b"]<br/>am []>]
+    R6C2 [label = <R6C2<br/>T "b"<br/>fi ["b"]<br/>fo ["", "b"]<br/>am []>]
+    R7C2 [label = <R7C2<br/>END <br/>fi [""]<br/>fo ["", "b"]<br/>am []>]
+    R6C2:s -> R7C2 [weight=100000000]
+    R5C2:s -> R6C2 [weight=100000000]
+    rank = same {R5C1 -> R5C2}
+    R4C1:s -> R5C1 [weight=100000000]
+    R3C1:s -> R4C1 [weight=100000000]
+    R2C1:s -> R3C1 [weight=100000000]
+    R1C1:s -> R2C1 [weight=100000000]
+    R1C3 [label = <R1C3<br/>ALT <br/>fi ["a"]<br/>fo ["a", "x"]<br/>am []>]
+    R2C3 [label = <R2C3<br/>T "a"<br/>fi ["a"]<br/>fo ["a", "x"]<br/>am []>]
+    R3C3 [label = <R3C3<br/>END <br/>fi [""]<br/>fo ["a", "x"]<br/>am []>]
+    R2C3:s -> R3C3 [weight=100000000]
+    R1C3:s -> R2C3 [weight=100000000]
+    rank = same {R1C1 -> R1C3}
+    R0C1:s -> R1C1 [weight=100000000]
+    rank = same {R0C0 -> R0C1}
+    node [style = invis]
+    edge [style = invis]
+    rank = same {R0C1 -> R0C2}
+    rank = same {R0C2 -> R0C3}
+    R0C0 -> R1C0 [weight=100000000]
+    rank = same {R1C0 -> R1C1}
+    R0C3 -> R1C3 [weight=100000000]
+    R1C0 -> R2C0 [weight=100000000]
+    rank = same {R2C0 -> R2C1}
+    rank = same {R2C1 -> R2C2}
+    rank = same {R2C2 -> R2C3}
+    R2C0 -> R3C0 [weight=100000000]
+    rank = same {R3C0 -> R3C1}
+    R2C2 -> R3C2 [weight=100000000]
+    rank = same {R3C1 -> R3C2}
+    rank = same {R3C2 -> R3C3}
+    R3C0 -> R4C0 [weight=100000000]
+    rank = same {R4C0 -> R4C1}
+    R3C2 -> R4C2 [weight=100000000]
+    rank = same {R4C1 -> R4C2}
+    R3C3 -> R4C3 [weight=100000000]
+    rank = same {R4C2 -> R4C3}
+    R4C0 -> R5C0 [weight=100000000]
+    rank = same {R5C0 -> R5C1}
+    R4C2 -> R5C2 [weight=100000000]
+    R4C3 -> R5C3 [weight=100000000]
+    rank = same {R5C2 -> R5C3}
+    R5C0 -> R6C0 [weight=100000000]
+    rank = same {R6C0 -> R6C1}
+    R5C3 -> R6C3 [weight=100000000]
+    rank = same {R6C2 -> R6C3}
+    R6C0 -> R7C0 [weight=100000000]
+    R6C1 -> R7C1 [weight=100000000]
+    rank = same {R7C0 -> R7C1}
+    rank = same {R7C1 -> R7C2}
+    R6C3 -> R7C3 [weight=100000000]
+    rank = same {R7C2 -> R7C3}
   }
-  10:s -> 14 [style = dotted, color = red, constraint = false]
-  10:s -> 2 [style = dotted, color = red, constraint = false]
-  5:s -> 9 [style = dotted, color = red, constraint = false]
-  5:s -> 3 [style = dotted, color = red, constraint = false]
-  8:s -> 9 [style = dotted, color = red, constraint = false]
-  8:s -> 6 [style = dotted, color = red, constraint = false]
-  13:s -> 14 [style = dotted, color = red, constraint = false]
-  13:s -> 11 [style = dotted, color = red, constraint = false]
+  R6C1:s -> R0C0 [style = dotted, color = red, constraint = false]
+  R6C1:s -> R0C1 [style = dotted, color = red, constraint = false]
+  R7C2:s -> R5C1 [style = dotted, color = red, constraint = false]
+  R7C2:s -> R5C2 [style = dotted, color = red, constraint = false]
+  R3C3:s -> R1C1 [style = dotted, color = red, constraint = false]
+  R3C3:s -> R1C3 [style = dotted, color = red, constraint = false]
 }

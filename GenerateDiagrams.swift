@@ -16,7 +16,7 @@ func generateDiagrams() {
         .appendingPathComponent("diagram")
         .appendingPathExtension("gv")
     
-    var diagramContent = #"""
+    var d = #"""
     digraph G {
       fontname = Menlo
       fontsize = 10
@@ -28,41 +28,42 @@ func generateDiagrams() {
     
     var nonterminalLinks: [(from: GrammarNode, to: GrammarNode)] = []
     
-    func generate(_ slot: GrammarNode) {
-        let sortedYield = slot.yield.sorted(by: { lhs, rhs in lhs.i < rhs.i }).description.dropFirst().dropLast()
-        let yieldInfo = "<br/><font color=\"gray\" point-size=\"8.0\"> \(sortedYield)</font>"
+    func draw(_ node: GrammarNode) {
+//        let sortedYield = node.yield.sorted(by: { lhs, rhs in lhs.i < rhs.i }).description.dropFirst().dropLast()
+//        let info = "<br/><font color=\"gray\" point-size=\"8.0\"> \(sortedYield)</font>"
+        let info = "<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())<br/>am \(node.ambiguous.sorted())"
 
-        switch slot.kind {
+        switch node.kind {
         case .SEQ(let children):
-            diagramContent.append("\n    \(slot) [label = <\(slot): SEQ\(yieldInfo)>]")
+            d.append("\n    \(node) [label = <\(node): SEQ\(info)>]")
             for child in children {
-                diagramContent.append("\n    \(slot) -> \(child)")
-                generate(child)
+                d.append("\n    \(node) -> \(child)")
+                draw(child)
             }
         case .ALT(let children):
-            diagramContent.append("\n    \(slot) [label = <\(slot): ALT\(yieldInfo)>]")
+            d.append("\n    \(node) [label = <\(node): ALT\(info)>]")
             for child in children {
-                diagramContent.append("\n    \(slot) -> \(child)")
-                generate(child)
+                d.append("\n    \(node) -> \(child)")
+                draw(child)
             }
         case .OPT(let child):
-            diagramContent.append("\n    \(slot) [label = <\(slot): OPT\(yieldInfo)>]")
-            diagramContent.append("\n    \(slot) -> \(child)")
-            generate(child)
+            d.append("\n    \(node) [label = <\(node): OPT\(info)>]")
+            d.append("\n    \(node) -> \(child)")
+            draw(child)
         case .REP(let child):
-            diagramContent.append("\n    \(slot) [label = <\(slot): REP\(yieldInfo)>]")
-            diagramContent.append("\n    \(slot) -> \(child)")
-            generate(child)
+            d.append("\n    \(node) [label = <\(node): REP\(info)>]")
+            d.append("\n    \(node) -> \(child)")
+            draw(child)
         case .NTR(let name, let link):
-            diagramContent.append("\n    \(slot) [label = <\(slot): \(name)\(yieldInfo)>]")
-            nonterminalLinks.append((slot, link!))
+            d.append("\n    \(node) [label = <\(node): \(name)\(info)>]")
+            nonterminalLinks.append((node, link!))
         case .TRM(let type):
-            diagramContent.append("\n    \(slot) [label = <\(slot): \"\(type.escapesRemoved.graphvizHTML)\"\(yieldInfo)>]")
+            d.append("\n    \(node) [label = <\(node): \"\(type.escapesRemoved.graphvizHTML)\"\(info)>]")
         }
     }
 
-    diagramContent.append("\n  subgraph GSS {")
-    diagramContent.append("\n    cluster = true")
+    d.append("\n  subgraph GSS {")
+    d.append("\n    cluster = true")
     
     var shortMessage = messages[0]
     if shortMessage.count > 20 {
@@ -70,43 +71,43 @@ func generateDiagrams() {
         shortMessage.append("...")
     }
 
-    diagramContent.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphvizHTML)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
-    diagramContent.append("\n    labeljust = l")
-    diagramContent.append("\n    node [shape = box, style = rounded, height = 0]")
+    d.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphvizHTML)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
+    d.append("\n    labeljust = l")
+    d.append("\n    node [shape = box, style = rounded, height = 0]")
     if graph.count > 1 {
         for (key, value) in graph.sorted(by: { $0.key > $1.key }) {
             if value.isEmpty {
-                diagramContent.append("\n    \"\(key)\" -> \"#\"") // use '#' or '●○' as the root label?
+                d.append("\n    \"\(key)\" -> \"#\"") // use '#' or '●○' as the root label?
             } else {
                 for element in value {
                     let poppedIndexes = element.towards.popped.sorted().description.dropFirst().dropLast()
-                    diagramContent.append("\n    \(key) [label = <\(key)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
-                    diagramContent.append("\n    \(key) -> \(element.towards.description)")
+                    d.append("\n    \(key) [label = <\(key)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+                    d.append("\n    \(key) -> \(element.towards.description)")
                 }
             }
         }
     }
-    diagramContent.append("\n  }")
+    d.append("\n  }")
     
 
     for (name, node) in nonTerminals.sorted(by: { $0.key < $1.key }) {
-        diagramContent.append("\n  subgraph \(name) {")
-        diagramContent.append("\n    cluster = true")
-        diagramContent.append("\n    label = <\(name) = \(node.ebnf().graphvizHTML)>")
-        diagramContent.append("\n    labeljust = l")
-        diagramContent.append("\n    node [shape = ellipse, height = 0]")
-        generate(node)
-        diagramContent.append("\n  }")
+        d.append("\n  subgraph \(name) {")
+        d.append("\n    cluster = true")
+        d.append("\n    label = <\(name) = \(node.ebnf().graphvizHTML)>")
+        d.append("\n    labeljust = l")
+        d.append("\n    node [shape = ellipse, height = 0]")
+        draw(node)
+        d.append("\n  }")
     }
     
     for (from, to) in nonterminalLinks {
-        diagramContent.append("\n  \(from) -> \(to) [style = dotted, constraint = false]")
+        d.append("\n  \(from) -> \(to) [style = dotted, constraint = false]")
     }
     
-    diagramContent.append("\n}")
+    d.append("\n}")
     
     do {
-        try diagramContent.write(to: diagramFileURL, atomically: true, encoding: .utf8)
+        try d.write(to: diagramFileURL, atomically: true, encoding: .utf8)
     } catch {
         print("error: could not write to \(diagramFileURL.absoluteString)")
         exit(6)

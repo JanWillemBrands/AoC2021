@@ -62,9 +62,9 @@ func parseGrammar(startSymbol: String) -> GrammarNode? {
         _oldSize = _newSize
         _newSize = 0
         for (_, node) in _nonTerminals {
-            GNode.sizeofSets = 0
+            _GrammarNode.sizeofSets = 0
             node.__populateFirstFollowSets()
-            _newSize += GNode.sizeofSets
+            _newSize += _GrammarNode.sizeofSets
         }
         trace("first & follow", _newSize)
     } while _newSize != _oldSize
