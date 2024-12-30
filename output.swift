@@ -6,24 +6,17 @@ var input = ""
 
 typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
 
-//: start of generated code
-let tokenPatterns: [String:TokenPattern] = [
-	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
+//: start of generated codelet tokenPatterns: [String:TokenPattern] = [
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"y":	("y",	Regex { "y" },	true,	false),
-	"z":	("z",	Regex { "z" },	true,	false),
-	"a":	("a",	Regex { "a" },	true,	false),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"x":	("x",	Regex { "x" },	true,	false),
+	"a":	("a",	Regex { "a" },	true,	false),
 	"b":	("b",	Regex { "b" },	true,	false),
 ]
 func S() {
-	while ["a"].contains(token.type) {
-		next()
-	}
-	next()
-	next()
-	next()
-	while ["b"].contains(token.type) {
-		next()
+	S() // yahoo
+	if token.type = ALT {
+		// KLN
+		expect(["a", "x"])
 	}
 }

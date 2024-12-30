@@ -12,6 +12,43 @@
 import Foundation
 import RegexBuilder
 
+enum ScannerFailure: Error { case charactersDoNotMatchAnySymbol, couldNotReadFile }
+
+class Scanner {
+    var input: String
+    var tokens: [Token]
+    var tokenPatterns: [String:TokenPattern]
+    
+    init(input: String, tokenPatterns: [String:TokenPattern]) {
+        self.input = input
+        self.tokenPatterns = tokenPatterns
+        self.tokens = []
+    }
+    
+    init(fromString inputString: String, patterns: [String:TokenPattern]) {
+        tokenPatterns = patterns
+        input = inputString
+        tokens = []
+        scanTokens()
+        currentIndex = -1
+        next()
+    }
+
+    init(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) throws {
+        guard let inputFileContent = try? String(contentsOf: inputFileURL, encoding: .utf8) else {
+            print("error: could not read from \(inputFileURL.absoluteString)")
+            throw ScannerFailure.couldNotReadFile
+        }
+        tokenPatterns = patterns
+        input = inputFileContent
+        tokens = []
+        scanTokens()
+        currentIndex = -1
+        next()
+    }
+
+}
+
 // input is the string that's being scanned and parsed
 var input: String = ""
 

@@ -62,7 +62,7 @@ func _production() {
     } else {
         expect([":"])
         next()
-        skip = true
+        _skip = true
         _terminalAlias = nonTerminalName
         if token.kind == "regex" {
             node = _regex()
@@ -70,7 +70,7 @@ func _production() {
             expect(["literal"])
             node = _literal()
         }
-        skip = false
+        _skip = false
         _terminalAlias = nil
         next()
     }
@@ -92,7 +92,7 @@ func _production() {
 
 func _message() {
     trace("message", token)
-    messages.append(token.stripped)
+    _messages.append(token.stripped)
     next()
 }
 
@@ -129,12 +129,12 @@ func _regex() -> _GrammarNode {
     
     //    let name = _terminalAlias ?? String(token.image)
     if _terminals[name] != nil {
-        print("warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
+        print("warning: redefinition of \(name) as \(_skip ? "skipped" : "not skipped")")
     }
     do {
         let regex = try Regex<Substring>(String(token.stripped))
         // TODO: why is the name not 'name'?
-        _terminals[name] = (String(token.image), regex, false, skip)
+        _terminals[name] = (String(token.image), regex, false, _skip)
         trace("regex name:", name, "image:", token.image)
     } catch {
         print("error: \(token.image) is not a valid /regex/")
@@ -147,11 +147,11 @@ func _literal() -> _GrammarNode {
     trace("literal", token)
     let name = _terminalAlias ?? token.stripped
     if _terminals[name] != nil {
-        print("warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
+        print("warning: redefinition of \(name) as \(_skip ? "skipped" : "not skipped")")
     }
     do {
         let regex = try Regex<Substring>(String(token.stripped))
-        _terminals[name] = (String(token.image), regex, true, skip)
+        _terminals[name] = (String(token.image), regex, true, _skip)
         trace("literal name:", name, "image:", token.image)
     } catch {
         print("error: \(token.image) is not a valid \"literal\"")

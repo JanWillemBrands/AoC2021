@@ -13,6 +13,14 @@
 		4E33E9202CAEDC3D004BD82C /* _ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E33E91F2CAEDC3D004BD82C /* _ApusParser.swift */; };
 		4E33E9222CAEDCDD004BD82C /* _GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E33E9212CAEDCDD004BD82C /* _GenerateDiagrams.swift */; };
 		4E34DF7D2C0354E400B2881E /* _GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE422A22BFB319500D99368 /* _GrammarNode.swift */; };
+		4E4213842D19C9D400CE6493 /* ParseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213832D19C9D400CE6493 /* ParseMessage.swift */; };
+		4E4213862D19CA1200CE6493 /* _ParseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213852D19CA1200CE6493 /* _ParseMessage.swift */; };
+		4E4213882D19E2FD00CE6493 /* ParseGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213872D19E2FD00CE6493 /* ParseGrammar.swift */; };
+		4E42138A2D19E31200CE6493 /* _ParseGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213892D19E31200CE6493 /* _ParseGrammar.swift */; };
+		4E42138C2D1B61AD00CE6493 /* NoGlobals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */; };
+		4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138D2D1C572D00CE6493 /* OutputTools.swift */; };
+		4E4213902D1DC15000CE6493 /* _GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138F2D1DC15000CE6493 /* _GenerateParser.swift */; };
+		4E4213922D1DC35400CE6493 /* _GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213912D1DC35400CE6493 /* _GraphStructuredStack.swift */; };
 		4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E94E9942C2913F600746EB7 /* SymbolTable.swift */; };
 		4EB4DE422B91CDDA00BA9A88 /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */; };
 		4EB4DE462B91D30600BA9A88 /* ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE452B91D30600BA9A88 /* ApusParser.swift */; };
@@ -47,6 +55,14 @@
 		4E34DF7E2C08042C00B2881E /* apusNoActionKLN.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusNoActionKLN.txt; sourceTree = "<group>"; };
 		4E34DF7F2C08A1C400B2881E /* ART.gv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
 		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
+		4E4213832D19C9D400CE6493 /* ParseMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParseMessage.swift; sourceTree = "<group>"; };
+		4E4213852D19CA1200CE6493 /* _ParseMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _ParseMessage.swift; sourceTree = "<group>"; };
+		4E4213872D19E2FD00CE6493 /* ParseGrammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParseGrammar.swift; sourceTree = "<group>"; };
+		4E4213892D19E31200CE6493 /* _ParseGrammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _ParseGrammar.swift; sourceTree = "<group>"; };
+		4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoGlobals.swift; sourceTree = "<group>"; };
+		4E42138D2D1C572D00CE6493 /* OutputTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputTools.swift; sourceTree = "<group>"; };
+		4E42138F2D1DC15000CE6493 /* _GenerateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _GenerateParser.swift; sourceTree = "<group>"; };
+		4E4213912D1DC35400CE6493 /* _GraphStructuredStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _GraphStructuredStack.swift; sourceTree = "<group>"; };
 		4E450E682BE8007F0077E275 /* playground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = playground.swift; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
 		4E94E9942C2913F600746EB7 /* SymbolTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolTable.swift; sourceTree = "<group>"; };
@@ -90,17 +106,25 @@
 				4EC9D6F42B977927002BA303 /* postRunActions.log */,
 				4E34DF802C08A71000B2881E /* ART.svg */,
 				4EBBDFF52B935BB90049A17F /* diagram.svg */,
-				4EB4DE452B91D30600BA9A88 /* ApusParser.swift */,
-				4EE422A22BFB319500D99368 /* _GrammarNode.swift */,
 				4E33E91F2CAEDC3D004BD82C /* _ApusParser.swift */,
-				4EB4DE492B91D81C00BA9A88 /* GenerateDiagrams.swift */,
 				4E33E9212CAEDCDD004BD82C /* _GenerateDiagrams.swift */,
+				4E42138F2D1DC15000CE6493 /* _GenerateParser.swift */,
+				4EE422A22BFB319500D99368 /* _GrammarNode.swift */,
+				4E4213912D1DC35400CE6493 /* _GraphStructuredStack.swift */,
+				4E4213892D19E31200CE6493 /* _ParseGrammar.swift */,
+				4E4213852D19CA1200CE6493 /* _ParseMessage.swift */,
+				4EB4DE452B91D30600BA9A88 /* ApusParser.swift */,
+				4EB4DE492B91D81C00BA9A88 /* GenerateDiagrams.swift */,
 				4EB4DE472B91D3C400BA9A88 /* GenerateParser.swift */,
 				4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */,
 				4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */,
 				4E333D632629D5E400640821 /* main.swift */,
 				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
+				4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */,
 				4E333D642629D5E400640821 /* output.swift */,
+				4E42138D2D1C572D00CE6493 /* OutputTools.swift */,
+				4E4213872D19E2FD00CE6493 /* ParseGrammar.swift */,
+				4E4213832D19C9D400CE6493 /* ParseMessage.swift */,
 				4E450E682BE8007F0077E275 /* playground.swift */,
 				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
 				4E333D672629D5E400640821 /* StringExtensions.swift */,
@@ -183,16 +207,24 @@
 			files = (
 				4E34DF7D2C0354E400B2881E /* _GrammarNode.swift in Sources */,
 				4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */,
+				4E42138C2D1B61AD00CE6493 /* NoGlobals.swift in Sources */,
 				4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */,
 				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
+				4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */,
 				4E33E9222CAEDCDD004BD82C /* _GenerateDiagrams.swift in Sources */,
+				4E4213862D19CA1200CE6493 /* _ParseMessage.swift in Sources */,
+				4E4213882D19E2FD00CE6493 /* ParseGrammar.swift in Sources */,
+				4E4213902D1DC15000CE6493 /* _GenerateParser.swift in Sources */,
 				4E333D712629D60000640821 /* main.swift in Sources */,
+				4E4213842D19C9D400CE6493 /* ParseMessage.swift in Sources */,
 				4EB4DE422B91CDDA00BA9A88 /* GrammarNode.swift in Sources */,
 				4EB4DE4A2B91D81C00BA9A88 /* GenerateDiagrams.swift in Sources */,
 				4E33E9202CAEDC3D004BD82C /* _ApusParser.swift in Sources */,
 				4EB4DE462B91D30600BA9A88 /* ApusParser.swift in Sources */,
 				4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */,
 				4EB4DE482B91D3C400BA9A88 /* GenerateParser.swift in Sources */,
+				4E4213922D1DC35400CE6493 /* _GraphStructuredStack.swift in Sources */,
+				4E42138A2D19E31200CE6493 /* _ParseGrammar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

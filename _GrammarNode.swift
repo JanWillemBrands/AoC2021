@@ -14,12 +14,12 @@ final class _GrammarNode {
     let str: String
     var alt: _GrammarNode? {
         didSet {
-            assert(alt?.kind == .ALT, "alt should always point to an .ALT node")
+            assert(alt?.kind == .ALT, "alt should always point to a .ALT node")
         }
     }
     var seq: _GrammarNode? {
         didSet {
-            assert(seq?.kind != .ALT, "seq should never point to an .ALT node")
+            assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
         }
     }
     init(kind: GrammarNodeKind, str: String, alt: _GrammarNode? = nil, seq: _GrammarNode? = nil) {
@@ -35,6 +35,8 @@ final class _GrammarNode {
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
     static var sizeofSets = 0
+    
+    var yield: Set<_Split> = []
     
     // TODO: remove or keep in DEBUG mode only
     static var count = 0
