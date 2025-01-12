@@ -124,16 +124,15 @@ func _sequence() -> _GrammarNode {
 
 func _regex() -> _GrammarNode {
     trace("regex", token)
-    // TODO: insert lineposition name?
     let name = _terminalAlias ?? input.linePosition(of: token.range.lowerBound)
     
-    //    let name = _terminalAlias ?? String(token.image)
-    if _terminals[name] != nil {
-        print("warning: redefinition of \(name) as \(_skip ? "skipped" : "not skipped")")
+    if let definition = _terminals[name] {
+        if definition.isSkip != _skip {
+            print("warning: redefinition of \(name) as \(_skip ? "skipped" : "not skipped")")
+        }
     }
     do {
         let regex = try Regex<Substring>(String(token.stripped))
-        // TODO: why is the name not 'name'?
         _terminals[name] = (String(token.image), regex, false, _skip)
         trace("regex name:", name, "image:", token.image)
     } catch {
@@ -144,10 +143,17 @@ func _regex() -> _GrammarNode {
 }
 
 func _literal() -> _GrammarNode {
-    trace("literal", token)
+    trace("literal", token, token.stripped)
+
+    if token.stripped == "" {
+        return _GrammarNode(kind: .EPS, str: "")
+    }
+    
     let name = _terminalAlias ?? token.stripped
-    if _terminals[name] != nil {
-        print("warning: redefinition of \(name) as \(_skip ? "skipped" : "not skipped")")
+    if let definition = _terminals[name] {
+        if definition.isSkip != _skip {
+            print("warning: redefinition of \(name) as \(_skip ? "skipped" : "not skipped")")
+        }
     }
     do {
         let regex = try Regex<Substring>(String(token.stripped))

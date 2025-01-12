@@ -49,6 +49,7 @@ struct _Split: Hashable, CustomStringConvertible {
     var description: String { i.inputPosition + ":" + k.inputPosition + ":" + j.inputPosition }
 }
 
+// the list of Decriptors that still need to be processed
 var _remainder: [_Descriptor] = []
 
 // TODO: OPTIMIZATION cf. Afroozeh change the set of edges to an array of edges
@@ -69,9 +70,9 @@ var _currentYield_Cn_ϒ_𝛶_BSR  : Set<_Quad> = []
 // creates a GSS vertex v, if it doesn't exist already
 // add an edge from v to the current stack top
 // add descriptors for previous pop actions from v
-// set the current stack_Cu to v
+// set the currentStack to v
 func _create(slot: _GrammarNode) {
-    let v = _Vertex(slot: slot, index: currentIndex)
+    let v = _Vertex(slot: slot, index: _currentIndex)
     let e = _Edge(towards: _currentStack)
     trace("create: edge from \(v) to", _currentStack)
     
@@ -83,17 +84,34 @@ func _create(slot: _GrammarNode) {
         trace("create add")
         _addDescriptor(slot: slot, stack: _currentStack, index: p)
     }
-    _currentStack = v
+    // TODO: update currentStack to newly top?
+//    _currentStack = v
+}
+
+func call(slot: _GrammarNode) {
+    // iterate over all ALT nodes
+    var current = slot
+    while let alt = current.alt {
+        if let seq = alt.seq {
+            _create(slot: seq)
+            _addDescriptor(slot: seq, stack: _currentStack, index: _currentIndex)
+        }
+        current = alt
+    }
 }
 
 // TODO: the first edge can be popped without addDescriptor
 func _pop() {
     trace("pop:", _currentStack)
-    _currentStack.popped.insert(currentIndex)
+    _currentStack.popped.insert(_currentIndex)
     for edge in _graph[_currentStack] ?? [] {
         trace("contingent pop add")
-        _addDescriptor(slot: _currentStack.slot, stack: edge.towards, index: currentIndex)
+        _addDescriptor(slot: _currentStack.slot, stack: edge.towards, index: _currentIndex)
     }
+}
+
+func ret() {
+    _pop()
 }
 
 func _addDescriptor(slot: _GrammarNode, stack: _Vertex, index: Int) {
@@ -103,6 +121,19 @@ func _addDescriptor(slot: _GrammarNode, stack: _Vertex, index: Int) {
         _addedDescriptors += 1
     } else {
         trace("not add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index))")
+    }
+}
+
+func getDescriptor() -> Bool {
+    if _remainder.isEmpty {
+        return false
+    } else {
+        let d = _remainder.removeLast()
+        _currentStack = d.stack
+        _currentIndex = d.index
+        _currentSlot = d.slot
+        trace("get Descriptor(slot: \(_currentSlot), stack: \(_currentStack), index: \(_currentIndex))")
+        return true
     }
 }
 

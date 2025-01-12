@@ -30,7 +30,7 @@ class Scanner {
         input = inputString
         tokens = []
         scanTokens()
-        currentIndex = -1
+        _currentIndex = -1
         next()
     }
 
@@ -43,7 +43,7 @@ class Scanner {
         input = inputFileContent
         tokens = []
         scanTokens()
-        currentIndex = -1
+        _currentIndex = -1
         next()
     }
 
@@ -80,7 +80,7 @@ let apusTerminals: [String:TokenPattern] = [
     ")?":           (")?",                      Regex { ")?" },                     true,  false),
     ")*":           (")*",                      Regex { ")*" },                     true,  false),
     ")+":           (")+",                      Regex { ")+" },                     true,  false),
-    "if":           ("if",                      try! Regex("if"),                   true,  false),
+//    "if":           ("if",                      try! Regex("if"),                   true,  false),
 ]
 
 struct Token {
@@ -114,7 +114,7 @@ func scanTokens() {
         var token: Token?
         for (kind, pattern) in tokenPatterns {
             if let match = input[matchStart...].prefixMatch(of: pattern.regex) {
-                if match.0.endIndex > matchEnd || match.0.endIndex == matchEnd && pattern.isKeyword {
+                if match.0.endIndex > matchEnd || (match.0.endIndex == matchEnd && pattern.isKeyword) {
                     matchEnd = match.0.endIndex
                     token = Token(image: match.0, kind: kind)
                 }
@@ -130,29 +130,31 @@ func scanTokens() {
 }
 
 func next() {
-    currentIndex += 1
-    while currentIndex < tokens.count, let t = tokenPatterns[tokens[currentIndex].kind], t.isSkip {
-        currentIndex += 1
+    // TODO: restrict currentIndex to tokens.range
+    // TODO: remove isSkip tokens from the list
+    _currentIndex += 1
+    while _currentIndex < tokens.count, let t = tokenPatterns[tokens[_currentIndex].kind], t.isSkip {
+        _currentIndex += 1
     }
-    if currentIndex >= tokens.count {
-        print("end of file reached")
-    } else {
+    if _currentIndex < tokens.count {
         trace("next", token.image, token.kind)
+    } else {
+        print("end of file reached")
     }
 }
 
 var tokens: [Token] = []
 
 // the index of the current active token
-var currentIndex = -1
+var _currentIndex = -1
 
 var token: Token {
-    if currentIndex < 0 {
+    if _currentIndex < 0 {
         return Token(image: input[...input.startIndex], kind: "")
-    } else if currentIndex >= tokens.count {
+    } else if _currentIndex >= tokens.count {
         return Token(image: input[input.endIndex...], kind: "")
     } else {
-        return tokens[currentIndex]
+        return tokens[_currentIndex]
     }
 }
 
@@ -163,7 +165,7 @@ func initScanner(fromString inputString: String, patterns: [String:TokenPattern]
     input = inputString
     tokens = []
     scanTokens()
-    currentIndex = -1
+    _currentIndex = -1
     next()
 }
 
@@ -176,7 +178,7 @@ func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
     input = inputFileContent
     tokens = []
     scanTokens()
-    currentIndex = -1
+    _currentIndex = -1
     next()
 }
 
@@ -217,7 +219,8 @@ let blockcommentRegex = Regex {
 }
 // recommended ID syntax following https://unicode.org/reports/tr31/
 let identifierRegex = Regex {
-    #/\p{XID_Start}/#
+    // TODO: why are there #'s here?
+    /\p{XID_Start}/
     ZeroOrMore {
         #/\p{XID_Continue}/#
     }

@@ -7,11 +7,10 @@
 
 import Foundation
 
-enum ParseFailure: Error { case unexpectedToken, didNotReachEndOfInput }
-
 // NEW ART
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
-// ParseGrammar is a handbuilt recursive descent parser
+// by using parseGrammar, which is a hand-built recursive descent parser
+trace = false
 let _startSymbol = "S"
 guard let _grammarRoot = _parseGrammar(startSymbol: _startSymbol) else {
     print("error: Start Symbol '\(_startSymbol)' not found")
@@ -22,11 +21,12 @@ guard let _grammarRoot = _parseGrammar(startSymbol: _startSymbol) else {
 var _currentSlot = _grammarRoot
 
 // the top of one of the stacks in the Graph Structured Stack
-var _currentStack = _Vertex(slot: _currentSlot, index: currentIndex)
+var _currentStack = _Vertex(slot: _currentSlot, index: _currentIndex)
 
 //addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
 
-var _isAmbiguous = true
+//var isAmbiguous = true
+
 var _failedParses = 0
 var _successfullParses = 0
 var _addedDescriptors = 0
@@ -39,8 +39,8 @@ for m in _messages {
     // TODO: set startSymbol depending on the message
     
     _currentSlot = _grammarRoot
-    _currentStack = _Vertex(slot: _currentSlot, index: currentIndex)
-    _addDescriptor(slot: _currentSlot, stack: _currentStack, index: currentIndex)
+    _currentStack = _Vertex(slot: _currentSlot, index: _currentIndex)
+    _addDescriptor(slot: _currentSlot, stack: _currentStack, index: _currentIndex)
 
     trace = true
     _failedParses = 0
@@ -48,7 +48,7 @@ for m in _messages {
     _addedDescriptors = 0
     
     // use the AST to parse the message
-    _parseMessage()
+    try _parseMessage()
 }
 
 //_generateParser()

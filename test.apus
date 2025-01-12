@@ -49,7 +49,8 @@ comment    : /\/\/.*/.
 //S = "x" | S "x".              // PASS c but FAIL too many failed on xxx   matched: 1   failed: 6   gss size: 5
 //S = S "x" | "x".              // PASS c but FAIL too many failed on xxx   matched: 1   failed: 6   gss size: 5
 
-//S = S "x" | "".
+S = S "x" | "".
+//S = "x" S | "".
 
 //S = A B C.  A = "a". B = "b". C = "c".    // PASS
 //S = X X X.  X = "x".                      // PASS c
@@ -102,6 +103,7 @@ comment    : /\/\/.*/.
 //S = { "a" } "b".
 //S = "a" | "c" "d".
 //S = ("a" | "b") | "c".
-S = {"a"} "x" {"b"}.
+//S = {"a"} "x" {"b" | "c"}.
+//S = "" | "b".
 ¶
-ab
+xxx

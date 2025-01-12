@@ -2,7 +2,7 @@ whitespace  : /\s+/ .
 singleLine  : /\/\/.*/ .
 multiLine   : /\/\*(?s).*?\*\// .
 
-identifier  = /\p{ID_Start}\p{ID_Continue}*/ .
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
@@ -29,7 +29,7 @@ whitespace  : /\s+/ .
 singleLine  : /\/\/.*/ .
 multiLine   : /\/\*(?s).*?\*\// .
 
-identifier  = /\p{ID_Start}\p{ID_Continue}*/ .
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .

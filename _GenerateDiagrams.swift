@@ -45,6 +45,35 @@ class DiagramsGenerator {
     // Draw a regular grid of GrammarNodes with arrows for .seq down and .alt to the right.
     func generateDiagrams() throws {
         
+        // generate GSS graph
+        content.append("\n  subgraph GSS {")
+        content.append("\n    cluster = true")
+        
+        var shortMessage = _messages[0]
+        if shortMessage.count > 20 {
+            shortMessage = String(shortMessage.prefix(17))
+            shortMessage.append("...")
+        }
+
+        content.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphvizHTML)> \(_successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
+        content.append("\n    labeljust = l")
+        content.append("\n    node [shape = box, style = rounded, height = 0]")
+        if _graph.count > 1 {
+            for (key, value) in _graph.sorted(by: { $0.key > $1.key }) {
+                if value.isEmpty {
+                    content.append("\n    \"\(key)\" -> \"#\"") // use '#' or '●○' as the root label?
+                } else {
+                    for element in value {
+                        let poppedIndexes = element.towards.popped.sorted().description.dropFirst().dropLast()
+                        content.append("\n    \(key) [label = <\(key)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+                        content.append("\n    \(key) -> \(element.towards.description)")
+                    }
+                }
+            }
+        }
+        content.append("\n  }")
+
+        // generate syntax graph for each non-terminal
         for (name, node) in _nonTerminals {
             content.append("\n  subgraph cluster\(name) {")
             //        d.append("\n    cluster = true")
@@ -85,7 +114,7 @@ class DiagramsGenerator {
         
 //        d.append("\n    \(node.number) [label = <\(node.number)<br/><font color=\"gray\" point-size=\"8.0\"> \(node.kind) \(str)</font>>]")
 //        d.append("\n    \(node.number) [label = <\(node.number)<br/>\(node.kind) \(str)<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())<br/>am \(node.ambiguous.sorted())>]")
-        content.append("\n    \(node.cell) [label = <\(node.cell)<br/>\(node.kind) \(str)<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())<br/>am \(node.ambiguous.sorted())>]")
+        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str)<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())<br/>am \(node.ambiguous.sorted())>]")
 
         if let seq = node.seq {
             if node.kind == .END {

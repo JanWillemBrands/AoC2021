@@ -61,8 +61,8 @@ extension String {
         var line = 0
         var lineStart = self.startIndex
         while let match = self[lineStart ..< index].firstIndex(of: "\n") {
-            lineStart = self.index(match, offsetBy: 1)
             line += 1
+            lineStart = self.index(match, offsetBy: 1)
         }
         let position = self.distance(from: lineStart, to: index)
         return "L\(line)P\(position)"

@@ -53,12 +53,11 @@ extension _GrammarNode {
         } else if first.contains("") && follow.contains(token.kind) {
             return true
         } else {
-            // TODO: invent some error message relevant to GLL parsing
-            //            var expected = first
-            //            if expected.remove("") == "" {
-            //                expected.formUnion(follow)
-            //            }
-            //            expect(expected)
+            var expectedTokens = first
+            if first.contains( "") {
+                expectedTokens.formUnion(follow)
+            }
+            trace("expect '\(token.kind)' to be in", expectedTokens)
             return false
         }
     }
@@ -74,6 +73,10 @@ extension _GrammarNode: Hashable {
 }
 
 extension _GrammarNode: CustomStringConvertible {
+//    var description: String {
+//        cell.description
+//    }
+    
     // generate labels like A, B, C, ... AA, AB, AC, ...
     var description: String {
         let latin = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -88,7 +91,7 @@ extension _GrammarNode: CustomStringConvertible {
         return toLatin(self.number)
     }
     
-    var description_: String {
+    var __description: String {
         let greek = Array("αβγδεζηθικλμνξοπρστυφχωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ")
         func toGreek(_ n: Int) -> String {
             let letter = String(greek[n % 24])
@@ -149,7 +152,7 @@ extension _GrammarNode {
             follow.formUnion(first.subtracting([""]))
         case .END:
             first = [""]
-            // the follow of .END is the follow of the .SEQ that started it
+            // the follow of .END is the follow of the .seq that started it
             follow = seq?.follow ?? []
         }
         _GrammarNode.sizeofSets += first.count + follow.count
@@ -314,6 +317,7 @@ extension _GrammarNode {
  END.seq references start of production 'N'
  END.alt references start of alternate 'ALT'
  Extends naturally to EBNF brackets if END.alt references the enclosing bracket 'DO', 'OPT', 'POS', or 'KLN'
+ //TODO: above breaks the invariant that .alt always references an ALT node.  Change to 'END.seq' references the bracket
  */
 
 extension _GrammarNode {

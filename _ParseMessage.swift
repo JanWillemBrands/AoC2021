@@ -7,35 +7,33 @@
 
 import Foundation
 
-func _parseMessage() {
+enum ParserError: Error { case unexpectedToken, didNotReachEndOfInput, missingSequence }
+
+func _parseMessage() throws {
     
-    while !_remainder.isEmpty {
-        let d = _remainder.removeLast()
-        trace("get Descriptor(slot: \(d.slot.description), stack: \(d.stack.description), index: \(d.index))")
-        _currentStack = d.stack
-//        currentIndex(to: d.index)
-        currentIndex = d.index
-//        token = tokens[currentIndex]
-//        next()
-        _currentSlot = d.slot
+    nextDescriptor: while getDescriptor() {
         
-        do {
+        while true {
             
-            trace("parse node", _currentSlot.kindName)
+            trace("parse slot", _currentSlot.kindName, _currentSlot, "token: \(token.image)")
             
+            // skip to next descriptor if token is not expected
             if _currentSlot.isExpecting(token) == false {
-                throw ParseFailure.unexpectedToken
+                _failedParses += 1
+                trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
+                continue nextDescriptor
             }
             
             // switch to .LL1 mode if only one single path is possible
-            _isAmbiguous = _currentSlot.ambiguous.contains(token.kind)
+            let _isAmbiguous = _currentSlot.ambiguous.contains(token.kind)
             
             switch _currentSlot.kind {
-                
             case .EOS:
                 break
             case .T:
-                break
+                next()
+                guard let seq = _currentSlot.seq else { throw ParserError.missingSequence }
+                _currentSlot = seq
             case .TI:
                 break
             case .C:
@@ -43,13 +41,16 @@ func _parseMessage() {
             case .B:
                 break
             case .EPS:
-                break
+                guard let seq = _currentSlot.seq else { throw ParserError.missingSequence }
+                _currentSlot = seq
             case .N:
-                break
+                call(slot: _currentSlot)
+                continue nextDescriptor
             case .ALT:
                 break
             case .END:
-                break
+                ret()
+                continue nextDescriptor
             case .DO:
                 break
             case .OPT:
@@ -57,77 +58,75 @@ func _parseMessage() {
             case .POS:
                 break
             case .KLN:
-                break
+                if _currentSlot.first.contains(token.kind) {
+                    _currentSlot = _currentSlot.alt ?? _currentSlot
+                }
+                if _currentSlot.follow.contains(token.kind) {
+                    if let seq = _currentSlot.seq { _create(slot: seq) }
+                }
             }
             
             
-//            switch _currentSlot.kind {
-//                
-//            case .SEQ(let children):
-//                for child in children.reversed() {
-//                    create(slot: child)
-//                }
-//                // TODO: something to gather all the extents of its children
-//                
-//            case .ALT(let children):
-//                for child in children where child.first.contains(token.kind) {
-//                    if isAmbiguous {
-//                        let saved = _currentStack
-//                        create(slot: child)
-//                        addDescriptor(slot: child, stack: saved, index: currentIndex)
-//                        currentStack = saved
-//                    } else {
-//                        create(slot: child)
-//                        break
-//                    }
-//                }
-//                
-//            case .OPT(let child):
-//                if child.first.contains(token.kind) {
-//                    if _isAmbiguous {
-//                        let saved = _currentStack
-//                        _create(slot: child)
-//                        _addDescriptor(slot: child, stack: saved, index: currentIndex)
-//                        _currentStack = saved
-//                    } else {
-//                        _create(slot: child)
-//                    }
-//                }
-//
-//           case .REP(let child):
-//                if child.first.contains(token.kind) {
-//                    if _isAmbiguous {
-//                        let saved = _currentStack
-//                        _create(slot: _currentSlot)
-//                        let intermediate = _currentStack
-//                        _create(slot: child)
-//                        _addDescriptor(slot: child, stack: intermediate, index: currentIndex)
-//                        _currentStack = saved
-//                    } else {
-//                        _create(slot: _currentSlot)
-//                        _create(slot: child)
-//                    }
-//                }
-//                
-//            case .NTR(_, let link):
-//                _create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
-//                
-//            case .TRM(_):
-//                _currentSlot.yield.insert(_Split(token.range.lowerBound, token.range.lowerBound, token.range.upperBound))
-//                next()
-//            }
-            
-            // TODO: update success criteria
-            if token.range.upperBound == input.endIndex {
+            //            switch _currentSlot.kind {
+            //
+            //            case .SEQ(let children):
+            //                for child in children.reversed() {
+            //                    create(slot: child)
+            //                }
+            //                // TODO: something to gather all the extents of its children
+            //
+            //            case .ALT(let children):
+            //                for child in children where child.first.contains(token.kind) {
+            //                    if isAmbiguous {
+            //                        let saved = _currentStack
+            //                        create(slot: child)
+            //                        addDescriptor(slot: child, stack: saved, index: currentIndex)
+            //                        currentStack = saved
+            //                    } else {
+            //                        create(slot: child)
+            //                        break
+            //                    }
+            //                }
+            //
+            //            case .OPT(let child):
+            //                if child.first.contains(token.kind) {
+            //                    if _isAmbiguous {
+            //                        let saved = _currentStack
+            //                        _create(slot: child)
+            //                        _addDescriptor(slot: child, stack: saved, index: currentIndex)
+            //                        _currentStack = saved
+            //                    } else {
+            //                        _create(slot: child)
+            //                    }
+            //                }
+            //
+            //           case .REP(let child):
+            //                if child.first.contains(token.kind) {
+            //                    if _isAmbiguous {
+            //                        let saved = _currentStack
+            //                        _create(slot: _currentSlot)
+            //                        let intermediate = _currentStack
+            //                        _create(slot: child)
+            //                        _addDescriptor(slot: child, stack: intermediate, index: currentIndex)
+            //                        _currentStack = saved
+            //                    } else {
+            //                        _create(slot: _currentSlot)
+            //                        _create(slot: child)
+            //                    }
+            //                }
+            //
+            //            case .NTR(_, let link):
+            //                _create(slot: link!)     // all nonterminal links have been resolved in func populateLookAheadSets
+            //
+            //            case .TRM(_):
+            //                _currentSlot.yield.insert(_Split(token.range.lowerBound, token.range.lowerBound, token.range.upperBound))
+            //                next()
+            //            }
+
+            if _currentIndex == tokens.count {
                 _successfullParses += 1
-                trace("HURRAH", terminator: "\n")
+                trace("HURRAH token = \(token)", terminator: "\n")
             }
-             
-            _pop()
-            
-        } catch let error {
-            _failedParses += 1
-            trace("NOGOOD Parse ended due to \(error)", terminator: "\n")
         }
     }
     

@@ -1,42 +1,43 @@
-
 // the programmer name of each token kind in the apus language
-//let _fullStop = 0
-//let _semicolon = 1
-//let _colon = 2
-//let _equalsSign = 3
-//let _verticalLine = 4
-//let _leftParenthesis = 5
-//let _rightParenthesis = 6
-//let _leftSquareBracket = 7
-//let _rightSquareBracket = 8
-//let _leftCurlyBracket = 9
-//let _rightCurlyBracket = 10
-//let _lessThanSign = 11
-//let _greaterThanSign = 12
-//let _rightParenthesisQuestionMark = 13
-//let _rightParenthesisAsterisk = 14
-//let _rightParenthesisPlusSign = 15
-//let _whitespace = 16
-//let _linecomment = 17
-//let _blockcomment = 18
-//let _identifier = 19
-//let _literal = 20
-//let _regex = 21
-//let _action = 22
-//let _message = 23
+//let _endOfString                  = 0
+//let _fullStop                     = 1
+//let _semicolon                    = 2
+//let _colon                        = 3
+//let _equalsSign                   = 4
+//let _verticalLine                 = 5
+//let _leftParenthesis              = 6
+//let _rightParenthesis             = 7
+//let _leftSquareBracket            = 8
+//let _rightSquareBracket           = 9
+//let _leftCurlyBracket             = 10
+//let _rightCurlyBracket            = 11
+//let _lessThanSign                 = 12
+//let _greaterThanSign              = 13
+//let _rightParenthesisQuestionMark = 14
+//let _rightParenthesisAsterisk     = 15
+//let _rightParenthesisPlusSign     = 16
+//let _whitespace                   = 17
+//let _linecomment                  = 18
+//let _blockcomment                 = 19
+//let _identifier                   = 20
+//let _literal                      = 21
+//let _regex                        = 22
+//let _action                       = 23
+//let _message                      = 24
 
 
 import Foundation
 import RegexBuilder
 
-enum TokenKind: Int, CustomStringConvertible, CaseIterable {
-    case fullStop, semicolon, colon, equalsSign, verticalLine, leftParenthesis, rightParenthesis, leftSquareBracket, rightSquareBracket, leftCurlyBracket, rightCurlyBracket, lessThanSign, greaterThanSign, rightParenthesisQuestionMark, rightParenthesisAsterisk, rightParenthesisPlusSign, whitespace, linecomment, blockcomment, identifier, literal, regex, action, message
+enum TokenKind: Int, CustomStringConvertible {
+    case endOfString, fullStop, semicolon, colon, equalsSign, verticalLine, leftParenthesis, rightParenthesis, leftSquareBracket, rightSquareBracket, leftCurlyBracket, rightCurlyBracket, lessThanSign, greaterThanSign, rightParenthesisQuestionMark, rightParenthesisAsterisk, rightParenthesisPlusSign, whitespace, linecomment, blockcomment, identifier, literal, regex, action, message
+    
     var description: String {
-        [".", ";", ":", "=", "|", "(", ")", "[", "]", "{", "}", "<", ">", ")?", ")*", ")+", "whitespace", "linecomment", "blockcomment", "identifier", "literal", "regex", "action", "message"][self.rawValue]
+        ["endOfString", ".", ";", ":", "=", "|", "(", ")", "[", "]", "{", "}", "<", ">", ")?", ")*", ")+", "whitespace", "linecomment", "blockcomment", "identifier", "literal", "regex", "action", "message"][self.rawValue]
     }
 }
 
-let skipTokens: Set<TokenKind> = [.whitespace, .lineComment, .blockComment, .action]
+let skipTokens: Set<TokenKind> = [.whitespace, .linecomment, .blockcomment, .action]
 
 struct Token {
     var image: Substring
@@ -60,36 +61,30 @@ struct Token {
 }
 
 let whitespaceRegex = Regex {
-    OneOrMore {
-        .whitespace
-    }
+    OneOrMore { .whitespace }
 }
 let linecommentRegex = Regex {
     "//"
-    ZeroOrMore {
-        .anyNonNewline
-    }
+    ZeroOrMore { .anyNonNewline }
 }
 let blockcommentRegex = Regex {
     "/*"
-    ZeroOrMore(.reluctant) {
-        .any
-    }
+    ZeroOrMore(.reluctant) { .any }
     "*/"
 }
 // recommended ID syntax following https://unicode.org/reports/tr31/
 let identifierRegex = Regex {
-    #/\p{XID_Start}/#
-    ZeroOrMore {
-        #/\p{XID_Continue}/#
-    }
+    /\p{XID_Start}/
+    ZeroOrMore { /\p{XID_Continue}/ }
 }
 let literalRegex = Regex {
     "\""
     ZeroOrMore {
         ChoiceOf {
-            CharacterClass(.anyOf("\"\\").inverted)  // any character that is not a '"' or a backward slash '\'
-            /\\./                                   // a backward slash '\' followed by single character, to escape '"' or '\', but catches more than legal escapes
+            CharacterClass(.anyOf("\"\\").inverted)
+            // any character that is not a '"' or a backward slash '\'
+            /\\./
+            // a backward slash '\' followed by single character, to escape '"' or '\', but catches more than legal escapes
         }
     }
     "\""
@@ -98,8 +93,10 @@ let regexRegex = Regex {
     "/"
     ZeroOrMore {
         ChoiceOf {
-            CharacterClass(.anyOf("/\\").inverted)  // any character that is not a forward slash '/' or a backward slash '\'
-            /\\./                                   // a backward slash '\' followed by single character, to escape '/' or '\', but catches more than legal escapes
+            CharacterClass(.anyOf("/\\").inverted)
+            // any character that is not a forward slash '/' or a backward slash '\'
+            /\\./
+            // a backward slash '\' followed by single character, to escape '/' or '\', but catches more than legal escapes
         }
     }
     "/"
@@ -108,8 +105,10 @@ let actionRegex = Regex {
     "@"
     ZeroOrMore {
         ChoiceOf {
-            CharacterClass(.anyOf("@\\").inverted)  // any character that is not a '@' or a backward slash '\'
-            /\\./                                   // a backward slash '\' followed by single character, to escape '@' or '\', but catches more than legal escapes
+            CharacterClass(.anyOf("@\\").inverted)
+            // any character that is not a '@' or a backward slash '\'
+            /\\./
+            // a backward slash '\' followed by single character, to escape '@' or '\', but catches more than legal escapes
         }
     }
     "@"
@@ -118,17 +117,19 @@ let messageRegex = Regex {
     "¶"
     ZeroOrMore {
         ChoiceOf {
-            CharacterClass(.anyOf("¶\\").inverted)  // any character that is not a '¶' or a backward slash '\'
-            /\\./                                   // a backward slash '\' followed by single character, to escape '¶' or '\', but catches more than legal escapes
+            CharacterClass(.anyOf("¶\\").inverted)
+            // any character that is not a '¶' or a backward slash '\'
+            /\\./
+            // a backward slash '\' followed by single character, to escape '¶' or '\', but catches more than legal escapes
         }
     }
 }
 
-let text = #"""
+let input = #"""
 whitespace   : /\s+/ .  // some characters
 lineComment  : /\/\/.*/ .
 blockComment : /\/\*(?s).*?\*\// .
-if 1_f-fy ***
+if iffy
 """#
 
 typealias TokenRegex = (kind: TokenKind, regex: Regex<Substring>)
@@ -151,53 +152,47 @@ let tokenRegexes: [TokenRegex] = [
     (.rightParenthesisQuestionMark, Regex { ")?" } ),
     (.rightParenthesisAsterisk,     Regex { ")*" } ),
     (.rightParenthesisPlusSign,     Regex { ")+" } ),
-    (.whitespace,                   /\s+/ ),
-    (.linecomment,                  /\/\/.*/ ),
-    (.blockcomment,                 /\/\*(?s).*?\*\// ),
-    (.identifier,                   /\p{XID_Start}\p{XID_Continue}*/ ),
-    (.literal,                      /\"(?:[^\"\\]|\\.)*\"/ ),
-    (.regex,                        /\/(?:[^\/\\]|\\.)*\// ),
-    (.action,                       /@(?:[^@\\]|\\.)*@/ ),
-    (.message,                      /¶(?:[^¶\\]|\\.)*/ ),
+    (.whitespace,                   whitespaceRegex ),
+    (.linecomment,                  linecommentRegex ),
+    (.blockcomment,                 blockcommentRegex ),
+    (.identifier,                   identifierRegex ),
+    (.literal,                      literalRegex ),
+    (.regex,                        regexRegex ),
+    (.action,                       actionRegex ),
+    (.message,                      messageRegex ),
 ]
 
 var tokens: [Token] = []
 var tokenIndex = 0
-var token: Token
-
+var token: Token { tokens[tokenIndex] }
 
 func scanTokens() {
-    var matchStart = text.startIndex
-    while matchStart != text.endIndex {
+    var matchStart = input.startIndex
+    while matchStart != input.endIndex {
         var matchEnd = matchStart
-        var token: Token?
+        var matchToken: Token?
         for tr in tokenRegexes {
-            if let match = text[matchStart ..< text.endIndex].prefixMatch(of: tr.regex) {
+            if let match = input[matchStart ..< input.endIndex].prefixMatch(of: tr.regex) {
                 if match.0.endIndex > matchEnd {
                     matchEnd = match.0.endIndex
-                    token = Token(image: match.0, kind: tr.kind)
+                    matchToken = Token(image: match.0, kind: tr.kind)
                 }
             }
         }
-        if let token {
-            tokens.append(token)
+        if let matchToken {
+            if !skipTokens.contains(matchToken.kind) {
+                tokens.append(matchToken)
+            }
             matchStart = matchEnd
         } else {
-            print("error")
-            matchStart = text.endIndex
+            print("no match possible")
+            matchStart = input.endIndex
         }
     }
+    tokens.append(Token(image: "", kind: .endOfString))
 }
 
-func next() {
-    while tokenIndex < tokens.count && skipTokens.contains(tokens[tokenIndex].kind) {
-        tokenIndex += 1
-    }
-    if tokenIndex == tokens.count {
-        print("end of file reached")
-    } else {
-        token = tokens[tokenIndex]
-        tokenIndex += 1
-        print("next", token.image, token.kind)
-    }
+scanTokens()
+for i in 0..<tokens.count {
+    print(tokens[i])
 }

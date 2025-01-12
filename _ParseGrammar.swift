@@ -19,7 +19,7 @@ func _parseGrammar(startSymbol: String) -> _GrammarNode? {
     
     initScanner(fromFile: inputFileURL, patterns: apusTerminals)
     
-    currentIndex = 0
+    _currentIndex = 0
     _initParser()
     _parseApusGrammar()
     
