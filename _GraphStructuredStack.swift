@@ -5,39 +5,39 @@
 //  Created by Johannes Brands on 26/12/2024.
 //
 
-final class _Vertex {
-    let slot: _GrammarNode
+final class Vertex {
+    let slot: GrammarNode
     let index: Int
-    var popped: Set<Int> = []
-    var unique: Set<_SlotIndex> = []
+    var pops: Set<Int> = []
+    var unique: Set<SlotIndex> = []
 
-    init(slot: _GrammarNode, index: Int) {
+    init(slot: GrammarNode, index: Int) {
         self.slot = slot
         self.index = index
     }
 }
 
-final class _Edge {
-    let towards: _Vertex
+final class Edge {
+    let towards: Vertex
 //    var yield: Set<Split> = []
     
-    init(towards: _Vertex) {
+    init(towards: Vertex) {
         self.towards = towards
     }
 }
 
-struct _Descriptor: Hashable {
-    let slot: _GrammarNode
-    let stack: _Vertex
+struct Descriptor: Hashable {
+    let slot: GrammarNode
+    let stack: Vertex
     let index: Int
 }
 
-struct _SlotIndex: Hashable {
-    let slot: _GrammarNode
+struct SlotIndex: Hashable {
+    let slot: GrammarNode
     let index: Int
 }
 
-struct _Split: Hashable, CustomStringConvertible {
+struct Split: Hashable, CustomStringConvertible {
     let i: String.Index
     let k: String.Index
     let j: String.Index
@@ -50,96 +50,162 @@ struct _Split: Hashable, CustomStringConvertible {
 }
 
 // the list of Decriptors that still need to be processed
-var _remainder: [_Descriptor] = []
+var remainder: [Descriptor] = []
 
 // TODO: OPTIMIZATION cf. Afroozeh change the set of edges to an array of edges
-//var graph: [Vertex: [Edge]] = [:]
-var _graph: [_Vertex: Set<_Edge>] = [:]
+//var gss: [Vertex: [Edge]] = [:]
+var gss: [Vertex: Set<Edge>] = [:]
+var gssRoot = Vertex(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
 
 // global popped
 //var unique: Set<Descriptor> = []
 //var popped: Set<Poppy> = []
 
-struct _Quad: Hashable, CustomStringConvertible {
-    let node: _GrammarNode
-    let split: _Split
+struct Quad: Hashable, CustomStringConvertible {
+    let node: GrammarNode
+    let split: Split
     var description: String { node.description + "\t" + split.description }
 }
-var _currentYield_Cn_ϒ_𝛶_BSR  : Set<_Quad> = []
+var currentYield_Cn_ϒ_𝛶_BSR  : Set<Quad> = []
 
-// creates a GSS vertex v, if it doesn't exist already
+// create a GSS vertex v, if it doesn't exist already
 // add an edge from v to the current stack top
 // add descriptors for previous pop actions from v
-// set the currentStack to v
-func _create(slot: _GrammarNode) {
-    let v = _Vertex(slot: slot, index: _currentIndex)
-    let e = _Edge(towards: _currentStack)
-    trace("create: edge from \(v) to", _currentStack)
+func create(slot: GrammarNode) {
+    let v = Vertex(slot: slot, index: index)
+    let e = Edge(towards: currentStack)
+    trace("create edge from \(v) to \(e.towards)")
     
-    var edges = _graph[v] ?? []
+    var edges = gss[v] ?? []
     edges.insert(e)
-    _graph[v] = edges
+    gss[v] = edges
     
-    for p in v.popped {
-        trace("create add")
-        _addDescriptor(slot: slot, stack: _currentStack, index: p)
+    for p in v.pops {
+        trace("contingent descriptor")
+        addDescriptor(slot: slot, stack: currentStack, index: p)
     }
-    // TODO: update currentStack to newly top?
-//    _currentStack = v
 }
 
-func call(slot: _GrammarNode) {
+func gssFind(slot: GrammarNode, index: Int) -> Vertex {
+    var node = Vertex(slot: slot.seq!, index: index)
+    if gss[node] == nil {
+        return node
+    } else {
+        return gss.keys.first(where: { $0 == node }) ?? node
+    }
+}
+
+func __call(slot: GrammarNode) {
+    trace("call", slot)
+    var v = Vertex(slot: slot.seq!, index: index)
+    if gss[v] != nil {
+        // the vertex already exists, but pops and unique are not part of the hash, so we need to find the original
+        v = gss.keys.first(where: { $0 == v }) ?? v
+    }
+    let e = Edge(towards: currentStack)
+    trace("create edge from \(v) to \(e.towards)")
+    
+    // insert the new edge and add
+    var edges = gss[v] ?? []
+    if edges.insert(e).inserted {
+        gss[v] = edges
+        for p in v.pops {
+            trace("contingent descriptor")
+            addDescriptor(slot: slot.seq!, stack: currentStack, index: p)
+        }
+    }
+
     // iterate over all ALT nodes
     var current = slot
-    while let alt = current.alt {
-        if let seq = alt.seq {
-            _create(slot: seq)
-            _addDescriptor(slot: seq, stack: _currentStack, index: _currentIndex)
+    while let next = current.alt, let seq = next.seq {
+        addDescriptor(slot: seq, stack: v, index: index)
+        current = next
+    }
+}
+
+
+func call(slot: GrammarNode) {
+    trace("call", slot)
+    var v = Vertex(slot: slot.seq!, index: index)
+    var edges = gss[v] ?? []
+    if !edges.isEmpty {
+        // the vertex already exists, but pops and unique are not part of the hash, so we need to find the original
+        if let originalKey = gss.keys.first(where: { $0 == v }) {
+            v = originalKey
         }
-        current = alt
+    }
+    let e = Edge(towards: currentStack)
+    trace("create edge from \(v) to \(e.towards)")
+    
+    // insert the new edge and add
+    if edges.insert(e).inserted {
+        gss[v] = edges
+        for p in v.pops {
+            trace("contingent descriptor")
+            addDescriptor(slot: slot.seq!, stack: currentStack, index: p)
+        }
+    }
+
+    // iterate over all ALT nodes
+    var current = slot
+    while let next = current.alt, let seq = next.seq {
+        addDescriptor(slot: seq, stack: v, index: index)
+        current = next
+    }
+}
+
+
+func _call(slot: GrammarNode) {
+    trace("call:", slot)
+    // iterate over all ALT nodes
+    var current = slot
+    while let next = current.alt, let seq = next.seq {
+        addDescriptor(slot: seq, stack: currentStack, index: index)
+        current = next
     }
 }
 
 // TODO: the first edge can be popped without addDescriptor
-func _pop() {
-    trace("pop:", _currentStack)
-    _currentStack.popped.insert(_currentIndex)
-    for edge in _graph[_currentStack] ?? [] {
-        trace("contingent pop add")
-        _addDescriptor(slot: _currentStack.slot, stack: edge.towards, index: _currentIndex)
+func ret() {
+    trace("ret", currentStack)
+    if index == tokens.count - 1 && currentStack == gssRoot {
+        successfullParses += 1
+        trace("HURRAH token = \(token)", terminator: "\n")
+    } else {
+        currentStack.pops.insert(index)
+        for edge in gss[currentStack] ?? [] {
+            trace("pop \(edge)")
+            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: index)
+        }
     }
 }
 
-func ret() {
-    _pop()
-}
-
-func _addDescriptor(slot: _GrammarNode, stack: _Vertex, index: Int) {
-    if index < tokens.count && stack.unique.insert(_SlotIndex(slot: slot, index: index)).inserted {
-        _remainder.append(_Descriptor(slot: slot, stack: stack, index: index))
-        trace("add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index))")
-        _addedDescriptors += 1
+func addDescriptor(slot: GrammarNode, stack: Vertex, index: Int) {
+    if stack.unique.insert(SlotIndex(slot: slot, index: index)).inserted {
+        remainder.append(Descriptor(slot: slot, stack: stack, index: index))
+        descriptorCount += 1
+        trace("add Descriptor(slot \(slot), stack \(stack), index \(index))")
     } else {
-        trace("not add Descriptor(slot: \(slot.description), stack: \(stack.description), index: \(index))")
+        trace("duplicate Descriptor(slot \(slot), stack \(stack), index \(index))")
     }
 }
 
 func getDescriptor() -> Bool {
-    if _remainder.isEmpty {
+    if remainder.isEmpty {
         return false
     } else {
-        let d = _remainder.removeLast()
-        _currentStack = d.stack
-        _currentIndex = d.index
-        _currentSlot = d.slot
-        trace("get Descriptor(slot: \(_currentSlot), stack: \(_currentStack), index: \(_currentIndex))")
+        let d = remainder.removeLast()
+        currentSlot = d.slot
+        currentStack = d.stack
+        index = d.index
+        trace("get Descriptor(slot \(currentSlot), stack \(currentStack), index \(index))")
         return true
     }
 }
 
 
-extension _Vertex: Hashable, CustomStringConvertible, Comparable {
-    static func == (lhs: _Vertex, rhs: _Vertex) -> Bool {
+extension Vertex: Hashable, CustomStringConvertible, Comparable {
+    static func == (lhs: Vertex, rhs: Vertex) -> Bool {
         lhs.slot == rhs.slot && lhs.index == rhs.index
     }
     func hash(into hasher: inout Hasher) {
@@ -149,13 +215,13 @@ extension _Vertex: Hashable, CustomStringConvertible, Comparable {
     var description: String {
         slot.description + index.description
     }
-    static func < (lhs: _Vertex, rhs: _Vertex) -> Bool {
+    static func < (lhs: Vertex, rhs: Vertex) -> Bool {
         lhs.description < rhs.description
     }
 }
 
-extension _Edge: Hashable, CustomStringConvertible, Comparable {
-    static func == (lhs: _Edge, rhs: _Edge) -> Bool {
+extension Edge: Hashable, CustomStringConvertible, Comparable {
+    static func == (lhs: Edge, rhs: Edge) -> Bool {
         lhs.towards == rhs.towards
     }
     func hash(into hasher: inout Hasher) {
@@ -164,8 +230,13 @@ extension _Edge: Hashable, CustomStringConvertible, Comparable {
     var description: String {
         towards.description
     }
-    static func < (lhs: _Edge, rhs: _Edge) -> Bool {
+    static func < (lhs: Edge, rhs: Edge) -> Bool {
         lhs.towards < rhs.towards
     }
 }
 
+extension SlotIndex: CustomStringConvertible {
+    var description: String {
+        slot.description + index.description
+    }
+}

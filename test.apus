@@ -43,17 +43,17 @@ comment    : /\/\/.*/.
 
 //S = "x" [S].                  // PASS c
 
-//S = "x" | "x" S.              // PASS c but FAIL should have fewer GSS nodes on xxx matched: 1   failed: 6   gss size: 15
-//S = "x" S | "x".              // PASS c but FAIL should have fewer GSS nodes on xxx matched: 1   failed: 6   gss size: 15
+//S = "x" | "x" S.              // PASS
+//S = "x" S | "x".              // PASS
 
-//S = "x" | S "x".              // PASS c but FAIL too many failed on xxx   matched: 1   failed: 6   gss size: 5
+//S = "x" | S "x".              // PASS
 //S = S "x" | "x".              // PASS c but FAIL too many failed on xxx   matched: 1   failed: 6   gss size: 5
 
-S = S "x" | "".
-//S = "x" S | "".
+//S = S "x" | "".               // PASS
+//S = "x" S | "".               // PASS
 
 //S = A B C.  A = "a". B = "b". C = "c".    // PASS
-//S = X X X.  X = "x".                      // PASS c
+//S = X X X.  X = "x".                      // PASS
 
 //S = "a" {"x"} "c".            // PASS
 
@@ -66,29 +66,28 @@ S = S "x" | "".
 
 //S = "x".                      // PASS c
 
-//S = "a" | "b" .               // PASS c
-//S = "x" | "x" .               // PASS c
-//S = ("x"|"x") "a".            // PASS on "xa" matched: 1   failed: 1   gss size: 5
+//S = "a" | "b" .               // PASS
+//S = "x" | "x" .               // PASS
 //S = "x" ( "x" | "x" ) "x".    // PASS
 //S = ( "x" | "x" ) "x".        // PASS
-//S = "x" ( "x" | "x" ).        // PASS
+//S = "x" ( "x" | "x" ).        // PASS c
 
-//S = "a" S "d" | "b" S | "".           // PASS c on "aadd" Cappers thesis Γ3
+//S = "a" S "d" | "b" S | "".           // PASS on "aadd" Cappers thesis Γ3
 
 //S = "a" S "d" | "a" S | "".           // PASS c Cappers thesis Γ5 but fail since only one match
 
 //S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
 
-//S = ( "a" "b" "c" | "a" "b" "c" ) "d".                  // PASS c but unnecessary desriptors and pops
+//S = ( "a" "b" "c" | "a" "b" "c" ) "d".                  // PASS on "abcd"
 
 //S = "a" A B | "a" A "b". A = ["a" | "c"]. B = ["b" | B "c"].    // Binsbergen Γ1
 
-//S = ( ("a" | "a" ) | "a" ) | "a".    // the ebnf reconstruction eliminates the intermediate ALT nodes
-//S = ( ( ( "a" ) "a" ) "a" ) "a".    // the ebnf reconstruction eliminates the intermediate SEQ nodes
+//S = ( ("a" | "a" ) | "a" ) | "a".     // PASS on "a"
+//S = ( ( ( "a" ) "a" ) "a" ) "a".      // PASS on "aaaa"
 
 //S = {"x"}{"x"}.
-//S = "a" B "c" | "a" B "c". B = "b".
-//S = "x" | S S | S S S.          // torture from ART
+//S = "a" B "c" | "a" B "c". B = "b".   // PASS on "abc"
+S = "x" | S S | S S S.          // torture from ART
 //S = "x" | { "x" "x" } | { "x" "x" "x" }.
 //S = A "b" | A "c". A = ["a"].
 //S = "a" [ "b" | "c" ] "d" . S = "k" [ "l" | "m" ] "n".
@@ -105,5 +104,8 @@ S = S "x" | "".
 //S = ("a" | "b") | "c".
 //S = {"a"} "x" {"b" | "c"}.
 //S = "" | "b".
-¶
-xxx
+//S = S "a" | S "b" | "".
+
+//S = X X. X = "x".
+//S = X. X = "x".
+¶xxxxxxxx

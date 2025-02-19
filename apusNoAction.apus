@@ -10,8 +10,8 @@ message     = /¶(?:[^¶\\]|\\.)*/ .
 
 S           = { production } { message } .
               
-production  = identifier ( ":" | "=" ) alternates "." .
-alternates  = sequence { "|" sequence } .
+production  = identifier ( ":" | "=" ) selection "." .
+selection   = sequence { "|" sequence } .
 sequence    = term { term } .
 term        = terminal
             | "[" selection "]"
@@ -33,7 +33,7 @@ identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /\¶(?:[^\¶\\]|\\.)*/ .
+message     = /¶(?:[^¶\\]|\\.)*/ .
 
 S           = { production } { message } .
               

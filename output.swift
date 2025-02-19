@@ -12,9 +12,11 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 	"x":	("x",	Regex { "x" },	true,	false),
 ]
 func S() {
-	S() // yahoo
-	if token.type = ALT {
-		next()
-		expect(["x"])
+	S()
+	 {
+		if token.type = ALT {
+			next()
+			expect(["x"])
+		}
 	}
 }

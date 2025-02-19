@@ -3,10 +3,30 @@
    version = "1.0">
    <ContextStates>
       <ContextState
+         contextName = "_parseMessage():_ParseMessage.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "bracket.description">
+            </PersistentString>
+            <PersistentString
+               value = "_currentSlot.description">
+            </PersistentString>
+            <PersistentString
+               value = "_currentStack.description">
+            </PersistentString>
+            <PersistentString
+               value = "_currentIndex">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "parseMessages():main.swift">
       </ContextState>
       <ContextState
          contextName = "add(_:):mangrove.swift">
+      </ContextState>
+      <ContextState
+         contextName = "ParserGenerator.generate(_:):_GenerateParser.swift">
       </ContextState>
       <ContextState
          contextName = "nextStep():mangrove.swift">
@@ -18,10 +38,10 @@
          contextName = "pathIsEmpty.getter:mangrove.swift">
       </ContextState>
       <ContextState
-         contextName = "tomitaParse():main.swift">
+         contextName = "todo.unsafeMutableAddressor:mangrove.swift">
       </ContextState>
       <ContextState
-         contextName = "todo.unsafeMutableAddressor:mangrove.swift">
+         contextName = "tomitaParse():main.swift">
       </ContextState>
    </ContextStates>
 </VariablesViewState>

@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum ParserError: Error { case unexpectedToken, didNotReachEndOfInput, missingSequence }
+enum ParserError: Error { case unexpectedToken, didNotReachEndOfInput }
 
 func _parseMessage() throws {
     
@@ -15,25 +15,30 @@ func _parseMessage() throws {
         
         while true {
             
-            trace("parse slot", _currentSlot.kindName, _currentSlot, "token: \(token.image)")
+            trace("parse slot", currentSlot.kindName)
             
+            // TODO: re-implement LL1 optimizations
             // skip to next descriptor if token is not expected
-            if _currentSlot.isExpecting(token) == false {
-                _failedParses += 1
-                trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
-                continue nextDescriptor
-            }
-            
+            //            if _currentSlot.kind == .END || _currentSlot.isExpecting(token) == false {
+            //                _failedParses += 1
+            //                trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
+            //                continue nextDescriptor
+            //            }
             // switch to .LL1 mode if only one single path is possible
-            let _isAmbiguous = _currentSlot.ambiguous.contains(token.kind)
+            //            let _isAmbiguous = _currentSlot.ambiguous.contains(token.kind)
             
-            switch _currentSlot.kind {
+            switch currentSlot.kind {
             case .EOS:
                 break
             case .T:
-                next()
-                guard let seq = _currentSlot.seq else { throw ParserError.missingSequence }
-                _currentSlot = seq
+                if currentSlot.str == token.kind {
+                    next()
+                    currentSlot = currentSlot.seq!
+                } else {
+                    failedParses += 1
+                    trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
+                    continue nextDescriptor
+                }
             case .TI:
                 break
             case .C:
@@ -41,28 +46,42 @@ func _parseMessage() throws {
             case .B:
                 break
             case .EPS:
-                guard let seq = _currentSlot.seq else { throw ParserError.missingSequence }
-                _currentSlot = seq
+                currentSlot = currentSlot.seq!
             case .N:
-                call(slot: _currentSlot)
+                call(slot: currentSlot)
                 continue nextDescriptor
+            case .END:
+//                ret()
+//                continue nextDescriptor
+                // The seq link of an END node always points back to the starting bracket node (N, DO, OPT, POS, KLN)
+                let bracket = currentSlot.seq!
+                if bracket.kind == .N && bracket.seq == nil {
+                    // if the bracket is a LHS nonTerminal
+                    ret()
+                    continue nextDescriptor
+                } else {
+                    // otherwise the bracket is a DO, OPT, POS or KLN
+                    currentSlot = bracket.seq!
+                }
             case .ALT:
                 break
-            case .END:
-                ret()
-                continue nextDescriptor
             case .DO:
-                break
+                var current = currentSlot
+                while let next = current.alt, let seq = next.seq {
+                    addDescriptor(slot: seq, stack: currentStack, index: index)
+                    current = next
+                }
+                continue nextDescriptor
             case .OPT:
                 break
             case .POS:
                 break
             case .KLN:
-                if _currentSlot.first.contains(token.kind) {
-                    _currentSlot = _currentSlot.alt ?? _currentSlot
+                if currentSlot.first.contains(token.kind) {
+                    currentSlot = currentSlot.alt!
                 }
-                if _currentSlot.follow.contains(token.kind) {
-                    if let seq = _currentSlot.seq { _create(slot: seq) }
+                if currentSlot.follow.contains(token.kind) {
+                    create(slot: currentSlot.seq!)
                 }
             }
             
@@ -122,19 +141,19 @@ func _parseMessage() throws {
             //                _currentSlot.yield.insert(_Split(token.range.lowerBound, token.range.lowerBound, token.range.upperBound))
             //                next()
             //            }
-
-            if _currentIndex == tokens.count {
-                _successfullParses += 1
-                trace("HURRAH token = \(token)", terminator: "\n")
-            }
+            
+            //            if _currentIndex == tokens.count - 1 {
+            //                _successfullParses += 1
+            //                trace("HURRAH token = \(token)", terminator: "\n")
+            //            }
         }
     }
     
     trace(
-        "\nmatched:", _successfullParses,
-        "  failed:", _failedParses,
-        "  gss size:", _graph.count,
-        "  descriptors:", _addedDescriptors
+        "\nmatched:", successfullParses,
+        "  failed:", failedParses,
+        "  gss size:", gss.count,
+        "  descriptors:", descriptorCount
     )
 }
 

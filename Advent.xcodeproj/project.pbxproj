@@ -52,7 +52,7 @@
 		4E333D6C2629D5E500640821 /* apusNoAction.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusNoAction.apus; sourceTree = "<group>"; };
 		4E33E91F2CAEDC3D004BD82C /* _ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _ApusParser.swift; sourceTree = "<group>"; };
 		4E33E9212CAEDCDD004BD82C /* _GenerateDiagrams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _GenerateDiagrams.swift; sourceTree = "<group>"; };
-		4E34DF7E2C08042C00B2881E /* apusNoActionKLN.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusNoActionKLN.txt; sourceTree = "<group>"; };
+		4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusNoActionKLN.apus; sourceTree = "<group>"; };
 		4E34DF7F2C08A1C400B2881E /* ART.gv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
 		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
 		4E4213832D19C9D400CE6493 /* ParseMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParseMessage.swift; sourceTree = "<group>"; };
@@ -67,7 +67,6 @@
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
 		4E94E9942C2913F600746EB7 /* SymbolTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolTable.swift; sourceTree = "<group>"; };
 		4EA293992BAACF9A0014546F /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
-		4EA8E8272B9B47F0002A5C51 /* Empty.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Empty.txt; sourceTree = "<group>"; };
 		4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
 		4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
 		4EB4DE452B91D30600BA9A88 /* ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParser.swift; sourceTree = "<group>"; };
@@ -98,6 +97,7 @@
 				4E333D622629D5E400640821 /* apus.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
 				4E333D6C2629D5E500640821 /* apusNoAction.apus */,
+				4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */,
 				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
 				4E333D692629D5E500640821 /* TortureSyntax.apus */,
@@ -129,8 +129,6 @@
 				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
 				4E333D672629D5E400640821 /* StringExtensions.swift */,
 				4E94E9942C2913F600746EB7 /* SymbolTable.swift */,
-				4E34DF7E2C08042C00B2881E /* apusNoActionKLN.txt */,
-				4EA8E8272B9B47F0002A5C51 /* Empty.txt */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 			);
 			sourceTree = "<group>";

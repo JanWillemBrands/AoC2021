@@ -87,8 +87,9 @@ extension String {
                 }
             }
         }
-        valid = valid.replacingOccurrences(of: " ", with: "")
-        valid = valid.replacingOccurrences(of: "-", with: "")
+        valid = valid
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "-", with: "")
         if let first = valid.first {
             if first.isNumber {
                 valid = "_" + valid

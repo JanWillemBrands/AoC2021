@@ -1,21 +1,21 @@
 whitespace  : /\s+/ .
 singleLine  : /\/\/.*/ .
 
-                               // syntax empty
-.                              // syntax no rule
-S00 = .                        // syntax empty sequence
-S01 = |.                       // syntax empty selection
-S02 = ().                      // syntax empty group
-S03 = [].                      // syntax empty option
-S04 = {}.                      // syntax empty iteration
-S05 = <>.                      // syntax empty iteration non zero
-S06 = "a" "".                  // syntax explicit end of input
-S07 = N07.                     // syntax indirection not defined
+                               // empty
+.                              // no rule
+S00 = .                        // empty sequence
+S01 = |.                       // empty selection
+S02 = ().                      // empty group
+S03 = [].                      // empty option
+S04 = {}.                      // empty iteration
+S05 = <>.                      // empty iteration non zero
+S06 = "a" "".                  // explicit end of input
+S07 = N07.                     // indirection not defined
 
 
-S10 = "".                       // empty string
+S10 = "".                       // epsilon
 S11 = "a".                      // literal
-S12 = 'a'.                      // regular
+S12 = /a/.                      // regex
 S13 = "a" "b" "c" "d".          // sequence
 S14 = "a" | "b".                // selection
 S15 = "a". S15 = "b".           // selection decomposed

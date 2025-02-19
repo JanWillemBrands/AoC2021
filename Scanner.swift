@@ -30,8 +30,8 @@ class Scanner {
         input = inputString
         tokens = []
         scanTokens()
-        _currentIndex = -1
-        next()
+        index = 0
+//        next()
     }
 
     init(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) throws {
@@ -43,8 +43,8 @@ class Scanner {
         input = inputFileContent
         tokens = []
         scanTokens()
-        _currentIndex = -1
-        next()
+        index = 0
+//        next()
     }
 
 }
@@ -110,63 +110,75 @@ struct Token {
 func scanTokens() {
     var matchStart = input.startIndex
     while matchStart != input.endIndex {
+        var skip = true
         var matchEnd = matchStart
-        var token: Token?
+        var matchedToken: Token?
         for (kind, pattern) in tokenPatterns {
             if let match = input[matchStart...].prefixMatch(of: pattern.regex) {
+                // longest match wins, keyword wins if equal length
                 if match.0.endIndex > matchEnd || (match.0.endIndex == matchEnd && pattern.isKeyword) {
                     matchEnd = match.0.endIndex
-                    token = Token(image: match.0, kind: kind)
+                    matchedToken = Token(image: match.0, kind: kind)
+                    skip = pattern.isSkip
                 }
             }
         }
-        if let token {
-            tokens.append(token)
+        if let matchedToken {
+            if !skip {
+                tokens.append(matchedToken)
+            }
             matchStart = matchEnd
         } else {
             scanError(position: matchStart)
         }
     }
+    // append EndOfString token
+    // TODO: re-implement tokenKind as an Int, with 0 as EndOfString
+//    tokens.append(Token(image: "", kind: "$"))
+    tokens.append(Token(image: "$EOS", kind: "$EOS"))
 }
 
 func next() {
-    // TODO: restrict currentIndex to tokens.range
+    index += 1
+    trace("next", token.image, token.kind)
+
     // TODO: remove isSkip tokens from the list
-    _currentIndex += 1
-    while _currentIndex < tokens.count, let t = tokenPatterns[tokens[_currentIndex].kind], t.isSkip {
-        _currentIndex += 1
-    }
-    if _currentIndex < tokens.count {
-        trace("next", token.image, token.kind)
-    } else {
-        print("end of file reached")
-    }
+//    while _currentIndex < tokens.count, let t = tokenPatterns[tokens[_currentIndex].kind], t.isSkip {
+//        _currentIndex += 1
+//    }
+//    // TODO: restrict currentIndex to tokens.range
+//    if _currentIndex < tokens.count {
+//        trace("next", token.image, token.kind)
+//    } else {
+//        print("end of file reached")
+//    }
 }
 
 var tokens: [Token] = []
 
 // the index of the current active token
-var _currentIndex = -1
+var index = 0
 
 var token: Token {
-    if _currentIndex < 0 {
-        return Token(image: input[...input.startIndex], kind: "")
-    } else if _currentIndex >= tokens.count {
-        return Token(image: input[input.endIndex...], kind: "")
-    } else {
-        return tokens[_currentIndex]
-    }
+    tokens[index]
+//    if _currentIndex < 0 {
+//        return Token(image: input[...input.startIndex], kind: "")
+//    } else if _currentIndex >= tokens.count {
+//        return Token(image: input[input.endIndex...], kind: "")
+//    } else {
+//        return tokens[_currentIndex]
+//    }
 }
 
 // the scanner uses regexes to identify tokens and is iniialized to the apus language
 
 func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) {
-    tokenPatterns = patterns
     input = inputString
+    tokenPatterns = patterns
     tokens = []
     scanTokens()
-    _currentIndex = -1
-    next()
+    index = 0
+//    next()
 }
 
 func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
@@ -174,12 +186,12 @@ func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
         print("error: could not read from \(inputFileURL.absoluteString)")
         exit(2)
     }
-    tokenPatterns = patterns
     input = inputFileContent
+    tokenPatterns = patterns
     tokens = []
     scanTokens()
-    _currentIndex = -1
-    next()
+    index = 0
+//    next()
 }
 
 // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern

@@ -11,7 +11,7 @@ var _skip = false
 
 var _terminalAlias: String?
 
-var _nonTerminals: [String:_GrammarNode] = [:]
+var _nonTerminals: [String:GrammarNode] = [:]
 var _terminals: [String:TokenPattern] = [:]
 var _messages: [String] = []
 
@@ -27,18 +27,22 @@ func _parseApusGrammar() {
     while token.kind == "identifier" {
         _production()
     }
-    // TODO: change ¶ into $ to match ART
-    expect(["message"])
+    // TODO: change ¶ into $ to match ART?
+//    expect(["message", "$"])
+    expect(["message", "¶"])
     while token.kind == "message" {
         _message()
     }
+    // TODO: finalize EOS representation
+//    expect(["$"])
+    expect(["$EOS"])
 }
 
 func _production() {
     trace("production", token)
     let nonTerminalName = String(token.image)
     next()
-    var node: _GrammarNode
+    var node: GrammarNode
     if token.kind == "=" {
         next()
         if token.kind == "regex" {
@@ -56,7 +60,7 @@ func _production() {
                 }
                 endOfList.alt = node
             } else {
-                _nonTerminals[nonTerminalName] = _GrammarNode(kind: .N, str: nonTerminalName, alt: node)
+                _nonTerminals[nonTerminalName] = GrammarNode(kind: .N, str: nonTerminalName, alt: node)
             }
         }
     } else {
@@ -96,7 +100,7 @@ func _message() {
     next()
 }
 
-func _alternates() -> _GrammarNode {
+func _alternates() -> GrammarNode {
     trace("alternates", token)
     let startOfAlternates = _sequence()
     var tmp = startOfAlternates
@@ -108,21 +112,21 @@ func _alternates() -> _GrammarNode {
     return startOfAlternates
 }
 
-func _sequence() -> _GrammarNode {
+func _sequence() -> GrammarNode {
     trace("sequence", token)
-    let startOfSequence = _GrammarNode(kind: .ALT, str: "")
+    let startOfSequence = GrammarNode(kind: .ALT, str: "")
     var tmp = _term()
     startOfSequence.seq = tmp
     while ["literal", "identifier", "regex", "(", "[", "{", "<"].contains(token.kind) {
         tmp.seq = _term()
         tmp = tmp.seq!
     }
-    tmp.seq = _GrammarNode(kind: .END, str: "")
+    tmp.seq = GrammarNode(kind: .END, str: "")
     // Setting the .alt and .seq links of an END node is done in resolveEndNodeLinks
     return startOfSequence
 }
 
-func _regex() -> _GrammarNode {
+func _regex() -> GrammarNode {
     trace("regex", token)
     let name = _terminalAlias ?? input.linePosition(of: token.range.lowerBound)
     
@@ -139,14 +143,14 @@ func _regex() -> _GrammarNode {
         print("error: \(token.image) is not a valid /regex/")
         exit(9)
     }
-    return _GrammarNode(kind: .T, str: name)
+    return GrammarNode(kind: .T, str: name)
 }
 
-func _literal() -> _GrammarNode {
+func _literal() -> GrammarNode {
     trace("literal", token, token.stripped)
 
     if token.stripped == "" {
-        return _GrammarNode(kind: .EPS, str: "")
+        return GrammarNode(kind: .EPS, str: "")
     }
     
     let name = _terminalAlias ?? token.stripped
@@ -163,15 +167,15 @@ func _literal() -> _GrammarNode {
         print("error: \(token.image) is not a valid \"literal\"")
         exit(8)
     }
-    return _GrammarNode(kind: .T, str: name)
+    return GrammarNode(kind: .T, str: name)
 }
 
-func _term() -> _GrammarNode {
+func _term() -> GrammarNode {
     trace("term", token)
-    var node: _GrammarNode
+    var node: GrammarNode
     switch token.kind {
     case "identifier":
-        node = _GrammarNode(kind: .N, str: token.stripped)
+        node = GrammarNode(kind: .N, str: token.stripped)
     case "literal":
         node = _literal()
     case "regex":
@@ -182,28 +186,28 @@ func _term() -> _GrammarNode {
         node = _alternates()
         switch token.kind {
         case ")":
-            node = _GrammarNode(kind: .DO, str: "", alt: node)
+            node = GrammarNode(kind: .DO, str: "", alt: node)
         case ")?":
-            node = _GrammarNode(kind: .OPT, str: "", alt: node)
+            node = GrammarNode(kind: .OPT, str: "", alt: node)
         case ")*":
-            node = _GrammarNode(kind: .KLN, str: "", alt: node)
+            node = GrammarNode(kind: .KLN, str: "", alt: node)
         case ")+":
-            node = _GrammarNode(kind: .POS, str: "", alt: node)
+            node = GrammarNode(kind: .POS, str: "", alt: node)
         default:
             expect([")", ")?", ")+", ")*"])
             exit(7)
         }
     case "[":
         next()
-        node = _GrammarNode(kind: .OPT, str: "", alt: _alternates())
+        node = GrammarNode(kind: .OPT, str: "", alt: _alternates())
         expect(["]"])
     case "{":
         next()
-        node = _GrammarNode(kind: .KLN, str: "", alt: _alternates())
+        node = GrammarNode(kind: .KLN, str: "", alt: _alternates())
         expect(["}"])
     case "<":
         next()
-        node = _GrammarNode(kind: .POS, str: "", alt: _alternates())
+        node = GrammarNode(kind: .POS, str: "", alt: _alternates())
         expect([">"])
     default:
         expect(["identifier", "literal", "regex", "(", "[", "{", "<"])
@@ -214,9 +218,9 @@ func _term() -> _GrammarNode {
 }
 
 func expect(_ expectedTokens: Set<String>) {
-    trace("expect '\(token.kind)' to be in", expectedTokens)
+    trace("expect \"\(token.kind)\" to be in", expectedTokens)
     if !expectedTokens.contains(token.kind) {
-        print("error: found '\(token.kind)' but expected one of \(expectedTokens)")
+        print("error: found \"\(token.kind)\" but expected one of \(expectedTokens)")
         print(token.image, token.image.endIndex > input.endIndex )
         let lineRange = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
         print(input[lineRange], terminator: "")

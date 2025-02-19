@@ -9,26 +9,26 @@ import Foundation
 
 enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
-final class _GrammarNode {
+final class GrammarNode {
     let kind: GrammarNodeKind
     let str: String
-    var alt: _GrammarNode? {
+    var alt: GrammarNode? {
         didSet {
             assert(alt?.kind == .ALT, "alt should always point to a .ALT node")
         }
     }
-    var seq: _GrammarNode? {
+    var seq: GrammarNode? {
         didSet {
             assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
         }
     }
-    init(kind: GrammarNodeKind, str: String, alt: _GrammarNode? = nil, seq: _GrammarNode? = nil) {
+    init(kind: GrammarNodeKind, str: String, alt: GrammarNode? = nil, seq: GrammarNode? = nil) {
         self.kind = kind
         self.str = str
         self.alt = alt
         self.seq = seq
-        self.number = _GrammarNode.count
-        _GrammarNode.count += 1
+        self.number = GrammarNode.count
+        GrammarNode.count += 1
     }
     
     var first:      Set<String> = []
@@ -36,17 +36,17 @@ final class _GrammarNode {
     var ambiguous:  Set<String> = []
     static var sizeofSets = 0
     
-    var yield: Set<_Split> = []
+    var yield: Set<Split> = []
     
     // TODO: remove or keep in DEBUG mode only
     static var count = 0
     let number: Int
     
-    var cell = Cell(r: 0, c: 0)
+    var cell = Cell(name: "", r: 0, c: 0)
 
 }
 
-extension _GrammarNode {
+extension GrammarNode {
     func isExpecting(_ token: Token) -> Bool {
         if first.contains(token.kind) {
             return true
@@ -57,14 +57,14 @@ extension _GrammarNode {
             if first.contains( "") {
                 expectedTokens.formUnion(follow)
             }
-            trace("expect '\(token.kind)' to be in", expectedTokens)
+            trace("expect \"\(token.kind)\" to be in", expectedTokens)
             return false
         }
     }
 }
 
-extension _GrammarNode: Hashable {
-    static func == (lhs: _GrammarNode, rhs: _GrammarNode) -> Bool {
+extension GrammarNode: Hashable {
+    static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
         ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
     }
     func hash(into hasher: inout Hasher) {
@@ -72,7 +72,7 @@ extension _GrammarNode: Hashable {
     }
 }
 
-extension _GrammarNode: CustomStringConvertible {
+extension GrammarNode: CustomStringConvertible {
 //    var description: String {
 //        cell.description
 //    }
@@ -109,10 +109,17 @@ extension _GrammarNode: CustomStringConvertible {
     }
 }
 
-extension _GrammarNode {
+extension GrammarNode {
     func __populateFirstFollowSets() {
         switch kind {
-        case .EOS, .T, .TI, .C, .B, .EPS:
+        case .EPS:
+            if let seq {
+                seq.__populateFirstFollowSets()
+                updateFollow(with: seq)
+            }
+//            first = []
+            first = follow // since .EPS matches the empty string ""
+        case .EOS, .T, .TI, .C, .B:
             first = [str]
             if let seq {
                 seq.__populateFirstFollowSets()
@@ -151,11 +158,12 @@ extension _GrammarNode {
             // if (root.elm.kind == GrammarKind.POS || root.elm.kind == GrammarKind.KLN) changed |= root.instanceFollow.addAll(removeEpsilon(root.instanceFirst));
             follow.formUnion(first.subtracting([""]))
         case .END:
+//            first = []
             first = [""]
             // the follow of .END is the follow of the .seq that started it
             follow = seq?.follow ?? []
         }
-        _GrammarNode.sizeofSets += first.count + follow.count
+        GrammarNode.sizeofSets += first.count + follow.count
     }
     
     private func handleNonTerminal() {
@@ -199,7 +207,7 @@ extension _GrammarNode {
         }
     }
     
-    private func updateFollow(with node: _GrammarNode) {
+    private func updateFollow(with node: GrammarNode) {
         follow = node.first
         if follow.contains("") && !node.follow.isEmpty{
             follow.remove("")
@@ -208,8 +216,8 @@ extension _GrammarNode {
     }
 }
 
-extension _GrammarNode {
-    func resolveEndNodeLinks(parent: _GrammarNode?, alternate: _GrammarNode?) {
+extension GrammarNode {
+    func resolveEndNodeLinks(parent: GrammarNode?, alternate: GrammarNode?) {
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
             seq?.resolveEndNodeLinks(parent: parent, alternate: alternate)
@@ -232,7 +240,7 @@ extension _GrammarNode {
     }
 }
 
-extension _GrammarNode {
+extension GrammarNode {
     
     // TODO: doublecheck the role of "" in first/follow/ambiguity
     func detectAmbiguity() {
@@ -300,12 +308,12 @@ extension _GrammarNode {
 //enum ApusKind { case EOS, TRM, EPS, NTR, ALT, END, ONE, ZOO, OOM, ZOM }
 //enum SwiftKind { case endOfString, terminal, epsilon, nonterminal, alternate, end, one, zeroOrOne, oneOrMore, zeroOrMore}
 /*
- EOS    end of string ("$")
+ EOS    end of string ("" or "$")
  T      terminal (singleton, case sensitive)
  TI     terminal (singleton, case insensitive
  C      terminal character
  B      terminal builtin (whitespace, comment, etc)
- EPS    empty string ("#")
+ EPS    empty string ("#" or "")
  N      nonterminal
  ALT    start of alternate
  END    end of alternate
@@ -320,7 +328,7 @@ extension _GrammarNode {
  //TODO: above breaks the invariant that .alt always references an ALT node.  Change to 'END.seq' references the bracket
  */
 
-extension _GrammarNode {
+extension GrammarNode {
     func ebnf() -> String {
         var s = ""
         switch kind {

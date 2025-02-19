@@ -7,29 +7,35 @@
 
 import Foundation
 
-// NEW ART
+trace = false
+
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
 // by using parseGrammar, which is a hand-built recursive descent parser
-trace = false
 let _startSymbol = "S"
-guard let _grammarRoot = _parseGrammar(startSymbol: _startSymbol) else {
+guard let grammarRoot = _parseGrammar(startSymbol: _startSymbol) else {
     print("error: Start Symbol '\(_startSymbol)' not found")
     exit(1)
 }
 
+//trace = true
+for t in tokens {
+    trace(t)
+}
+//trace = false
+
 // the GrammarNode being processed
-var _currentSlot = _grammarRoot
+var currentSlot = grammarRoot
 
 // the top of one of the stacks in the Graph Structured Stack
-var _currentStack = _Vertex(slot: _currentSlot, index: _currentIndex)
+var currentStack = gssRoot
 
 //addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
 
 //var isAmbiguous = true
 
-var _failedParses = 0
-var _successfullParses = 0
-var _addedDescriptors = 0
+var failedParses = 0
+var successfullParses = 0
+var descriptorCount = 0
 
 
 for m in _messages {
@@ -37,16 +43,21 @@ for m in _messages {
     initScanner(fromString: m, patterns: _terminals)
     // TODO: reset parser after every message     grammarRoot.resetParseResults()
     // TODO: set startSymbol depending on the message
-    
-    _currentSlot = _grammarRoot
-    _currentStack = _Vertex(slot: _currentSlot, index: _currentIndex)
-    _addDescriptor(slot: _currentSlot, stack: _currentStack, index: _currentIndex)
 
     trace = true
-    _failedParses = 0
-    _successfullParses = 0
-    _addedDescriptors = 0
+    failedParses = 0
+    successfullParses = 0
+    descriptorCount = 0
     
+    currentSlot = grammarRoot
+    currentStack = gssRoot
+
+    var current = grammarRoot
+    while let next = current.alt, let seq = next.seq {
+        addDescriptor(slot: seq, stack: currentStack, index: index)
+        current = next
+    }
+
     // use the AST to parse the message
     try _parseMessage()
 }

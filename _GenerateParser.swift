@@ -52,7 +52,7 @@ class ParserGenerator {
         try content.write(to: parserFile, atomically: true, encoding: .utf8)
     }
     
-    func generate(_ node: _GrammarNode) {
+    func generate(_ node: GrammarNode) {
         
         func commaList(_ set: Set<String>) -> String {
             let escapedSet = set.map { $0.escapesAdded }
@@ -73,12 +73,19 @@ class ParserGenerator {
         case .EPS:
             break
         case .N:
-            emit(node.str + "() // yahoo")
-            if let seq = node.seq { generate(seq) }
-            if let alt = node.alt { generate(alt) }
+            emit(node.str + "()")
+            if let seq = node.seq {
+                // rhs nonterminal call
+                generate(seq)
+            } else if let alt = node.alt {
+                // lhs nonterminal declaration
+                emit(dent: .NR, " {")
+                generate(alt)
+                emit(dent: .LN, "}")
+            }
         case .ALT:
             emit(dent: .NR, "if token.type = \(node.kind) {")
-            generate(node.seq!)
+            if let seq = node.seq { generate(seq) }
             emit("expect([\(commaList(node.first))])")
             emit(dent: .LN, "}")
         case .END:

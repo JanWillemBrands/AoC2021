@@ -7,7 +7,7 @@
 
 import Foundation
 
-func _parseGrammar(startSymbol: String) -> _GrammarNode? {
+func _parseGrammar(startSymbol: String) -> GrammarNode? {
     let inputFileURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
     //        .appendingPathComponent("TortureSyntax")
@@ -19,7 +19,7 @@ func _parseGrammar(startSymbol: String) -> _GrammarNode? {
     
     initScanner(fromFile: inputFileURL, patterns: apusTerminals)
     
-    _currentIndex = 0
+    index = 0
     _initParser()
     _parseApusGrammar()
     
@@ -40,7 +40,10 @@ func _parseGrammar(startSymbol: String) -> _GrammarNode? {
         node.resolveEndNodeLinks(parent: node, alternate: node.alt)
     }
     
+    // TODO: finalize representation for EOS
+//    root.follow.insert("$")
     root.follow.insert("")
+    trace = false
     trace("_start symbol '\(startSymbol)' first:", root.first, "follow:", root.follow)
     
     var _oldSize = 0
@@ -49,9 +52,9 @@ func _parseGrammar(startSymbol: String) -> _GrammarNode? {
         _oldSize = _newSize
         _newSize = 0
         for (_, node) in _nonTerminals {
-            _GrammarNode.sizeofSets = 0
+            GrammarNode.sizeofSets = 0
             node.__populateFirstFollowSets()
-            _newSize += _GrammarNode.sizeofSets
+            _newSize += GrammarNode.sizeofSets
         }
         trace("first & follow", _newSize)
     } while _newSize != _oldSize
