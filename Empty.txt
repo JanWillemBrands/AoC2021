@@ -1,8 +1,0 @@
-     whitespace         (pattern: "\\s+", regex: true, muted: true)
-     singleLine         (pattern: "//.*", regex: true, muted: true)
-     multiLine          (pattern: "/\\*(?s).*?\\*/", regex: true, muted: true)
-     literal            (pattern: "\\\"(?:[^\\\"\\\\]|\\\\.)*\\\"", regex: true, muted: false)
-     message            (pattern: "¶[^¶]*", regex: true, muted: false)
-     regex              (pattern: "/(?:[^/\\\\]|\\\\.)*/", regex: true, muted: false)
-     action             (pattern: "@(?:[^@\\\\]|\\\\.)*@", regex: true, muted: false)
-     identifier         (pattern: "[\\p{L}\\p{N}\\p{Pc}]+", regex: true, muted: false)

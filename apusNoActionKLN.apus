@@ -2,7 +2,7 @@ whitespace   : /\s+/ .
 linecomment  : /\/\/.*/ .
 blockcomment : /\/\*(?s).*?\*\// .
 
-identifier  = /\p{ID_Start}\p{ID_Continue}*/ .
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
@@ -10,8 +10,8 @@ message     = /¶(?:[^¶\\]|\\.)*/ .
 
 S           = { rule } { message } .
               
-rule        = identifier ( ":" | "=" ) alternates "." .
-alternates  = sequence { "|" sequence } .
+rule        = identifier ( ":" | "=" ) selection "." .
+selection   = sequence { "|" sequence } .
 sequence    = < term [ "?" | "*" | "+" ] > .
 term        = terminal
             | "[" selection "]"
@@ -21,28 +21,24 @@ term        = terminal
 terminal    = identifier | literal | regex | action .
 
 ¶
-whitespace  : /\s+/ .
-singleLine  : /\/\/.*/ .
-multiLine   : /\/\*(?s).*?\*\// .
+whitespace   : /\s+/ .
+linecomment  : /\/\/.*/ .
+blockcomment : /\/\*(?s).*?\*\// .
 
-identifier  = /\p{ID_Start}\p{ID_Continue}*/ .
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /\¶(?:[^\¶\\]|\\.)*/ .
+message     = /¶(?:[^¶\\]|\\.)*/ .
 
-S     = { production } { message } .
+S           = { rule } { message } .
               
-production  = identifier ( ":" | "=" ) selection "." .
+rule        = identifier ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .
-sequence    = term { term } .
+sequence    = < term [ "?" | "*" | "+" ] > .
 term        = terminal
             | "[" selection "]"
             | "{" selection "}"
             | "<" selection ">"
-            | "(" selection ( ")"
-                            | ")?"
-                            | ")*"
-                            | ")+"
-                            ) .
+            | "(" selection ")" .
 terminal    = identifier | literal | regex | action .
