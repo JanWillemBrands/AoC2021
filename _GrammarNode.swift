@@ -35,9 +35,7 @@ final class GrammarNode {
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
     static var sizeofSets = 0
-    
-    var yield: Set<Split> = []
-    
+        
     // TODO: remove or keep in DEBUG mode only
     static var count = 0
     let number: Int

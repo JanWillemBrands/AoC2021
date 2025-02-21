@@ -7,8 +7,8 @@ var input = ""
 typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
 
 //: start of generated codelet tokenPatterns: [String:TokenPattern] = [
-	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"x":	("x",	Regex { "x" },	true,	false),
 ]
 func S() {

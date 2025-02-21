@@ -52,6 +52,7 @@ for m in _messages {
     currentSlot = grammarRoot
     currentStack = gssRoot
 
+//    addDescriptor(slot: grammarRoot, stack: currentStack, index: index)
     var current = grammarRoot
     while let next = current.alt, let seq = next.seq {
         addDescriptor(slot: seq, stack: currentStack, index: index)

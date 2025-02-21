@@ -98,7 +98,7 @@ class DiagramsGenerator {
         }
         
         for (from, to) in endSeqLinks {
-            content.append("\n  \(from.cell):w -> \(to.cell) [style = solid, color = red, constraint = false]")
+            content.append("\n  \(from.cell):w -> \(to.cell):s [style = solid, color = red, constraint = false]")
         }
         for (from, to) in endAltLinks {
             content.append("\n  \(from.cell):e -> \(to.cell) [style = dotted, color = green, constraint = false]")

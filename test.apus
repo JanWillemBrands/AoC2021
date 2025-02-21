@@ -1,39 +1,39 @@
 whitespace : /\s+/.
 comment    : /\/\/.*/.
 
-//S = X X X.                    // PASS c
+//S = X X X.                    // PASS
 //X = "x".
 
-//S = X "x" | X "x".            // PASS c
+//S = X "x" | X "x".            // PASS
 //X = "x".
 
-//S = "x" X | "x" X.            // PASS c
+//S = "x" X | "x" X.            // PASS
 //X = "x".
 
 //S = X | X.
-//X = "x".                      // PASS c
+//X = "x".                      // PASS
 
-//S = X | X.                    // PASS c
+//S = X | X.                    // PASS
 //X = ["x"].
 
-//S = "x" | "x".                // PASS c
+//S = "x" | "x".                // PASS
 
 //S = "x" X "x" | "x" X "x".    // PASS
 //X = "x".
 
 //S = ( ["x"] | ["x"] ) "x".    // PASS c
 
-//S = "x".                      // PASS c
-//S = "x" "x".                  // PASS c
-//S = "a" "b".                  // PASS c
-//S = "a" "".                   // PASS c
+//S = "x".                      // PASS
+//S = "x" "x".                  // PASS
+//S = "a" "b".                  // PASS
+//S = "a" "".                   // PASS
 
-//S = "a" /u+/ "b".             // pass auuub
-//S = /u+/ "b".                 // fail uuub (first regex in production means "named regex"")
+//S = "a" /u+/ "b".             // PASS auuub
+//S = /u+/ "b".                 // FAIL uuub (first regex in production means "named regex"")
 
 //S = ["x"].                    // PASS c
-//S = "x" | "".                 // PASS but on ""   matched: 2   failed: 0   gss size: 2
-//S = ["x"] "a".                // PASS
+//S = "x" | "".                 // PASS
+//S = ["x"] "a".                // PASS c
 //S = "x" ["x"].                // PASS c but opportunity for improvement (LA?), should not fail on "xx"  matched: 1   failed: 1   gss size: 4
 //S = ["x"] "x".                // PASS c
 
@@ -47,7 +47,7 @@ comment    : /\/\/.*/.
 //S = "x" S | "x".              // PASS
 
 //S = "x" | S "x".              // PASS
-//S = S "x" | "x".              // PASS c but FAIL too many failed on xxx   matched: 1   failed: 6   gss size: 5
+//S = S "x" | "x".              // PASS
 
 //S = S "x" | "".               // PASS
 //S = "x" S | "".               // PASS
@@ -55,57 +55,67 @@ comment    : /\/\/.*/.
 //S = A B C.  A = "a". B = "b". C = "c".    // PASS
 //S = X X X.  X = "x".                      // PASS
 
-//S = "a" {"x"} "c".            // PASS
+//S = "a" {"x"} "c".            // PASS c
 
 //S = {{"x"}}.                  // PASS c lots of descriptors including with index == input.endIndex
-//S = {{"x"}} "a".              // PASS
+//S = {{"x"}} "a".              // PASS c
 //S = {"x"} {"x"}.         `    // PASS c but nor sure all combination sets are reached
 
 //S = <"x">.                    // PASS c
 //S = <"x"> <"x">.              // PASS c
 
-//S = "x".                      // PASS c
+//S = "x".                      // PASS
 
 //S = "a" | "b" .               // PASS
 //S = "x" | "x" .               // PASS
 //S = "x" ( "x" | "x" ) "x".    // PASS
 //S = ( "x" | "x" ) "x".        // PASS
-//S = "x" ( "x" | "x" ).        // PASS c
+//S = "x" ( "x" | "x" ).        // PASS on xx
 
-//S = "a" S "d" | "b" S | "".           // PASS on "aadd" Cappers thesis Γ3
+//S = "b" S | A S "d" | "". A = "a".    // PASS on "aadd" Cappers thesis Γ3
 
-//S = "a" S "d" | "a" S | "".           // PASS c Cappers thesis Γ5 but fail since only one match
+//S = "a" S | "a" S "d" | "".           // PASS on "aad" Cappers thesis Γ5
 
-//S = "a" S "b" | "a" S "d" | "a".      // PASS c Alfroozeh
+//S = "a" S "b" | "a" S "c" | "a".      // PASS on "aac" "Alfroozeh Γ0
 
-//S = ( "a" "b" "c" | "a" "b" "c" ) "d".                  // PASS on "abcd"
+//S = ( "a" "b" | "a" "b" ) "c".        // PASS on "abc"
 
-//S = "a" A B | "a" A "b". A = ["a" | "c"]. B = ["b" | B "c"].    // Binsbergen Γ1
+//S = "a" A B | "a" A "b".              // PASS on "aab" Binsbergen Γ1 (2 matches, need to check for derivation equivalence)
+//A = "a" | "c" | "".
+//B = "b" | B "c" | "".
+
+//S = A C "a" B | A B "a" "a".          // PASS on "aabbaa" Binsbergen Γ2 (1 match, need to check derivation efficiency)
+//A = "a" A | "a".
+//B = "b" B | "b".
+//C = "b" C | "c".
 
 //S = ( ("a" | "a" ) | "a" ) | "a".     // PASS on "a"
 //S = ( ( ( "a" ) "a" ) "a" ) "a".      // PASS on "aaaa"
 
-//S = {"x"}{"x"}.
+//S = { "x" } { "x" }.
 //S = "a" B "c" | "a" B "c". B = "b".   // PASS on "abc"
-S = "x" | S S | S S S.          // torture from ART
+
+//S = "x" | S S | S S S.                // PASS on "xxx" Binsbergen Γ3  matched: _2_!!!   failed: 5   gss size: 16   descriptors: 118
+S = "x" | S S.                        // PASS on "xxx" Binsbergen Γ3  matched: _2_!!!   failed: 5   gss size: 16   descriptors: 118
+//S = "x" | S S S.                      // PASS on "xxx"
+
 //S = "x" | { "x" "x" } | { "x" "x" "x" }.
 //S = A "b" | A "c". A = ["a"].
 //S = "a" [ "b" | "c" ] "d" . S = "k" [ "l" | "m" ] "n".
-//S = A "b" | A "c". A = "a" | "".
-//S = A "b" | A "c".  A = "a".
+//S = A "b" | A "c". A = "a" | "".      // PASS
+//S = A "b" | A "c".  A = "a".          // PASS
 //S = ["a"] ["b"] ["c"].
 //S = A B C. A = ["a"]. B = ["b"]. C = ["c"].
-//S = "" "" "a".
-//S = S "x" | "".
-//S = <"x" |"x">.
-//S = ((("a"))).
+//S = "" "" "a".                        // PASS
+//S = < "x" | "x" >.
+//S = ((("a"))).                        // PASS
 //S = { "a" } "b".
-//S = "a" | "c" "d".
-//S = ("a" | "b") | "c".
+//S = "a" | "c" "d".                    // PASS
+//S = ("a" | "b") | "c".                // PASS
 //S = {"a"} "x" {"b" | "c"}.
-//S = "" | "b".
-//S = S "a" | S "b" | "".
+//S = "" | "b".                         // PASS
+//S = S "a" | S "b" | "".               // PASS
 
-//S = X X. X = "x".
-//S = X. X = "x".
-¶xxxxxxxx
+//S = X X. X = "x".                     // PASS
+//S = X. X = "x".                       // PASS
+¶xxxxxxxxx

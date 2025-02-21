@@ -5,7 +5,7 @@
 //  Created by Johannes Brands on 26/12/2024.
 //
 
-final class Vertex {
+final class StackNode {
     let slot: GrammarNode
     let index: Int
     var pops: Set<Int> = []
@@ -17,18 +17,27 @@ final class Vertex {
     }
 }
 
-final class Edge {
-    let towards: Vertex
+struct _StackNode: Hashable {
+    let slot: GrammarNode
+    let index: Int
+}
+
+// the graph-structured-stack consists of nodes and edges.
+// besides a list of edges, each node contains a list of descriptors and a list of pops.
+var _gss: [_StackNode:(edges: Set<Edge>, unique: Set<_StackNode>, pops: Set<Int>)] = [:]
+
+struct Edge {
+    let towards: StackNode
 //    var yield: Set<Split> = []
     
-    init(towards: Vertex) {
+    init(towards: StackNode) {
         self.towards = towards
     }
 }
 
 struct Descriptor: Hashable {
     let slot: GrammarNode
-    let stack: Vertex
+    let stack: StackNode
     let index: Int
 }
 
@@ -37,67 +46,30 @@ struct SlotIndex: Hashable {
     let index: Int
 }
 
-struct Split: Hashable, CustomStringConvertible {
-    let i: String.Index
-    let k: String.Index
-    let j: String.Index
-    init(_ lowerBound: String.Index, _ pivot: String.Index, _ upperBound: String.Index) {
-        self.i = lowerBound
-        self.k = pivot
-        self.j = upperBound
-    }
-    var description: String { i.inputPosition + ":" + k.inputPosition + ":" + j.inputPosition }
-}
-
 // the list of Decriptors that still need to be processed
 var remainder: [Descriptor] = []
 
 // TODO: OPTIMIZATION cf. Afroozeh change the set of edges to an array of edges
 //var gss: [Vertex: [Edge]] = [:]
-var gss: [Vertex: Set<Edge>] = [:]
-var gssRoot = Vertex(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
+var gss: [StackNode: Set<Edge>] = [:]
+var gssRoot = StackNode(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
 
-// global popped
-//var unique: Set<Descriptor> = []
-//var popped: Set<Poppy> = []
-
-struct Quad: Hashable, CustomStringConvertible {
+struct BSR: Hashable, CustomStringConvertible {
     let node: GrammarNode
-    let split: Split
-    var description: String { node.description + "\t" + split.description }
+    let i: Int
+    let k: Int
+    let j: Int
+    var description: String { "\(node) \(i):\(k):\(j)" }
 }
-var currentYield_Cn_ϒ_𝛶_BSR  : Set<Quad> = []
+
+var yield : Set<BSR> = []   // currentYield_Cn_ϒ_𝛶_BSR
 
 // create a GSS vertex v, if it doesn't exist already
 // add an edge from v to the current stack top
 // add descriptors for previous pop actions from v
-func create(slot: GrammarNode) {
-    let v = Vertex(slot: slot, index: index)
-    let e = Edge(towards: currentStack)
-    trace("create edge from \(v) to \(e.towards)")
-    
-    var edges = gss[v] ?? []
-    edges.insert(e)
-    gss[v] = edges
-    
-    for p in v.pops {
-        trace("contingent descriptor")
-        addDescriptor(slot: slot, stack: currentStack, index: p)
-    }
-}
-
-func gssFind(slot: GrammarNode, index: Int) -> Vertex {
-    var node = Vertex(slot: slot.seq!, index: index)
-    if gss[node] == nil {
-        return node
-    } else {
-        return gss.keys.first(where: { $0 == node }) ?? node
-    }
-}
-
 func __call(slot: GrammarNode) {
     trace("call", slot)
-    var v = Vertex(slot: slot.seq!, index: index)
+    var v = StackNode(slot: slot.seq!, index: index)
     if gss[v] != nil {
         // the vertex already exists, but pops and unique are not part of the hash, so we need to find the original
         v = gss.keys.first(where: { $0 == v }) ?? v
@@ -126,7 +98,7 @@ func __call(slot: GrammarNode) {
 
 func call(slot: GrammarNode) {
     trace("call", slot)
-    var v = Vertex(slot: slot.seq!, index: index)
+    var v = StackNode(slot: slot.seq!, index: index)
     var edges = gss[v] ?? []
     if !edges.isEmpty {
         // the vertex already exists, but pops and unique are not part of the hash, so we need to find the original
@@ -137,11 +109,13 @@ func call(slot: GrammarNode) {
     let e = Edge(towards: currentStack)
     trace("create edge from \(v) to \(e.towards)")
     
+    // to test Afroozeh's assertion
+    assert(edges.contains(e) == false, "edge \(e) was already in node \(v) \(gss[v] ?? [])")
     // insert the new edge and add
     if edges.insert(e).inserted {
         gss[v] = edges
         for p in v.pops {
-            trace("contingent descriptor")
+            trace("contingent Descriptor(slot \(slot.seq!), stack \(currentStack), index \(p))")
             addDescriptor(slot: slot.seq!, stack: currentStack, index: p)
         }
     }
@@ -150,17 +124,6 @@ func call(slot: GrammarNode) {
     var current = slot
     while let next = current.alt, let seq = next.seq {
         addDescriptor(slot: seq, stack: v, index: index)
-        current = next
-    }
-}
-
-
-func _call(slot: GrammarNode) {
-    trace("call:", slot)
-    // iterate over all ALT nodes
-    var current = slot
-    while let next = current.alt, let seq = next.seq {
-        addDescriptor(slot: seq, stack: currentStack, index: index)
         current = next
     }
 }
@@ -180,7 +143,7 @@ func ret() {
     }
 }
 
-func addDescriptor(slot: GrammarNode, stack: Vertex, index: Int) {
+func addDescriptor(slot: GrammarNode, stack: StackNode, index: Int) {
     if stack.unique.insert(SlotIndex(slot: slot, index: index)).inserted {
         remainder.append(Descriptor(slot: slot, stack: stack, index: index))
         descriptorCount += 1
@@ -204,8 +167,8 @@ func getDescriptor() -> Bool {
 }
 
 
-extension Vertex: Hashable, CustomStringConvertible, Comparable {
-    static func == (lhs: Vertex, rhs: Vertex) -> Bool {
+extension StackNode: Hashable, CustomStringConvertible, Comparable {
+    static func == (lhs: StackNode, rhs: StackNode) -> Bool {
         lhs.slot == rhs.slot && lhs.index == rhs.index
     }
     func hash(into hasher: inout Hasher) {
@@ -215,7 +178,7 @@ extension Vertex: Hashable, CustomStringConvertible, Comparable {
     var description: String {
         slot.description + index.description
     }
-    static func < (lhs: Vertex, rhs: Vertex) -> Bool {
+    static func < (lhs: StackNode, rhs: StackNode) -> Bool {
         lhs.description < rhs.description
     }
 }

@@ -64,7 +64,14 @@ func _parseMessage() throws {
                     currentSlot = bracket.seq!
                 }
             case .ALT:
-                break
+                // TODO add lookahead checking
+//                if currentSlot.contains(token.kind) {}
+                if let alt = currentSlot.alt, let seq = alt.seq {
+                    addDescriptor(slot: seq, stack: currentStack, index: index)
+                    currentSlot = alt
+                } else {
+                    currentSlot = currentSlot.seq!
+                }
             case .DO:
                 var current = currentSlot
                 while let next = current.alt, let seq = next.seq {
