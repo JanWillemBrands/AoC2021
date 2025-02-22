@@ -88,7 +88,7 @@ func _parseMessage() throws {
                     currentSlot = currentSlot.alt!
                 }
                 if currentSlot.follow.contains(token.kind) {
-                    create(slot: currentSlot.seq!)
+//                    create(slot: currentSlot.seq!)
                 }
             }
             

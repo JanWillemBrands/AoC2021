@@ -65,6 +65,7 @@
 		4E4213912D1DC35400CE6493 /* _GraphStructuredStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _GraphStructuredStack.swift; sourceTree = "<group>"; };
 		4E450E682BE8007F0077E275 /* playground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = playground.swift; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
+		4E89AAEB2D69EDA8006A0BBA /* dummy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = dummy.swift; sourceTree = "<group>"; };
 		4E94E9942C2913F600746EB7 /* SymbolTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolTable.swift; sourceTree = "<group>"; };
 		4EA293992BAACF9A0014546F /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
 		4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
@@ -111,6 +112,7 @@
 				4E42138F2D1DC15000CE6493 /* _GenerateParser.swift */,
 				4EE422A22BFB319500D99368 /* _GrammarNode.swift */,
 				4E4213912D1DC35400CE6493 /* _GraphStructuredStack.swift */,
+				4E89AAEB2D69EDA8006A0BBA /* dummy.swift */,
 				4E4213892D19E31200CE6493 /* _ParseGrammar.swift */,
 				4E4213852D19CA1200CE6493 /* _ParseMessage.swift */,
 				4EB4DE452B91D30600BA9A88 /* ApusParser.swift */,

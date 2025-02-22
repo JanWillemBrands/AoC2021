@@ -62,20 +62,36 @@ class DiagramsGenerator {
         content.append("\n    labeljust = l")
         content.append("\n    node [shape = box, style = rounded, height = 0]")
         if !gss.isEmpty {
-//            if _graph.count > 1 {
-            for (key, value) in gss.sorted(by: { $0.key > $1.key }) {
-                if value.isEmpty {
-                    content.append("\n    \"\(key)\" -> \"#\"")
+            for node in gss.sorted() {
+                if node.edges.isEmpty {
+                    content.append("\n    \"\(node)\" -> \"#\"")
                     // TODO: use '#' or '●○' as the root label?
                 } else {
-                    for element in value {
-                        let poppedIndexes = element.towards.pops.sorted().description.dropFirst().dropLast()
-                        content.append("\n    \(key) [label = <\(key)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
-                        content.append("\n    \(key) -> \(element.towards.description)")
+                    for edge in node.edges {
+                        let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
+                        content.append("\n    \(node) [label = <\(node)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+                        content.append("\n    \(node) -> \(edge)")
                     }
                 }
             }
         }
+//        if !gss.isEmpty {
+////            if _graph.count > 1 {
+//            for (key, value) in gss.sorted(by: { $0.key > $1.key }) {
+//                if value.edges.isEmpty {
+////                    if value.isEmpty {
+//                    content.append("\n    \"\(key)\" -> \"#\"")
+//                    // TODO: use '#' or '●○' as the root label?
+//                } else {
+//                    for element in value.edges {
+//                        let poppedIndexes = gss[element.towards]?.pops.sorted().description.dropFirst().dropLast()
+////                        let poppedIndexes = element.towards.pops.sorted().description.dropFirst().dropLast()
+//                        content.append("\n    \(key) [label = <\(key)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+//                        content.append("\n    \(key) -> \(element.towards.description)")
+//                    }
+//                }
+//            }
+//        }
         content.append("\n  }")
 
         // generate syntax graph for each non-terminal

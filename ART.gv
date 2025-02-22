@@ -7,245 +7,31 @@ digraph G {
   rankdir = "TB"
   subgraph GSS {
     cluster = true
-    label = <xxxxxxxxx↵> fontcolor = green
+    label = <xxx↵> fontcolor = green
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 8, 9</font>>]
-    I9 -> I7
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I9 -> I2
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I9 -> H2
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I9 -> I1
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I9 -> H1
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 7, 8, 9</font>>]
-    I9 -> H6
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I9 -> I4
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    I9 -> I5
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 9</font>>]
-    I9 -> I8
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I9 -> H4
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 9</font>>]
-    I9 -> H8
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 8, 9</font>>]
-    I9 -> H7
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 7, 8, 9</font>>]
-    I9 -> I6
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I9 -> I3
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    I9 -> H5
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I9 -> H0
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I9 -> H3
-    I9 [label = <I9<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    I9 -> K0
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I8 -> I4
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I8 -> I3
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I8 -> H4
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I8 -> H1
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    I8 -> I5
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I8 -> I1
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 7, 8, 9</font>>]
-    I8 -> H6
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I8 -> H3
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I8 -> I2
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 8, 9</font>>]
-    I8 -> I7
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 7, 8, 9</font>>]
-    I8 -> I6
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 8, 9</font>>]
-    I8 -> H7
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I8 -> H2
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I8 -> H0
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    I8 -> K0
-    I8 [label = <I8<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    I8 -> H5
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I7 -> I4
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I7 -> I3
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I7 -> H4
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I7 -> H1
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    I7 -> I5
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I7 -> I1
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 7, 8, 9</font>>]
-    I7 -> H6
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I7 -> H3
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I7 -> I2
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 7, 8, 9</font>>]
-    I7 -> I6
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I7 -> H2
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I7 -> H0
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    I7 -> K0
-    I7 [label = <I7<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    I7 -> H5
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I6 -> I1
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I6 -> I4
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    I6 -> I5
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I6 -> H1
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I6 -> H0
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I6 -> I3
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I6 -> I2
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    I6 -> H5
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    I6 -> K0
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I6 -> H3
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I6 -> H4
-    I6 [label = <I6<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I6 -> H2
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I5 -> I3
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I5 -> H0
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I5 -> I1
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I5 -> H3
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I5 -> H1
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I5 -> I4
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    I5 -> H4
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I5 -> I2
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I5 -> H2
-    I5 [label = <I5<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    I5 -> K0
-    I4 [label = <I4<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I4 -> H2
-    I4 [label = <I4<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I4 -> H3
-    I4 [label = <I4<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    I4 -> K0
-    I4 [label = <I4<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I4 -> H0
-    I4 [label = <I4<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    I4 -> I3
-    I4 [label = <I4<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I4 -> I1
-    I4 [label = <I4<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I4 -> I2
-    I4 [label = <I4<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I4 -> H1
-    I3 [label = <I3<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I3 -> H2
-    I3 [label = <I3<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    I3 -> I2
-    I3 [label = <I3<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I3 -> H1
-    I3 [label = <I3<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I3 -> I1
-    I3 [label = <I3<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    I3 -> K0
-    I3 [label = <I3<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I3 -> H0
-    I2 [label = <I2<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I2 -> H1
-    I2 [label = <I2<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I2 -> H0
-    I2 [label = <I2<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I2 -> I1
-    I2 [label = <I2<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    I2 -> K0
-    I1 [label = <I1<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    I1 -> K0
-    I1 [label = <I1<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    I1 -> H0
-    H9 [label = <H9<br/><font color="gray" point-size="8.0"> </font>>]
-    H9 -> I9
-    H9 [label = <H9<br/><font color="gray" point-size="8.0"> </font>>]
-    H9 -> H9
-    H8 [label = <H8<br/><font color="gray" point-size="8.0"> 9</font>>]
-    H8 -> I8
-    H8 [label = <H8<br/><font color="gray" point-size="8.0"> 9</font>>]
-    H8 -> H8
-    H7 [label = <H7<br/><font color="gray" point-size="8.0"> 8, 9</font>>]
-    H7 -> I7
-    H7 [label = <H7<br/><font color="gray" point-size="8.0"> 8, 9</font>>]
-    H7 -> H7
-    H6 [label = <H6<br/><font color="gray" point-size="8.0"> 7, 8, 9</font>>]
-    H6 -> H6
-    H6 [label = <H6<br/><font color="gray" point-size="8.0"> 7, 8, 9</font>>]
-    H6 -> I6
-    H5 [label = <H5<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    H5 -> H5
-    H5 [label = <H5<br/><font color="gray" point-size="8.0"> 6, 7, 8, 9</font>>]
-    H5 -> I5
-    H4 [label = <H4<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    H4 -> H4
-    H4 [label = <H4<br/><font color="gray" point-size="8.0"> 5, 6, 7, 8, 9</font>>]
-    H4 -> I4
-    H3 [label = <H3<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    H3 -> H3
-    H3 [label = <H3<br/><font color="gray" point-size="8.0"> 4, 5, 6, 7, 8, 9</font>>]
-    H3 -> I3
-    H2 [label = <H2<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    H2 -> H2
-    H2 [label = <H2<br/><font color="gray" point-size="8.0"> 3, 4, 5, 6, 7, 8, 9</font>>]
-    H2 -> I2
-    H1 [label = <H1<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    H1 -> I1
-    H1 [label = <H1<br/><font color="gray" point-size="8.0"> 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    H1 -> H1
-    H0 [label = <H0<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8, 9</font>>]
-    H0 -> H0
-    H0 [label = <H0<br/><font color="gray" point-size="8.0"> 1, 2, 3, 4, 5, 6, 7, 8</font>>]
-    H0 -> K0
+    F1 [label = <F1<br/><font color="gray" point-size="8.0"> 1, 2, 3</font>>]
+    F1 -> K0
+    F2 [label = <F2<br/><font color="gray" point-size="8.0"> 2, 3</font>>]
+    F2 -> F1
+    F3 [label = <F3<br/><font color="gray" point-size="8.0"> 3</font>>]
+    F3 -> F2
   }
   subgraph clusterS {
     node [shape = box]
-    label = <S = "x" | S S .>
+    label = <S = "x" S | "" .>
     labeljust = l
-    SR0C0 [label = <J<br/>N S<br/>fi ["x"]<br/>fo [""]<br/>am ["x"]>]
+    SR0C0 [label = <J<br/>N S<br/>fi ["", "x"]<br/>fo [""]<br/>am []>]
     SR0C1 [label = <C<br/>ALT <br/>fi ["x"]<br/>fo [""]<br/>am []>]
-    SR1C1 [label = <D<br/>T "x"<br/>fi ["x"]<br/>fo [""]<br/>am []>]
-    SR2C1 [label = <E<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    SR1C1 [label = <D<br/>T "x"<br/>fi ["x"]<br/>fo ["", "x"]<br/>am []>]
+    SR2C1 [label = <E<br/>N S<br/>fi ["", "x"]<br/>fo [""]<br/>am []>]
+    SR3C1 [label = <F<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    SR2C1 -> SR3C1 [weight=100000000]
     SR1C1 -> SR2C1 [weight=100000000]
     SR0C1 -> SR1C1 [weight=100000000]
-    SR0C2 [label = <F<br/>ALT <br/>fi ["x"]<br/>fo [""]<br/>am []>]
-    SR1C2 [label = <G<br/>N S<br/>fi ["x"]<br/>fo ["x"]<br/>am []>]
-    SR2C2 [label = <H<br/>N S<br/>fi ["x"]<br/>fo [""]<br/>am []>]
-    SR3C2 [label = <I<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
-    SR2C2 -> SR3C2 [weight=100000000]
+    SR0C2 [label = <G<br/>ALT <br/>fi [""]<br/>fo [""]<br/>am []>]
+    SR1C2 [label = <H<br/>EPS <br/>fi [""]<br/>fo [""]<br/>am []>]
+    SR2C2 [label = <I<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
     SR1C2 -> SR2C2 [weight=100000000]
     SR0C2 -> SR1C2 [weight=100000000]
     rank = same {SR0C1 -> SR0C2}
@@ -257,14 +43,13 @@ digraph G {
     SR1C0 -> SR2C0 [weight=100000000]
     rank = same {SR2C0 -> SR2C1}
     SR2C0 -> SR3C0 [weight=100000000]
-    SR2C1 -> SR3C1 [weight=100000000]
     rank = same {SR3C0 -> SR3C1}
+    SR2C2 -> SR3C2 [weight=100000000]
     rank = same {SR3C1 -> SR3C2}
   }
-  SR2C1:w -> SR0C0:s [style = solid, color = red, constraint = false]
-  SR3C2:w -> SR0C0:s [style = solid, color = red, constraint = false]
-  SR2C1:e -> SR0C1 [style = dotted, color = green, constraint = false]
-  SR3C2:e -> SR0C2 [style = dotted, color = green, constraint = false]
-  SR2C2:e -> SR0C1 [style = dotted, color = blue, constraint = false]
-  SR1C2:e -> SR0C1 [style = dotted, color = blue, constraint = false]
+  SR3C1:w -> SR0C0:s [style = solid, color = red, constraint = false]
+  SR2C2:w -> SR0C0:s [style = solid, color = red, constraint = false]
+  SR3C1:e -> SR0C1 [style = dotted, color = green, constraint = false]
+  SR2C2:e -> SR0C2 [style = dotted, color = green, constraint = false]
+  SR2C1:e -> SR0C1 [style = dotted, color = blue, constraint = false]
 }

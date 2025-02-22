@@ -8,6 +8,7 @@
 final class StackNode {
     let slot: GrammarNode
     let index: Int
+    var edges: [Edge] = []
     var pops: Set<Int> = []
     var unique: Set<SlotIndex> = []
 
@@ -17,19 +18,9 @@ final class StackNode {
     }
 }
 
-struct _StackNode: Hashable {
-    let slot: GrammarNode
-    let index: Int
-}
-
-// the graph-structured-stack consists of nodes and edges.
-// besides a list of edges, each node contains a list of descriptors and a list of pops.
-var _gss: [_StackNode:(edges: Set<Edge>, unique: Set<_StackNode>, pops: Set<Int>)] = [:]
-
 struct Edge {
     let towards: StackNode
-//    var yield: Set<Split> = []
-    
+//    var dummy: [GrammarNode] = []
     init(towards: StackNode) {
         self.towards = towards
     }
@@ -49,9 +40,7 @@ struct SlotIndex: Hashable {
 // the list of Decriptors that still need to be processed
 var remainder: [Descriptor] = []
 
-// TODO: OPTIMIZATION cf. Afroozeh change the set of edges to an array of edges
-//var gss: [Vertex: [Edge]] = [:]
-var gss: [StackNode: Set<Edge>] = [:]
+var gss: Set<StackNode> = []
 var gssRoot = StackNode(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
 
 struct BSR: Hashable, CustomStringConvertible {
@@ -64,66 +53,28 @@ struct BSR: Hashable, CustomStringConvertible {
 
 var yield : Set<BSR> = []   // currentYield_Cn_ϒ_𝛶_BSR
 
-// create a GSS vertex v, if it doesn't exist already
-// add an edge from v to the current stack top
+// create a GSS node if it doesn't already exist
+// add an edge from that node to the current stack top
 // add descriptors for previous pop actions from v
-func __call(slot: GrammarNode) {
-    trace("call", slot)
-    var v = StackNode(slot: slot.seq!, index: index)
-    if gss[v] != nil {
-        // the vertex already exists, but pops and unique are not part of the hash, so we need to find the original
-        v = gss.keys.first(where: { $0 == v }) ?? v
-    }
-    let e = Edge(towards: currentStack)
-    trace("create edge from \(v) to \(e.towards)")
-    
-    // insert the new edge and add
-    var edges = gss[v] ?? []
-    if edges.insert(e).inserted {
-        gss[v] = edges
-        for p in v.pops {
-            trace("contingent descriptor")
-            addDescriptor(slot: slot.seq!, stack: currentStack, index: p)
-        }
-    }
-
-    // iterate over all ALT nodes
-    var current = slot
-    while let next = current.alt, let seq = next.seq {
-        addDescriptor(slot: seq, stack: v, index: index)
-        current = next
-    }
-}
-
-
 func call(slot: GrammarNode) {
     trace("call", slot)
-    var v = StackNode(slot: slot.seq!, index: index)
-    var edges = gss[v] ?? []
-    if !edges.isEmpty {
-        // the vertex already exists, but pops and unique are not part of the hash, so we need to find the original
-        if let originalKey = gss.keys.first(where: { $0 == v }) {
-            v = originalKey
-        }
-    }
-    let e = Edge(towards: currentStack)
-    trace("create edge from \(v) to \(e.towards)")
+    let node = StackNode(slot: slot.seq!, index: index)
+    let actualNode = gss.insert(node).memberAfterInsert
+    let edge = Edge(towards: currentStack)
+    trace("create edge from \(actualNode) to \(currentStack)")
     
-    // to test Afroozeh's assertion
-    assert(edges.contains(e) == false, "edge \(e) was already in node \(v) \(gss[v] ?? [])")
-    // insert the new edge and add
-    if edges.insert(e).inserted {
-        gss[v] = edges
-        for p in v.pops {
-            trace("contingent Descriptor(slot \(slot.seq!), stack \(currentStack), index \(p))")
-            addDescriptor(slot: slot.seq!, stack: currentStack, index: p)
-        }
+    assert(!actualNode.edges.contains(where: { $0.towards === currentStack }), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
+    
+    actualNode.edges.append(edge)
+    for pop in actualNode.pops {
+        trace("contingent Descriptor")
+        addDescriptor(slot: slot.seq!, stack: currentStack, index: pop)
     }
 
-    // iterate over all ALT nodes
+    // TODO: iterate over all ALT nodes in parseMessage
     var current = slot
     while let next = current.alt, let seq = next.seq {
-        addDescriptor(slot: seq, stack: v, index: index)
+        addDescriptor(slot: seq, stack: actualNode, index: index)
         current = next
     }
 }
@@ -136,7 +87,7 @@ func ret() {
         trace("HURRAH token = \(token)", terminator: "\n")
     } else {
         currentStack.pops.insert(index)
-        for edge in gss[currentStack] ?? [] {
+        for edge in currentStack.edges {
             trace("pop \(edge)")
             addDescriptor(slot: currentStack.slot, stack: edge.towards, index: index)
         }
@@ -165,7 +116,6 @@ func getDescriptor() -> Bool {
         return true
     }
 }
-
 
 extension StackNode: Hashable, CustomStringConvertible, Comparable {
     static func == (lhs: StackNode, rhs: StackNode) -> Bool {
@@ -198,8 +148,8 @@ extension Edge: Hashable, CustomStringConvertible, Comparable {
     }
 }
 
-extension SlotIndex: CustomStringConvertible {
-    var description: String {
-        slot.description + index.description
-    }
-}
+//extension SlotIndex: CustomStringConvertible {
+//    var description: String {
+//        slot.description + index.description
+//    }
+//}

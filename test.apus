@@ -50,7 +50,7 @@ comment    : /\/\/.*/.
 //S = S "x" | "x".              // PASS
 
 //S = S "x" | "".               // PASS
-//S = "x" S | "".               // PASS
+S = "x" S | "".               // PASS
 
 //S = A B C.  A = "a". B = "b". C = "c".    // PASS
 //S = X X X.  X = "x".                      // PASS
@@ -96,7 +96,7 @@ comment    : /\/\/.*/.
 //S = "a" B "c" | "a" B "c". B = "b".   // PASS on "abc"
 
 //S = "x" | S S | S S S.                // PASS on "xxx" Binsbergen Γ3  matched: _2_!!!   failed: 5   gss size: 16   descriptors: 118
-S = "x" | S S.                        // PASS on "xxx" Binsbergen Γ3  matched: _2_!!!   failed: 5   gss size: 16   descriptors: 118
+//S = "x" | S S.                        // PASS on "xxx" Binsbergen Γ3  matched: _2_!!!   failed: 5   gss size: 16   descriptors: 118
 //S = "x" | S S S.                      // PASS on "xxx"
 
 //S = "x" | { "x" "x" } | { "x" "x" "x" }.
@@ -118,4 +118,5 @@ S = "x" | S S.                        // PASS on "xxx" Binsbergen Γ3  matched: 
 
 //S = X X. X = "x".                     // PASS
 //S = X. X = "x".                       // PASS
-¶xxxxxxxxx
+
+¶xxx
