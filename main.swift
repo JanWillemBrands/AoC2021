@@ -7,7 +7,7 @@
 
 import Foundation
 
-trace = false
+trace = true
 
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
 // by using parseGrammar, which is a hand-built recursive descent parser
@@ -52,12 +52,7 @@ for m in _messages {
     currentSlot = grammarRoot
     currentStack = gssRoot
 
-//    addDescriptor(slot: grammarRoot, stack: currentStack, index: index)
-    var current = grammarRoot
-    while let next = current.alt, let seq = next.seq {
-        addDescriptor(slot: seq, stack: currentStack, index: index)
-        current = next
-    }
+    addDescriptor(slot: grammarRoot.alt!, stack: currentStack, index: index)
 
     // use the AST to parse the message
     try _parseMessage()

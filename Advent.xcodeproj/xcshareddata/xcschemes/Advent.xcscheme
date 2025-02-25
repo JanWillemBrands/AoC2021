@@ -45,7 +45,7 @@
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
                title = "Run Script"
-               scriptText = "# Type a script or drag a script file from your workspace to insert its path.&#10;exec &gt; ${PROJECT_DIR}/postRunActions.log 2&gt;&amp;1&#10;/opt/local/bin/dot -Tsvg ${PROJECT_DIR}/diagram.gv -o ${PROJECT_DIR}/diagram.svg&#10;/opt/local/bin/dot -Tsvg ${PROJECT_DIR}/ART.gv -o ${PROJECT_DIR}/ART.svg&#10;"
+               scriptText = "# Type a script or drag a script file from your workspace to insert its path.&#10;exec &gt; ${PROJECT_DIR}/postRunActions.log 2&gt;&amp;1&#10;/opt/local/bin/dot -Tsvg ${PROJECT_DIR}/diagram.gv -o ${PROJECT_DIR}/diagram.svg&#10;/opt/local/bin/dot  -Gnslimit=2 -Gnslimit1=2 -Gmaxiter=5000 -v5 -Tsvg ${PROJECT_DIR}/ART.gv -o ${PROJECT_DIR}/ART.svg&#10;"
                shellToInvoke = "/bin/zsh">
                <EnvironmentBuildable>
                   <BuildableReference

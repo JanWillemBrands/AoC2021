@@ -2,3 +2,320 @@ Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_FORMAT
 Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_VERSION
 Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_FORMAT
 Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_VERSION
+dot - graphviz version 9.0.0 (20230911.1827)
+libdir = "/opt/local/lib/graphviz"
+Loading /opt/local/lib/graphviz/libgvplugin_core.6.dylib
+Activated plugin library: libgvplugin_core.6.dylib
+Using render: svg:core
+Using device: svg:svg:core
+Loading /opt/local/lib/graphviz/libgvplugin_dot_layout.6.dylib
+Activated plugin library: libgvplugin_dot_layout.6.dylib
+Using layout: dot:dot_layout
+The plugin configuration file:
+	/opt/local/lib/graphviz/config6
+		was successfully loaded.
+    render	:  cairo:cairo dot:core dot_json:core fig:core gd:gd json:core json0:core lasi:lasi map:core mp:core pic:core pov:core ps:core quartz:quartz svg:core tk:core vrml:gd xdot:core xdot_json:core
+    layout	:  circo:neato_layout dot:dot_layout fdp:neato_layout neato:neato_layout nop:neato_layout nop1:neato_layout nop2:neato_layout osage:neato_layout patchwork:neato_layout sfdp:neato_layout twopi:neato_layout
+    textlayout	:  textlayout:cairo textlayout:quartz textlayout:gd
+    device	:  bmp:quartz:quartz bmp:cairo:quartz canon:dot:core cgimage:quartz:quartz cmap:map:core cmapx:map:core cmapx_np:map:core dot:dot:core dot_json:json:core eps:ps:core eps:lasi:lasi eps:cairo:cairo exr:quartz:quartz exr:cairo:quartz fig:fig:core gd:cairo:gd gd:gd:gd gd2:cairo:gd gd2:gd:gd gif:cairo:gd gif:quartz:quartz gif:cairo:quartz gif:gd:gd gv:dot:core icns:quartz:quartz icns:cairo:quartz ico:quartz:quartz ico:cairo:quartz imap:map:core imap_np:map:core ismap:map:core jp2:quartz:quartz jp2:cairo:quartz jpe:quartz:quartz jpe:cairo:quartz jpe:cairo:gd jpe:gd:gd jpeg:quartz:quartz jpeg:cairo:quartz jpeg:cairo:gd jpeg:gd:gd jpg:quartz:quartz jpg:cairo:quartz jpg:cairo:gd jpg:gd:gd json:json:core json0:json:core kitty:cairo:kitty kittyz:cairo:kitty mp:mp:core pct:quartz:quartz pct:cairo:quartz pdf:cairo:cairo pdf:quartz:quartz pic:pic:core pict:quartz:quartz pict:cairo:quartz plain:dot:core plain-ext:dot:core png:cairo:cairo png:quartz:quartz png:cairo:quartz png:cairo:gd png:gd:gd pov:pov:core ps:ps:core ps:lasi:lasi ps:cairo:cairo ps2:ps:core ps2:lasi:lasi psd:quartz:quartz psd:cairo:quartz sgi:quartz:quartz sgi:cairo:quartz svg:svg:core svg:cairo:cairo svgz:svg:core tga:quartz:quartz tga:cairo:quartz tif:quartz:quartz tif:cairo:quartz tiff:quartz:quartz tiff:cairo:quartz tk:tk:core vrml:vrml:gd vt:cairo:vt vt-24bit:cairo:vt wbmp:cairo:gd wbmp:gd:gd webp:cairo:webp x11:cairo:xlib xdot:xdot:core xdot1.2:xdot:core xdot1.4:xdot:core xdot_json:json:core xlib:cairo:xlib
+    loadimage	:  (lib):ps:core bmp:quartz:quartz eps:xdot:core eps:dot:core eps:map:core eps:ps:core eps:lasi:lasi gd:cairo:gd gd:lasi:gd gd:ps:gd gd:gd:gd gd2:cairo:gd gd2:lasi:gd gd2:ps:gd gd2:gd:gd gif:quartz:quartz gif:cairo:gd gif:lasi:gd gif:ps:gd gif:gd:gd gif:tk:core gif:xdot:core gif:dot:core gif:map:core gif:vrml:core gif:fig:core gif:svg:core jpe:quartz:quartz jpe:cairo:gd jpe:lasi:gd jpe:ps:gd jpe:gd:gd jpe:xdot:core jpe:dot:core jpe:map:core jpe:vrml:core jpe:fig:core jpe:svg:core jpeg:quartz:quartz jpeg:cairo:gd jpeg:lasi:gd jpeg:ps:gd jpeg:gd:gd jpeg:xdot:core jpeg:dot:core jpeg:map:core jpeg:vrml:core jpeg:fig:core jpeg:svg:core jpg:quartz:quartz jpg:cairo:gd jpg:lasi:gd jpg:ps:gd jpg:gd:gd jpg:xdot:core jpg:dot:core jpg:map:core jpg:vrml:core jpg:fig:core jpg:svg:core pdf:quartz:quartz png:quartz:quartz png:ps:cairo png:lasi:cairo png:cairo:cairo png:lasi:gd png:ps:gd png:gd:gd png:xdot:core png:dot:core png:map:core png:vrml:core png:fig:core png:svg:core png:cairo:gd ps:xdot:core ps:dot:core ps:map:core ps:ps:core ps:lasi:lasi svg:svg:core svg:xdot:core svg:dot:core svg:map:core webp:cairo:webp xbm:cairo:gd xbm:lasi:gd xbm:ps:gd xbm:gd:gd
+pack info:
+  mode   undefined
+  size   0
+  flags  0
+  margin 8
+pack info:
+  mode   node
+  size   0
+  flags  0
+Verbose 5
+ [0] Times-Roman => "Times New Roman,  REGULAR"
+ [1] Times-Italic => "Times New Roman,  REGULAR ITALIC"
+ [2] Times-Bold => "Times New Roman,  BOLD"
+ [3] Times-BoldItalic => "Times New Roman,  BOLD ITALIC"
+ [4] AvantGarde-Book => "Verdana, "
+ [5] AvantGarde-BookOblique => "Verdana,  ITALIC"
+ [6] AvantGarde-Demi => "Verdana, "
+ [7] AvantGarde-DemiOblique => "Verdana,  ITALIC"
+ [8] Bookman-Light => "Times New Roman, "
+ [9] Bookman-LightItalic => "Times New Roman,  ITALIC"
+ [10] Bookman-Demi => "Times New Roman, "
+ [11] Bookman-DemiItalic => "Times New Roman,  ITALIC"
+ [12] Courier => "Courier New,  REGULAR"
+ [13] Courier-Oblique => "Courier New,  REGULAR ITALIC"
+ [14] Courier-Bold => "Courier New,  BOLD"
+ [15] Courier-BoldOblique => "Courier New,  BOLD ITALIC"
+ [16] Helvetica => "Helvetica,  REGULAR"
+ [17] Helvetica-Oblique => "Helvetica,  REGULAR OBLIQUE"
+ [18] Helvetica-Bold => "Helvetica,  BOLD"
+ [19] Helvetica-BoldOblique => "Helvetica,  BOLD OBLIQUE"
+ [20] Helvetica-Narrow => "Helvetica,  REGULAR"
+ [21] Helvetica-Narrow-Oblique => "Helvetica,  REGULAR OBLIQUE"
+ [22] Helvetica-Narrow-Bold => "Helvetica,  BOLD"
+ [23] Helvetica-Narrow-BoldOblique => "Helvetica,  BOLD OBLIQUE"
+ [24] NewCenturySchlbk-Roman => "Times New Roman,  ROMAN"
+ [25] NewCenturySchlbk-Italic => "Times New Roman,  REGULAR ITALIC"
+ [26] NewCenturySchlbk-Bold => "Times New Roman,  BOLD"
+ [27] NewCenturySchlbk-BoldItalic => "Times New Roman,  BOLD ITALIC"
+ [28] Palatino-Roman => "Palatino,  ROMAN"
+ [29] Palatino-Italic => "Palatino,  REGULAR ITALIC"
+ [30] Palatino-Bold => "Palatino,  BOLD"
+ [31] Palatino-BoldItalic => "Palatino,  BOLD ITALIC"
+ [32] Symbol => "Symbol,  REGULAR"
+ [33] ZapfChancery-MediumItalic => "Times New Roman,  ITALIC"
+ [34] ZapfDingbats => "Impact,  REGULAR"
+fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
+network simplex:  10 nodes 11 edges maxiter=48 balance=1
+network simplex: 10 nodes 11 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  27 nodes 31 edges maxiter=120 balance=1
+network simplex: 27 nodes 31 edges 1 iter 0.00 sec
+network simplex:  9 nodes 8 edges maxiter=30 balance=1
+network simplex: 9 nodes 8 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=36 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  8 nodes 9 edges maxiter=38 balance=1
+network simplex: 8 nodes 9 edges 0 iter 0.00 sec
+network simplex:  221 nodes 220 edges maxiter=442 balance=1
+network simplex: 221 nodes 220 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+Maxrank = 8, minrank = 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+merge2: graph G, rank 0 has only 7 < 50 nodes
+merge2: graph G, rank 1 has only 15 < 83 nodes
+merge2: graph G, rank 2 has only 10 < 60 nodes
+merge2: graph G, rank 3 has only 7 < 107 nodes
+merge2: graph G, rank 4 has only 6 < 92 nodes
+merge2: graph G, rank 5 has only 4 < 38 nodes
+merge2: graph G, rank 6 has only 1 < 14 nodes
+merge2: graph G, rank 7 has only 1 < 15 nodes
+mincross: pass 2 iter 0 trying 0 cur_cross 10 best_cross 10
+mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
+mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 64 best_cross 64
+mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 9 best_cross 9
+mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
+mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 9 best_cross 9
+mincross: pass 2 iter 1 trying 0 cur_cross 1 best_cross 1
+mincross: pass 2 iter 2 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 99 best_cross 99
+mincross: pass 2 iter 1 trying 0 cur_cross 82 best_cross 82
+mincross: pass 2 iter 2 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross G: 0 crossings, 0.00 secs.
+network simplex:  962 nodes 1622 edges maxiter=744 balance=2
+network simplex: 100 200 300 
+network simplex: 962 nodes 1622 edges 321 iter 0.00 sec
+in checkpath, start port not in first box
+5 boxes:
+0 (6158, 509.58), (6535, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (7027, 432.07), (7052, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (6430, 389.31), (6574, 424.07)
+start port: (6382, 508.34), tangent angle: -1.5708, constrained
+end port: (6573, 389.31), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+5 boxes:
+0 (3695, 269.05), (4338, 338.56)
+1 (-4744, 261.05), (7226, 269.05)
+2 (3692, 183.54), (3886, 261.05)
+3 (-4744, 175.54), (7226, 183.54)
+4 (4141, 140.79), (4350, 175.54)
+start port: (4105, 267.81), tangent angle: -1.5708, constrained
+end port: (4349, 140.79), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+5 boxes:
+0 (104, 432.07), (498, 501.58)
+1 (-4744, 424.07), (7226, 432.07)
+2 (104, 346.56), (227, 424.07)
+3 (-4744, 338.56), (7226, 346.56)
+4 (498, 303.81), (507, 338.56)
+start port: (293, 430.82), tangent angle: -1.5708, constrained
+end port: (506, 303.81), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+5 boxes:
+0 (6158, 509.58), (6535, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (7040, 432.07), (7072, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (6631, 389.31), (6711, 424.07)
+start port: (6382, 508.34), tangent angle: -1.5708, constrained
+end port: (6710, 389.31), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+5 boxes:
+0 (1859, 509.58), (2288, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (4715, 432.07), (4740, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (2111, 389.31), (2417, 424.07)
+start port: (2075, 508.34), tangent angle: -1.5708, constrained
+end port: (2416, 389.31), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+5 boxes:
+0 (3695, 269.05), (4338, 338.56)
+1 (-4744, 261.05), (7226, 269.05)
+2 (3882, 183.54), (3981, 261.05)
+3 (-4744, 175.54), (7226, 183.54)
+4 (4407, 140.79), (4465, 175.54)
+start port: (4105, 267.81), tangent angle: -1.5708, constrained
+end port: (4464, 140.79), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+5 boxes:
+0 (6158, 509.58), (6535, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (7053, 432.07), (7092, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (6768, 389.31), (6853, 424.07)
+start port: (6382, 508.34), tangent angle: -1.5708, constrained
+end port: (6852, 389.31), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+5 boxes:
+0 (3695, 269.05), (4338, 338.56)
+1 (-4744, 261.05), (7226, 269.05)
+2 (3977, 183.54), (4038, 261.05)
+3 (-4744, 175.54), (7226, 183.54)
+4 (4522, 140.79), (4577, 175.54)
+start port: (4105, 267.81), tangent angle: -1.5708, constrained
+end port: (4576, 140.79), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+5 boxes:
+0 (3695, 269.05), (4338, 338.56)
+1 (-4744, 261.05), (7226, 269.05)
+2 (4034, 183.54), (4072, 261.05)
+3 (-4744, 175.54), (7226, 183.54)
+4 (4634, 140.79), (4655, 175.54)
+start port: (4105, 267.81), tangent angle: -1.5708, constrained
+end port: (4654, 140.79), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+5 boxes:
+0 (6158, 509.58), (6535, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (7066, 432.07), (7226, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (6910, 389.31), (6952, 424.07)
+start port: (6382, 508.34), tangent angle: -1.5708, constrained
+end port: (6951, 389.31), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+7 boxes:
+0 (-34, 509.58), (185, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (714, 432.07), (737, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (714, 346.56), (737, 424.07)
+5 (-4744, 338.56), (7226, 346.56)
+6 (104, 303.81), (269, 338.56)
+start port: (77, 508.34), tangent angle: -1.5708, constrained
+end port: (268, 303.81), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+7 boxes:
+0 (4818, 509.58), (5247, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (5958, 432.07), (6175, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (6135, 346.56), (6198, 424.07)
+5 (-4744, 338.56), (7226, 346.56)
+6 (5424, 303.81), (5436, 338.56)
+start port: (5034, 508.34), tangent angle: -1.5708, constrained
+end port: (5435, 303.81), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+7 boxes:
+0 (737, 509.58), (1166, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (1694, 432.07), (1859, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (1691, 346.56), (1859, 424.07)
+5 (-4744, 338.56), (7226, 346.56)
+6 (1172, 303.81), (1355, 338.56)
+start port: (953, 508.34), tangent angle: -1.5708, constrained
+end port: (1354, 303.81), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+9 boxes:
+0 (1859, 509.58), (2288, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (4728, 432.07), (4760, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (4715, 346.56), (4752, 424.07)
+5 (-4744, 338.56), (7226, 346.56)
+6 (4718, 269.05), (4751, 338.56)
+7 (-4744, 261.05), (7226, 269.05)
+8 (2769, 226.3), (2783, 261.05)
+start port: (2075, 508.34), tangent angle: -1.5708, constrained
+end port: (2782, 226.3), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+9 boxes:
+0 (1859, 509.58), (2288, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (4739, 432.07), (4780, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (4745, 346.56), (4772, 424.07)
+5 (-4744, 338.56), (7226, 346.56)
+6 (4733, 269.05), (4771, 338.56)
+7 (-4744, 261.05), (7226, 269.05)
+8 (3195, 226.3), (3209, 261.05)
+start port: (2075, 508.34), tangent angle: -1.5708, constrained
+end port: (3208, 226.3), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+9 boxes:
+0 (1859, 509.58), (2288, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (4755, 432.07), (4800, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (4768, 346.56), (4792, 424.07)
+5 (-4744, 338.56), (7226, 346.56)
+6 (4751, 269.05), (4795, 338.56)
+7 (-4744, 261.05), (7226, 269.05)
+8 (3621, 226.3), (3635, 261.05)
+start port: (2075, 508.34), tangent angle: -1.5708, constrained
+end port: (3634, 226.3), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+9 boxes:
+0 (1859, 509.58), (2288, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (4772, 432.07), (4818, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (4786, 346.56), (4818, 424.07)
+5 (-4744, 338.56), (7226, 346.56)
+6 (4769, 269.05), (4818, 338.56)
+7 (-4744, 261.05), (7226, 269.05)
+8 (4068, 226.3), (4081, 261.05)
+start port: (2075, 508.34), tangent angle: -1.5708, constrained
+end port: (4080, 226.3), tangent angle: 3.1416, constrained
+in checkpath, start port not in first box
+11 boxes:
+0 (-1566, 509.58), (-1265, 607.84)
+1 (-4744, 501.58), (7226, 509.58)
+2 (-216, 432.07), (-122, 501.58)
+3 (-4744, 424.07), (7226, 432.07)
+4 (-57, 346.56), (-34, 424.07)
+5 (-4744, 338.56), (7226, 346.56)
+6 (-57, 269.05), (-34, 338.56)
+7 (-4744, 261.05), (7226, 269.05)
+8 (-57, 183.54), (-34, 261.05)
+9 (-4744, 175.54), (7226, 183.54)
+10 (-1435, 140.79), (-1226, 175.54)
+start port: (-1489, 508.34), tangent angle: -1.5708, constrained
+end port: (-1227, 140.79), tangent angle: 3.1416, constrained
+routesplines: 398 edges, 1370 boxes 0.00 sec
+Using render: svg:core
+Using device: svg:svg:core
+gvRenderJobs G: 0.03 secs.

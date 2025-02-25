@@ -7,49 +7,842 @@ digraph G {
   rankdir = "TB"
   subgraph GSS {
     cluster = true
-    label = <xxx↵> fontcolor = green
+    label = <↵whitespace··:·/\...> fontcolor = green
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    F1 [label = <F1<br/><font color="gray" point-size="8.0"> 1, 2, 3</font>>]
-    F1 -> K0
-    F2 [label = <F2<br/><font color="gray" point-size="8.0"> 2, 3</font>>]
-    F2 -> F1
-    F3 [label = <F3<br/><font color="gray" point-size="8.0"> 3</font>>]
-    F3 -> F2
+    AD10 [label = <AD10<br/><font color="gray" point-size="8.0"> 11</font>>]
+    AD10 -> L8
+    AD14 [label = <AD14<br/><font color="gray" point-size="8.0"> 15</font>>]
+    AD14 -> L12
+    AD18 [label = <AD18<br/><font color="gray" point-size="8.0"> 19</font>>]
+    AD18 -> L16
+    AD2 [label = <AD2<br/><font color="gray" point-size="8.0"> 3</font>>]
+    AD2 -> L0
+    AD22 [label = <AD22<br/><font color="gray" point-size="8.0"> 23</font>>]
+    AD22 -> L20
+    AD26 [label = <AD26<br/><font color="gray" point-size="8.0"> 27</font>>]
+    AD26 -> L24
+    AD30 [label = <AD30<br/><font color="gray" point-size="8.0"> 31</font>>]
+    AD30 -> L28
+    AD34 [label = <AD34<br/><font color="gray" point-size="8.0"> 37, 40</font>>]
+    AD34 -> L32
+    AD43 [label = <AD43<br/><font color="gray" point-size="8.0"> 44, 49, 50, 51</font>>]
+    AD43 -> L41
+    AD54 [label = <AD54<br/><font color="gray" point-size="8.0"> 55, 59</font>>]
+    AD54 -> L52
+    AD6 [label = <AD6<br/><font color="gray" point-size="8.0"> 7</font>>]
+    AD6 -> L4
+    AD62 [label = <AD62<br/><font color="gray" point-size="8.0"> 63, 66</font>>]
+    AD62 -> L60
+    AD69 [label = <AD69<br/><font color="gray" point-size="8.0"> 70, 72, 73, 74, 76, 77, 78, 80, 81, 82, 84, 85, 94</font>>]
+    AD69 -> L67
+    AD97 [label = <AD97<br/><font color="gray" point-size="8.0"> 98, 100, 102, 104</font>>]
+    AD97 -> L95
+    AL101 [label = <AL101<br/><font color="gray" point-size="8.0"> 102</font>>]
+    AL101 -> AD97
+    AL103 [label = <AL103<br/><font color="gray" point-size="8.0"> 104</font>>]
+    AL103 -> AD97
+    AL47 [label = <AL47<br/><font color="gray" point-size="8.0"> 48</font>>]
+    AL47 -> CE45
+    AL71 [label = <AL71<br/><font color="gray" point-size="8.0"> 72, 73, 74</font>>]
+    AL71 -> AD69
+    AL75 [label = <AL75<br/><font color="gray" point-size="8.0"> 76, 77, 78</font>>]
+    AL75 -> AD69
+    AL79 [label = <AL79<br/><font color="gray" point-size="8.0"> 80, 81, 82</font>>]
+    AL79 -> AD69
+    AL83 [label = <AL83<br/><font color="gray" point-size="8.0"> 84, 85, 94</font>>]
+    AL83 -> AD69
+    AL88 [label = <AL88<br/><font color="gray" point-size="8.0"> 89</font>>]
+    AL88 -> CE86
+    AL90 [label = <AL90<br/><font color="gray" point-size="8.0"> 91</font>>]
+    AL90 -> CE86
+    AL92 [label = <AL92<br/><font color="gray" point-size="8.0"> 93</font>>]
+    AL92 -> CE86
+    AL99 [label = <AL99<br/><font color="gray" point-size="8.0"> 100</font>>]
+    AL99 -> AD97
+    AM10 [label = <AM10<br/><font color="gray" point-size="8.0"> 11</font>>]
+    AM10 -> AD10
+    AM14 [label = <AM14<br/><font color="gray" point-size="8.0"> 15</font>>]
+    AM14 -> AD14
+    AM18 [label = <AM18<br/><font color="gray" point-size="8.0"> 19</font>>]
+    AM18 -> AD18
+    AM2 [label = <AM2<br/><font color="gray" point-size="8.0"> 3</font>>]
+    AM2 -> AD2
+    AM22 [label = <AM22<br/><font color="gray" point-size="8.0"> 23</font>>]
+    AM22 -> AD22
+    AM26 [label = <AM26<br/><font color="gray" point-size="8.0"> 27</font>>]
+    AM26 -> AD26
+    AM30 [label = <AM30<br/><font color="gray" point-size="8.0"> 31</font>>]
+    AM30 -> AD30
+    AM34 [label = <AM34<br/><font color="gray" point-size="8.0"> 37, 40</font>>]
+    AM34 -> AD34
+    AM35 [label = <AM35<br/><font color="gray" point-size="8.0"> 36</font>>]
+    AM35 -> BI35
+    AM38 [label = <AM38<br/><font color="gray" point-size="8.0"> 39</font>>]
+    AM38 -> BI38
+    AM43 [label = <AM43<br/><font color="gray" point-size="8.0"> 44, 49, 50, 51</font>>]
+    AM43 -> AD43
+    AM45 [label = <AM45<br/><font color="gray" point-size="8.0"> 46</font>>]
+    AM45 -> CE45
+    AM54 [label = <AM54<br/><font color="gray" point-size="8.0"> 55, 59</font>>]
+    AM54 -> AD54
+    AM56 [label = <AM56<br/><font color="gray" point-size="8.0"> 57, 58</font>>]
+    AM56 -> BI56
+    AM6 [label = <AM6<br/><font color="gray" point-size="8.0"> 7</font>>]
+    AM6 -> AD6
+    AM62 [label = <AM62<br/><font color="gray" point-size="8.0"> 63, 66</font>>]
+    AM62 -> AD62
+    AM64 [label = <AM64<br/><font color="gray" point-size="8.0"> 65</font>>]
+    AM64 -> BI64
+    AM69 [label = <AM69<br/><font color="gray" point-size="8.0"> 70</font>>]
+    AM69 -> AD69
+    AM86 [label = <AM86<br/><font color="gray" point-size="8.0"> 87</font>>]
+    AM86 -> CE86
+    AM97 [label = <AM97<br/><font color="gray" point-size="8.0"> 98</font>>]
+    AM97 -> AD97
+    AT100 [label = <AT100<br/><font color="gray" point-size="8.0"> </font>>]
+    AT100 -> AL99
+    AT102 [label = <AT102<br/><font color="gray" point-size="8.0"> </font>>]
+    AT102 -> AL101
+    AT104 [label = <AT104<br/><font color="gray" point-size="8.0"> </font>>]
+    AT104 -> AL103
+    AT11 [label = <AT11<br/><font color="gray" point-size="8.0"> </font>>]
+    AT11 -> AM10
+    AT15 [label = <AT15<br/><font color="gray" point-size="8.0"> </font>>]
+    AT15 -> AM14
+    AT19 [label = <AT19<br/><font color="gray" point-size="8.0"> </font>>]
+    AT19 -> AM18
+    AT23 [label = <AT23<br/><font color="gray" point-size="8.0"> </font>>]
+    AT23 -> AM22
+    AT27 [label = <AT27<br/><font color="gray" point-size="8.0"> </font>>]
+    AT27 -> AM26
+    AT3 [label = <AT3<br/><font color="gray" point-size="8.0"> </font>>]
+    AT3 -> AM2
+    AT31 [label = <AT31<br/><font color="gray" point-size="8.0"> </font>>]
+    AT31 -> AM30
+    AT36 [label = <AT36<br/><font color="gray" point-size="8.0"> </font>>]
+    AT36 -> AM35
+    AT37 [label = <AT37<br/><font color="gray" point-size="8.0"> 40</font>>]
+    AT37 -> AM34
+    AT39 [label = <AT39<br/><font color="gray" point-size="8.0"> </font>>]
+    AT39 -> AM38
+    AT40 [label = <AT40<br/><font color="gray" point-size="8.0"> </font>>]
+    AT40 -> AM34
+    AT44 [label = <AT44<br/><font color="gray" point-size="8.0"> 49</font>>]
+    AT44 -> AM43
+    AT46 [label = <AT46<br/><font color="gray" point-size="8.0"> </font>>]
+    AT46 -> AM45
+    AT48 [label = <AT48<br/><font color="gray" point-size="8.0"> </font>>]
+    AT48 -> AL47
+    AT49 [label = <AT49<br/><font color="gray" point-size="8.0"> 50</font>>]
+    AT49 -> AM43
+    AT50 [label = <AT50<br/><font color="gray" point-size="8.0"> 51</font>>]
+    AT50 -> AM43
+    AT51 [label = <AT51<br/><font color="gray" point-size="8.0"> </font>>]
+    AT51 -> AM43
+    AT55 [label = <AT55<br/><font color="gray" point-size="8.0"> 59</font>>]
+    AT55 -> AM54
+    AT57 [label = <AT57<br/><font color="gray" point-size="8.0"> 58</font>>]
+    AT57 -> AM56
+    AT58 [label = <AT58<br/><font color="gray" point-size="8.0"> </font>>]
+    AT58 -> AM56
+    AT59 [label = <AT59<br/><font color="gray" point-size="8.0"> </font>>]
+    AT59 -> AM54
+    AT63 [label = <AT63<br/><font color="gray" point-size="8.0"> 66</font>>]
+    AT63 -> AM62
+    AT65 [label = <AT65<br/><font color="gray" point-size="8.0"> </font>>]
+    AT65 -> AM64
+    AT66 [label = <AT66<br/><font color="gray" point-size="8.0"> </font>>]
+    AT66 -> AM62
+    AT7 [label = <AT7<br/><font color="gray" point-size="8.0"> </font>>]
+    AT7 -> AM6
+    AT70 [label = <AT70<br/><font color="gray" point-size="8.0"> </font>>]
+    AT70 -> AM69
+    AT72 [label = <AT72<br/><font color="gray" point-size="8.0"> 73</font>>]
+    AT72 -> AL71
+    AT73 [label = <AT73<br/><font color="gray" point-size="8.0"> 74</font>>]
+    AT73 -> AL71
+    AT74 [label = <AT74<br/><font color="gray" point-size="8.0"> </font>>]
+    AT74 -> AL71
+    AT76 [label = <AT76<br/><font color="gray" point-size="8.0"> 77</font>>]
+    AT76 -> AL75
+    AT77 [label = <AT77<br/><font color="gray" point-size="8.0"> 78</font>>]
+    AT77 -> AL75
+    AT78 [label = <AT78<br/><font color="gray" point-size="8.0"> </font>>]
+    AT78 -> AL75
+    AT80 [label = <AT80<br/><font color="gray" point-size="8.0"> 81</font>>]
+    AT80 -> AL79
+    AT81 [label = <AT81<br/><font color="gray" point-size="8.0"> 82</font>>]
+    AT81 -> AL79
+    AT82 [label = <AT82<br/><font color="gray" point-size="8.0"> </font>>]
+    AT82 -> AL79
+    AT84 [label = <AT84<br/><font color="gray" point-size="8.0"> 85</font>>]
+    AT84 -> AL83
+    AT85 [label = <AT85<br/><font color="gray" point-size="8.0"> 94</font>>]
+    AT85 -> AL83
+    AT87 [label = <AT87<br/><font color="gray" point-size="8.0"> </font>>]
+    AT87 -> AM86
+    AT89 [label = <AT89<br/><font color="gray" point-size="8.0"> </font>>]
+    AT89 -> AL88
+    AT91 [label = <AT91<br/><font color="gray" point-size="8.0"> </font>>]
+    AT91 -> AL90
+    AT93 [label = <AT93<br/><font color="gray" point-size="8.0"> </font>>]
+    AT93 -> AL92
+    AT94 [label = <AT94<br/><font color="gray" point-size="8.0"> </font>>]
+    AT94 -> AL83
+    AT98 [label = <AT98<br/><font color="gray" point-size="8.0"> </font>>]
+    AT98 -> AM97
+    AU10 [label = <AU10<br/><font color="gray" point-size="8.0"> 11</font>>]
+    AU10 -> AM10
+    AU101 [label = <AU101<br/><font color="gray" point-size="8.0"> 102</font>>]
+    AU101 -> AL101
+    AU103 [label = <AU103<br/><font color="gray" point-size="8.0"> 104</font>>]
+    AU103 -> AL103
+    AU14 [label = <AU14<br/><font color="gray" point-size="8.0"> 15</font>>]
+    AU14 -> AM14
+    AU18 [label = <AU18<br/><font color="gray" point-size="8.0"> 19</font>>]
+    AU18 -> AM18
+    AU2 [label = <AU2<br/><font color="gray" point-size="8.0"> 3</font>>]
+    AU2 -> AM2
+    AU22 [label = <AU22<br/><font color="gray" point-size="8.0"> 23</font>>]
+    AU22 -> AM22
+    AU26 [label = <AU26<br/><font color="gray" point-size="8.0"> 27</font>>]
+    AU26 -> AM26
+    AU30 [label = <AU30<br/><font color="gray" point-size="8.0"> 31</font>>]
+    AU30 -> AM30
+    AU34 [label = <AU34<br/><font color="gray" point-size="8.0"> 37</font>>]
+    AU34 -> AM34
+    AU35 [label = <AU35<br/><font color="gray" point-size="8.0"> 36</font>>]
+    AU35 -> AM35
+    AU38 [label = <AU38<br/><font color="gray" point-size="8.0"> 39</font>>]
+    AU38 -> AM38
+    AU43 [label = <AU43<br/><font color="gray" point-size="8.0"> 44</font>>]
+    AU43 -> AM43
+    AU45 [label = <AU45<br/><font color="gray" point-size="8.0"> 46</font>>]
+    AU45 -> AM45
+    AU47 [label = <AU47<br/><font color="gray" point-size="8.0"> 48</font>>]
+    AU47 -> AL47
+    AU54 [label = <AU54<br/><font color="gray" point-size="8.0"> 55</font>>]
+    AU54 -> AM54
+    AU56 [label = <AU56<br/><font color="gray" point-size="8.0"> 57</font>>]
+    AU56 -> AM56
+    AU6 [label = <AU6<br/><font color="gray" point-size="8.0"> 7</font>>]
+    AU6 -> AM6
+    AU62 [label = <AU62<br/><font color="gray" point-size="8.0"> 63</font>>]
+    AU62 -> AM62
+    AU64 [label = <AU64<br/><font color="gray" point-size="8.0"> 65</font>>]
+    AU64 -> AM64
+    AU69 [label = <AU69<br/><font color="gray" point-size="8.0"> 70</font>>]
+    AU69 -> AM69
+    AU71 [label = <AU71<br/><font color="gray" point-size="8.0"> 72</font>>]
+    AU71 -> AL71
+    AU75 [label = <AU75<br/><font color="gray" point-size="8.0"> 76</font>>]
+    AU75 -> AL75
+    AU79 [label = <AU79<br/><font color="gray" point-size="8.0"> 80</font>>]
+    AU79 -> AL79
+    AU83 [label = <AU83<br/><font color="gray" point-size="8.0"> 84</font>>]
+    AU83 -> AL83
+    AU86 [label = <AU86<br/><font color="gray" point-size="8.0"> 87</font>>]
+    AU86 -> AM86
+    AU88 [label = <AU88<br/><font color="gray" point-size="8.0"> 89</font>>]
+    AU88 -> AL88
+    AU90 [label = <AU90<br/><font color="gray" point-size="8.0"> 91</font>>]
+    AU90 -> AL90
+    AU92 [label = <AU92<br/><font color="gray" point-size="8.0"> 93</font>>]
+    AU92 -> AL92
+    AU97 [label = <AU97<br/><font color="gray" point-size="8.0"> 98</font>>]
+    AU97 -> AM97
+    AU99 [label = <AU99<br/><font color="gray" point-size="8.0"> 100</font>>]
+    AU99 -> AL99
+    AZ10 [label = <AZ10<br/><font color="gray" point-size="8.0"> 11</font>>]
+    AZ10 -> AU10
+    AZ100 [label = <AZ100<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ100 -> AT100
+    AZ101 [label = <AZ101<br/><font color="gray" point-size="8.0"> 102</font>>]
+    AZ101 -> AU101
+    AZ102 [label = <AZ102<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ102 -> AT102
+    AZ103 [label = <AZ103<br/><font color="gray" point-size="8.0"> 104</font>>]
+    AZ103 -> AU103
+    AZ104 [label = <AZ104<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ104 -> AT104
+    AZ11 [label = <AZ11<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ11 -> AT11
+    AZ14 [label = <AZ14<br/><font color="gray" point-size="8.0"> 15</font>>]
+    AZ14 -> AU14
+    AZ15 [label = <AZ15<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ15 -> AT15
+    AZ18 [label = <AZ18<br/><font color="gray" point-size="8.0"> 19</font>>]
+    AZ18 -> AU18
+    AZ19 [label = <AZ19<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ19 -> AT19
+    AZ2 [label = <AZ2<br/><font color="gray" point-size="8.0"> 3</font>>]
+    AZ2 -> AU2
+    AZ22 [label = <AZ22<br/><font color="gray" point-size="8.0"> 23</font>>]
+    AZ22 -> AU22
+    AZ23 [label = <AZ23<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ23 -> AT23
+    AZ26 [label = <AZ26<br/><font color="gray" point-size="8.0"> 27</font>>]
+    AZ26 -> AU26
+    AZ27 [label = <AZ27<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ27 -> AT27
+    AZ3 [label = <AZ3<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ3 -> AT3
+    AZ30 [label = <AZ30<br/><font color="gray" point-size="8.0"> 31</font>>]
+    AZ30 -> AU30
+    AZ31 [label = <AZ31<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ31 -> AT31
+    AZ34 [label = <AZ34<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ34 -> AU34
+    AZ35 [label = <AZ35<br/><font color="gray" point-size="8.0"> 36</font>>]
+    AZ35 -> AU35
+    AZ36 [label = <AZ36<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ36 -> AT36
+    AZ37 [label = <AZ37<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ37 -> AT37
+    AZ38 [label = <AZ38<br/><font color="gray" point-size="8.0"> 39</font>>]
+    AZ38 -> AU38
+    AZ39 [label = <AZ39<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ39 -> AT39
+    AZ40 [label = <AZ40<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ40 -> AT40
+    AZ43 [label = <AZ43<br/><font color="gray" point-size="8.0"> 44</font>>]
+    AZ43 -> AU43
+    AZ44 [label = <AZ44<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ44 -> AT44
+    AZ45 [label = <AZ45<br/><font color="gray" point-size="8.0"> 46</font>>]
+    AZ45 -> AU45
+    AZ46 [label = <AZ46<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ46 -> AT46
+    AZ47 [label = <AZ47<br/><font color="gray" point-size="8.0"> 48</font>>]
+    AZ47 -> AU47
+    AZ48 [label = <AZ48<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ48 -> AT48
+    AZ49 [label = <AZ49<br/><font color="gray" point-size="8.0"> 50</font>>]
+    AZ49 -> AT49
+    AZ50 [label = <AZ50<br/><font color="gray" point-size="8.0"> 51</font>>]
+    AZ50 -> AT50
+    AZ51 [label = <AZ51<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ51 -> AT51
+    AZ54 [label = <AZ54<br/><font color="gray" point-size="8.0"> 55</font>>]
+    AZ54 -> AU54
+    AZ55 [label = <AZ55<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ55 -> AT55
+    AZ56 [label = <AZ56<br/><font color="gray" point-size="8.0"> 57</font>>]
+    AZ56 -> AU56
+    AZ57 [label = <AZ57<br/><font color="gray" point-size="8.0"> 58</font>>]
+    AZ57 -> AT57
+    AZ58 [label = <AZ58<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ58 -> AT58
+    AZ59 [label = <AZ59<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ59 -> AT59
+    AZ6 [label = <AZ6<br/><font color="gray" point-size="8.0"> 7</font>>]
+    AZ6 -> AU6
+    AZ62 [label = <AZ62<br/><font color="gray" point-size="8.0"> 63</font>>]
+    AZ62 -> AU62
+    AZ63 [label = <AZ63<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ63 -> AT63
+    AZ64 [label = <AZ64<br/><font color="gray" point-size="8.0"> 65</font>>]
+    AZ64 -> AU64
+    AZ65 [label = <AZ65<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ65 -> AT65
+    AZ66 [label = <AZ66<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ66 -> AT66
+    AZ69 [label = <AZ69<br/><font color="gray" point-size="8.0"> 70</font>>]
+    AZ69 -> AU69
+    AZ7 [label = <AZ7<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ7 -> AT7
+    AZ70 [label = <AZ70<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ70 -> AT70
+    AZ71 [label = <AZ71<br/><font color="gray" point-size="8.0"> 72</font>>]
+    AZ71 -> AU71
+    AZ72 [label = <AZ72<br/><font color="gray" point-size="8.0"> 73</font>>]
+    AZ72 -> AT72
+    AZ73 [label = <AZ73<br/><font color="gray" point-size="8.0"> 74</font>>]
+    AZ73 -> AT73
+    AZ74 [label = <AZ74<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ74 -> AT74
+    AZ75 [label = <AZ75<br/><font color="gray" point-size="8.0"> 76</font>>]
+    AZ75 -> AU75
+    AZ76 [label = <AZ76<br/><font color="gray" point-size="8.0"> 77</font>>]
+    AZ76 -> AT76
+    AZ77 [label = <AZ77<br/><font color="gray" point-size="8.0"> 78</font>>]
+    AZ77 -> AT77
+    AZ78 [label = <AZ78<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ78 -> AT78
+    AZ79 [label = <AZ79<br/><font color="gray" point-size="8.0"> 80</font>>]
+    AZ79 -> AU79
+    AZ80 [label = <AZ80<br/><font color="gray" point-size="8.0"> 81</font>>]
+    AZ80 -> AT80
+    AZ81 [label = <AZ81<br/><font color="gray" point-size="8.0"> 82</font>>]
+    AZ81 -> AT81
+    AZ82 [label = <AZ82<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ82 -> AT82
+    AZ83 [label = <AZ83<br/><font color="gray" point-size="8.0"> 84</font>>]
+    AZ83 -> AU83
+    AZ84 [label = <AZ84<br/><font color="gray" point-size="8.0"> 85</font>>]
+    AZ84 -> AT84
+    AZ85 [label = <AZ85<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ85 -> AT85
+    AZ86 [label = <AZ86<br/><font color="gray" point-size="8.0"> 87</font>>]
+    AZ86 -> AU86
+    AZ87 [label = <AZ87<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ87 -> AT87
+    AZ88 [label = <AZ88<br/><font color="gray" point-size="8.0"> 89</font>>]
+    AZ88 -> AU88
+    AZ89 [label = <AZ89<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ89 -> AT89
+    AZ90 [label = <AZ90<br/><font color="gray" point-size="8.0"> 91</font>>]
+    AZ90 -> AU90
+    AZ91 [label = <AZ91<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ91 -> AT91
+    AZ92 [label = <AZ92<br/><font color="gray" point-size="8.0"> 93</font>>]
+    AZ92 -> AU92
+    AZ93 [label = <AZ93<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ93 -> AT93
+    AZ94 [label = <AZ94<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ94 -> AT94
+    AZ97 [label = <AZ97<br/><font color="gray" point-size="8.0"> 98</font>>]
+    AZ97 -> AU97
+    AZ98 [label = <AZ98<br/><font color="gray" point-size="8.0"> </font>>]
+    AZ98 -> AT98
+    AZ99 [label = <AZ99<br/><font color="gray" point-size="8.0"> 100</font>>]
+    AZ99 -> AU99
+    BI35 [label = <BI35<br/><font color="gray" point-size="8.0"> 36</font>>]
+    BI35 -> AU34
+    BI38 [label = <BI38<br/><font color="gray" point-size="8.0"> 39</font>>]
+    BI38 -> AT37
+    BI56 [label = <BI56<br/><font color="gray" point-size="8.0"> 57, 58</font>>]
+    BI56 -> AT55
+    BI64 [label = <BI64<br/><font color="gray" point-size="8.0"> 65</font>>]
+    BI64 -> AT63
+    CE45 [label = <CE45<br/><font color="gray" point-size="8.0"> 46, 48</font>>]
+    CE45 -> AT44
+    CE86 [label = <CE86<br/><font color="gray" point-size="8.0"> 87, 89, 91, 93</font>>]
+    CE86 -> AT85
+    L0 [label = <L0<br/><font color="gray" point-size="8.0"> 4</font>>]
+    L0 -> ●○
+    L105 [label = <L105<br/><font color="gray" point-size="8.0"> </font>>]
+    L105 -> ●○
+    L12 [label = <L12<br/><font color="gray" point-size="8.0"> 16</font>>]
+    L12 -> ●○
+    L16 [label = <L16<br/><font color="gray" point-size="8.0"> 20</font>>]
+    L16 -> ●○
+    L20 [label = <L20<br/><font color="gray" point-size="8.0"> 24</font>>]
+    L20 -> ●○
+    L24 [label = <L24<br/><font color="gray" point-size="8.0"> 28</font>>]
+    L24 -> ●○
+    L28 [label = <L28<br/><font color="gray" point-size="8.0"> 32</font>>]
+    L28 -> ●○
+    L32 [label = <L32<br/><font color="gray" point-size="8.0"> 41</font>>]
+    L32 -> ●○
+    L4 [label = <L4<br/><font color="gray" point-size="8.0"> 8</font>>]
+    L4 -> ●○
+    L41 [label = <L41<br/><font color="gray" point-size="8.0"> 52</font>>]
+    L41 -> ●○
+    L52 [label = <L52<br/><font color="gray" point-size="8.0"> 60</font>>]
+    L52 -> ●○
+    L60 [label = <L60<br/><font color="gray" point-size="8.0"> 67</font>>]
+    L60 -> ●○
+    L67 [label = <L67<br/><font color="gray" point-size="8.0"> 95</font>>]
+    L67 -> ●○
+    L8 [label = <L8<br/><font color="gray" point-size="8.0"> 12</font>>]
+    L8 -> ●○
+    L95 [label = <L95<br/><font color="gray" point-size="8.0"> 105</font>>]
+    L95 -> ●○
+  }
+  subgraph clusterproduction {
+    node [shape = box]
+    label = <production = "identifier" ( ":" | "=" ) selection "." .>
+    labeljust = l
+    productionR0C0 [label = <AF<br/>N production<br/>fi ["identifier"]<br/>fo []<br/>am []>]
+    productionR0C1 [label = <T<br/>ALT <br/>fi ["identifier"]<br/>fo []<br/>am []>]
+    productionR1C1 [label = <U<br/>T "identifier"<br/>fi ["identifier"]<br/>fo [":", "="]<br/>am []>]
+    productionR2C1 [label = <AB<br/>DO <br/>fi [":", "="]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    productionR3C1 [label = <AC<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["."]<br/>am []>]
+    productionR4C1 [label = <AD<br/>T "."<br/>fi ["."]<br/>fo [""]<br/>am []>]
+    productionR5C1 [label = <AE<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    productionR4C1 -> productionR5C1 [weight=100000000]
+    productionR3C1 -> productionR4C1 [weight=100000000]
+    productionR2C1 -> productionR3C1 [weight=100000000]
+    productionR2C2 [label = <V<br/>ALT <br/>fi [":"]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    productionR3C2 [label = <W<br/>T ":"<br/>fi [":"]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    productionR4C2 [label = <X<br/>END <br/>fi [""]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    productionR3C2 -> productionR4C2 [weight=100000000]
+    productionR2C2 -> productionR3C2 [weight=100000000]
+    productionR2C3 [label = <Y<br/>ALT <br/>fi ["="]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    productionR3C3 [label = <Z<br/>T "="<br/>fi ["="]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    productionR4C3 [label = <AA<br/>END <br/>fi [""]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    productionR3C3 -> productionR4C3 [weight=100000000]
+    productionR2C3 -> productionR3C3 [weight=100000000]
+    rank = same {productionR2C2 -> productionR2C3}
+    rank = same {productionR2C1 -> productionR2C2}
+    productionR1C1 -> productionR2C1 [weight=100000000]
+    productionR0C1 -> productionR1C1 [weight=100000000]
+    rank = same {productionR0C0 -> productionR0C1}
+    node [style = invis]
+    edge [style = invis]
+    rank = same {productionR0C1 -> productionR0C2}
+    rank = same {productionR0C2 -> productionR0C3}
+    productionR0C0 -> productionR1C0 [weight=100000000]
+    rank = same {productionR1C0 -> productionR1C1}
+    productionR0C2 -> productionR1C2 [weight=100000000]
+    rank = same {productionR1C1 -> productionR1C2}
+    productionR0C3 -> productionR1C3 [weight=100000000]
+    rank = same {productionR1C2 -> productionR1C3}
+    productionR1C0 -> productionR2C0 [weight=100000000]
+    rank = same {productionR2C0 -> productionR2C1}
+    productionR1C2 -> productionR2C2 [weight=100000000]
+    productionR1C3 -> productionR2C3 [weight=100000000]
+    productionR2C0 -> productionR3C0 [weight=100000000]
+    rank = same {productionR3C0 -> productionR3C1}
+    productionR3C0 -> productionR4C0 [weight=100000000]
+    rank = same {productionR4C0 -> productionR4C1}
+    productionR4C0 -> productionR5C0 [weight=100000000]
+    rank = same {productionR5C0 -> productionR5C1}
+    productionR4C2 -> productionR5C2 [weight=100000000]
+    rank = same {productionR5C1 -> productionR5C2}
+    productionR4C3 -> productionR5C3 [weight=100000000]
+    rank = same {productionR5C2 -> productionR5C3}
+  }
+  subgraph clustersequence {
+    node [shape = box]
+    label = <sequence = term { term } .>
+    labeljust = l
+    sequenceR0C0 [label = <AW<br/>N sequence<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo []<br/>am []>]
+    sequenceR0C1 [label = <AP<br/>ALT <br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo []<br/>am []>]
+    sequenceR1C1 [label = <AQ<br/>N term<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["", "(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    sequenceR2C1 [label = <AU<br/>KLN <br/>fi ["", "(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["", "(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]>]
+    sequenceR3C1 [label = <AV<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    sequenceR2C1 -> sequenceR3C1 [weight=100000000]
+    sequenceR2C2 [label = <AR<br/>ALT <br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["", "(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    sequenceR3C2 [label = <AS<br/>N term<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["", "(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    sequenceR4C2 [label = <AT<br/>END <br/>fi [""]<br/>fo ["", "(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    sequenceR3C2 -> sequenceR4C2 [weight=100000000]
+    sequenceR2C2 -> sequenceR3C2 [weight=100000000]
+    rank = same {sequenceR2C1 -> sequenceR2C2}
+    sequenceR1C1 -> sequenceR2C1 [weight=100000000]
+    sequenceR0C1 -> sequenceR1C1 [weight=100000000]
+    rank = same {sequenceR0C0 -> sequenceR0C1}
+    node [style = invis]
+    edge [style = invis]
+    rank = same {sequenceR0C1 -> sequenceR0C2}
+    sequenceR0C0 -> sequenceR1C0 [weight=100000000]
+    rank = same {sequenceR1C0 -> sequenceR1C1}
+    sequenceR0C2 -> sequenceR1C2 [weight=100000000]
+    rank = same {sequenceR1C1 -> sequenceR1C2}
+    sequenceR1C0 -> sequenceR2C0 [weight=100000000]
+    rank = same {sequenceR2C0 -> sequenceR2C1}
+    sequenceR1C2 -> sequenceR2C2 [weight=100000000]
+    sequenceR2C0 -> sequenceR3C0 [weight=100000000]
+    rank = same {sequenceR3C0 -> sequenceR3C1}
+    sequenceR3C0 -> sequenceR4C0 [weight=100000000]
+    sequenceR3C1 -> sequenceR4C1 [weight=100000000]
+    rank = same {sequenceR4C0 -> sequenceR4C1}
+    rank = same {sequenceR4C1 -> sequenceR4C2}
+  }
+  subgraph clusterterm {
+    node [shape = box]
+    label = <term = terminal | "[" selection "]" | "{" selection "}" | "&lt;" selection "&gt;" | "(" selection ( ")" | ")?" | ")*" | ")+" ) .>
+    labeljust = l
+    termR0C0 [label = <CG<br/>N term<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo []<br/>am []>]
+    termR0C1 [label = <AX<br/>ALT <br/>fi ["action", "identifier", "literal", "regex"]<br/>fo []<br/>am []>]
+    termR1C1 [label = <AY<br/>N terminal<br/>fi ["action", "identifier", "literal", "regex"]<br/>fo [""]<br/>am []>]
+    termR2C1 [label = <AZ<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    termR1C1 -> termR2C1 [weight=100000000]
+    termR0C1 -> termR1C1 [weight=100000000]
+    termR0C2 [label = <BA<br/>ALT <br/>fi ["["]<br/>fo []<br/>am []>]
+    termR1C2 [label = <BB<br/>T "["<br/>fi ["["]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    termR2C2 [label = <BC<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["]"]<br/>am []>]
+    termR3C2 [label = <BD<br/>T "]"<br/>fi ["]"]<br/>fo [""]<br/>am []>]
+    termR4C2 [label = <BE<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    termR3C2 -> termR4C2 [weight=100000000]
+    termR2C2 -> termR3C2 [weight=100000000]
+    termR1C2 -> termR2C2 [weight=100000000]
+    termR0C2 -> termR1C2 [weight=100000000]
+    termR0C3 [label = <BF<br/>ALT <br/>fi ["{"]<br/>fo []<br/>am []>]
+    termR1C3 [label = <BG<br/>T "{"<br/>fi ["{"]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    termR2C3 [label = <BH<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["}"]<br/>am []>]
+    termR3C3 [label = <BI<br/>T "}"<br/>fi ["}"]<br/>fo [""]<br/>am []>]
+    termR4C3 [label = <BJ<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    termR3C3 -> termR4C3 [weight=100000000]
+    termR2C3 -> termR3C3 [weight=100000000]
+    termR1C3 -> termR2C3 [weight=100000000]
+    termR0C3 -> termR1C3 [weight=100000000]
+    termR0C4 [label = <BK<br/>ALT <br/>fi ["&lt;"]<br/>fo []<br/>am []>]
+    termR1C4 [label = <BL<br/>T "&lt;"<br/>fi ["&lt;"]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    termR2C4 [label = <BM<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["&gt;"]<br/>am []>]
+    termR3C4 [label = <BN<br/>T "&gt;"<br/>fi ["&gt;"]<br/>fo [""]<br/>am []>]
+    termR4C4 [label = <BO<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    termR3C4 -> termR4C4 [weight=100000000]
+    termR2C4 -> termR3C4 [weight=100000000]
+    termR1C4 -> termR2C4 [weight=100000000]
+    termR0C4 -> termR1C4 [weight=100000000]
+    termR0C5 [label = <BP<br/>ALT <br/>fi ["("]<br/>fo []<br/>am []>]
+    termR1C5 [label = <BQ<br/>T "("<br/>fi ["("]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    termR2C5 [label = <BR<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo [")", ")*", ")+", ")?"]<br/>am []>]
+    termR3C5 [label = <CE<br/>DO <br/>fi [")", ")*", ")+", ")?"]<br/>fo [""]<br/>am []>]
+    termR4C5 [label = <CF<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    termR3C5 -> termR4C5 [weight=100000000]
+    termR3C6 [label = <BS<br/>ALT <br/>fi [")"]<br/>fo [""]<br/>am []>]
+    termR4C6 [label = <BT<br/>T ")"<br/>fi [")"]<br/>fo [""]<br/>am []>]
+    termR5C6 [label = <BU<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    termR4C6 -> termR5C6 [weight=100000000]
+    termR3C6 -> termR4C6 [weight=100000000]
+    termR3C7 [label = <BV<br/>ALT <br/>fi [")?"]<br/>fo [""]<br/>am []>]
+    termR4C7 [label = <BW<br/>T ")?"<br/>fi [")?"]<br/>fo [""]<br/>am []>]
+    termR5C7 [label = <BX<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    termR4C7 -> termR5C7 [weight=100000000]
+    termR3C7 -> termR4C7 [weight=100000000]
+    termR3C8 [label = <BY<br/>ALT <br/>fi [")*"]<br/>fo [""]<br/>am []>]
+    termR4C8 [label = <BZ<br/>T ")*"<br/>fi [")*"]<br/>fo [""]<br/>am []>]
+    termR5C8 [label = <CA<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    termR4C8 -> termR5C8 [weight=100000000]
+    termR3C8 -> termR4C8 [weight=100000000]
+    termR3C9 [label = <CB<br/>ALT <br/>fi [")+"]<br/>fo [""]<br/>am []>]
+    termR4C9 [label = <CC<br/>T ")+"<br/>fi [")+"]<br/>fo [""]<br/>am []>]
+    termR5C9 [label = <CD<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    termR4C9 -> termR5C9 [weight=100000000]
+    termR3C9 -> termR4C9 [weight=100000000]
+    rank = same {termR3C8 -> termR3C9}
+    rank = same {termR3C7 -> termR3C8}
+    rank = same {termR3C6 -> termR3C7}
+    rank = same {termR3C5 -> termR3C6}
+    termR2C5 -> termR3C5 [weight=100000000]
+    termR1C5 -> termR2C5 [weight=100000000]
+    termR0C5 -> termR1C5 [weight=100000000]
+    rank = same {termR0C4 -> termR0C5}
+    rank = same {termR0C3 -> termR0C4}
+    rank = same {termR0C2 -> termR0C3}
+    rank = same {termR0C1 -> termR0C2}
+    rank = same {termR0C0 -> termR0C1}
+    node [style = invis]
+    edge [style = invis]
+    rank = same {termR0C5 -> termR0C6}
+    rank = same {termR0C6 -> termR0C7}
+    rank = same {termR0C7 -> termR0C8}
+    rank = same {termR0C8 -> termR0C9}
+    termR0C0 -> termR1C0 [weight=100000000]
+    rank = same {termR1C0 -> termR1C1}
+    termR0C6 -> termR1C6 [weight=100000000]
+    rank = same {termR1C5 -> termR1C6}
+    termR0C7 -> termR1C7 [weight=100000000]
+    rank = same {termR1C6 -> termR1C7}
+    termR0C8 -> termR1C8 [weight=100000000]
+    rank = same {termR1C7 -> termR1C8}
+    termR0C9 -> termR1C9 [weight=100000000]
+    rank = same {termR1C8 -> termR1C9}
+    termR1C0 -> termR2C0 [weight=100000000]
+    rank = same {termR2C0 -> termR2C1}
+    termR1C6 -> termR2C6 [weight=100000000]
+    rank = same {termR2C5 -> termR2C6}
+    termR1C7 -> termR2C7 [weight=100000000]
+    rank = same {termR2C6 -> termR2C7}
+    termR1C8 -> termR2C8 [weight=100000000]
+    rank = same {termR2C7 -> termR2C8}
+    termR1C9 -> termR2C9 [weight=100000000]
+    rank = same {termR2C8 -> termR2C9}
+    termR2C0 -> termR3C0 [weight=100000000]
+    termR2C1 -> termR3C1 [weight=100000000]
+    rank = same {termR3C0 -> termR3C1}
+    rank = same {termR3C1 -> termR3C2}
+    termR2C6 -> termR3C6 [weight=100000000]
+    termR2C7 -> termR3C7 [weight=100000000]
+    termR2C8 -> termR3C8 [weight=100000000]
+    termR2C9 -> termR3C9 [weight=100000000]
+    termR3C0 -> termR4C0 [weight=100000000]
+    termR3C1 -> termR4C1 [weight=100000000]
+    rank = same {termR4C0 -> termR4C1}
+    rank = same {termR4C1 -> termR4C2}
+    termR4C0 -> termR5C0 [weight=100000000]
+    termR4C1 -> termR5C1 [weight=100000000]
+    rank = same {termR5C0 -> termR5C1}
+    termR4C2 -> termR5C2 [weight=100000000]
+    rank = same {termR5C1 -> termR5C2}
+    termR4C3 -> termR5C3 [weight=100000000]
+    rank = same {termR5C2 -> termR5C3}
+    termR4C4 -> termR5C4 [weight=100000000]
+    rank = same {termR5C3 -> termR5C4}
+    termR4C5 -> termR5C5 [weight=100000000]
+    rank = same {termR5C4 -> termR5C5}
+    rank = same {termR5C5 -> termR5C6}
+  }
+  subgraph clusterterminal {
+    node [shape = box]
+    label = <terminal = "identifier" | "literal" | "regex" | "action" .>
+    labeljust = l
+    terminalR0C0 [label = <CT<br/>N terminal<br/>fi ["action", "identifier", "literal", "regex"]<br/>fo []<br/>am []>]
+    terminalR0C1 [label = <CH<br/>ALT <br/>fi ["identifier"]<br/>fo []<br/>am []>]
+    terminalR1C1 [label = <CI<br/>T "identifier"<br/>fi ["identifier"]<br/>fo [""]<br/>am []>]
+    terminalR2C1 [label = <CJ<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    terminalR1C1 -> terminalR2C1 [weight=100000000]
+    terminalR0C1 -> terminalR1C1 [weight=100000000]
+    terminalR0C2 [label = <CK<br/>ALT <br/>fi ["literal"]<br/>fo []<br/>am []>]
+    terminalR1C2 [label = <CL<br/>T "literal"<br/>fi ["literal"]<br/>fo [""]<br/>am []>]
+    terminalR2C2 [label = <CM<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    terminalR1C2 -> terminalR2C2 [weight=100000000]
+    terminalR0C2 -> terminalR1C2 [weight=100000000]
+    terminalR0C3 [label = <CN<br/>ALT <br/>fi ["regex"]<br/>fo []<br/>am []>]
+    terminalR1C3 [label = <CO<br/>T "regex"<br/>fi ["regex"]<br/>fo [""]<br/>am []>]
+    terminalR2C3 [label = <CP<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    terminalR1C3 -> terminalR2C3 [weight=100000000]
+    terminalR0C3 -> terminalR1C3 [weight=100000000]
+    terminalR0C4 [label = <CQ<br/>ALT <br/>fi ["action"]<br/>fo []<br/>am []>]
+    terminalR1C4 [label = <CR<br/>T "action"<br/>fi ["action"]<br/>fo [""]<br/>am []>]
+    terminalR2C4 [label = <CS<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    terminalR1C4 -> terminalR2C4 [weight=100000000]
+    terminalR0C4 -> terminalR1C4 [weight=100000000]
+    rank = same {terminalR0C3 -> terminalR0C4}
+    rank = same {terminalR0C2 -> terminalR0C3}
+    rank = same {terminalR0C1 -> terminalR0C2}
+    rank = same {terminalR0C0 -> terminalR0C1}
+    node [style = invis]
+    edge [style = invis]
+    terminalR0C0 -> terminalR1C0 [weight=100000000]
+    rank = same {terminalR1C0 -> terminalR1C1}
+    terminalR1C0 -> terminalR2C0 [weight=100000000]
+    rank = same {terminalR2C0 -> terminalR2C1}
+  }
+  subgraph clusterselection {
+    node [shape = box]
+    label = <selection = sequence { "|" sequence } .>
+    labeljust = l
+    selectionR0C0 [label = <AO<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo []<br/>am []>]
+    selectionR0C1 [label = <AG<br/>ALT <br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo []<br/>am []>]
+    selectionR1C1 [label = <AH<br/>N sequence<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["", "|"]<br/>am []>]
+    selectionR2C1 [label = <AM<br/>KLN <br/>fi ["", "|"]<br/>fo ["", "|"]<br/>am ["|"]>]
+    selectionR3C1 [label = <AN<br/>END <br/>fi [""]<br/>fo []<br/>am []>]
+    selectionR2C1 -> selectionR3C1 [weight=100000000]
+    selectionR2C2 [label = <AI<br/>ALT <br/>fi ["|"]<br/>fo ["", "|"]<br/>am []>]
+    selectionR3C2 [label = <AJ<br/>T "|"<br/>fi ["|"]<br/>fo ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>am []>]
+    selectionR4C2 [label = <AK<br/>N sequence<br/>fi ["(", "&lt;", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["", "|"]<br/>am []>]
+    selectionR5C2 [label = <AL<br/>END <br/>fi [""]<br/>fo ["", "|"]<br/>am []>]
+    selectionR4C2 -> selectionR5C2 [weight=100000000]
+    selectionR3C2 -> selectionR4C2 [weight=100000000]
+    selectionR2C2 -> selectionR3C2 [weight=100000000]
+    rank = same {selectionR2C1 -> selectionR2C2}
+    selectionR1C1 -> selectionR2C1 [weight=100000000]
+    selectionR0C1 -> selectionR1C1 [weight=100000000]
+    rank = same {selectionR0C0 -> selectionR0C1}
+    node [style = invis]
+    edge [style = invis]
+    rank = same {selectionR0C1 -> selectionR0C2}
+    selectionR0C0 -> selectionR1C0 [weight=100000000]
+    rank = same {selectionR1C0 -> selectionR1C1}
+    selectionR0C2 -> selectionR1C2 [weight=100000000]
+    rank = same {selectionR1C1 -> selectionR1C2}
+    selectionR1C0 -> selectionR2C0 [weight=100000000]
+    rank = same {selectionR2C0 -> selectionR2C1}
+    selectionR1C2 -> selectionR2C2 [weight=100000000]
+    selectionR2C0 -> selectionR3C0 [weight=100000000]
+    rank = same {selectionR3C0 -> selectionR3C1}
+    selectionR3C0 -> selectionR4C0 [weight=100000000]
+    selectionR3C1 -> selectionR4C1 [weight=100000000]
+    rank = same {selectionR4C0 -> selectionR4C1}
+    rank = same {selectionR4C1 -> selectionR4C2}
+    selectionR4C0 -> selectionR5C0 [weight=100000000]
+    selectionR4C1 -> selectionR5C1 [weight=100000000]
+    rank = same {selectionR5C0 -> selectionR5C1}
+    rank = same {selectionR5C1 -> selectionR5C2}
   }
   subgraph clusterS {
     node [shape = box]
-    label = <S = "x" S | "" .>
+    label = <S = { production } { "message" } .>
     labeljust = l
-    SR0C0 [label = <J<br/>N S<br/>fi ["", "x"]<br/>fo [""]<br/>am []>]
-    SR0C1 [label = <C<br/>ALT <br/>fi ["x"]<br/>fo [""]<br/>am []>]
-    SR1C1 [label = <D<br/>T "x"<br/>fi ["x"]<br/>fo ["", "x"]<br/>am []>]
-    SR2C1 [label = <E<br/>N S<br/>fi ["", "x"]<br/>fo [""]<br/>am []>]
-    SR3C1 [label = <F<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
+    SR0C0 [label = <S<br/>N S<br/>fi ["", "identifier", "message"]<br/>fo [""]<br/>am []>]
+    SR0C1 [label = <I<br/>ALT <br/>fi ["", "identifier", "message"]<br/>fo [""]<br/>am []>]
+    SR1C1 [label = <M<br/>KLN <br/>fi ["", "identifier"]<br/>fo ["", "identifier", "message"]<br/>am ["identifier"]>]
+    SR2C1 [label = <Q<br/>KLN <br/>fi ["", "message"]<br/>fo ["", "message"]<br/>am ["message"]>]
+    SR3C1 [label = <R<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
     SR2C1 -> SR3C1 [weight=100000000]
+    SR2C2 [label = <N<br/>ALT <br/>fi ["message"]<br/>fo ["", "message"]<br/>am []>]
+    SR3C2 [label = <O<br/>T "message"<br/>fi ["message"]<br/>fo ["", "message"]<br/>am []>]
+    SR4C2 [label = <P<br/>END <br/>fi [""]<br/>fo ["", "message"]<br/>am []>]
+    SR3C2 -> SR4C2 [weight=100000000]
+    SR2C2 -> SR3C2 [weight=100000000]
+    rank = same {SR2C1 -> SR2C2}
     SR1C1 -> SR2C1 [weight=100000000]
+    SR1C3 [label = <J<br/>ALT <br/>fi ["identifier"]<br/>fo ["", "identifier", "message"]<br/>am []>]
+    SR2C3 [label = <K<br/>N production<br/>fi ["identifier"]<br/>fo ["", "identifier", "message"]<br/>am []>]
+    SR3C3 [label = <L<br/>END <br/>fi [""]<br/>fo ["", "identifier", "message"]<br/>am []>]
+    SR2C3 -> SR3C3 [weight=100000000]
+    SR1C3 -> SR2C3 [weight=100000000]
+    rank = same {SR1C1 -> SR1C3}
     SR0C1 -> SR1C1 [weight=100000000]
-    SR0C2 [label = <G<br/>ALT <br/>fi [""]<br/>fo [""]<br/>am []>]
-    SR1C2 [label = <H<br/>EPS <br/>fi [""]<br/>fo [""]<br/>am []>]
-    SR2C2 [label = <I<br/>END <br/>fi [""]<br/>fo [""]<br/>am []>]
-    SR1C2 -> SR2C2 [weight=100000000]
-    SR0C2 -> SR1C2 [weight=100000000]
-    rank = same {SR0C1 -> SR0C2}
     rank = same {SR0C0 -> SR0C1}
     node [style = invis]
     edge [style = invis]
+    rank = same {SR0C1 -> SR0C2}
+    rank = same {SR0C2 -> SR0C3}
     SR0C0 -> SR1C0 [weight=100000000]
     rank = same {SR1C0 -> SR1C1}
+    SR0C3 -> SR1C3 [weight=100000000]
     SR1C0 -> SR2C0 [weight=100000000]
     rank = same {SR2C0 -> SR2C1}
     SR2C0 -> SR3C0 [weight=100000000]
     rank = same {SR3C0 -> SR3C1}
-    SR2C2 -> SR3C2 [weight=100000000]
-    rank = same {SR3C1 -> SR3C2}
+    SR3C0 -> SR4C0 [weight=100000000]
+    SR3C1 -> SR4C1 [weight=100000000]
+    rank = same {SR4C0 -> SR4C1}
+    rank = same {SR4C1 -> SR4C2}
+    SR3C3 -> SR4C3 [weight=100000000]
+    rank = same {SR4C2 -> SR4C3}
   }
+  productionR5C1:w -> productionR0C0:s [style = solid, color = red, constraint = false]
+  productionR4C2:w -> productionR2C1:s [style = solid, color = red, constraint = false]
+  productionR4C3:w -> productionR2C1:s [style = solid, color = red, constraint = false]
+  sequenceR3C1:w -> sequenceR0C0:s [style = solid, color = red, constraint = false]
+  sequenceR4C2:w -> sequenceR2C1:s [style = solid, color = red, constraint = false]
+  termR2C1:w -> termR0C0:s [style = solid, color = red, constraint = false]
+  termR4C2:w -> termR0C0:s [style = solid, color = red, constraint = false]
+  termR4C3:w -> termR0C0:s [style = solid, color = red, constraint = false]
+  termR4C4:w -> termR0C0:s [style = solid, color = red, constraint = false]
+  termR4C5:w -> termR0C0:s [style = solid, color = red, constraint = false]
+  termR5C6:w -> termR3C5:s [style = solid, color = red, constraint = false]
+  termR5C7:w -> termR3C5:s [style = solid, color = red, constraint = false]
+  termR5C8:w -> termR3C5:s [style = solid, color = red, constraint = false]
+  termR5C9:w -> termR3C5:s [style = solid, color = red, constraint = false]
+  terminalR2C1:w -> terminalR0C0:s [style = solid, color = red, constraint = false]
+  terminalR2C2:w -> terminalR0C0:s [style = solid, color = red, constraint = false]
+  terminalR2C3:w -> terminalR0C0:s [style = solid, color = red, constraint = false]
+  terminalR2C4:w -> terminalR0C0:s [style = solid, color = red, constraint = false]
+  selectionR3C1:w -> selectionR0C0:s [style = solid, color = red, constraint = false]
+  selectionR5C2:w -> selectionR2C1:s [style = solid, color = red, constraint = false]
   SR3C1:w -> SR0C0:s [style = solid, color = red, constraint = false]
-  SR2C2:w -> SR0C0:s [style = solid, color = red, constraint = false]
+  SR4C2:w -> SR2C1:s [style = solid, color = red, constraint = false]
+  SR3C3:w -> SR1C1:s [style = solid, color = red, constraint = false]
+  productionR5C1:e -> productionR0C1 [style = dotted, color = green, constraint = false]
+  productionR4C2:e -> productionR2C2 [style = dotted, color = green, constraint = false]
+  productionR4C3:e -> productionR2C3 [style = dotted, color = green, constraint = false]
+  sequenceR3C1:e -> sequenceR0C1 [style = dotted, color = green, constraint = false]
+  sequenceR4C2:e -> sequenceR2C2 [style = dotted, color = green, constraint = false]
+  termR2C1:e -> termR0C1 [style = dotted, color = green, constraint = false]
+  termR4C2:e -> termR0C2 [style = dotted, color = green, constraint = false]
+  termR4C3:e -> termR0C3 [style = dotted, color = green, constraint = false]
+  termR4C4:e -> termR0C4 [style = dotted, color = green, constraint = false]
+  termR4C5:e -> termR0C5 [style = dotted, color = green, constraint = false]
+  termR5C6:e -> termR3C6 [style = dotted, color = green, constraint = false]
+  termR5C7:e -> termR3C7 [style = dotted, color = green, constraint = false]
+  termR5C8:e -> termR3C8 [style = dotted, color = green, constraint = false]
+  termR5C9:e -> termR3C9 [style = dotted, color = green, constraint = false]
+  terminalR2C1:e -> terminalR0C1 [style = dotted, color = green, constraint = false]
+  terminalR2C2:e -> terminalR0C2 [style = dotted, color = green, constraint = false]
+  terminalR2C3:e -> terminalR0C3 [style = dotted, color = green, constraint = false]
+  terminalR2C4:e -> terminalR0C4 [style = dotted, color = green, constraint = false]
+  selectionR3C1:e -> selectionR0C1 [style = dotted, color = green, constraint = false]
+  selectionR5C2:e -> selectionR2C2 [style = dotted, color = green, constraint = false]
   SR3C1:e -> SR0C1 [style = dotted, color = green, constraint = false]
-  SR2C2:e -> SR0C2 [style = dotted, color = green, constraint = false]
-  SR2C1:e -> SR0C1 [style = dotted, color = blue, constraint = false]
+  SR4C2:e -> SR2C2 [style = dotted, color = green, constraint = false]
+  SR3C3:e -> SR1C3 [style = dotted, color = green, constraint = false]
+  productionR3C1:e -> selectionR0C1 [style = dotted, color = blue, constraint = false]
+  sequenceR3C2:e -> termR0C1 [style = dotted, color = blue, constraint = false]
+  sequenceR1C1:e -> termR0C1 [style = dotted, color = blue, constraint = false]
+  termR1C1:e -> terminalR0C1 [style = dotted, color = blue, constraint = false]
+  termR2C2:e -> selectionR0C1 [style = dotted, color = blue, constraint = false]
+  termR2C3:e -> selectionR0C1 [style = dotted, color = blue, constraint = false]
+  termR2C4:e -> selectionR0C1 [style = dotted, color = blue, constraint = false]
+  termR2C5:e -> selectionR0C1 [style = dotted, color = blue, constraint = false]
+  selectionR4C2:e -> sequenceR0C1 [style = dotted, color = blue, constraint = false]
+  selectionR1C1:e -> sequenceR0C1 [style = dotted, color = blue, constraint = false]
+  SR2C3:e -> productionR0C1 [style = dotted, color = blue, constraint = false]
 }

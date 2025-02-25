@@ -7,6 +7,34 @@
 
 import Foundation
 
+extension Character {
+    // Set of Unicode scalar values for epsilon-related codepoints
+    private static let epsilonScalars: [UInt32] = [
+        0x0395,  // Ε - GREEK CAPITAL LETTER EPSILON
+        0x03B5,  // ε - GREEK SMALL LETTER EPSILON
+        0x03F5,  // ϵ - GREEK LUNATE EPSILON SYMBOL
+        0x0510,  // Ԑ - CYRILLIC CAPITAL LETTER REVERSED ZE OR EPSILON
+        0x0511,  // ԑ - CYRILLIC SMALL LETTER REVERSED ZE OR EPSILON
+        0x1D6C6, // 𝛆 - MATHEMATICAL BOLD CAPITAL EPSILON
+        0x1D6DC, // 𝛜 - MATHEMATICAL BOLD SMALL EPSILON
+        0x1D700, // 𝜀 - MATHEMATICAL ITALIC CAPITAL EPSILON
+        0x1D716, // 𝜖 - MATHEMATICAL ITALIC SMALL EPSILON
+        0x1D73A, // 𝜺 - MATHEMATICAL BOLD ITALIC CAPITAL EPSILON
+        0x1D750, // 𝝐 - MATHEMATICAL BOLD ITALIC SMALL EPSILON
+        0x1D774, // 𝝴 - MATHEMATICAL SANS-SERIF BOLD CAPITAL EPSILON
+        0x1D78A, // 𝞊 - MATHEMATICAL SANS-SERIF BOLD SMALL EPSILON
+        0x1D7AE, // 𝞮 - MATHEMATICAL SANS-SERIF BOLD ITALIC CAPITAL EPSILON
+        0x1D7C4  // 𝟄 - MATHEMATICAL SANS-SERIF BOLD ITALIC SMALL EPSILON
+    ]
+
+    var isEpsilon: Bool {
+        // A Character can have multiple scalars (e.g., composed characters),
+        // but these epsilons are single scalars, so we check the first one
+        guard let scalar = unicodeScalars.first else { return false }
+        return Self.epsilonScalars.contains(scalar.value)
+    }
+}
+
 extension String {
     
     var escapesAdded: String {

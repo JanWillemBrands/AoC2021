@@ -9,6 +9,7 @@ import Foundation
 
 var trace = true
 var traceIndent = 0
+
 func trace(_ items: Any..., terminator term: String = "") {
     if trace {
         for _ in 0..<traceIndent { print(" ", terminator: "")}

@@ -5,7 +5,7 @@
 //  Created by Johannes Brands on 26/12/2024.
 //
 
-final class StackNode {
+final class StackNode: Hashable, CustomStringConvertible, Comparable {
     let slot: GrammarNode
     let index: Int
     var edges: [Edge] = []
@@ -16,13 +16,40 @@ final class StackNode {
         self.slot = slot
         self.index = index
     }
+    static func == (lhs: StackNode, rhs: StackNode) -> Bool {
+        lhs.slot == rhs.slot && lhs.index == rhs.index
+    }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(slot)
+        hasher.combine(index)
+    }
+    var description: String {
+        if slot.kind == .EOS { return "●○" }
+        return slot.description + index.description
+    }
+    static func < (lhs: StackNode, rhs: StackNode) -> Bool {
+        lhs.description < rhs.description
+    }
 }
 
-struct Edge {
+// TODO: simplify!  does Edge need all this?
+struct Edge: Hashable, CustomStringConvertible, Comparable {
     let towards: StackNode
 //    var dummy: [GrammarNode] = []
     init(towards: StackNode) {
         self.towards = towards
+    }
+    static func == (lhs: Edge, rhs: Edge) -> Bool {
+        lhs.towards == rhs.towards
+    }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(towards)
+    }
+    var description: String {
+        towards.description
+    }
+    static func < (lhs: Edge, rhs: Edge) -> Bool {
+        lhs.towards < rhs.towards
     }
 }
 
@@ -32,26 +59,30 @@ struct Descriptor: Hashable {
     let index: Int
 }
 
-struct SlotIndex: Hashable {
+// TODO: replace with tuple?
+struct SlotIndex: Hashable, CustomStringConvertible {
     let slot: GrammarNode
     let index: Int
+    var description: String {
+        slot.description + index.description
+    }
 }
 
 // the list of Decriptors that still need to be processed
 var remainder: [Descriptor] = []
 
-var gss: Set<StackNode> = []
 var gssRoot = StackNode(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
+var gss: Set<StackNode> = [gssRoot]
 
-struct BSR: Hashable, CustomStringConvertible {
-    let node: GrammarNode
-    let i: Int
-    let k: Int
-    let j: Int
-    var description: String { "\(node) \(i):\(k):\(j)" }
-}
-
-var yield : Set<BSR> = []   // currentYield_Cn_ϒ_𝛶_BSR
+//struct BSR: Hashable, CustomStringConvertible {
+//    let node: GrammarNode
+//    let i: Int  // left
+//    let k: Int  // pivot
+//    let j: Int  // right
+//    var description: String { "\(node) \(i):\(k):\(j)" }
+//}
+//
+//var yield : Set<BSR> = []   // currentYield_Cn_ϒ_𝛶_BSR
 
 // create a GSS node if it doesn't already exist
 // add an edge from that node to the current stack top
@@ -116,40 +147,3 @@ func getDescriptor() -> Bool {
         return true
     }
 }
-
-extension StackNode: Hashable, CustomStringConvertible, Comparable {
-    static func == (lhs: StackNode, rhs: StackNode) -> Bool {
-        lhs.slot == rhs.slot && lhs.index == rhs.index
-    }
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(slot)
-        hasher.combine(index)
-    }
-    var description: String {
-        slot.description + index.description
-    }
-    static func < (lhs: StackNode, rhs: StackNode) -> Bool {
-        lhs.description < rhs.description
-    }
-}
-
-extension Edge: Hashable, CustomStringConvertible, Comparable {
-    static func == (lhs: Edge, rhs: Edge) -> Bool {
-        lhs.towards == rhs.towards
-    }
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(towards)
-    }
-    var description: String {
-        towards.description
-    }
-    static func < (lhs: Edge, rhs: Edge) -> Bool {
-        lhs.towards < rhs.towards
-    }
-}
-
-//extension SlotIndex: CustomStringConvertible {
-//    var description: String {
-//        slot.description + index.description
-//    }
-//}

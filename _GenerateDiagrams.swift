@@ -61,37 +61,13 @@ class DiagramsGenerator {
         content.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphvizHTML)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
         content.append("\n    labeljust = l")
         content.append("\n    node [shape = box, style = rounded, height = 0]")
-        if !gss.isEmpty {
-            for node in gss.sorted() {
-                if node.edges.isEmpty {
-                    content.append("\n    \"\(node)\" -> \"#\"")
-                    // TODO: use '#' or '●○' as the root label?
-                } else {
-                    for edge in node.edges {
-                        let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
-                        content.append("\n    \(node) [label = <\(node)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
-                        content.append("\n    \(node) -> \(edge)")
-                    }
-                }
+        for node in gss.sorted() {
+            for edge in node.edges {
+                let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
+                content.append("\n    \(node) [label = <\(node)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+                content.append("\n    \(node) -> \(edge)")
             }
         }
-//        if !gss.isEmpty {
-////            if _graph.count > 1 {
-//            for (key, value) in gss.sorted(by: { $0.key > $1.key }) {
-//                if value.edges.isEmpty {
-////                    if value.isEmpty {
-//                    content.append("\n    \"\(key)\" -> \"#\"")
-//                    // TODO: use '#' or '●○' as the root label?
-//                } else {
-//                    for element in value.edges {
-//                        let poppedIndexes = gss[element.towards]?.pops.sorted().description.dropFirst().dropLast()
-////                        let poppedIndexes = element.towards.pops.sorted().description.dropFirst().dropLast()
-//                        content.append("\n    \(key) [label = <\(key)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
-//                        content.append("\n    \(key) -> \(element.towards.description)")
-//                    }
-//                }
-//            }
-//        }
         content.append("\n  }")
 
         // generate syntax graph for each non-terminal
@@ -138,9 +114,7 @@ class DiagramsGenerator {
         node.cell = Cell(name: name, r: row, c: col)
         grid[node.cell] = true
         
-//        d.append("\n    \(node.number) [label = <\(node.number)<br/><font color=\"gray\" point-size=\"8.0\"> \(node.kind) \(str)</font>>]")
-//        d.append("\n    \(node.number) [label = <\(node.number)<br/>\(node.kind) \(str)<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())<br/>am \(node.ambiguous.sorted())>]")
-        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str)<br/>fi \(node.first.sorted())<br/>fo \(node.follow.sorted())<br/>am \(node.ambiguous.sorted())>]")
+        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind.rawValue.description.graphvizHTML) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)<br/>am \(node.ambiguous.sorted().description.graphvizHTML)>]")
 
         if let seq = node.seq {
             if node.kind == .END {

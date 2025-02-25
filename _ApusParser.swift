@@ -80,16 +80,6 @@ func _production() {
     }
     // TODO: do we really want regex and literal terminals also listed as nonTerminals?
     // TODO:  this causes the terminals to end up in the nonterminals
-    //    if let existing = _nonTerminals[nonTerminalName] {
-    //        // add this production to the end of the existing ALT list
-    //        var current = existing
-    //        while let next = current.alt {
-    //            current = next
-    //        }
-    //        current.alt = node
-    //    } else {
-    //        _nonTerminals[nonTerminalName] = node
-    //    }
     expect(["."])
     next()
 }
@@ -136,6 +126,7 @@ func _regex() -> GrammarNode {
         }
     }
     do {
+        // the token is a regex definition, try to initialize a Regex with it
         let regex = try Regex<Substring>(String(token.stripped))
         _terminals[name] = (String(token.image), regex, false, _skip)
         trace("regex name:", name, "image:", token.image)
@@ -143,13 +134,14 @@ func _regex() -> GrammarNode {
         print("error: \(token.image) is not a valid /regex/")
         exit(9)
     }
+
     return GrammarNode(kind: .T, str: name)
 }
 
 func _literal() -> GrammarNode {
     trace("literal", token, token.stripped)
 
-    if token.stripped == "" {
+    if token.stripped == "" || token.stripped.count == 1 && token.stripped.first!.isEpsilon {
         return GrammarNode(kind: .EPS, str: "")
     }
     
@@ -159,14 +151,11 @@ func _literal() -> GrammarNode {
             print("warning: redefinition of \(name) as \(_skip ? "skipped" : "not skipped")")
         }
     }
-    do {
-        let regex = try Regex<Substring>(String(token.stripped))
-        _terminals[name] = (String(token.image), regex, true, _skip)
-        trace("literal name:", name, "image:", token.image)
-    } catch {
-        print("error: \(token.image) is not a valid \"literal\"")
-        exit(8)
-    }
+    // the token is a string literal, use a regex builder to create a Regex
+    let regex = Regex { token.stripped }
+    _terminals[name] = (String(token.image), regex, true, _skip)
+    trace("literal name:", name, "image:", token.image)
+
     return GrammarNode(kind: .T, str: name)
 }
 
@@ -175,7 +164,16 @@ func _term() -> GrammarNode {
     var node: GrammarNode
     switch token.kind {
     case "identifier":
-        node = GrammarNode(kind: .N, str: token.stripped)
+        print("identifier", token.image)
+        if _terminals[String(token.image)] != nil {
+            // this string was defined previously as a terminal
+            // TODO: currently all terminals must be defined BEFORE they are used
+            node = GrammarNode(kind: .T, str: token.stripped)
+        } else {
+            // this string is assumed to be a nonTerminal
+            // nonTerminals may be used before they are defined, and are resolved later
+            node = GrammarNode(kind: .N, str: token.stripped)
+        }
     case "literal":
         node = _literal()
     case "regex":

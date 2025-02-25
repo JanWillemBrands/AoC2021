@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
+enum GrammarNodeKind: String { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
 final class GrammarNode {
     let kind: GrammarNodeKind
@@ -35,13 +35,21 @@ final class GrammarNode {
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
     static var sizeofSets = 0
-        
+    
+    var bsr: Set<Triple> = []
+    
     // TODO: remove or keep in DEBUG mode only
     static var count = 0
     let number: Int
     
     var cell = Cell(name: "", r: 0, c: 0)
+}
 
+struct Triple: Hashable, CustomStringConvertible {
+    let i: Int  // left
+    let k: Int  // pivot
+    let j: Int  // right
+    var description: String { "\(i):\(k):\(j)" }
 }
 
 extension GrammarNode {
@@ -77,6 +85,7 @@ extension GrammarNode: CustomStringConvertible {
     
     // generate labels like A, B, C, ... AA, AB, AC, ...
     var description: String {
+        if kind == .EOS { return "●○" }
         let latin = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
         func toLatin(_ n: Int) -> String {
             let letter = String(latin[n % 26])
@@ -86,7 +95,7 @@ extension GrammarNode: CustomStringConvertible {
                 return toLatin(n / 26 - 1) + letter
             }
         }
-        return toLatin(self.number)
+        return toLatin(self.number).graphvizHTML
     }
     
     var __description: String {

@@ -10,11 +10,11 @@ import Foundation
 func _parseGrammar(startSymbol: String) -> GrammarNode? {
     let inputFileURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
-    //        .appendingPathComponent("TortureSyntax")
-        .appendingPathComponent("test")
+//        .appendingPathComponent("TortureSyntax")
+//        .appendingPathComponent("test")
 //        .appendingPathComponent("apus")
-//        .appendingPathComponent("apusNoAction")
-    //        .appendingPathComponent("apusAmbiguous")
+        .appendingPathComponent("apusNoAction")
+//        .appendingPathComponent("apusAmbiguous")
         .appendingPathExtension("apus")
     
     initScanner(fromFile: inputFileURL, patterns: apusTerminals)

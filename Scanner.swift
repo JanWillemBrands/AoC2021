@@ -63,7 +63,7 @@ let apusTerminals: [String:TokenPattern] = [
     "literal":      (#""(?:[^"\\]|\\.)*""#,     /\"(?:[^\"\\]|\\.)*\"/,             false, false),
     "regex":        (#"/(?:[^\/\\]|\\.)*/"#,    /\/(?:[^\/\\]|\\.)*\//,             false, false),
     "action":       (#"@(?:[^@\\]|\\.)*@"#,     /@(?:[^@\\]|\\.)*@/,                false, false),
-    "message":      (#"¶(?:[^¶\\]|\\.)*"#,      /¶(?:[^¶\\]|\\.)*/,                 false, false),
+    "message":      (#"¶(?:/(?:[^/\\]|\\.)*/|[^¶/]*)*"#,      /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/,                 false, false),
     ".":            (".",                       Regex { "." },                      true,  false),
     ";":            (";",                       Regex { ";" },                      true,  false),
     ":":            (":",                       Regex { ":" },                      true,  false),
@@ -80,7 +80,6 @@ let apusTerminals: [String:TokenPattern] = [
     ")?":           (")?",                      Regex { ")?" },                     true,  false),
     ")*":           (")*",                      Regex { ")*" },                     true,  false),
     ")+":           (")+",                      Regex { ")+" },                     true,  false),
-//    "if":           ("if",                      try! Regex("if"),                   true,  false),
 ]
 
 struct Token {
@@ -170,7 +169,7 @@ var token: Token {
 //    }
 }
 
-// the scanner uses regexes to identify tokens and is iniialized to the apus language
+// the scanner uses regexes to identify tokens and is initialized to the apus language
 
 func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) {
     input = inputString
@@ -178,7 +177,6 @@ func initScanner(fromString inputString: String, patterns: [String:TokenPattern]
     tokens = []
     scanTokens()
     index = 0
-//    next()
 }
 
 func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
@@ -191,7 +189,6 @@ func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
     tokens = []
     scanTokens()
     index = 0
-//    next()
 }
 
 // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern
