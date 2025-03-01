@@ -11,6 +11,14 @@ import Foundation
 
 func _parseMessage() throws {
     
+    func testSelect() -> Bool {
+        if currentSlot.first.contains(token.kind) ||
+            currentSlot.first.contains("") && currentSlot.follow.contains(token.kind) {
+            return true
+        }
+        return false
+    }
+    
     nextDescriptor: while getDescriptor() {
         
         while true {

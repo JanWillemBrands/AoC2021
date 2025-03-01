@@ -134,7 +134,7 @@ func scanTokens() {
     // append EndOfString token
     // TODO: re-implement tokenKind as an Int, with 0 as EndOfString
 //    tokens.append(Token(image: "", kind: "$"))
-    tokens.append(Token(image: "$EOS", kind: "$EOS"))
+    tokens.append(Token(image: "$", kind: "$"))
 }
 
 func next() {

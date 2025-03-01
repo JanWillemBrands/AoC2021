@@ -1,6 +1,6 @@
 whitespace : /\s+/.
 comment    : /\/\/.*/.
-something  = /[a-z]+/ .
+//something  = /[a-z]+/ .
 
 
 //S = X X X.                    // PASS
@@ -130,8 +130,11 @@ something  = /[a-z]+/ .
 //S = { "a" B "c" }. B = { "b" }.       // PASS
 //S = { "x" X "x" }. X = { "x" }.       // PASS
 
-//S = "a"("a""b"|"a")("b""c"|"c").        // PASS Scott & Johnstone EBNF two derivations
+//S = "a"("a""b"|"a")("b""c"|"c").      // PASS Scott & Johnstone EBNF two derivations
 
-S = something something.
+//S = something something.              // PASS
 
-¶hello there
+//S = A "b" | A "c". A = ["a"].
+
+S = ["a"] | ["b"] | ["c"].
+¶a

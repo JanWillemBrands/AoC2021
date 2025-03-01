@@ -34,8 +34,7 @@ func _parseApusGrammar() {
         _message()
     }
     // TODO: finalize EOS representation
-//    expect(["$"])
-    expect(["$EOS"])
+    expect(["$"])
 }
 
 func _production() {

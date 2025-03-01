@@ -17,7 +17,8 @@ guard let grammarRoot = _parseGrammar(startSymbol: _startSymbol) else {
     exit(1)
 }
 
-//trace = true
+trace = true
+trace("all grammar tokens:")
 for t in tokens {
     trace(t)
 }
@@ -43,6 +44,11 @@ for m in _messages {
     initScanner(fromString: m, patterns: _terminals)
     // TODO: reset parser after every message     grammarRoot.resetParseResults()
     // TODO: set startSymbol depending on the message
+
+    trace("all message tokens:")
+    for t in tokens {
+        trace(t)
+    }
 
     trace = true
     failedParses = 0

@@ -11,9 +11,9 @@ func _parseGrammar(startSymbol: String) -> GrammarNode? {
     let inputFileURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
 //        .appendingPathComponent("TortureSyntax")
-//        .appendingPathComponent("test")
+        .appendingPathComponent("test")
 //        .appendingPathComponent("apus")
-        .appendingPathComponent("apusNoAction")
+//        .appendingPathComponent("apusNoAction")
 //        .appendingPathComponent("apusAmbiguous")
         .appendingPathExtension("apus")
     
@@ -41,9 +41,8 @@ func _parseGrammar(startSymbol: String) -> GrammarNode? {
     }
     
     // TODO: finalize representation for EOS
-//    root.follow.insert("$")
-    root.follow.insert("")
-    trace = false
+    root.follow.insert("$")
+    trace = true
     trace("_start symbol '\(startSymbol)' first:", root.first, "follow:", root.follow)
     
     var _oldSize = 0
@@ -53,7 +52,7 @@ func _parseGrammar(startSymbol: String) -> GrammarNode? {
         _newSize = 0
         for (_, node) in _nonTerminals {
             GrammarNode.sizeofSets = 0
-            node.__populateFirstFollowSets()
+            node.populateFirstFollowSets()
             _newSize += GrammarNode.sizeofSets
         }
         trace("first & follow", _newSize)
