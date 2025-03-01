@@ -11,9 +11,9 @@ trace = true
 
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
 // by using parseGrammar, which is a hand-built recursive descent parser
-let _startSymbol = "S"
-guard let grammarRoot = _parseGrammar(startSymbol: _startSymbol) else {
-    print("error: Start Symbol '\(_startSymbol)' not found")
+let startSymbol = "S"
+guard let grammarRoot = parseGrammar(startSymbol: startSymbol) else {
+    print("error: Start Symbol '\(startSymbol)' not found")
     exit(1)
 }
 
@@ -39,9 +39,9 @@ var successfullParses = 0
 var descriptorCount = 0
 
 
-for m in _messages {
+for m in messages {
     trace = true
-    initScanner(fromString: m, patterns: _terminals)
+    initScanner(fromString: m, patterns: terminals)
     // TODO: reset parser after every message     grammarRoot.resetParseResults()
     // TODO: set startSymbol depending on the message
 
@@ -61,10 +61,9 @@ for m in _messages {
     addDescriptor(slot: grammarRoot.alt!, stack: currentStack, index: index)
 
     // use the AST to parse the message
-    try _parseMessage()
+    try parseMessage()
 }
 
-//_generateParser()
 trace = false
 let parserFile = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
@@ -78,7 +77,6 @@ do {
     exit(5)
 }
 
-//_generateDiagrams()
 trace = false
 let diagramFile = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
@@ -91,53 +89,3 @@ do {
     print("error: could not write to \(diagramFile.absoluteString)")
     exit(6)
 }
-
-// NEW ART
-
-
-//// transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
-//// ParseGrammar is a handbuilt recursive descent parser
-//let startSymbol = "S"
-//guard let grammarRoot = parseGrammar(startSymbol: startSymbol) else {
-//    print("error: Start Symbol '\(startSymbol)' not found")
-//    exit(1)
-//}
-//
-//// the GrammarNode being processed
-//var currentSlot = grammarRoot
-//
-//// the top of one of the stacks in the Graph Structured Stack
-//var currentStack = Vertex(slot: currentSlot, index: currentIndex)
-//
-////addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
-//
-//var isAmbiguous = true
-//var failedParses = 0
-//var successfullParses = 0
-//var addedDescriptors = 0
-//
-//for m in messages {
-//    trace = true
-//    initScanner(fromString: m, patterns: terminals)
-//    // TODO: reset parser after every message     grammarRoot.resetParseResults()
-//    // TODO: set startSymbol depending on the message
-//    
-//    currentSlot = grammarRoot
-//    currentStack = Vertex(slot: currentSlot, index: currentIndex)
-//    addDescriptor(slot: currentSlot, stack: currentStack, index: currentIndex)
-//
-//    trace = true
-//    failedParses = 0
-//    successfullParses = 0
-//    addedDescriptors = 0
-//    
-//    // use the AST to parse the message
-//    parseMessage()
-//}
-//
-//trace = false
-//generateParser()
-//
-//trace = false
-//generateDiagrams()
-//// BEFORE ART

@@ -28,7 +28,7 @@ extension Character {
     ]
 
     var isEpsilon: Bool {
-        // A Character can have multiple scalars (e.g., composed characters),
+        // A Character can have multiple scalars (e.g. composed characters),
         // but these epsilons are single scalars, so we check the first one
         guard let scalar = unicodeScalars.first else { return false }
         return Self.epsilonScalars.contains(scalar.value)

@@ -8,25 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		4E333D712629D60000640821 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D632629D5E400640821 /* main.swift */; };
-		4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */; };
 		4E333D752629D60A00640821 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D672629D5E400640821 /* StringExtensions.swift */; };
-		4E33E9202CAEDC3D004BD82C /* _ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E33E91F2CAEDC3D004BD82C /* _ApusParser.swift */; };
-		4E33E9222CAEDCDD004BD82C /* _GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E33E9212CAEDCDD004BD82C /* _GenerateDiagrams.swift */; };
-		4E34DF7D2C0354E400B2881E /* _GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE422A22BFB319500D99368 /* _GrammarNode.swift */; };
-		4E4213842D19C9D400CE6493 /* ParseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213832D19C9D400CE6493 /* ParseMessage.swift */; };
-		4E4213862D19CA1200CE6493 /* _ParseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213852D19CA1200CE6493 /* _ParseMessage.swift */; };
-		4E4213882D19E2FD00CE6493 /* ParseGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213872D19E2FD00CE6493 /* ParseGrammar.swift */; };
-		4E42138A2D19E31200CE6493 /* _ParseGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213892D19E31200CE6493 /* _ParseGrammar.swift */; };
+		4E33E9202CAEDC3D004BD82C /* ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E33E91F2CAEDC3D004BD82C /* ApusParser.swift */; };
+		4E33E9222CAEDCDD004BD82C /* GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */; };
+		4E34DF7D2C0354E400B2881E /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE422A22BFB319500D99368 /* GrammarNode.swift */; };
+		4E4213862D19CA1200CE6493 /* ParseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213852D19CA1200CE6493 /* ParseMessage.swift */; };
+		4E42138A2D19E31200CE6493 /* ParseGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213892D19E31200CE6493 /* ParseGrammar.swift */; };
 		4E42138C2D1B61AD00CE6493 /* NoGlobals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */; };
 		4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138D2D1C572D00CE6493 /* OutputTools.swift */; };
-		4E4213902D1DC15000CE6493 /* _GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138F2D1DC15000CE6493 /* _GenerateParser.swift */; };
-		4E4213922D1DC35400CE6493 /* _GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213912D1DC35400CE6493 /* _GraphStructuredStack.swift */; };
-		4E89AAF22D71EF44006A0BBA /* PopulateFirstFollowSets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E89AAEB2D69EDA8006A0BBA /* PopulateFirstFollowSets.swift */; };
+		4E4213902D1DC15000CE6493 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138F2D1DC15000CE6493 /* GenerateParser.swift */; };
+		4E4213922D1DC35400CE6493 /* GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */; };
 		4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E94E9942C2913F600746EB7 /* SymbolTable.swift */; };
-		4EB4DE422B91CDDA00BA9A88 /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */; };
-		4EB4DE462B91D30600BA9A88 /* ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE452B91D30600BA9A88 /* ApusParser.swift */; };
-		4EB4DE482B91D3C400BA9A88 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE472B91D3C400BA9A88 /* GenerateParser.swift */; };
-		4EB4DE4A2B91D81C00BA9A88 /* GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE492B91D81C00BA9A88 /* GenerateDiagrams.swift */; };
 		4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */; };
 /* End PBXBuildFile section */
 
@@ -49,36 +41,28 @@
 		4E333D672629D5E400640821 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
 		4E333D692629D5E500640821 /* TortureSyntax.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = TortureSyntax.apus; sourceTree = "<group>"; };
 		4E333D6A2629D5E500640821 /* test.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = test.apus; sourceTree = "<group>"; };
-		4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphStructuredStack.swift; sourceTree = "<group>"; };
 		4E333D6C2629D5E500640821 /* apusNoAction.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusNoAction.apus; sourceTree = "<group>"; };
-		4E33E91F2CAEDC3D004BD82C /* _ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _ApusParser.swift; sourceTree = "<group>"; };
-		4E33E9212CAEDCDD004BD82C /* _GenerateDiagrams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _GenerateDiagrams.swift; sourceTree = "<group>"; };
+		4E33E91F2CAEDC3D004BD82C /* ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParser.swift; sourceTree = "<group>"; };
+		4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateDiagrams.swift; sourceTree = "<group>"; };
 		4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusNoActionKLN.apus; sourceTree = "<group>"; };
 		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
-		4E4213832D19C9D400CE6493 /* ParseMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParseMessage.swift; sourceTree = "<group>"; };
-		4E4213852D19CA1200CE6493 /* _ParseMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _ParseMessage.swift; sourceTree = "<group>"; };
-		4E4213872D19E2FD00CE6493 /* ParseGrammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParseGrammar.swift; sourceTree = "<group>"; };
-		4E4213892D19E31200CE6493 /* _ParseGrammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _ParseGrammar.swift; sourceTree = "<group>"; };
+		4E4213852D19CA1200CE6493 /* ParseMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParseMessage.swift; sourceTree = "<group>"; };
+		4E4213892D19E31200CE6493 /* ParseGrammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParseGrammar.swift; sourceTree = "<group>"; };
 		4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoGlobals.swift; sourceTree = "<group>"; };
 		4E42138D2D1C572D00CE6493 /* OutputTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputTools.swift; sourceTree = "<group>"; };
-		4E42138F2D1DC15000CE6493 /* _GenerateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _GenerateParser.swift; sourceTree = "<group>"; };
-		4E4213912D1DC35400CE6493 /* _GraphStructuredStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _GraphStructuredStack.swift; sourceTree = "<group>"; };
+		4E42138F2D1DC15000CE6493 /* GenerateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateParser.swift; sourceTree = "<group>"; };
+		4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphStructuredStack.swift; sourceTree = "<group>"; };
 		4E450E682BE8007F0077E275 /* playground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = playground.swift; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
-		4E89AAEB2D69EDA8006A0BBA /* PopulateFirstFollowSets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopulateFirstFollowSets.swift; sourceTree = "<group>"; };
 		4E89AAED2D6DF2EE006A0BBA /* ART.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
 		4E89AAEE2D6DF2EE006A0BBA /* postRunActions.log */ = {isa = PBXFileReference; lastKnownFileType = text; path = postRunActions.log; sourceTree = "<group>"; };
 		4E94E9942C2913F600746EB7 /* SymbolTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolTable.swift; sourceTree = "<group>"; };
 		4EA293992BAACF9A0014546F /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
-		4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
 		4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
-		4EB4DE452B91D30600BA9A88 /* ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParser.swift; sourceTree = "<group>"; };
-		4EB4DE472B91D3C400BA9A88 /* GenerateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateParser.swift; sourceTree = "<group>"; };
-		4EB4DE492B91D81C00BA9A88 /* GenerateDiagrams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateDiagrams.swift; sourceTree = "<group>"; };
 		4EBBDFF52B935BB90049A17F /* diagram.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = diagram.svg; sourceTree = "<group>"; };
 		4EC5CE942BBC111E0045F751 /* apusUnicode.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusUnicode.apus; sourceTree = "<group>"; };
 		4ECF78982BF8C3CE00B9F1F4 /* diagram.gv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = diagram.gv; sourceTree = "<group>"; };
-		4EE422A22BFB319500D99368 /* _GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _GrammarNode.swift; sourceTree = "<group>"; };
+		4EE422A22BFB319500D99368 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
 		CB6B7315257EA9F400B929C6 /* Advent */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Advent; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -108,26 +92,18 @@
 				4E89AAEE2D6DF2EE006A0BBA /* postRunActions.log */,
 				4E34DF802C08A71000B2881E /* ART.svg */,
 				4EBBDFF52B935BB90049A17F /* diagram.svg */,
-				4E33E91F2CAEDC3D004BD82C /* _ApusParser.swift */,
-				4E33E9212CAEDCDD004BD82C /* _GenerateDiagrams.swift */,
-				4E42138F2D1DC15000CE6493 /* _GenerateParser.swift */,
-				4EE422A22BFB319500D99368 /* _GrammarNode.swift */,
-				4E4213912D1DC35400CE6493 /* _GraphStructuredStack.swift */,
-				4E4213892D19E31200CE6493 /* _ParseGrammar.swift */,
-				4E4213852D19CA1200CE6493 /* _ParseMessage.swift */,
-				4EB4DE452B91D30600BA9A88 /* ApusParser.swift */,
-				4E89AAEB2D69EDA8006A0BBA /* PopulateFirstFollowSets.swift */,
-				4EB4DE492B91D81C00BA9A88 /* GenerateDiagrams.swift */,
-				4EB4DE472B91D3C400BA9A88 /* GenerateParser.swift */,
-				4EB4DE412B91CDDA00BA9A88 /* GrammarNode.swift */,
-				4E333D6B2629D5E500640821 /* GraphStructuredStack.swift */,
+				4E33E91F2CAEDC3D004BD82C /* ApusParser.swift */,
+				4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */,
+				4E42138F2D1DC15000CE6493 /* GenerateParser.swift */,
+				4EE422A22BFB319500D99368 /* GrammarNode.swift */,
+				4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */,
+				4E4213892D19E31200CE6493 /* ParseGrammar.swift */,
+				4E4213852D19CA1200CE6493 /* ParseMessage.swift */,
 				4E333D632629D5E400640821 /* main.swift */,
 				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
 				4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */,
 				4E333D642629D5E400640821 /* output.swift */,
 				4E42138D2D1C572D00CE6493 /* OutputTools.swift */,
-				4E4213872D19E2FD00CE6493 /* ParseGrammar.swift */,
-				4E4213832D19C9D400CE6493 /* ParseMessage.swift */,
 				4E450E682BE8007F0077E275 /* playground.swift */,
 				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
 				4E333D672629D5E400640821 /* StringExtensions.swift */,
@@ -206,27 +182,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4E34DF7D2C0354E400B2881E /* _GrammarNode.swift in Sources */,
-				4E333D732629D60500640821 /* GraphStructuredStack.swift in Sources */,
+				4E34DF7D2C0354E400B2881E /* GrammarNode.swift in Sources */,
 				4E42138C2D1B61AD00CE6493 /* NoGlobals.swift in Sources */,
 				4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */,
 				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
 				4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */,
-				4E33E9222CAEDCDD004BD82C /* _GenerateDiagrams.swift in Sources */,
-				4E4213862D19CA1200CE6493 /* _ParseMessage.swift in Sources */,
-				4E89AAF22D71EF44006A0BBA /* PopulateFirstFollowSets.swift in Sources */,
-				4E4213882D19E2FD00CE6493 /* ParseGrammar.swift in Sources */,
-				4E4213902D1DC15000CE6493 /* _GenerateParser.swift in Sources */,
+				4E33E9222CAEDCDD004BD82C /* GenerateDiagrams.swift in Sources */,
+				4E4213862D19CA1200CE6493 /* ParseMessage.swift in Sources */,
+				4E4213902D1DC15000CE6493 /* GenerateParser.swift in Sources */,
 				4E333D712629D60000640821 /* main.swift in Sources */,
-				4E4213842D19C9D400CE6493 /* ParseMessage.swift in Sources */,
-				4EB4DE422B91CDDA00BA9A88 /* GrammarNode.swift in Sources */,
-				4EB4DE4A2B91D81C00BA9A88 /* GenerateDiagrams.swift in Sources */,
-				4E33E9202CAEDC3D004BD82C /* _ApusParser.swift in Sources */,
-				4EB4DE462B91D30600BA9A88 /* ApusParser.swift in Sources */,
+				4E33E9202CAEDC3D004BD82C /* ApusParser.swift in Sources */,
 				4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */,
-				4EB4DE482B91D3C400BA9A88 /* GenerateParser.swift in Sources */,
-				4E4213922D1DC35400CE6493 /* _GraphStructuredStack.swift in Sources */,
-				4E42138A2D19E31200CE6493 /* _ParseGrammar.swift in Sources */,
+				4E4213922D1DC35400CE6493 /* GraphStructuredStack.swift in Sources */,
+				4E42138A2D19E31200CE6493 /* ParseGrammar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
