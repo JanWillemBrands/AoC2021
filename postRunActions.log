@@ -65,257 +65,75 @@ Verbose 5
  [33] ZapfChancery-MediumItalic => "Times New Roman,  ITALIC"
  [34] ZapfDingbats => "Impact,  REGULAR"
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
-network simplex:  221 nodes 220 edges maxiter=442 balance=1
-network simplex: 221 nodes 220 edges 0 iter 0.00 sec
-network simplex:  8 nodes 9 edges maxiter=38 balance=1
-network simplex: 8 nodes 9 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  10 nodes 11 edges maxiter=48 balance=1
-network simplex: 10 nodes 11 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=36 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  27 nodes 31 edges maxiter=120 balance=1
-network simplex: 27 nodes 31 edges 1 iter 0.00 sec
-network simplex:  9 nodes 8 edges maxiter=30 balance=1
-network simplex: 9 nodes 8 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex:  3 nodes 2 edges maxiter=6 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  5 nodes 5 edges maxiter=24 balance=1
+network simplex: 5 nodes 5 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=24 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=54 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex:  1 nodes 0 edges maxiter=54 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=744 balance=0
+network simplex:  1 nodes 0 edges maxiter=54 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=744 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=744 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=744 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=744 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-Maxrank = 8, minrank = 0
+Maxrank = 3, minrank = 0
 mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-merge2: graph G, rank 0 has only 7 < 50 nodes
-merge2: graph G, rank 1 has only 15 < 83 nodes
-merge2: graph G, rank 2 has only 10 < 60 nodes
-merge2: graph G, rank 3 has only 7 < 107 nodes
-merge2: graph G, rank 4 has only 6 < 92 nodes
-merge2: graph G, rank 5 has only 4 < 38 nodes
-merge2: graph G, rank 6 has only 1 < 14 nodes
-merge2: graph G, rank 7 has only 1 < 15 nodes
-mincross: pass 2 iter 0 trying 0 cur_cross 99 best_cross 99
-mincross: pass 2 iter 1 trying 0 cur_cross 82 best_cross 82
-mincross: pass 2 iter 2 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 9 best_cross 9
-mincross: pass 2 iter 1 trying 0 cur_cross 1 best_cross 1
-mincross: pass 2 iter 2 trying 0 cur_cross 0 best_cross 0
+merge2: graph G, rank 0 has only 3 < 8 nodes
+merge2: graph G, rank 1 has only 3 < 13 nodes
+merge2: graph G, rank 2 has only 2 < 12 nodes
+merge2: graph G, rank 3 has only 2 < 6 nodes
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
 mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 10 best_cross 10
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 64 best_cross 64
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 9 best_cross 9
+mincross: pass 2 iter 0 trying 0 cur_cross 2 best_cross 2
 mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross G: 0 crossings, 0.00 secs.
-network simplex:  962 nodes 1622 edges maxiter=744 balance=2
-network simplex: 100 200 300 
-network simplex: 962 nodes 1622 edges 330 iter 0.00 sec
+network simplex:  89 nodes 166 edges maxiter=54 balance=2
+network simplex: 89 nodes 166 edges 18 iter 0.00 sec
 in checkpath, start port not in first box
 5 boxes:
-0 (-4916, 432.07), (-4534, 501.58)
-1 (-8199, 424.07), (11221, 432.07)
-2 (-4916, 346.56), (-4856, 424.07)
-3 (-8199, 338.56), (11221, 346.56)
-4 (-4576, 303.81), (-4567, 338.56)
-start port: (-4790, 430.82), tangent angle: -1.5708, constrained
-end port: (-4568, 303.81), tangent angle: 3.1416, constrained
+0 (74, 163.02), (216, 232.53)
+1 (-136, 155.02), (730, 163.02)
+2 (74, 85.51), (114, 155.02)
+3 (-136, 77.51), (730, 85.51)
+4 (192, 42.755), (225, 77.51)
+start port: (165, 161.78), tangent angle: -1.5708, constrained
+end port: (224, 42.755), tangent angle: 3.1416, constrained
 in checkpath, start port not in first box
 5 boxes:
-0 (-1541, 509.58), (-824, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (5461, 432.07), (5711, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (-1145, 389.31), (-815, 424.07)
-start port: (-1181, 508.34), tangent angle: -1.5708, constrained
-end port: (-816, 389.31), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-5 boxes:
-0 (7389, 509.58), (8106, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (11022, 432.07), (11047, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (7797, 389.31), (8115, 424.07)
-start port: (7749, 508.34), tangent angle: -1.5708, constrained
-end port: (8114, 389.31), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-5 boxes:
-0 (2072, 269.05), (2886, 338.56)
-1 (-8199, 261.05), (11221, 269.05)
-2 (2072, 183.54), (2097, 261.05)
-3 (-8199, 175.54), (11221, 183.54)
-4 (2545, 140.79), (2895, 175.54)
-start port: (2509, 267.81), tangent angle: -1.5708, constrained
-end port: (2894, 140.79), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-5 boxes:
-0 (7389, 509.58), (8106, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (11035, 432.07), (11067, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (8820, 389.31), (8849, 424.07)
-start port: (7749, 508.34), tangent angle: -1.5708, constrained
-end port: (8848, 389.31), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-5 boxes:
-0 (2072, 269.05), (2886, 338.56)
-1 (-8199, 261.05), (11221, 269.05)
-2 (2092, 183.54), (2117, 261.05)
-3 (-8199, 175.54), (11221, 183.54)
-4 (3600, 140.79), (3649, 175.54)
-start port: (2509, 267.81), tangent angle: -1.5708, constrained
-end port: (3648, 140.79), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-5 boxes:
-0 (2072, 269.05), (2886, 338.56)
-1 (-8199, 261.05), (11221, 269.05)
-2 (2112, 183.54), (2137, 261.05)
-3 (-8199, 175.54), (11221, 183.54)
-4 (4354, 140.79), (4363, 175.54)
-start port: (2509, 267.81), tangent angle: -1.5708, constrained
-end port: (4362, 140.79), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-5 boxes:
-0 (7389, 509.58), (8106, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (11048, 432.07), (11087, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (9554, 389.31), (9603, 424.07)
-start port: (7749, 508.34), tangent angle: -1.5708, constrained
-end port: (9602, 389.31), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-5 boxes:
-0 (2072, 269.05), (2886, 338.56)
-1 (-8199, 261.05), (11221, 269.05)
-2 (2132, 183.54), (2152, 261.05)
-3 (-8199, 175.54), (11221, 183.54)
-4 (5068, 140.79), (5077, 175.54)
-start port: (2509, 267.81), tangent angle: -1.5708, constrained
-end port: (5076, 140.79), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-5 boxes:
-0 (7389, 509.58), (8106, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (11061, 432.07), (11221, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (10308, 389.31), (10317, 424.07)
-start port: (7749, 508.34), tangent angle: -1.5708, constrained
-end port: (10316, 389.31), tangent angle: 3.1416, constrained
+0 (-7, 240.53), (114, 338.79)
+1 (-136, 232.53), (730, 240.53)
+2 (318, 163.02), (341, 232.53)
+3 (-136, 155.02), (730, 163.02)
+4 (111, 120.27), (123, 155.02)
+start port: (47, 239.29), tangent angle: -1.5708, constrained
+end port: (122, 120.27), tangent angle: 3.1416, constrained
 in checkpath, start port not in first box
 7 boxes:
-0 (-5021, 509.58), (-4865, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (-4396, 432.07), (-4331, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (-4354, 346.56), (-4331, 424.07)
-5 (-8199, 338.56), (11221, 346.56)
-6 (-4916, 303.81), (-4817, 338.56)
-start port: (-4943, 508.34), tangent angle: -1.5708, constrained
-end port: (-4818, 303.81), tangent angle: 3.1416, constrained
+0 (341, 240.53), (459, 338.79)
+1 (-136, 232.53), (730, 240.53)
+2 (651, 163.02), (676, 232.53)
+3 (-136, 155.02), (730, 163.02)
+4 (639, 85.51), (673, 155.02)
+5 (-136, 77.51), (730, 85.51)
+6 (419, 42.755), (480, 77.51)
+start port: (392, 239.29), tangent angle: -1.5708, constrained
+end port: (479, 42.755), tangent angle: 3.1416, constrained
 in checkpath, start port not in first box
 7 boxes:
-0 (5865, 509.58), (6294, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (7077, 432.07), (7284, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (7242, 346.56), (7354, 424.07)
-5 (-8199, 338.56), (11221, 346.56)
-6 (6339, 303.81), (6351, 338.56)
-start port: (6081, 508.34), tangent angle: -1.5708, constrained
-end port: (6350, 303.81), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-7 boxes:
-0 (-2762, 509.58), (-2333, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (-1706, 432.07), (-1541, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (-1607, 346.56), (-1541, 424.07)
-5 (-8199, 338.56), (11221, 346.56)
-6 (-2377, 303.81), (-2261, 338.56)
-start port: (-2546, 508.34), tangent angle: -1.5708, constrained
-end port: (-2262, 303.81), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-9 boxes:
-0 (-1541, 509.58), (-824, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (5474, 432.07), (5769, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (5461, 346.56), (5688, 424.07)
-5 (-8199, 338.56), (11221, 346.56)
-6 (5782, 269.05), (5807, 338.56)
-7 (-8199, 261.05), (11221, 269.05)
-8 (-114, 226.3), (-101, 261.05)
-start port: (-1181, 508.34), tangent angle: -1.5708, constrained
-end port: (-102, 226.3), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-9 boxes:
-0 (-1541, 509.58), (-824, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (5529, 432.07), (5808, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (5640, 346.56), (5758, 424.07)
-5 (-8199, 338.56), (11221, 346.56)
-6 (5795, 269.05), (5827, 338.56)
-7 (-8199, 261.05), (11221, 269.05)
-8 (619, 226.3), (633, 261.05)
-start port: (-1181, 508.34), tangent angle: -1.5708, constrained
-end port: (632, 226.3), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-9 boxes:
-0 (-1541, 509.58), (-824, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (5590, 432.07), (5837, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (5709, 346.56), (5807, 424.07)
-5 (-8199, 338.56), (11221, 346.56)
-6 (5807, 269.05), (5847, 338.56)
-7 (-8199, 261.05), (11221, 269.05)
-8 (1353, 226.3), (1367, 261.05)
-start port: (-1181, 508.34), tangent angle: -1.5708, constrained
-end port: (1366, 226.3), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-9 boxes:
-0 (-1541, 509.58), (-824, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (5671, 432.07), (5865, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (5782, 346.56), (5865, 424.07)
-5 (-8199, 338.56), (11221, 346.56)
-6 (5818, 269.05), (5865, 338.56)
-7 (-8199, 261.05), (11221, 269.05)
-8 (2147, 226.3), (2161, 261.05)
-start port: (-1181, 508.34), tangent angle: -1.5708, constrained
-end port: (2160, 226.3), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-11 boxes:
-0 (-4331, 509.58), (-4041, 607.84)
-1 (-8199, 501.58), (11221, 509.58)
-2 (-2944, 432.07), (-2762, 501.58)
-3 (-8199, 424.07), (11221, 432.07)
-4 (-2785, 346.56), (-2762, 424.07)
-5 (-8199, 338.56), (11221, 346.56)
-6 (-2785, 269.05), (-2762, 338.56)
-7 (-8199, 261.05), (11221, 269.05)
-8 (-2785, 183.54), (-2762, 261.05)
-9 (-8199, 175.54), (11221, 183.54)
-10 (-4163, 140.79), (-4032, 175.54)
-start port: (-4217, 508.34), tangent angle: -1.5708, constrained
-end port: (-4033, 140.79), tangent angle: 3.1416, constrained
-routesplines: 398 edges, 1370 boxes 0.02 sec
+0 (341, 240.53), (459, 338.79)
+1 (-136, 232.53), (730, 240.53)
+2 (662, 163.02), (730, 232.53)
+3 (-136, 155.02), (730, 163.02)
+4 (655, 85.51), (730, 155.02)
+5 (-136, 77.51), (730, 85.51)
+6 (543, 42.755), (576, 77.51)
+start port: (392, 239.29), tangent angle: -1.5708, constrained
+end port: (575, 42.755), tangent angle: 3.1416, constrained
+routesplines: 30 edges, 114 boxes 0.00 sec
 Using render: svg:core
 Using device: svg:svg:core
-gvRenderJobs G: 0.02 secs.
+gvRenderJobs G: 0.00 secs.

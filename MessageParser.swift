@@ -1,5 +1,5 @@
 //
-//  ParseMessage.swift
+//  MessageParser.swift
 //  Advent
 //
 //  Created by Johannes Brands on 23/12/2024.
@@ -9,21 +9,32 @@ import Foundation
 
 //enum ParserError: Error { case unexpectedToken, didNotReachEndOfInput }
 
-func parseMessage() throws {
+// the list of Decriptors that still need to be processed
+var remainder: [Descriptor] = []
+
+// the graph-structured-stack that keeps track of execution
+var gss: Set<StackNode> = [gssRoot]
+var gssRoot = StackNode(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
+
+// clear all previous parsing results
+func resetMessageParser() {
+    remainder = []
+    gssRoot = StackNode(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
+    gss = [gssRoot]
+    grammarRoot.clearNodes()
     
-    func testSelect() -> Bool {
-        if currentSlot.first.contains(token.kind) ||
-            currentSlot.first.contains("") && currentSlot.follow.contains(token.kind) {
-            return true
-        }
-        return false
-    }
+    failedParses = 0
+    successfullParses = 0
+    descriptorCount = 0
+}
+
+func parseMessage() throws {
     
     nextDescriptor: while getDescriptor() {
         
         while true {
             
-            trace("parse slot", currentSlot.kindName)
+            trace("parse slot", currentSlot, currentSlot.kindName)
             
             // TODO: add first check before each instance of addDescriptor
             // TODO: verify testSelect()
@@ -51,7 +62,7 @@ func parseMessage() throws {
             case .ALT:
                 if let alt = currentSlot.alt {
                     // schedule the current branch
-                    addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: index)
+                    addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: currentIndex)
                     // move to the next branch
                     currentSlot = alt
                 } else {
@@ -63,7 +74,7 @@ func parseMessage() throws {
                 currentSlot = currentSlot.alt!
             case .OPT, .KLN:
                 // schedule the optional branch
-                addDescriptor(slot: currentSlot.alt!, stack: currentStack, index: index)
+                addDescriptor(slot: currentSlot.alt!, stack: currentStack, index: currentIndex)
                 // move to the next slot
                 currentSlot = currentSlot.seq!
             case .END:
@@ -84,7 +95,7 @@ func parseMessage() throws {
                     currentSlot = bracket.seq!
                 case .KLN, .POS:
                     // schedule the branch again
-                    addDescriptor(slot: bracket.alt!, stack: currentStack, index: index)
+                    addDescriptor(slot: bracket.alt!, stack: currentStack, index: currentIndex)
                     // move to the next slot
                     currentSlot = bracket.seq!
                 default:
@@ -102,4 +113,12 @@ func parseMessage() throws {
     )
 }
 
+
+func testSelect() -> Bool {
+    if currentSlot.first.contains(token.kind) ||
+        currentSlot.first.contains("") && currentSlot.follow.contains(token.kind) {
+        return true
+    }
+    return false
+}
 

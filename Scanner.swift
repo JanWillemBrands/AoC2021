@@ -14,43 +14,22 @@ import RegexBuilder
 
 enum ScannerFailure: Error { case charactersDoNotMatchAnySymbol, couldNotReadFile }
 
-class Scanner {
-    var input: String
-    var tokens: [Token]
-    var tokenPatterns: [String:TokenPattern]
-    
-    init(input: String, tokenPatterns: [String:TokenPattern]) {
-        self.input = input
-        self.tokenPatterns = tokenPatterns
-        self.tokens = []
-    }
-    
-    init(fromString inputString: String, patterns: [String:TokenPattern]) {
-        tokenPatterns = patterns
-        input = inputString
-        tokens = []
-        scanTokens()
-        index = 0
-//        next()
-    }
+var tokens: [Token] = []
 
-    init(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) throws {
-        guard let inputFileContent = try? String(contentsOf: inputFileURL, encoding: .utf8) else {
-            print("error: could not read from \(inputFileURL.absoluteString)")
-            throw ScannerFailure.couldNotReadFile
-        }
-        tokenPatterns = patterns
-        input = inputFileContent
-        tokens = []
-        scanTokens()
-        index = 0
-//        next()
-    }
+// the index of the current active token
+var currentIndex = 0
 
+var token: Token {
+    tokens[currentIndex]
 }
 
-// input is the string that's being scanned and parsed
-var input: String = ""
+func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) {
+    input = inputString
+    tokenPatterns = patterns
+    tokens = []
+    scanTokens()
+    currentIndex = 0
+}
 
 typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
 var tokenPatterns = apusTerminals
@@ -123,6 +102,7 @@ func scanTokens() {
             }
         }
         if let matchedToken {
+            // remove isSkip tokens from the list
             if !skip {
                 tokens.append(matchedToken)
             }
@@ -133,62 +113,12 @@ func scanTokens() {
     }
     // append EndOfString token
     // TODO: re-implement tokenKind as an Int, with 0 as EndOfString
-//    tokens.append(Token(image: "", kind: "$"))
     tokens.append(Token(image: "$", kind: "$"))
 }
 
 func next() {
-    index += 1
+    currentIndex += 1
     trace("next", token.image, token.kind)
-
-    // TODO: remove isSkip tokens from the list
-//    while _currentIndex < tokens.count, let t = tokenPatterns[tokens[_currentIndex].kind], t.isSkip {
-//        _currentIndex += 1
-//    }
-//    // TODO: restrict currentIndex to tokens.range
-//    if _currentIndex < tokens.count {
-//        trace("next", token.image, token.kind)
-//    } else {
-//        print("end of file reached")
-//    }
-}
-
-var tokens: [Token] = []
-
-// the index of the current active token
-var index = 0
-
-var token: Token {
-    tokens[index]
-//    if _currentIndex < 0 {
-//        return Token(image: input[...input.startIndex], kind: "")
-//    } else if _currentIndex >= tokens.count {
-//        return Token(image: input[input.endIndex...], kind: "")
-//    } else {
-//        return tokens[_currentIndex]
-//    }
-}
-
-// the scanner uses regexes to identify tokens and is initialized to the apus language
-
-func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) {
-    input = inputString
-    tokenPatterns = patterns
-    tokens = []
-    scanTokens()
-    index = 0
-}
-
-func initScanner(fromFile inputFileURL: URL, patterns: [String:TokenPattern]) {
-    guard let inputFileContent = try? String(contentsOf: inputFileURL, encoding: .utf8) else {
-        print("error: could not read from \(inputFileURL.absoluteString)")
-        exit(2)
-    }
-    input = inputFileContent
-    tokenPatterns = patterns
-    tokens = []
-    scanTokens()
-    index = 0
 }
 
 // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern

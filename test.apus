@@ -134,7 +134,11 @@ comment    : /\/\/.*/.
 
 //S = something something.              // PASS
 
-//S = A "b" | A "c". A = ["a"].
+S = A "b" | A "c". A = ["a"].         // PASS
 
-S = ["a"] | ["b"] | ["c"].
+//S = ["a"] | ["b"] | ["c"].            // PASS
 ¶a
+¶ab
+¶ac
+¶b
+¶c

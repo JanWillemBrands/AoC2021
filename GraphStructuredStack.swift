@@ -68,12 +68,6 @@ struct SlotIndex: Hashable, CustomStringConvertible {
     }
 }
 
-// the list of Decriptors that still need to be processed
-var remainder: [Descriptor] = []
-
-var gssRoot = StackNode(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
-var gss: Set<StackNode> = [gssRoot]
-
 //struct BSR: Hashable, CustomStringConvertible {
 //    let node: GrammarNode
 //    let i: Int  // left
@@ -89,7 +83,7 @@ var gss: Set<StackNode> = [gssRoot]
 // add descriptors for previous pop actions from v
 func call(slot: GrammarNode) {
     trace("call", slot)
-    let node = StackNode(slot: slot.seq!, index: index)
+    let node = StackNode(slot: slot.seq!, index: currentIndex)
     let actualNode = gss.insert(node).memberAfterInsert
     let edge = Edge(towards: currentStack)
     trace("create edge from \(actualNode) to \(currentStack)")
@@ -105,7 +99,7 @@ func call(slot: GrammarNode) {
     // TODO: iterate over all ALT nodes in parseMessage
     var current = slot
     while let next = current.alt, let seq = next.seq {
-        addDescriptor(slot: seq, stack: actualNode, index: index)
+        addDescriptor(slot: seq, stack: actualNode, index: currentIndex)
         current = next
     }
 }
@@ -113,14 +107,14 @@ func call(slot: GrammarNode) {
 // TODO: the first edge can be popped without addDescriptor
 func ret() {
     trace("ret", currentStack)
-    if index == tokens.count - 1 && currentStack == gssRoot {
+    if currentIndex == tokens.count - 1 && currentStack == gssRoot {
         successfullParses += 1
         trace("HURRAH token = \(token)", terminator: "\n")
     } else {
-        currentStack.pops.insert(index)
+        currentStack.pops.insert(currentIndex)
         for edge in currentStack.edges {
             trace("pop \(edge)")
-            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: index)
+            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
         }
     }
 }
@@ -142,8 +136,8 @@ func getDescriptor() -> Bool {
         let d = remainder.removeLast()
         currentSlot = d.slot
         currentStack = d.stack
-        index = d.index
-        trace("get Descriptor(slot \(currentSlot), stack \(currentStack), index \(index))")
+        currentIndex = d.index
+        trace("get Descriptor(slot \(currentSlot), stack \(currentStack), index \(currentIndex))")
         return true
     }
 }

@@ -360,3 +360,13 @@ extension GrammarNode {
         }
     }
 }
+
+extension GrammarNode {
+    func clearNodes() {
+        bsr = []
+        if kind != .END { // avoid loops
+            seq?.clearNodes()
+            alt?.clearNodes()
+        }
+    }
+}
