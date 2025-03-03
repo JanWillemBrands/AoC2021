@@ -157,13 +157,22 @@ class GrammarParser {
     func sequence() -> GrammarNode {
         trace("sequence", token)
         let startOfSequence = GrammarNode(kind: .ALT, str: "")
-        var tmp = term()
-        startOfSequence.seq = tmp
-        while ["literal", "identifier", "regex", "(", "[", "{", "<"].contains(token.kind) {
-            tmp.seq = term()
-            tmp = tmp.seq!
+        while ["action"].contains(token.kind) {
+            startOfSequence.action += action() + "\n"
+            print("action @", startOfSequence.action, "@ added to", startOfSequence.kind)
         }
-        tmp.seq = GrammarNode(kind: .END, str: "")
+        var termNode = term()
+        startOfSequence.seq = termNode
+        while ["literal", "identifier", "regex", "action", "(", "[", "{", "<"].contains(token.kind) {
+            if token.kind == "action" {
+                termNode.action += action() + "\n"
+                print("action @", termNode.action, "@added to", termNode.kind)
+            } else {
+                termNode.seq = term()
+                termNode = termNode.seq!
+            }
+        }
+        termNode.seq = GrammarNode(kind: .END, str: "")
         // Setting the .alt and .seq links of an END node is done in resolveEndNodeLinks
         return startOfSequence
     }
@@ -230,6 +239,14 @@ class GrammarParser {
         case "regex":
             // TODO: add support for anonymous regexes
             node = regex()
+//        case "action":
+//            // TODO: eliminate the spurious EPS node and store actions in the node they belong to.
+//            print("ACTION", token.image)
+////            node = GrammarNode(kind: .EPS, str: "")
+////            node.action += token.image + "\n"
+//            action = token.image
+//            next()
+//            return nil
         case "(":
             next()
             node = alternates()
@@ -259,11 +276,16 @@ class GrammarParser {
             node = GrammarNode(kind: .POS, str: "", alt: alternates())
             expect([">"])
         default:
-            expect(["identifier", "literal", "regex", "(", "[", "{", "<"])
+            expect(["identifier", "literal", "regex", "action", "(", "[", "{", "<"])
             exit(7)
         }
         next()
         return node
+    }
+    
+    func action() -> String {
+        next()
+        return token.stripped
     }
     
     func expect(_ expectedTokens: Set<String>) {

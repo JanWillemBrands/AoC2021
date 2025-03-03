@@ -12,10 +12,10 @@ import Foundation
 trace = false
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-        .appendingPathComponent("test")
+//        .appendingPathComponent("test")
 //        .appendingPathComponent("apusNoAction")
 //        .appendingPathComponent("TortureSyntax")
-//        .appendingPathComponent("apus")
+        .appendingPathComponent("apus")
 //        .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
 

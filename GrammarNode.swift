@@ -57,6 +57,8 @@ final class GrammarNode {
         GrammarNode.count += 1
     }
     
+    var action = "" // stores semantic actions
+    
     var first:      Set<String> = []
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
@@ -364,8 +366,12 @@ extension GrammarNode {
 extension GrammarNode {
     func clearNodes() {
         bsr = []
-        if kind != .END { // avoid loops
+        print("clear", self)
+        // recursively clear child nodes but avoid loops
+        if kind != .END {
             seq?.clearNodes()
+        }
+        if kind != .END && kind != .N {
             alt?.clearNodes()
         }
     }

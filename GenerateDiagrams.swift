@@ -89,15 +89,15 @@ class DiagramsGenerator {
             content.append("\n  }")
         }
         
-        for (from, to) in endSeqLinks {
-            content.append("\n  \(from.cell):w -> \(to.cell):s [style = solid, color = red, constraint = false]")
-        }
-        for (from, to) in endAltLinks {
-            content.append("\n  \(from.cell):e -> \(to.cell) [style = dotted, color = green, constraint = false]")
-        }
-        for (from, to) in ntrAltLinks {
-            content.append("\n  \(from.cell):e -> \(to.cell) [style = dotted, color = blue, constraint = false]")
-        }
+//        for (from, to) in endSeqLinks {
+//            content.append("\n  \(from.cell):w -> \(to.cell):s [style = solid, color = red, constraint = false]")
+//        }
+//        for (from, to) in endAltLinks {
+//            content.append("\n  \(from.cell):e -> \(to.cell) [style = dotted, color = green, constraint = false]")
+//        }
+//        for (from, to) in ntrAltLinks {
+//            content.append("\n  \(from.cell):e -> \(to.cell) [style = dotted, color = blue, constraint = false]")
+//        }
         
         content.append("\n}")
         
@@ -114,7 +114,8 @@ class DiagramsGenerator {
         node.cell = Cell(name: name, r: row, c: col)
         grid[node.cell] = true
         
-        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind.rawValue.description.graphvizHTML) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)<br/>am \(node.ambiguous.sorted().description.graphvizHTML)>]")
+//        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind.rawValue.description.graphvizHTML) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)<br/>am \(node.ambiguous.sorted().description.graphvizHTML)>]")
+        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind.rawValue.description.graphvizHTML) \(str.graphvizHTML)<br/> \(node.action.graphvizHTML)>]")
 
         if let seq = node.seq {
             if node.kind == .END {
