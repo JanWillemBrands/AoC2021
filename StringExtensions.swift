@@ -59,6 +59,7 @@ extension String {
             case "&": modified.append("&amp;")
             case "<": modified.append("&lt;")
             case ">": modified.append("&gt;")
+            case "\n": modified.append("<br/>")
             default: modified.append(char)
             }
         }

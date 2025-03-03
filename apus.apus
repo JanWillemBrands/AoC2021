@@ -1,14 +1,14 @@
 whitespace  : /\s+/ .
-singleLine  : /\/\/.*/ .
-multiLine   : /\/\*(?s).*?\*\// .
+linecomment  : /\/\/.*/ .
+blockcomment   : /\/\*(?s).*?\*\// .
 
-identifier  = /[\p{L}\p{N}\p{Pc}]+/ .
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /\¶(?:[^\¶\\]|\\.)*/ .
+message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
 
-S     = { production } { input } .
+S           = { production } { input } .
               
 input       = message               @let message = token.image@
                                     @   .dropFirst()@
@@ -60,22 +60,23 @@ term        =                       @var node: Node@
              ) .
 terminal    = identifier            @node = Node(.NTM(name: token.image))@
             | literal               @node = _literal()@
+            | regex                 @node = _regex()@
             | action                @node = Node(.TRM(type: "action"))@
                                     @actionList[node] = token.stripped@
             .
 
 ¶
 whitespace  : /\s+/ .
-singleLine  : /\/\/.*/ .
-multiLine   : /\/\*(?s).*?\*\// .
+linecomment  : /\/\/.*/ .
+blockcomment   : /\/\*(?s).*?\*\// .
 
-identifier  = /[\p{L}\p{N}\p{Pc}]+/ .
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /\¶(?:[^\¶\\]|\\.)*/ .
+message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
 
-S     = { production } { input } .
+S           = { production } { input } .
               
 input       = message               @let message = token.image@
                                     @   .dropFirst()@
@@ -85,14 +86,14 @@ input       = message               @let message = token.image@
 production  =                       @var node: Node@
                                     @var muted = false@
                                     @var terminalAlias: String?@
-                identifier                @let nonTerminalName = token.image@
+                identifier          @let nonTerminalName = token.image@
                 ( ":"               @muted = true@
                                     @terminalAlias = nonTerminalName@
-                    ( regular       @node = regular()@
+                    ( regex         @node = regular()@
                     | literal       @node = literal()@
                     )
                 | "="               @muted = false@
-                    ( regular       @terminalAlias = nonTerminalName@
+                    ( regex         @terminalAlias = nonTerminalName@
                                     @node = regular()@
                     | selection     @node = selection()@
                     )
@@ -105,11 +106,11 @@ selection   =                       @var node: Node@
             { "|" sequence          @node = Node(.ALT(left: node, right: sequence()))@
             } .
 sequence    =                       @var node: Node@
-            @node = @ term                    @node = term()@
+            @node = @ term          @node = term()@
             { term                  @node = Node(.SEQ(head: node, tail: term()))@
             } .
 term        =                       @var node: Node@
-            (   terminal             @node = terminal()@
+            (   terminal            @node = terminal()@
             | "[" selection         @node = Node(.OPT(body: node))@
                 "]"
             | "{" selection         @node = Node(.REP(body: node))@
@@ -125,7 +126,7 @@ term        =                       @var node: Node@
                                                             tail: Node(.REP(body: node))))@
                 )
              ) .
-terminal    = identifier                  @node = Node(.NTM(name: token.image))@
+terminal    = identifier            @node = Node(.NTM(name: token.image))@
             | literal               @node = _literal()@
             | action                @node = Node(.TRM(type: "action"))@
                                     @actionList[node] = token.stripped@

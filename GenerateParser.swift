@@ -25,6 +25,7 @@ class ParserGenerator {
         typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
         
         //: start of generated code
+        
         """#
     
     func generateParser() throws {
@@ -73,21 +74,25 @@ class ParserGenerator {
         case .EPS:
             break
         case .N:
-            emit(node.str + "()")
             if let seq = node.seq {
                 // rhs nonterminal call
+                emit(node.str + "()")
                 generate(seq)
             } else if let alt = node.alt {
                 // lhs nonterminal declaration
-                emit(dent: .NR, " {")
                 generate(alt)
-                emit(dent: .LN, "}")
             }
         case .ALT:
-            emit(dent: .NR, "if token.type = \(node.kind) {")
+            emit(dent: .NR, "if token.type = .\(node.kind) {")
             if let seq = node.seq { generate(seq) }
-            emit("expect([\(commaList(node.first))])")
+            var alt = node
+            while let nextAlt = alt.alt {
+                emit(dent: .LR, "} else if token.type = .\(nextAlt.kind) {")
+                if let seq = node.seq { generate(seq) }
+                alt = nextAlt
+            }
             emit(dent: .LN, "}")
+            emit("expect([\(commaList(node.first))])")
         case .END:
             emit("// END")
         case .DO:
@@ -98,6 +103,12 @@ class ParserGenerator {
             emit("// POS")
         case .KLN:
             emit("// KLN")
+            emit(dent: .NR, "while [\(commaList(node.first))].contains(token.type) {")
+            generate(node.alt!)
+            emit(dent: .LN, "}")
+        }
+        for action in node.actions {
+            emit(action)
         }
     }
 

@@ -29,7 +29,7 @@
 import Foundation
 import RegexBuilder
 
-enum TokenKind: Int, CustomStringConvertible {
+enum TokenKind: CustomStringConvertible {
     case endOfString, fullStop, semicolon, colon, equalsSign, verticalLine, leftParenthesis, rightParenthesis, leftSquareBracket, rightSquareBracket, leftCurlyBracket, rightCurlyBracket, lessThanSign, greaterThanSign, rightParenthesisQuestionMark, rightParenthesisAsterisk, rightParenthesisPlusSign, whitespace, linecomment, blockcomment, identifier, literal, regex, action, message
     
     var description: String {

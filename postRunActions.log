@@ -67,10 +67,10 @@ Verbose 5
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
 network simplex:  3 nodes 2 edges maxiter=6 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  5 nodes 5 edges maxiter=24 balance=1
-network simplex: 5 nodes 5 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=24 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  5 nodes 5 edges maxiter=24 balance=1
+network simplex: 5 nodes 5 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=54 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=54 balance=0
@@ -80,60 +80,21 @@ network simplex: 1 nodes 0 edges 0 iter 0.00 sec
 Maxrank = 3, minrank = 0
 mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
 merge2: graph G, rank 0 has only 3 < 8 nodes
-merge2: graph G, rank 1 has only 3 < 13 nodes
-merge2: graph G, rank 2 has only 2 < 12 nodes
+merge2: graph G, rank 1 has only 3 < 7 nodes
+merge2: graph G, rank 2 has only 2 < 6 nodes
 merge2: graph G, rank 3 has only 2 < 6 nodes
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 2 best_cross 2
+mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
 mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross G: 0 crossings, 0.00 secs.
-network simplex:  89 nodes 166 edges maxiter=54 balance=2
-network simplex: 89 nodes 166 edges 18 iter 0.00 sec
-in checkpath, start port not in first box
-5 boxes:
-0 (74, 163.02), (216, 232.53)
-1 (-136, 155.02), (730, 163.02)
-2 (74, 85.51), (114, 155.02)
-3 (-136, 77.51), (730, 85.51)
-4 (192, 42.755), (225, 77.51)
-start port: (165, 161.78), tangent angle: -1.5708, constrained
-end port: (224, 42.755), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-5 boxes:
-0 (-7, 240.53), (114, 338.79)
-1 (-136, 232.53), (730, 240.53)
-2 (318, 163.02), (341, 232.53)
-3 (-136, 155.02), (730, 163.02)
-4 (111, 120.27), (123, 155.02)
-start port: (47, 239.29), tangent angle: -1.5708, constrained
-end port: (122, 120.27), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-7 boxes:
-0 (341, 240.53), (459, 338.79)
-1 (-136, 232.53), (730, 240.53)
-2 (651, 163.02), (676, 232.53)
-3 (-136, 155.02), (730, 163.02)
-4 (639, 85.51), (673, 155.02)
-5 (-136, 77.51), (730, 85.51)
-6 (419, 42.755), (480, 77.51)
-start port: (392, 239.29), tangent angle: -1.5708, constrained
-end port: (479, 42.755), tangent angle: 3.1416, constrained
-in checkpath, start port not in first box
-7 boxes:
-0 (341, 240.53), (459, 338.79)
-1 (-136, 232.53), (730, 240.53)
-2 (662, 163.02), (730, 232.53)
-3 (-136, 155.02), (730, 163.02)
-4 (655, 85.51), (730, 155.02)
-5 (-136, 77.51), (730, 85.51)
-6 (543, 42.755), (576, 77.51)
-start port: (392, 239.29), tangent angle: -1.5708, constrained
-end port: (575, 42.755), tangent angle: 3.1416, constrained
-routesplines: 30 edges, 114 boxes 0.00 sec
+network simplex:  55 nodes 107 edges maxiter=54 balance=2
+network simplex: 55 nodes 107 edges 23 iter 0.00 sec
+routesplines: 20 edges, 60 boxes 0.00 sec
 Using render: svg:core
 Using device: svg:svg:core
-gvRenderJobs G: 0.00 secs.
+gvRenderJobs G: 0.02 secs.

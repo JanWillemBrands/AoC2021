@@ -7,43 +7,13 @@ digraph G {
   rankdir = "TB"
   subgraph GSS {
     cluster = true
-    label = <a↵> fontcolor = green
+    label = <ab↵> fontcolor = green
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    E0 [label = <E0<br/><font color="gray" point-size="8.0"> 0</font>>]
+    E0 [label = <E0<br/><font color="gray" point-size="8.0"> 0, 1</font>>]
     E0 -> ●○
-    I0 [label = <I0<br/><font color="gray" point-size="8.0"> 0</font>>]
+    I0 [label = <I0<br/><font color="gray" point-size="8.0"> 0, 1</font>>]
     I0 -> ●○
-  }
-  subgraph clusterA {
-    node [shape = box]
-    label = <A = [ "a" ] .>
-    labeljust = l
-    AR0C0 [label = <R<br/>N A<br/>fi ["", "a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR0C1 [label = <L<br/>ALT <br/>fi ["", "a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR1C1 [label = <P<br/>OPT <br/>fi ["", "a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR2C1 [label = <Q<br/>END <br/>fi [""]<br/>fo ["b", "c"]<br/>am []>]
-    AR1C1 -> AR2C1 [weight=100000000]
-    AR1C2 [label = <M<br/>ALT <br/>fi ["a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR2C2 [label = <N<br/>T "a"<br/>fi ["a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR3C2 [label = <O<br/>END <br/>fi [""]<br/>fo ["b", "c"]<br/>am []>]
-    AR2C2 -> AR3C2 [weight=100000000]
-    AR1C2 -> AR2C2 [weight=100000000]
-    rank = same {AR1C1 -> AR1C2}
-    AR0C1 -> AR1C1 [weight=100000000]
-    rank = same {AR0C0 -> AR0C1}
-    node [style = invis]
-    edge [style = invis]
-    rank = same {AR0C1 -> AR0C2}
-    AR0C0 -> AR1C0 [weight=100000000]
-    rank = same {AR1C0 -> AR1C1}
-    AR0C2 -> AR1C2 [weight=100000000]
-    AR1C0 -> AR2C0 [weight=100000000]
-    rank = same {AR2C0 -> AR2C1}
-    AR2C0 -> AR3C0 [weight=100000000]
-    AR2C1 -> AR3C1 [weight=100000000]
-    rank = same {AR3C0 -> AR3C1}
-    rank = same {AR3C1 -> AR3C2}
   }
   subgraph clusterS {
     node [shape = box]
@@ -75,14 +45,34 @@ digraph G {
     SR2C0 -> SR3C0 [weight=100000000]
     rank = same {SR3C0 -> SR3C1}
   }
-  AR2C1:w -> AR0C0:s [style = solid, color = red, constraint = false]
-  AR3C2:w -> AR1C1:s [style = solid, color = red, constraint = false]
-  SR3C1:w -> SR0C0:s [style = solid, color = red, constraint = false]
-  SR3C2:w -> SR0C0:s [style = solid, color = red, constraint = false]
-  AR2C1:e -> AR0C1 [style = dotted, color = green, constraint = false]
-  AR3C2:e -> AR1C2 [style = dotted, color = green, constraint = false]
-  SR3C1:e -> SR0C1 [style = dotted, color = green, constraint = false]
-  SR3C2:e -> SR0C2 [style = dotted, color = green, constraint = false]
-  SR1C1:e -> AR0C1 [style = dotted, color = blue, constraint = false]
-  SR1C2:e -> AR0C1 [style = dotted, color = blue, constraint = false]
+  subgraph clusterA {
+    node [shape = box]
+    label = <A = [ "a" ] .>
+    labeljust = l
+    AR0C0 [label = <R<br/>N A<br/>fi ["", "a"]<br/>fo ["b", "c"]<br/>am []>]
+    AR0C1 [label = <L<br/>ALT <br/>fi ["", "a"]<br/>fo ["b", "c"]<br/>am []>]
+    AR1C1 [label = <P<br/>OPT <br/>fi ["", "a"]<br/>fo ["b", "c"]<br/>am []>]
+    AR2C1 [label = <Q<br/>END <br/>fi [""]<br/>fo ["b", "c"]<br/>am []>]
+    AR1C1 -> AR2C1 [weight=100000000]
+    AR1C2 [label = <M<br/>ALT <br/>fi ["a"]<br/>fo ["b", "c"]<br/>am []>]
+    AR2C2 [label = <N<br/>T "a"<br/>fi ["a"]<br/>fo ["b", "c"]<br/>am []>]
+    AR3C2 [label = <O<br/>END <br/>fi [""]<br/>fo ["b", "c"]<br/>am []>]
+    AR2C2 -> AR3C2 [weight=100000000]
+    AR1C2 -> AR2C2 [weight=100000000]
+    rank = same {AR1C1 -> AR1C2}
+    AR0C1 -> AR1C1 [weight=100000000]
+    rank = same {AR0C0 -> AR0C1}
+    node [style = invis]
+    edge [style = invis]
+    rank = same {AR0C1 -> AR0C2}
+    AR0C0 -> AR1C0 [weight=100000000]
+    rank = same {AR1C0 -> AR1C1}
+    AR0C2 -> AR1C2 [weight=100000000]
+    AR1C0 -> AR2C0 [weight=100000000]
+    rank = same {AR2C0 -> AR2C1}
+    AR2C0 -> AR3C0 [weight=100000000]
+    AR2C1 -> AR3C1 [weight=100000000]
+    rank = same {AR3C0 -> AR3C1}
+    rank = same {AR3C1 -> AR3C2}
+  }
 }

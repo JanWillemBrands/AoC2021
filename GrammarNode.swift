@@ -31,13 +31,12 @@
 
 import Foundation
 
-enum GrammarNodeKind: String { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
+enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
+
 
 final class GrammarNode {
     let kind: GrammarNodeKind
     let str: String
-    // TODO: remove assertions
-//    var alt, seq: GrammarNode?
     var alt: GrammarNode? {
         didSet {
             assert(alt?.kind == .ALT, "alt should always point to a .ALT node")
@@ -56,6 +55,8 @@ final class GrammarNode {
         self.number = GrammarNode.count
         GrammarNode.count += 1
     }
+    
+    var actions: [String] = [] // stores semantic actions
     
     var first:      Set<String> = []
     var follow:     Set<String> = []
@@ -364,8 +365,11 @@ extension GrammarNode {
 extension GrammarNode {
     func clearNodes() {
         bsr = []
-        if kind != .END { // avoid loops
+        // recursively clear child nodes but avoid loops
+        if kind != .END {
             seq?.clearNodes()
+        }
+        if kind != .END && kind != .N {
             alt?.clearNodes()
         }
     }

@@ -157,13 +157,20 @@ class GrammarParser {
     func sequence() -> GrammarNode {
         trace("sequence", token)
         let startOfSequence = GrammarNode(kind: .ALT, str: "")
-        var tmp = term()
-        startOfSequence.seq = tmp
-        while ["literal", "identifier", "regex", "(", "[", "{", "<"].contains(token.kind) {
-            tmp.seq = term()
-            tmp = tmp.seq!
+        while ["action"].contains(token.kind) {
+            startOfSequence.actions.append(action())
         }
-        tmp.seq = GrammarNode(kind: .END, str: "")
+        var termNode = term()
+        startOfSequence.seq = termNode
+        while ["literal", "identifier", "regex", "action", "(", "[", "{", "<"].contains(token.kind) {
+            if token.kind == "action" {
+                termNode.actions.append(action())
+            } else {
+                termNode.seq = term()
+                termNode = termNode.seq!
+            }
+        }
+        termNode.seq = GrammarNode(kind: .END, str: "")
         // Setting the .alt and .seq links of an END node is done in resolveEndNodeLinks
         return startOfSequence
     }
@@ -259,11 +266,16 @@ class GrammarParser {
             node = GrammarNode(kind: .POS, str: "", alt: alternates())
             expect([">"])
         default:
-            expect(["identifier", "literal", "regex", "(", "[", "{", "<"])
+            expect(["identifier", "literal", "regex", "action", "(", "[", "{", "<"])
             exit(7)
         }
         next()
         return node
+    }
+    
+    func action() -> String {
+        next()
+        return token.stripped
     }
     
     func expect(_ expectedTokens: Set<String>) {

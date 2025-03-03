@@ -12,10 +12,11 @@ import Foundation
 trace = false
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-        .appendingPathComponent("test")
+//        .appendingPathComponent("test")
 //        .appendingPathComponent("apusNoAction")
 //        .appendingPathComponent("TortureSyntax")
-//        .appendingPathComponent("apus")
+//    .appendingPathComponent("apus")
+    .appendingPathComponent("tortureART")
 //        .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
 
@@ -69,10 +70,15 @@ for m in messages {
     addDescriptor(slot: grammarRoot.alt!, stack: currentStack, index: currentIndex)
 
     // use the AST to parse the message
+    let start = clock()
     try parseMessage()
+    let end = clock()
+    let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
+    print(cpuTime)
+//    print("CPU time: \(cpuTime) seconds")
 }
 
-
+#if DEBUG
 trace = false
 let generatedParserFile = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
@@ -99,3 +105,4 @@ do {
     print("error: could not write to \(generatedDiagramFile.absoluteString)")
     exit(6)
 }
+#endif

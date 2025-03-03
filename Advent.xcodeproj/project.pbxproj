@@ -54,6 +54,7 @@
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
 		4E89AAED2D6DF2EE006A0BBA /* ART.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
 		4E89AAEE2D6DF2EE006A0BBA /* postRunActions.log */ = {isa = PBXFileReference; lastKnownFileType = text; path = postRunActions.log; sourceTree = "<group>"; };
+		4E89AAF32D7667C3006A0BBA /* tortureART.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = tortureART.apus; sourceTree = "<group>"; };
 		4E94E9942C2913F600746EB7 /* SymbolTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolTable.swift; sourceTree = "<group>"; };
 		4EA293992BAACF9A0014546F /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
 		4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
@@ -85,6 +86,7 @@
 				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
 				4E333D692629D5E500640821 /* TortureSyntax.apus */,
+				4E89AAF32D7667C3006A0BBA /* tortureART.apus */,
 				4E89AAED2D6DF2EE006A0BBA /* ART.gv */,
 				4ECF78982BF8C3CE00B9F1F4 /* diagram.gv */,
 				4E89AAEE2D6DF2EE006A0BBA /* postRunActions.log */,
@@ -93,14 +95,14 @@
 				4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */,
 				4E42138F2D1DC15000CE6493 /* GenerateParser.swift */,
 				4EE422A22BFB319500D99368 /* GrammarNode.swift */,
+				4E4213892D19E31200CE6493 /* GrammarParser.swift */,
 				4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */,
 				4E333D632629D5E400640821 /* main.swift */,
 				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
+				4E4213852D19CA1200CE6493 /* MessageParser.swift */,
 				4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */,
 				4E333D642629D5E400640821 /* output.swift */,
 				4E42138D2D1C572D00CE6493 /* OutputTools.swift */,
-				4E4213892D19E31200CE6493 /* GrammarParser.swift */,
-				4E4213852D19CA1200CE6493 /* MessageParser.swift */,
 				4E450E682BE8007F0077E275 /* playground.swift */,
 				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
 				4E333D672629D5E400640821 /* StringExtensions.swift */,

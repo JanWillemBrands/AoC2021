@@ -1,6 +1,6 @@
 whitespace  : /\s+/ .
-singleLine  : /\/\/.*/ .
-multiLine   : /\/\*(?s).*?\*\// .
+linecomment  : /\/\/.*/ .
+blockcomment   : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
@@ -10,7 +10,7 @@ message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
 
 S           = { production } { message } .
               
-production  = identifier ( ":" | "=" ) selection "." .
+production  = identifier @ACTION@ ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .
 sequence    = term { term } .
 term        = terminal
@@ -26,8 +26,8 @@ terminal    = identifier | literal | regex | action .
 
 ¶
 whitespace  : /\s+/ .
-singleLine  : /\/\/.*/ .
-multiLine   : /\/\*(?s).*?\*\// .
+linecomment  : /\/\/.*/ .
+blockcomment   : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
@@ -37,7 +37,7 @@ message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
 
 S           = { production } { message } .
               
-production  = identifier ( ":" | "=" ) selection "." .
+production  = identifier @ACTION@ ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .
 sequence    = term { term } .
 term        = terminal
