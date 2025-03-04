@@ -237,6 +237,14 @@ class GrammarParser {
         case "regex":
             // TODO: add support for anonymous regexes
             node = regex()
+//        case "action":
+//            // TODO: eliminate the spurious EPS node and store actions in the node they belong to.
+//            print("ACTION", token.image)
+////            node = GrammarNode(kind: .EPS, str: "")
+////            node.action += token.image + "\n"
+//            action = token.image
+//            next()
+//            return nil
         case "(":
             next()
             node = alternates()

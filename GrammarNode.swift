@@ -365,6 +365,7 @@ extension GrammarNode {
 extension GrammarNode {
     func clearNodes() {
         bsr = []
+        print("clear", self)
         // recursively clear child nodes but avoid loops
         if kind != .END {
             seq?.clearNodes()

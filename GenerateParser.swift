@@ -110,6 +110,7 @@ class ParserGenerator {
         for action in node.actions {
             emit(action)
         }
+        emit(node.action)
     }
 
     // IndentMode specifies the increase or decrease of indentation before and after emitting the items

@@ -17,29 +17,36 @@ digraph G {
   }
   subgraph clusterS {
     node [shape = box]
-    label = <S = A "b" | A "c" .>
+    label = <S = { production } { input } .>
     labeljust = l
-    SR0C0 [label = <K<br/>N S<br/>fi ["", "a"]<br/>fo ["$"]<br/>am ["a"]>]
-    SR0C1 [label = <C<br/>ALT <br/>fi ["", "a"]<br/>fo ["$"]<br/>am []>]
-    SR1C1 [label = <D<br/>N A<br/>fi ["", "a"]<br/>fo ["b"]<br/>am []>]
-    SR2C1 [label = <E<br/>T "b"<br/>fi ["b"]<br/>fo ["$"]<br/>am []>]
-    SR3C1 [label = <F<br/>END <br/>fi [""]<br/>fo ["$"]<br/>am []>]
+    SR0C0 [label = <S<br/>N S<br/> >]
+    SR0C1 [label = <I<br/>ALT <br/> >]
+    SR1C1 [label = <M<br/>KLN <br/> >]
+    SR2C1 [label = <Q<br/>KLN <br/> >]
+    SR3C1 [label = <R<br/>END <br/> >]
     SR2C1 -> SR3C1 [weight=100000000]
-    SR1C1 -> SR2C1 [weight=100000000]
-    SR0C1 -> SR1C1 [weight=100000000]
-    SR0C2 [label = <G<br/>ALT <br/>fi ["", "a"]<br/>fo ["$"]<br/>am []>]
-    SR1C2 [label = <H<br/>N A<br/>fi ["", "a"]<br/>fo ["c"]<br/>am []>]
-    SR2C2 [label = <I<br/>T "c"<br/>fi ["c"]<br/>fo ["$"]<br/>am []>]
-    SR3C2 [label = <J<br/>END <br/>fi [""]<br/>fo ["$"]<br/>am []>]
+    SR2C2 [label = <N<br/>ALT <br/> >]
+    SR3C2 [label = <O<br/>N input<br/> >]
+    SR4C2 [label = <P<br/>END <br/> >]
+    SR3C2 -> SR4C2 [weight=100000000]
     SR2C2 -> SR3C2 [weight=100000000]
-    SR1C2 -> SR2C2 [weight=100000000]
-    SR0C2 -> SR1C2 [weight=100000000]
-    rank = same {SR0C1 -> SR0C2}
+    rank = same {SR2C1 -> SR2C2}
+    SR1C1 -> SR2C1 [weight=100000000]
+    SR1C3 [label = <J<br/>ALT <br/> >]
+    SR2C3 [label = <K<br/>N production<br/> >]
+    SR3C3 [label = <L<br/>END <br/> >]
+    SR2C3 -> SR3C3 [weight=100000000]
+    SR1C3 -> SR2C3 [weight=100000000]
+    rank = same {SR1C1 -> SR1C3}
+    SR0C1 -> SR1C1 [weight=100000000]
     rank = same {SR0C0 -> SR0C1}
     node [style = invis]
     edge [style = invis]
+    rank = same {SR0C1 -> SR0C2}
+    rank = same {SR0C2 -> SR0C3}
     SR0C0 -> SR1C0 [weight=100000000]
     rank = same {SR1C0 -> SR1C1}
+    SR0C3 -> SR1C3 [weight=100000000]
     SR1C0 -> SR2C0 [weight=100000000]
     rank = same {SR2C0 -> SR2C1}
     SR2C0 -> SR3C0 [weight=100000000]
