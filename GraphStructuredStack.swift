@@ -82,17 +82,23 @@ struct SlotIndex: Hashable, CustomStringConvertible {
 // add an edge from that node to the current stack top
 // add descriptors for previous pop actions from v
 func call(slot: GrammarNode) {
+#if DEBUG
     trace("call", slot)
+#endif
     let node = StackNode(slot: slot.seq!, index: currentIndex)
     let actualNode = gss.insert(node).memberAfterInsert
     let edge = Edge(towards: currentStack)
+#if DEBUG
     trace("create edge from \(actualNode) to \(currentStack)")
-    
+#endif
+
     assert(!actualNode.edges.contains(where: { $0.towards === currentStack }), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
     
     actualNode.edges.append(edge)
     for pop in actualNode.pops {
+#if DEBUG
         trace("contingent Descriptor")
+#endif
         addDescriptor(slot: slot.seq!, stack: currentStack, index: pop)
     }
 
@@ -106,14 +112,20 @@ func call(slot: GrammarNode) {
 
 // TODO: the first edge can be popped without addDescriptor
 func ret() {
+#if DEBUG
     trace("ret", currentStack)
+#endif
     if currentIndex == tokens.count - 1 && currentStack == gssRoot {
         successfullParses += 1
+#if DEBUG
         trace("HURRAH token = \(token)", terminator: "\n")
+#endif
     } else {
         currentStack.pops.insert(currentIndex)
         for edge in currentStack.edges {
+#if DEBUG
             trace("pop \(edge)")
+#endif
             addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
         }
     }
@@ -123,9 +135,13 @@ func addDescriptor(slot: GrammarNode, stack: StackNode, index: Int) {
     if stack.unique.insert(SlotIndex(slot: slot, index: index)).inserted {
         remainder.append(Descriptor(slot: slot, stack: stack, index: index))
         descriptorCount += 1
+#if DEBUG
         trace("add Descriptor(slot \(slot), stack \(stack), index \(index))")
+#endif
     } else {
+#if DEBUG
         trace("duplicate Descriptor(slot \(slot), stack \(stack), index \(index))")
+#endif
     }
 }
 
@@ -137,7 +153,9 @@ func getDescriptor() -> Bool {
         currentSlot = d.slot
         currentStack = d.stack
         currentIndex = d.index
+#if DEBUG
         trace("get Descriptor(slot \(currentSlot), stack \(currentStack), index \(currentIndex))")
+#endif
         return true
     }
 }

@@ -90,7 +90,9 @@ extension GrammarNode {
             if first.contains( "") {
                 expectedTokens.formUnion(follow)
             }
+#if DEBUG
             trace("expect \"\(token.kind)\" to be in", expectedTokens)
+#endif
             return false
         }
     }

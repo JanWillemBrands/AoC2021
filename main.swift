@@ -74,7 +74,7 @@ for m in messages {
     try parseMessage()
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
-    print(cpuTime)
+    print(cpuTime, descriptorCount)
 //    print("CPU time: \(cpuTime) seconds")
 }
 

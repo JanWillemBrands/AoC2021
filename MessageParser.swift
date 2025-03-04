@@ -34,8 +34,10 @@ func parseMessage() throws {
         
         while true {
             
+#if DEBUG
             trace("parse slot", currentSlot, currentSlot.kindName)
-            
+#endif
+
             // TODO: add first check before each instance of addDescriptor
             // TODO: verify testSelect()
             // TODO: switch to .LL1 mode if only one single path is possible
@@ -50,7 +52,9 @@ func parseMessage() throws {
                     currentSlot = currentSlot.seq!
                 } else {
                     failedParses += 1
-                    trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
+#if DEBUG
+                   trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
+#endif
                     continue nextDescriptor
                 }
             case .EPS:
@@ -105,12 +109,14 @@ func parseMessage() throws {
         }
     }
     
+#if DEBUG
     trace(
         "\nmatched:", successfullParses,
         "  failed:", failedParses,
         "  gss size:", gss.count,
         "  descriptors:", descriptorCount
     )
+#endif
 }
 
 

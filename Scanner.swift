@@ -118,7 +118,9 @@ func scanTokens() {
 
 func next() {
     currentIndex += 1
+#if DEBUG
     trace("next", token.image, token.kind)
+#endif
 }
 
 // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern
