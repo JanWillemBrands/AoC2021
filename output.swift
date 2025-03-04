@@ -11,9 +11,15 @@ let tokenPatterns: [String:TokenPattern] = [
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"b":	("b",	Regex { "b" },	true,	false),
-	"a":	("a",	Regex { "a" },	true,	false),
 	"c":	("c",	Regex { "c" },	true,	false),
+	"a":	("a",	Regex { "a" },	true,	false),
 ]
+func A() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["", "a"])
+}
 func S() {
 	if token.type = .ALT {
 		A()
@@ -22,11 +28,5 @@ func S() {
 		A()
 		next()
 	}
-	expect(["", "a"])
-}
-func A() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["", "a"])
+	expect(["a", ""])
 }

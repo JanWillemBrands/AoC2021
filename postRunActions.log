@@ -67,10 +67,10 @@ Verbose 5
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
 network simplex:  3 nodes 2 edges maxiter=6 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=24 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
 network simplex:  5 nodes 5 edges maxiter=24 balance=1
 network simplex: 5 nodes 5 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=24 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=54 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=54 balance=0
@@ -86,9 +86,9 @@ merge2: graph G, rank 1 has only 3 < 7 nodes
 merge2: graph G, rank 2 has only 2 < 6 nodes
 merge2: graph G, rank 3 has only 2 < 6 nodes
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 2 best_cross 2
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
+mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 2 best_cross 2
 mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross G: 0 crossings, 0.00 secs.
@@ -97,4 +97,4 @@ network simplex: 55 nodes 107 edges 23 iter 0.00 sec
 routesplines: 20 edges, 60 boxes 0.00 sec
 Using render: svg:core
 Using device: svg:svg:core
-gvRenderJobs G: 0.02 secs.
+gvRenderJobs G: 0.00 secs.

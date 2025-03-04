@@ -137,4 +137,4 @@ comment    : /\/\/.*/.
 S = A "b" | A "c". A = ["a"].         // PASS
 
 //S = ["a"] | ["b"] | ["c"].            // PASS
-¶ab
+¶ac
