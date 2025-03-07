@@ -1,6 +1,6 @@
-whitespace  : /\s+/ .
+whitespace   : /\s+/ .
 linecomment  : /\/\/.*/ .
-blockcomment   : /\/\*(?s).*?\*\// .
+blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
@@ -66,9 +66,9 @@ terminal    = identifier            @node = Node(.NTM(name: token.image))@
             .
 
 ¶
-whitespace  : /\s+/ .
+whitespace   : /\s+/ .
 linecomment  : /\/\/.*/ .
-blockcomment   : /\/\*(?s).*?\*\// .
+blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .

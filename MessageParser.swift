@@ -28,7 +28,7 @@ func resetMessageParser() {
     descriptorCount = 0
 }
 
-func parseMessage() throws {
+func parseMessage() {
     
     nextDescriptor: while getDescriptor() {
         

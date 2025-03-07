@@ -1,6 +1,5 @@
 whitespace : /\s+/.
 comment    : /\/\/.*/.
-//something  = /[a-z]+/ .
 
 
 //S = X X X.                    // PASS
@@ -132,9 +131,20 @@ comment    : /\/\/.*/.
 
 //S = "a"("a""b"|"a")("b""c"|"c").      // PASS Scott & Johnstone EBNF two derivations
 
+//something  = /[a-z]+/ .
 //S = something something.              // PASS
 
-S = A "b" | A "c". A = ["a"].         // PASS
+//S = A "b" | A "c". A = ["a"].         // PASS
 
 //S = ["a"] | ["b"] | ["c"].            // PASS
-¶ac
+S = "bla" ("hup" "lala") * "!" .      // PASS
+
+//S = @a@ { @b@ "x" @c@ } @d@ .         // PASS
+//S = @a@ "x" @b@ | @c@ "y" @d@ .       // PASS
+//@bla@ S @bla@ = "x" .                 // FAIL need to think about actions surrounding lhs nonterminals
+
+//S = @a@ @aa@ "x" @b@ @bb@ ( @c@ @cc@ "y" @d@ @dd@ "z" @e@ @ee@ ) @f@ @ff@ * @g@ @gg@ "w" @h@ @hh@ .  // PASS xyzyzyzw
+//S = "x" * * .
+
+¶bla hup lala hup lala !
+

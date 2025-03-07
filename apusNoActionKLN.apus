@@ -6,11 +6,11 @@ identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /¶(?:[^¶\\]|\\.)*/ .
+message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
 
-S           = { rule } { message } .
+grammar     = { production } { message } .
               
-rule        = identifier ( ":" | "=" ) selection "." .
+production  = identifier ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .
 sequence    = < term [ "?" | "*" | "+" ] > .
 term        = terminal
@@ -29,11 +29,11 @@ identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /¶(?:[^¶\\]|\\.)*/ .
+message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
 
-S           = { rule } { message } .
+grammar     = { production } { message } .
               
-rule        = identifier ( ":" | "=" ) selection "." .
+production  = identifier ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .
 sequence    = < term [ "?" | "*" | "+" ] > .
 term        = terminal

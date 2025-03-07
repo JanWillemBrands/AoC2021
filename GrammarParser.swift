@@ -17,7 +17,37 @@ var messages: [String] = []
 class GrammarParser {
     
     init(inputFile inputFileURL: URL, patterns: [String:TokenPattern]) throws {
-        input = try String(contentsOf: inputFileURL, encoding: .utf8)
+        
+        // Define a list of commonly supported encodings
+        let encodings: [String.Encoding] = [
+            .utf8,                // UTF-8
+            .isoLatin1,           // ISO-8859-1 (Western European)
+            .isoLatin2,           // ISO-8859-2 (Central/Eastern European)
+            .ascii,               // ASCII
+            .utf16,               // UTF-16 (with BOM)
+            .utf16BigEndian,      // UTF-16 Big Endian
+            .utf16LittleEndian,   // UTF-16 Little Endian
+            .utf32,               // UTF-32 (with BOM)
+            .utf32BigEndian,      // UTF-32 Big Endian
+            .utf32LittleEndian,   // UTF-32 Little Endian
+            .macOSRoman,          // Mac Roman (classic Mac OS encoding)
+            .windowsCP1250,       // Windows Central European
+            .windowsCP1251,       // Windows Cyrillic
+            .windowsCP1252,       // Windows Latin-1
+            .windowsCP1253,       // Windows Greek
+            .windowsCP1254,       // Windows Turkish
+            // Add more encodings as needed via raw values below
+        ]
+        for encoding in encodings {
+            do {
+                input = try String(contentsOf: inputFileURL, encoding: encoding)
+                print("Success with \(encoding)")
+                break
+            } catch {
+                print("Failed with \(encoding): \(error)")
+            }
+        }
+        
         initScanner(fromString: input, patterns: patterns)
 
         terminals = [:]
@@ -25,21 +55,23 @@ class GrammarParser {
         messages = []
     }
     
-    func parseGrammar(startSymbol: String) -> GrammarNode? {
+    func parseGrammar(explicitStartSymbol: String = "") -> GrammarNode? {
         initScanner(fromString: input, patterns: apusTerminals)
 
+        if explicitStartSymbol != "" {
+            startSymbol = explicitStartSymbol
+        }
         parseApusGrammar()
         
         trace("terminals:")
         for (name, tokenPattern) in terminals {
             trace("\t", name, "\t", tokenPattern.source)
         }
-        
+
         trace("nonTerminals:")
         for (name, node) in nonTerminals {
             trace("\t", name, "\t", node.kind)
         }
-        
         guard let root = nonTerminals[startSymbol] else { return nil }
         
         for (name, node) in nonTerminals {
@@ -82,7 +114,7 @@ class GrammarParser {
         while token.kind == "identifier" {
             production()
         }
-        expect(["message", "¶"])
+        expect(["message"])
         while token.kind == "message" {
             message()
         }
@@ -103,6 +135,10 @@ class GrammarParser {
                 terminalAlias = nil
                 next()
             } else {
+                // set the startSymbol to the first nonTerminal in the grammar file
+                if startSymbol == "" {
+                    startSymbol = nonTerminalName
+                }
                 node = alternates()
                 if let existing = nonTerminals[nonTerminalName] {
                     // add this production to the end of the existing ALT list
@@ -157,21 +193,40 @@ class GrammarParser {
     func sequence() -> GrammarNode {
         trace("sequence", token)
         let startOfSequence = GrammarNode(kind: .ALT, str: "")
-        while ["action"].contains(token.kind) {
-            startOfSequence.actions.append(action())
-        }
-        var termNode = term()
-        startOfSequence.seq = termNode
-        while ["literal", "identifier", "regex", "action", "(", "[", "{", "<"].contains(token.kind) {
-            if token.kind == "action" {
-                termNode.actions.append(action())
-            } else {
+        var termNode = startOfSequence
+        
+        repeat {
+            if ["action"].contains(token.kind) {
+                termNode.actions.append(token.stripped)
+                next()
+            } else if ["literal", "identifier", "regex", "(", "[", "{", "<"].contains(token.kind) {
                 termNode.seq = term()
+                while ["action"].contains(token.kind) {
+                    termNode.seq?.actions.append(token.stripped)
+                    next()
+                }
+                // handle postfix EBNF operators
+                if ["?", "*", "+"].contains(token.kind) {
+                    // wrap the preceding term in its own little sequence
+                    let miniSeq = GrammarNode(kind: .ALT, str: "")
+                    miniSeq.seq = termNode.seq
+                    miniSeq.seq?.seq = GrammarNode(kind: .END, str: "")
+                    if token.kind == "?" {
+                        termNode.seq = GrammarNode(kind: .OPT, str: "", alt: miniSeq)
+                    } else if token.kind == "*" {
+                        termNode.seq = GrammarNode(kind: .KLN, str: "", alt: miniSeq)
+                    } else if token.kind == "+" {
+                        termNode.seq = GrammarNode(kind: .POS, str: "", alt: miniSeq)
+                    }
+                    termNode.seq?.alt = miniSeq
+                    next()
+                }
                 termNode = termNode.seq!
             }
-        }
+        } while ["literal", "identifier", "regex", "action", "(", "[", "{", "<"].contains(token.kind)
+        
         termNode.seq = GrammarNode(kind: .END, str: "")
-        // Setting the .alt and .seq links of an END node is done in resolveEndNodeLinks
+        // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
         return startOfSequence
     }
 
@@ -237,14 +292,6 @@ class GrammarParser {
         case "regex":
             // TODO: add support for anonymous regexes
             node = regex()
-//        case "action":
-//            // TODO: eliminate the spurious EPS node and store actions in the node they belong to.
-//            print("ACTION", token.image)
-////            node = GrammarNode(kind: .EPS, str: "")
-////            node.action += token.image + "\n"
-//            action = token.image
-//            next()
-//            return nil
         case "(":
             next()
             node = alternates()
@@ -279,11 +326,6 @@ class GrammarParser {
         }
         next()
         return node
-    }
-    
-    func action() -> String {
-        next()
-        return token.stripped
     }
     
     func expect(_ expectedTokens: Set<String>) {

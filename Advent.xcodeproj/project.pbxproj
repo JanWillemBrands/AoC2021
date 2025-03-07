@@ -34,6 +34,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4E1E47512D7A2CE100EECD17 /* Swift6Grammar.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = Swift6Grammar.apus; sourceTree = "<group>"; };
+		4E1E47522D7A352D00EECD17 /* clean.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = clean.apus; sourceTree = "<group>"; };
 		4E333D622629D5E400640821 /* apus.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
 		4E333D632629D5E400640821 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		4E333D642629D5E400640821 /* output.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = output.swift; sourceTree = "<group>"; };
@@ -79,6 +81,7 @@
 		CB6B730C257EA9F400B929C6 = {
 			isa = PBXGroup;
 			children = (
+				4E1E47522D7A352D00EECD17 /* clean.apus */,
 				4E333D622629D5E400640821 /* apus.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
 				4E333D6C2629D5E500640821 /* apusNoAction.apus */,
@@ -98,6 +101,7 @@
 				4E4213892D19E31200CE6493 /* GrammarParser.swift */,
 				4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */,
 				4E333D632629D5E400640821 /* main.swift */,
+				4E1E47512D7A2CE100EECD17 /* Swift6Grammar.apus */,
 				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
 				4E4213852D19CA1200CE6493 /* MessageParser.swift */,
 				4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */,

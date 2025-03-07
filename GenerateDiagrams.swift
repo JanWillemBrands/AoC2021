@@ -114,7 +114,7 @@ class DiagramsGenerator {
         node.cell = Cell(name: name, r: row, c: col)
         grid[node.cell] = true
         
-        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)<br/>am \(node.ambiguous.sorted().description.graphvizHTML)>]")
+        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)<br/>am \(node.ambiguous.sorted().description.graphvizHTML)<br/>\(node.actions.joined(separator: "<br/>"))>]")
 
         if let seq = node.seq {
             if node.kind == .END {

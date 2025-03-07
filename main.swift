@@ -9,14 +9,16 @@ import Foundation
 
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
 // by using grammarParser, which is a hand-built recursive descent parser
-trace = false
+trace = true
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-//        .appendingPathComponent("test")
+    .appendingPathComponent("test")
+//    .appendingPathComponent("Swift6Grammar")
 //        .appendingPathComponent("apusNoAction")
+//        .appendingPathComponent("apusNoActionKLN")
 //        .appendingPathComponent("TortureSyntax")
 //    .appendingPathComponent("apus")
-    .appendingPathComponent("tortureART")
+//    .appendingPathComponent("tortureART")
 //        .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
 
@@ -28,9 +30,9 @@ do {
     exit(0)
 }
 
-let startSymbol = "S"
+var startSymbol = ""    // if "" then startSymbol will set set by parseGrammar to the first nonTerminal in the grammar file
 let grammarRoot: GrammarNode
-guard let root = grammarParser.parseGrammar(startSymbol: startSymbol) else {
+guard let root = grammarParser.parseGrammar(explicitStartSymbol: startSymbol) else {
     print("Error: Start symbol '\(startSymbol)' not found")
     exit(1)
 }
@@ -63,7 +65,7 @@ for m in messages {
 
     trace = true
     resetMessageParser()
-    // TODO: set startSymbol depending on the message
+
     currentSlot = grammarRoot
     currentStack = gssRoot
 
@@ -71,10 +73,10 @@ for m in messages {
 
     // use the AST to parse the message
     let start = clock()
-    try parseMessage()
+    parseMessage()
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
-    print(cpuTime, descriptorCount)
+    print(cpuTime, descriptorCount, gss.count)
 //    print("CPU time: \(cpuTime) seconds")
 }
 

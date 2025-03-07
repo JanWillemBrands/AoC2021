@@ -7,72 +7,70 @@ digraph G {
   rankdir = "TB"
   subgraph GSS {
     cluster = true
-    label = <ac↵> fontcolor = green
+    label = <bla·hup·lala·hup·...> fontcolor = green
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    E0 [label = <E0<br/><font color="gray" point-size="8.0"> 0, 1</font>>]
-    E0 -> ●○
-    I0 [label = <I0<br/><font color="gray" point-size="8.0"> 0, 1</font>>]
-    I0 -> ●○
-  }
-  subgraph clusterA {
-    node [shape = box]
-    label = <A = [ "a" ] .>
-    labeljust = l
-    AR0C0 [label = <R<br/>N A<br/>fi ["", "a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR0C1 [label = <L<br/>ALT <br/>fi ["", "a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR1C1 [label = <P<br/>OPT <br/>fi ["", "a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR2C1 [label = <Q<br/>END <br/>fi [""]<br/>fo ["b", "c"]<br/>am []>]
-    AR1C1 -> AR2C1 [weight=100000000]
-    AR1C2 [label = <M<br/>ALT <br/>fi ["a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR2C2 [label = <N<br/>T "a"<br/>fi ["a"]<br/>fo ["b", "c"]<br/>am []>]
-    AR3C2 [label = <O<br/>END <br/>fi [""]<br/>fo ["b", "c"]<br/>am []>]
-    AR2C2 -> AR3C2 [weight=100000000]
-    AR1C2 -> AR2C2 [weight=100000000]
-    rank = same {AR1C1 -> AR1C2}
-    AR0C1 -> AR1C1 [weight=100000000]
-    rank = same {AR0C0 -> AR0C1}
-    node [style = invis]
-    edge [style = invis]
-    rank = same {AR0C1 -> AR0C2}
-    AR0C0 -> AR1C0 [weight=100000000]
-    rank = same {AR1C0 -> AR1C1}
-    AR0C2 -> AR1C2 [weight=100000000]
-    AR1C0 -> AR2C0 [weight=100000000]
-    rank = same {AR2C0 -> AR2C1}
-    AR2C0 -> AR3C0 [weight=100000000]
-    AR2C1 -> AR3C1 [weight=100000000]
-    rank = same {AR3C0 -> AR3C1}
-    rank = same {AR3C1 -> AR3C2}
   }
   subgraph clusterS {
     node [shape = box]
-    label = <S = A "b" | A "c" .>
+    label = <S = "bla" { ( "hup" "lala" ) } "!" .>
     labeljust = l
-    SR0C0 [label = <K<br/>N S<br/>fi ["", "a"]<br/>fo ["$"]<br/>am ["a"]>]
-    SR0C1 [label = <C<br/>ALT <br/>fi ["", "a"]<br/>fo ["$"]<br/>am []>]
-    SR1C1 [label = <D<br/>N A<br/>fi ["", "a"]<br/>fo ["b"]<br/>am []>]
-    SR2C1 [label = <E<br/>T "b"<br/>fi ["b"]<br/>fo ["$"]<br/>am []>]
-    SR3C1 [label = <F<br/>END <br/>fi [""]<br/>fo ["$"]<br/>am []>]
+    SR0C0 [label = <O<br/>N S<br/>fi ["bla"]<br/>fo ["$"]<br/>am []<br/>>]
+    SR0C1 [label = <C<br/>ALT <br/>fi ["bla"]<br/>fo ["$"]<br/>am []<br/>>]
+    SR1C1 [label = <D<br/>T "bla"<br/>fi ["bla"]<br/>fo ["!", "hup"]<br/>am []<br/>>]
+    SR2C1 [label = <L<br/>KLN <br/>fi ["", "hup"]<br/>fo ["!"]<br/>am []<br/>>]
+    SR3C1 [label = <M<br/>T "!"<br/>fi ["!"]<br/>fo ["$"]<br/>am []<br/>>]
+    SR4C1 [label = <N<br/>END <br/>fi [""]<br/>fo ["$"]<br/>am []<br/>>]
+    SR3C1 -> SR4C1 [weight=100000000]
     SR2C1 -> SR3C1 [weight=100000000]
+    SR2C2 [label = <J<br/>ALT <br/>fi ["hup"]<br/>fo ["!"]<br/>am []<br/>>]
+    SR3C2 [label = <I<br/>DO <br/>fi ["hup"]<br/>fo ["!", "hup"]<br/>am []<br/>>]
+    SR4C2 [label = <K<br/>END <br/>fi [""]<br/>fo ["!", "hup"]<br/>am []<br/>>]
+    SR3C2 -> SR4C2 [weight=100000000]
+    SR3C3 [label = <E<br/>ALT <br/>fi ["hup"]<br/>fo ["!", "hup"]<br/>am []<br/>>]
+    SR4C3 [label = <F<br/>T "hup"<br/>fi ["hup"]<br/>fo ["lala"]<br/>am []<br/>>]
+    SR5C3 [label = <G<br/>T "lala"<br/>fi ["lala"]<br/>fo ["!", "hup"]<br/>am []<br/>>]
+    SR6C3 [label = <H<br/>END <br/>fi [""]<br/>fo ["!", "hup"]<br/>am []<br/>>]
+    SR5C3 -> SR6C3 [weight=100000000]
+    SR4C3 -> SR5C3 [weight=100000000]
+    SR3C3 -> SR4C3 [weight=100000000]
+    rank = same {SR3C2 -> SR3C3}
+    SR2C2 -> SR3C2 [weight=100000000]
+    rank = same {SR2C1 -> SR2C2}
     SR1C1 -> SR2C1 [weight=100000000]
     SR0C1 -> SR1C1 [weight=100000000]
-    SR0C2 [label = <G<br/>ALT <br/>fi ["", "a"]<br/>fo ["$"]<br/>am []>]
-    SR1C2 [label = <H<br/>N A<br/>fi ["", "a"]<br/>fo ["c"]<br/>am []>]
-    SR2C2 [label = <I<br/>T "c"<br/>fi ["c"]<br/>fo ["$"]<br/>am []>]
-    SR3C2 [label = <J<br/>END <br/>fi [""]<br/>fo ["$"]<br/>am []>]
-    SR2C2 -> SR3C2 [weight=100000000]
-    SR1C2 -> SR2C2 [weight=100000000]
-    SR0C2 -> SR1C2 [weight=100000000]
-    rank = same {SR0C1 -> SR0C2}
     rank = same {SR0C0 -> SR0C1}
     node [style = invis]
     edge [style = invis]
+    rank = same {SR0C1 -> SR0C2}
+    rank = same {SR0C2 -> SR0C3}
     SR0C0 -> SR1C0 [weight=100000000]
     rank = same {SR1C0 -> SR1C1}
+    SR0C2 -> SR1C2 [weight=100000000]
+    rank = same {SR1C1 -> SR1C2}
+    SR0C3 -> SR1C3 [weight=100000000]
+    rank = same {SR1C2 -> SR1C3}
     SR1C0 -> SR2C0 [weight=100000000]
     rank = same {SR2C0 -> SR2C1}
+    SR1C2 -> SR2C2 [weight=100000000]
+    SR1C3 -> SR2C3 [weight=100000000]
+    rank = same {SR2C2 -> SR2C3}
     SR2C0 -> SR3C0 [weight=100000000]
     rank = same {SR3C0 -> SR3C1}
+    SR2C3 -> SR3C3 [weight=100000000]
+    SR3C0 -> SR4C0 [weight=100000000]
+    rank = same {SR4C0 -> SR4C1}
+    SR4C0 -> SR5C0 [weight=100000000]
+    SR4C1 -> SR5C1 [weight=100000000]
+    rank = same {SR5C0 -> SR5C1}
+    SR4C2 -> SR5C2 [weight=100000000]
+    rank = same {SR5C1 -> SR5C2}
+    rank = same {SR5C2 -> SR5C3}
+    SR5C0 -> SR6C0 [weight=100000000]
+    SR5C1 -> SR6C1 [weight=100000000]
+    rank = same {SR6C0 -> SR6C1}
+    SR5C2 -> SR6C2 [weight=100000000]
+    rank = same {SR6C1 -> SR6C2}
+    rank = same {SR6C2 -> SR6C3}
   }
 }
