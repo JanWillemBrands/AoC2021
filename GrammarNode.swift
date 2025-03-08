@@ -207,6 +207,9 @@ extension GrammarNode {
         trace("first    ", first.sorted())
         trace("follow   ", follow.sorted())
         trace("ambiguous", ambiguous.sorted())
+//        if ambiguous.count > 0 {
+//            print("ambiguous", ambiguous.sorted())
+//        }
         traceIndent -= 4
         
     }
@@ -326,7 +329,10 @@ extension GrammarNode {
                 // update the follow of the lhs nonterminal as the union of the follows of all rhs nonterminals
                 production.follow.formUnion(follow)
             } else {
-                print("error: '\(str)' has not been defined as a grammar rule")
+                print("grammar parse error: '\(str)' was not defined as a grammar rule")
+                if let terminal = terminals[str] {
+                    print("but it was defined as terminal \(terminal.source) instead, please move the terminal definition before its first use.")
+                }
                 exit(4)
             }
         } else {

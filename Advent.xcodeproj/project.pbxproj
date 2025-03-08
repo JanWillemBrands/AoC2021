@@ -34,7 +34,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4E1E47512D7A2CE100EECD17 /* Swift6Grammar.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = Swift6Grammar.apus; sourceTree = "<group>"; };
+		4E1E47512D7A2CE100EECD17 /* Swift6Grammar.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Swift6Grammar.apus; sourceTree = "<group>"; };
 		4E1E47522D7A352D00EECD17 /* clean.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = clean.apus; sourceTree = "<group>"; };
 		4E333D622629D5E400640821 /* apus.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
 		4E333D632629D5E400640821 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };

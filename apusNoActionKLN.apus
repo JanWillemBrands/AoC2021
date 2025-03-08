@@ -4,9 +4,9 @@ blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
-regex       = /\/(?:[^\/\\]|\\.)*\// .
-action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
+regex       = /\/(?:[^\/\\]|\\.)+\// .
+action      = /@(?:[^@\\]|\\.)+@/ .
+message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
 
 grammar     = { production } { message } .
               
@@ -20,16 +20,16 @@ term        = terminal
             | "(" selection ")" .
 terminal    = identifier | literal | regex | action .
 
-¶
+^^^
 whitespace   : /\s+/ .
 linecomment  : /\/\/.*/ .
 blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
-regex       = /\/(?:[^\/\\]|\\.)*\// .
-action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
+regex       = /\/(?:[^\/\\]|\\.)+\// .
+action      = /@(?:[^@\\]|\\.)+@/ .
+message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
 
 grammar     = { production } { message } .
               

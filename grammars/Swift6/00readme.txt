@@ -12,15 +12,15 @@ Provenance
 	Enclosed bold keywords in quotation marks "
 	Replaced → with =
 	Removed - in names and applied camel capitalization
-	Added a . after each production
-	Removed a spurious \ near declaration	
+	Added a . after each rule
+	Removed spurious \s near declaration and expression	
 
-4. Save a copy as Swift6GrammarDraft.txt
-
-5. Rewrite whitespace, comment, identifier and various Unicode character ranges as Regex or Swift String literal.  Assume the file has already been successfully parsed by the Swift compiler, so that terminal definitions do not need to be 100%, only need to avoid to overmatch.
-
-6. Save a copy as Swift6Grammar.apus
-
-7. Rewrite terminals as Regex's, add '.' at the end of every rule. Replaced fancy quotes with simple ".  Replaced non-ascii spaces with ' '.
+4. Save a copy as Swift6Grammar.apus
+	Rewrite whitespace, comment, identifier and various Unicode character ranges as Regex or Swift String literal
+	Assume the file has already been successfully parsed by the Swift compiler, so that terminal definitions do not need to be 100%, only need to avoid to overmatch.
+	Rewrite terminals as Regex's
+	Replaced curly quotes with straight quotes "
+	Replaced non-ascii spaces with ' '
+	Added an escape for every \ in literals
 
 8. 

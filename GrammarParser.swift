@@ -21,6 +21,7 @@ class GrammarParser {
         // Define a list of commonly supported encodings
         let encodings: [String.Encoding] = [
             .utf8,                // UTF-8
+            .macOSRoman,          // Mac Roman (classic Mac OS encoding) PUT HIGH ON THE LIST BECAUSE OF^^^ QUIRK
             .isoLatin1,           // ISO-8859-1 (Western European)
             .isoLatin2,           // ISO-8859-2 (Central/Eastern European)
             .ascii,               // ASCII
@@ -30,7 +31,6 @@ class GrammarParser {
             .utf32,               // UTF-32 (with BOM)
             .utf32BigEndian,      // UTF-32 Big Endian
             .utf32LittleEndian,   // UTF-32 Little Endian
-            .macOSRoman,          // Mac Roman (classic Mac OS encoding)
             .windowsCP1250,       // Windows Central European
             .windowsCP1251,       // Windows Cyrillic
             .windowsCP1252,       // Windows Latin-1
@@ -63,15 +63,26 @@ class GrammarParser {
         }
         parseApusGrammar()
         
+//        print("TERMINALS")
+//        for t in terminals.keys.sorted() { print(t) }
+//        print("NONTERMINALS")
+//        for t in nonTerminals.keys.sorted() { print(t) }
+        trace = false
         trace("terminals:")
         for (name, tokenPattern) in terminals {
             trace("\t", name, "\t", tokenPattern.source)
         }
-
         trace("nonTerminals:")
         for (name, node) in nonTerminals {
             trace("\t", name, "\t", node.kind)
         }
+
+        let conflictSet = Set(terminals.keys).intersection(Set(nonTerminals.keys))
+        if !conflictSet.isEmpty {
+            print("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
+            exit(12)
+        }
+            
         guard let root = nonTerminals[startSymbol] else { return nil }
         
         for (name, node) in nonTerminals {
@@ -81,15 +92,17 @@ class GrammarParser {
         
         // TODO: finalize representation for EOS
         root.follow.insert("$")
-        trace = false
+        trace = true
         trace("start symbol '\(startSymbol)' first:", root.first, "follow:", root.follow)
         
+        trace = false
         var oldSize = 0
         var newSize = 0
         repeat {
             oldSize = newSize
             newSize = 0
             for (_, node) in nonTerminals {
+                trace("nonterminalcount", nonTerminals.count)
                 GrammarNode.sizeofSets = 0
                 node.populateFirstFollowSets()
                 newSize += GrammarNode.sizeofSets
@@ -191,6 +204,7 @@ class GrammarParser {
     }
 
     func sequence() -> GrammarNode {
+        // TODO: is this correct?   sequence = < term [ "?" | "*" | "+" ] > .
         trace("sequence", token)
         let startOfSequence = GrammarNode(kind: .ALT, str: "")
         var termNode = startOfSequence
@@ -236,7 +250,7 @@ class GrammarParser {
         
         if let definition = terminals[name] {
             if definition.isSkip != skip {
-                print("warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
+                print("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
             }
         }
         do {
@@ -245,7 +259,7 @@ class GrammarParser {
             terminals[name] = (String(token.image), regex, false, skip)
             trace("regex name:", name, "image:", token.image)
         } catch {
-            print("error: \(token.image) is not a valid /regex/")
+            print("parse error: \(token.image) is not a valid literal Regex \(error)")
             exit(9)
         }
 
@@ -262,7 +276,7 @@ class GrammarParser {
         let name = terminalAlias ?? token.stripped
         if let definition = terminals[name] {
             if definition.isSkip != skip {
-                print("warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
+                print("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
             }
         }
         // the token is a string literal, use a regex builder to create a Regex
@@ -278,7 +292,11 @@ class GrammarParser {
         var node: GrammarNode
         switch token.kind {
         case "identifier":
+            // the identifier can be a terminal or nonTerminal but not both
             if terminals[String(token.image)] != nil {
+                if nonTerminals[String(token.image)] != nil {
+                    print("grammar parse error: \(token.image) is both a terminal and a nonTerminal")
+                }
                 // this string was defined previously as a terminal
                 // TODO: currently all terminals must be defined BEFORE they are used
                 node = GrammarNode(kind: .T, str: token.stripped)
@@ -294,20 +312,8 @@ class GrammarParser {
             node = regex()
         case "(":
             next()
-            node = alternates()
-            switch token.kind {
-            case ")":
-                node = GrammarNode(kind: .DO, str: "", alt: node)
-            case ")?":
-                node = GrammarNode(kind: .OPT, str: "", alt: node)
-            case ")*":
-                node = GrammarNode(kind: .KLN, str: "", alt: node)
-            case ")+":
-                node = GrammarNode(kind: .POS, str: "", alt: node)
-            default:
-                expect([")", ")?", ")+", ")*"])
-                exit(7)
-            }
+            node = GrammarNode(kind: .DO, str: "", alt: alternates())
+            expect([")"])
         case "[":
             next()
             node = GrammarNode(kind: .OPT, str: "", alt: alternates())

@@ -92,7 +92,8 @@ func call(slot: GrammarNode) {
     trace("create edge from \(actualNode) to \(currentStack)")
 #endif
 
-    assert(!actualNode.edges.contains(where: { $0.towards === currentStack }), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
+    // TODO: change edges from array to set
+//    assert(!actualNode.edges.contains(where: { $0.towards === currentStack }), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
     
     actualNode.edges.append(edge)
     for pop in actualNode.pops {

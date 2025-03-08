@@ -6,7 +6,7 @@ identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
+message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
 
 S           = { production } { input } .
               
@@ -65,7 +65,7 @@ terminal    = identifier            @node = Node(.NTM(name: token.image))@
                                     @actionList[node] = token.stripped@
             .
 
-¶
+^^^
 whitespace   : /\s+/ .
 linecomment  : /\/\/.*/ .
 blockcomment : /\/\*(?s).*?\*\// .
@@ -74,7 +74,7 @@ identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
+message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
 
 S           = { production } { input } .
               

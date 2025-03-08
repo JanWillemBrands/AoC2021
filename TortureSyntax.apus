@@ -88,23 +88,23 @@ S94 = "a" S94 | "a" S94 "c" | "".           // ambiguous matched brackets Capper
 S95 = "a" S95 "b" | "a" S95 "c" | "a".      // ambiguous matched brackets Alfroozeh
 
 
-//¶       ALL? 0 All! 0 LL1?0 LL1!0 GLL? 1  GLL! 1
-¶a
-¶b
-¶aa
-¶ab
-¶ba
-¶bb
-¶aaa
-¶aab
-¶aba
-¶abb
-¶baa
-¶bab
-¶bba
-¶bbb
-¶x
-¶aacc
-¶aaaccc
-¶aac
-¶aaacc
+//^^^       ALL? 0 All! 0 LL1?0 LL1!0 GLL? 1  GLL! 1
+^^^a
+^^^b
+^^^aa
+^^^ab
+^^^ba
+^^^bb
+^^^aaa
+^^^aab
+^^^aba
+^^^abb
+^^^baa
+^^^bab
+^^^bba
+^^^bbb
+^^^x
+^^^aacc
+^^^aaaccc
+^^^aac
+^^^aaacc

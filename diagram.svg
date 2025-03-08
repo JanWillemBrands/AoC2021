@@ -9,15 +9,15 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 621.82)">
 <title>G</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-621.82 739,-621.82 739,4 -4,4"/>
-<g id="clust2" class="cluster">
-<title>S</title>
-<polygon fill="none" stroke="black" points="86,-250.75 86,-609.82 727,-609.82 727,-250.75 86,-250.75"/>
-<text text-anchor="start" x="94" y="-596.32" font-family="Menlo" font-size="10.00">S = { &quot;a&quot; } &quot;x&quot; &quot;y&quot; &quot;z&quot; { &quot;b&quot; }</text>
-</g>
 <g id="clust1" class="cluster">
 <title>GSS</title>
 <polygon fill="none" stroke="black" points="8,-8 8,-581.1 78,-581.1 78,-8 8,-8"/>
 <text text-anchor="start" x="16" y="-567.6" font-family="Menlo" font-size="10.00" fill="red">↵ab↵</text>
+</g>
+<g id="clust2" class="cluster">
+<title>S</title>
+<polygon fill="none" stroke="black" points="86,-250.75 86,-609.82 727,-609.82 727,-250.75 86,-250.75"/>
+<text text-anchor="start" x="94" y="-596.32" font-family="Menlo" font-size="10.00">S = { &quot;a&quot; } &quot;x&quot; &quot;y&quot; &quot;z&quot; { &quot;b&quot; }</text>
 </g>
 <!-- G1 -->
 <g id="node1" class="node">

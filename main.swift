@@ -9,17 +9,17 @@ import Foundation
 
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
 // by using grammarParser, which is a hand-built recursive descent parser
-trace = true
+trace = false
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-    .appendingPathComponent("test")
-//    .appendingPathComponent("Swift6Grammar")
-//        .appendingPathComponent("apusNoAction")
-//        .appendingPathComponent("apusNoActionKLN")
-//        .appendingPathComponent("TortureSyntax")
+//    .appendingPathComponent("test")
+    .appendingPathComponent("Swift6Grammar")
+//    .appendingPathComponent("apusNoAction")
+//    .appendingPathComponent("apusNoActionKLN")
+//    .appendingPathComponent("TortureSyntax")
 //    .appendingPathComponent("apus")
 //    .appendingPathComponent("tortureART")
-//        .appendingPathComponent("apusAmbiguous")
+//    .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
 
 var grammarParser: GrammarParser
@@ -58,12 +58,13 @@ for m in messages {
     trace = false
     initScanner(fromString: m, patterns: terminals)
 
+    trace = false
     trace("all message tokens:")
     for t in tokens {
         trace(t)
     }
 
-    trace = true
+    trace = false
     resetMessageParser()
 
     currentSlot = grammarRoot

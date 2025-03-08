@@ -6,7 +6,7 @@ identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
+message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
 
 S           = { production } { message } .
               
@@ -24,7 +24,7 @@ term        = terminal
                             ) .
 terminal    = identifier | literal | regex | action .
 
-¶
+^^^
 whitespace  : /\s+/ .
 linecomment  : /\/\/.*/ .
 blockcomment   : /\/\*(?s).*?\*\// .
@@ -33,7 +33,7 @@ identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)*\// .
 action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/ .
+message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
 
 S           = { production } { message } .
               

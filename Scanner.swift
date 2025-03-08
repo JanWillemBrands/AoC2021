@@ -40,9 +40,9 @@ let apusTerminals: [String:TokenPattern] = [
     "blockcomment": (#"/\*(?s).*?\*/"#,         /\/\*(?s).*?\*\//,                  false, true),
     "identifier":   (#"[\p{L}\p{N}\p{Pc}]+"#,   /\p{XID_Start}\p{XID_Continue}*/,   false, false),
     "literal":      (#""(?:[^"\\]|\\.)*""#,     /\"(?:[^\"\\]|\\.)*\"/,             false, false),
-    "regex":        (#"/(?:[^\/\\]|\\.)*/"#,    /\/(?:[^\/\\]|\\.)*\//,             false, false),
+    "regex":        (#"/(?:[^\/\\]|\\.)+/"#,    /\/(?:[^\/\\]|\\.)+\//,             false, false),
     "action":       (#"@(?:[^@\\]|\\.)*@"#,     /@(?:[^@\\]|\\.)*@/,                false, false),
-    "message":      (#"¶(?:/(?:[^/\\]|\\.)*/|[^¶/]*)*"#,      /¶(?:\/(?:[^\/\\]|\\.)*\/|[^¶\/]*)*/,                 false, false),
+    "message":      (#"\^\^\^(?:(?s).*?)(?=\^\^\^|$)"#,    /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,                 false, false),
     ".":            (".",                       Regex { "." },                      true,  false),
     ";":            (";",                       Regex { ";" },                      true,  false),
     ":":            (":",                       Regex { ":" },                      true,  false),
@@ -59,9 +59,10 @@ let apusTerminals: [String:TokenPattern] = [
     "?":            ("?",                       Regex { "?" },                      true,  false),
     "*":            ("*",                       Regex { "*" },                      true,  false),
     "+":            ("+",                       Regex { "+" },                      true,  false),
-    ")?":           (")?",                      Regex { ")?" },                     true,  false),
-    ")*":           (")*",                      Regex { ")*" },                     true,  false),
-    ")+":           (")+",                      Regex { ")+" },                     true,  false),
+//    "nonASCII":     (#"[^\p{ASCII}]"#,          /[^\p{ASCII}]/,                     false,  false),
+//    ")?":           (")?",                      Regex { ")?" },                     true,  false),
+//    ")*":           (")*",                      Regex { ")*" },                     true,  false),
+//    ")+":           (")+",                      Regex { ")+" },                     true,  false),
 ]
 
 struct Token {
@@ -77,8 +78,7 @@ struct Token {
             return image.dropFirst().dropLast()
                 .replacingOccurrences(of: "\\@", with: "@")
         case "message":
-            return image.dropFirst()
-                .replacingOccurrences(of: "\\¶", with: "¶")
+            return String(image.dropFirst(3))
         default:
             return String(image)
         }
@@ -105,12 +105,19 @@ func scanTokens() {
             }
         }
         if let matchedToken {
-            // remove isSkip tokens from the list
+//            print("match", matchedToken.image, matchedToken.kind)
             if !skip {
                 tokens.append(matchedToken)
             }
             matchStart = matchEnd
         } else {
+//            if input[matchStart] == "¦" {
+//                print("found a ^^^")
+//                let bytes = String(input[matchStart]).utf8
+//                for byte in bytes {
+//                    print(String(format: "0x%02X", byte), terminator: " ")
+//                }
+//            }
             scanError(position: matchStart)
         }
     }
@@ -129,7 +136,7 @@ func next() {
 // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern
 
 func scanError(position: String.Index) {
-    print("error: input characters do not match any symbol in the grammar")
+    print("scan error: input characters do not match any symbol in the grammar")
     let lineRange = input.lineRange(for: position ..< input.index(after: position))
     print(input[lineRange], terminator: "")
     let before = lineRange.lowerBound ..< position
@@ -206,12 +213,12 @@ let actionRegex = Regex {
     "@"
 }
 let messageRegex = Regex {
-    "¶"
+    "^^^"
     ZeroOrMore {
         ChoiceOf {
-            // any character that is not a '¶' or a backward slash '\'
-            CharacterClass(.anyOf("¶\\").inverted)
-            // a backward slash '\' followed by single character, to escape '¶' or '\', but catches more than legal escapes
+            // any character that is not a '^^^' or a backward slash '\'
+            CharacterClass(.anyOf("^^^\\").inverted)
+            // a backward slash '\' followed by single character, to escape '^^^' or '\', but catches more than legal escapes
             /\\./
         }
     }

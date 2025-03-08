@@ -7,7 +7,7 @@ regex       = '\'(\\\'|[^\']+?)*\'' ;
 action      = '@(\\@|[^@]+?)*@' ;
 keyword     = '\"(\\"|[^\"]+?)*\"' ;
 
-testInput   = '\¶(\\\¶|[^\¶])+' .
+testInput   = '\^^^(\\\^^^|[^\^^^])+' .
 
 S           = { production } { testInput } .
               
@@ -23,7 +23,7 @@ oneOrMore   = "(" selection ")+" | "<" selection ">" .
 grouping    = "(" selection ")" .
 terminal    = identifier | keyword | action .
 
-¶
+^^^
 whitespace  : '\s+' ;
 singleLine  : '//.*' ;
 multiLine   : '(?s)(/\*).*?(\*/)' ;
@@ -33,7 +33,7 @@ regex       = '\'(\\\'|[^\']+?)*\'' ;
 action      = '@(\\@|[^@]+?)*@' ;
 keyword     = '\"(\\"|[^\"]+?)*\"' ;
 
-testInput   = '\¶(\\\¶|[^\¶])+' .
+testInput   = '\^^^(\\\^^^|[^\^^^])+' .
 
 S           = { production } { testInput } .
               

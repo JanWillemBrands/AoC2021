@@ -13,9 +13,9 @@
 //let _rightCurlyBracket            = 11
 //let _lessThanSign                 = 12
 //let _greaterThanSign              = 13
-//let _rightParenthesisQuestionMark = 14
-//let _rightParenthesisAsterisk     = 15
-//let _rightParenthesisPlusSign     = 16
+//let _questionMark                 = 14
+//let _asterisk                     = 15
+//let _plusSign                     = 16
 //let _whitespace                   = 17
 //let _linecomment                  = 18
 //let _blockcomment                 = 19
@@ -30,10 +30,10 @@ import Foundation
 import RegexBuilder
 
 enum TokenKind: CustomStringConvertible {
-    case endOfString, fullStop, semicolon, colon, equalsSign, verticalLine, leftParenthesis, rightParenthesis, leftSquareBracket, rightSquareBracket, leftCurlyBracket, rightCurlyBracket, lessThanSign, greaterThanSign, rightParenthesisQuestionMark, rightParenthesisAsterisk, rightParenthesisPlusSign, whitespace, linecomment, blockcomment, identifier, literal, regex, action, message
+    case endOfString, fullStop, semicolon, colon, equalsSign, verticalLine, leftParenthesis, rightParenthesis, leftSquareBracket, rightSquareBracket, leftCurlyBracket, rightCurlyBracket, lessThanSign, greaterThanSign, questionMark, asterisk, plusSign, whitespace, linecomment, blockcomment, identifier, literal, regex, action, message
     
     var description: String {
-        ["endOfString", ".", ";", ":", "=", "|", "(", ")", "[", "]", "{", "}", "<", ">", ")?", ")*", ")+", "whitespace", "linecomment", "blockcomment", "identifier", "literal", "regex", "action", "message"][self.rawValue]
+        ["endOfString", ".", ";", ":", "=", "|", "(", ")", "[", "]", "{", "}", "<", ">", "?", "*", "+", "whitespace", "linecomment", "blockcomment", "identifier", "literal", "regex", "action", "message"][self.rawValue]
     }
 }
 
@@ -53,7 +53,7 @@ struct Token {
                 .replacingOccurrences(of: "\\@", with: "@")
         case .message:
             return image.dropFirst()
-                .replacingOccurrences(of: "\\¶", with: "¶")
+                .replacingOccurrences(of: "\\^^^", with: "^^^")
         default:
             return String(image)
         }
@@ -114,13 +114,13 @@ let actionRegex = Regex {
     "@"
 }
 let messageRegex = Regex {
-    "¶"
+    "^^^"
     ZeroOrMore {
         ChoiceOf {
-            CharacterClass(.anyOf("¶\\").inverted)
-            // any character that is not a '¶' or a backward slash '\'
+            CharacterClass(.anyOf("^^^\\").inverted)
+            // any character that is not a '^^^' or a backward slash '\'
             /\\./
-            // a backward slash '\' followed by single character, to escape '¶' or '\', but catches more than legal escapes
+            // a backward slash '\' followed by single character, to escape '^^^' or '\', but catches more than legal escapes
         }
     }
 }

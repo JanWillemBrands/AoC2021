@@ -109,14 +109,14 @@ func parseMessage() {
         }
     }
     
-#if DEBUG
-    trace(
+//#if DEBUG
+    print(
         "\nmatched:", successfullParses,
         "  failed:", failedParses,
         "  gss size:", gss.count,
         "  descriptors:", descriptorCount
     )
-#endif
+//#endif
 }
 
 

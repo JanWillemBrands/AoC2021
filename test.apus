@@ -146,5 +146,4 @@ S = "bla" ("hup" "lala") * "!" .      // PASS
 //S = @a@ @aa@ "x" @b@ @bb@ ( @c@ @cc@ "y" @d@ @dd@ "z" @e@ @ee@ ) @f@ @ff@ * @g@ @gg@ "w" @h@ @hh@ .  // PASS xyzyzyzw
 //S = "x" * * .
 
-¶bla hup lala hup lala !
-
+^^^bla hup lala hup lala !
