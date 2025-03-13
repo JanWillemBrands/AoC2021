@@ -1,6 +1,5 @@
 whitespace : /\s+/.
-comment    : /\/\/.*/.
-
+//comment    : /\/\/.*/.
 
 //S = X X X.                    // PASS
 //X = "x".
@@ -137,7 +136,7 @@ comment    : /\/\/.*/.
 //S = A "b" | A "c". A = ["a"].         // PASS
 
 //S = ["a"] | ["b"] | ["c"].            // PASS
-S = "bla" ("hup" "lala") * "!" .      // PASS
+//S = "bla" ("hup" "lala") * "!" .      // PASS bla hup lala hup lala !
 
 //S = @a@ { @b@ "x" @c@ } @d@ .         // PASS
 //S = @a@ "x" @b@ | @c@ "y" @d@ .       // PASS
@@ -146,4 +145,9 @@ S = "bla" ("hup" "lala") * "!" .      // PASS
 //S = @a@ @aa@ "x" @b@ @bb@ ( @c@ @cc@ "y" @d@ @dd@ "z" @e@ @ee@ ) @f@ @ff@ * @g@ @gg@ "w" @h@ @hh@ .  // PASS xyzyzyzw
 //S = "x" * * .
 
-^^^bla hup lala hup lala !
+//S = "b" | S S .
+
+//S = "b" | { "b" S | S "b" } .
+
+S = { "b" } { "b" } .
+^^^bbbbb

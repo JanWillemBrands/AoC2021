@@ -22,5 +22,6 @@ Provenance
 	Replaced curly quotes with straight quotes "
 	Replaced non-ascii spaces with ' '
 	Added an escape for every \ in literals
+	Capitalized Operator rule to avoid conflict with "operator" literal
 
 8. 

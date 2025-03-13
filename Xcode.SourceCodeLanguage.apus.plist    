@@ -1,0 +1,8 @@
+{
+    "CFBundleIdentifier" = "xcode.lang.apus";
+    "Xcode.SourceCodeLanguageName" = "apus";
+    "Xcode.SourceCodeLanguageFileTypes" = (
+        "apus"
+    );
+    "Xcode.SourceCodeLanguageSpecification" = "apus.xclangspec";
+}

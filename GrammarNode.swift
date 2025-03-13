@@ -35,6 +35,9 @@ enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KL
 
 
 final class GrammarNode {
+    static var count = 0
+    let number: Int
+    
     let kind: GrammarNodeKind
     let str: String
     var alt: GrammarNode? {
@@ -65,10 +68,6 @@ final class GrammarNode {
     
     var bsr: Set<Triple> = []
     
-    // TODO: remove or keep in DEBUG mode only
-    static var count = 0
-    let number: Int
-    
     var cell = Cell(name: "", r: 0, c: 0)
 }
 
@@ -98,12 +97,21 @@ extension GrammarNode {
     }
 }
 
+//extension GrammarNode: Hashable {
+//    static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
+//        ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+//    }
+//    func hash(into hasher: inout Hasher) {
+//        hasher.combine(ObjectIdentifier(self))
+//    }
+//}
+
 extension GrammarNode: Hashable {
     static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
-        ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+        lhs.number == rhs.number
     }
     func hash(into hasher: inout Hasher) {
-        hasher.combine(ObjectIdentifier(self))
+        hasher.combine(number)
     }
 }
 
@@ -111,6 +119,8 @@ extension GrammarNode: CustomStringConvertible {
 //    var description: String {
 //        cell.description
 //    }
+    
+    var _description: String { String(number) }
     
     // generate labels like A, B, C, ... AA, AB, AC, ...
     var description: String {

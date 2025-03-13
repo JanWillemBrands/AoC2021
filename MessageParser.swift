@@ -26,6 +26,7 @@ func resetMessageParser() {
     failedParses = 0
     successfullParses = 0
     descriptorCount = 0
+    duplicateDescriptorCount = 0
 }
 
 func parseMessage() {
@@ -114,7 +115,8 @@ func parseMessage() {
         "\nmatched:", successfullParses,
         "  failed:", failedParses,
         "  gss size:", gss.count,
-        "  descriptors:", descriptorCount
+        "  descriptors:", descriptorCount,
+        "  duplicateDescriptors:", duplicateDescriptorCount
     )
 //#endif
 }

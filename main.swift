@@ -41,7 +41,7 @@ grammarRoot = root
 trace = false
 trace("all grammar tokens:")
 for t in tokens {
-    trace(t)
+    trace(t.kind)
 }
 
 // the GrammarNode being processed
@@ -53,15 +53,38 @@ var currentStack = gssRoot
 var failedParses = 0
 var successfullParses = 0
 var descriptorCount = 0
+var duplicateDescriptorCount = 0
 
+//var first1000: [Descriptor] = []
+
+/*
+ @available(*, unavailable, renamed: "test")
+func test() {}
+let r = /\/[^\s](?:(?:[^\/\\\s]|\\.)*[^\s])?\//
+let e = #/
+    \/              # Match the opening forward slash
+    [^\s]           # First character must not be whitespace (ensures at least one character)
+    (?:
+      (?:           # Non-capturing group for middle content
+        [^\/\\\s]   # Any character except slash, backslash, or whitespace
+        |           # OR
+        \\.         # An escaped character (e.g., \. or \/)
+      )*            # Zero or more of the above
+      [^\s]         # Last character before closing slash must not be whitespace
+    )?              # Entire middle-and-last group is optional (allows just one character)
+    \/              # Match the closing forward slash
+/#
+ */
+
+//while let m = messages.first {
 for m in messages {
     trace = false
     initScanner(fromString: m, patterns: terminals)
 
-    trace = false
+    trace = true
     trace("all message tokens:")
     for t in tokens {
-        trace(t)
+        trace(t.kind, t.image)
     }
 
     trace = false
@@ -77,8 +100,11 @@ for m in messages {
     parseMessage()
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
+    print("cpuTime, descriptorCount, gss.count")
     print(cpuTime, descriptorCount, gss.count)
-//    print("CPU time: \(cpuTime) seconds")
+//    for d in first1000 {
+//        print(d)
+//    }
 }
 
 #if DEBUG

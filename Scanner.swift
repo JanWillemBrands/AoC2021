@@ -105,7 +105,7 @@ func scanTokens() {
             }
         }
         if let matchedToken {
-//            print("match", matchedToken.image, matchedToken.kind)
+            if matchedToken.image == "0" { print("match", matchedToken.image, matchedToken.kind) }
             if !skip {
                 tokens.append(matchedToken)
             }
