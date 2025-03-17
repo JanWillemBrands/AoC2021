@@ -67,23 +67,43 @@ Verbose 5
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
 network simplex:  39071 nodes 83621 edges maxiter=78142 balance=1
 network simplex: 100 200 300 400 500 600 
-network simplex: 39071 nodes 83621 edges 621 iter 0.28 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex: 39071 nodes 83621 edges 621 iter 0.30 sec
+network simplex:  8 nodes 7 edges maxiter=32 balance=1
+network simplex: 8 nodes 7 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=24 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=24 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=30 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  6 nodes 5 edges maxiter=24 balance=1
-network simplex: 6 nodes 5 edges 0 iter 0.00 sec
-network simplex:  24 nodes 31 edges maxiter=106 balance=1
-network simplex: 24 nodes 31 edges 1 iter 0.00 sec
-network simplex:  11 nodes 10 edges maxiter=36 balance=1
-network simplex: 11 nodes 10 edges 0 iter 0.00 sec
-network simplex:  11 nodes 11 edges maxiter=40 balance=1
-network simplex: 11 nodes 11 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  9 nodes 8 edges maxiter=30 balance=1
+network simplex: 9 nodes 8 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=18 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=18 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  11 nodes 13 edges maxiter=64 balance=1
+network simplex: 11 nodes 13 edges 0 iter 0.00 sec
+network simplex:  9 nodes 8 edges maxiter=30 balance=1
+network simplex: 9 nodes 8 edges 0 iter 0.00 sec
+network simplex:  13 nodes 14 edges maxiter=64 balance=1
+network simplex: 13 nodes 14 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=32 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
@@ -110,82 +130,38 @@ network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  25 nodes 28 edges maxiter=106 balance=1
 network simplex: 25 nodes 28 edges 1 iter 0.00 sec
-network simplex:  9 nodes 8 edges maxiter=30 balance=1
-network simplex: 9 nodes 8 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=18 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=18 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  11 nodes 13 edges maxiter=64 balance=1
-network simplex: 11 nodes 13 edges 0 iter 0.00 sec
-network simplex:  9 nodes 8 edges maxiter=30 balance=1
-network simplex: 9 nodes 8 edges 0 iter 0.00 sec
-network simplex:  13 nodes 14 edges maxiter=64 balance=1
-network simplex: 13 nodes 14 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=32 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  8 nodes 7 edges maxiter=32 balance=1
-network simplex: 8 nodes 7 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=24 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=24 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=30 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  10 nodes 10 edges maxiter=46 balance=1
-network simplex: 10 nodes 10 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=30 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=18 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  12 nodes 14 edges maxiter=58 balance=1
-network simplex: 12 nodes 14 edges 0 iter 0.00 sec
-network simplex:  20 nodes 27 edges maxiter=80 balance=1
-network simplex: 20 nodes 27 edges 0 iter 0.00 sec
+network simplex:  6 nodes 5 edges maxiter=24 balance=1
+network simplex: 6 nodes 5 edges 0 iter 0.00 sec
+network simplex:  24 nodes 31 edges maxiter=106 balance=1
+network simplex: 24 nodes 31 edges 1 iter 0.00 sec
 network simplex:  11 nodes 10 edges maxiter=36 balance=1
 network simplex: 11 nodes 10 edges 0 iter 0.00 sec
-network simplex:  29 nodes 40 edges maxiter=140 balance=1
-network simplex: 29 nodes 40 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
+network simplex:  11 nodes 11 edges maxiter=40 balance=1
+network simplex: 11 nodes 11 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=18 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=38 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  18 nodes 20 edges maxiter=120 balance=1
-network simplex: 18 nodes 20 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=18 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  25 nodes 24 edges maxiter=78 balance=1
-network simplex: 25 nodes 24 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  18 nodes 20 edges maxiter=134 balance=1
-network simplex: 18 nodes 20 edges 0 iter 0.00 sec
+network simplex:  13 nodes 14 edges maxiter=78 balance=1
+network simplex: 13 nodes 14 edges 0 iter 0.00 sec
+network simplex:  8 nodes 8 edges maxiter=36 balance=1
+network simplex: 8 nodes 8 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=30 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  21 nodes 25 edges maxiter=96 balance=1
+network simplex: 21 nodes 25 edges 1 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  18 nodes 22 edges maxiter=104 balance=1
+network simplex: 18 nodes 22 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=24 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
@@ -212,24 +188,52 @@ network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  10 nodes 11 edges maxiter=46 balance=1
-network simplex: 10 nodes 11 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=38 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
+network simplex:  18 nodes 20 edges maxiter=120 balance=1
+network simplex: 18 nodes 20 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=18 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  13 nodes 14 edges maxiter=78 balance=1
-network simplex: 13 nodes 14 edges 0 iter 0.00 sec
-network simplex:  8 nodes 8 edges maxiter=36 balance=1
-network simplex: 8 nodes 8 edges 0 iter 0.00 sec
+network simplex:  25 nodes 24 edges maxiter=78 balance=1
+network simplex: 25 nodes 24 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  18 nodes 20 edges maxiter=134 balance=1
+network simplex: 18 nodes 20 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=32 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
+network simplex:  34 nodes 35 edges maxiter=160 balance=1
+network simplex: 34 nodes 35 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=38 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=24 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  18 nodes 20 edges maxiter=120 balance=1
+network simplex: 18 nodes 20 edges 0 iter 0.00 sec
+network simplex:  4 nodes 3 edges maxiter=16 balance=1
+network simplex: 4 nodes 3 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  18 nodes 22 edges maxiter=80 balance=1
+network simplex: 18 nodes 22 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=30 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  21 nodes 25 edges maxiter=96 balance=1
-network simplex: 21 nodes 25 edges 1 iter 0.00 sec
+network simplex:  4 nodes 3 edges maxiter=16 balance=1
+network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  18 nodes 22 edges maxiter=104 balance=1
-network simplex: 18 nodes 22 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=38 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
+network simplex:  31 nodes 44 edges maxiter=158 balance=1
+network simplex: 31 nodes 44 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=24 balance=1
@@ -254,58 +258,46 @@ network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  10 nodes 11 edges maxiter=46 balance=1
+network simplex: 10 nodes 11 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  12 nodes 13 edges maxiter=64 balance=1
+network simplex: 12 nodes 13 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=30 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  4 nodes 3 edges maxiter=16 balance=1
+network simplex: 4 nodes 3 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  33 nodes 32 edges maxiter=102 balance=1
+network simplex: 33 nodes 32 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=20 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  9 nodes 8 edges maxiter=30 balance=1
+network simplex: 9 nodes 8 edges 0 iter 0.00 sec
+network simplex:  28 nodes 43 edges maxiter=164 balance=1
+network simplex: 28 nodes 43 edges 0 iter 0.00 sec
+network simplex:  9 nodes 8 edges maxiter=30 balance=1
+network simplex: 9 nodes 8 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=38 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=38 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  31 nodes 44 edges maxiter=158 balance=1
-network simplex: 31 nodes 44 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=38 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=24 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  18 nodes 20 edges maxiter=120 balance=1
-network simplex: 18 nodes 20 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  18 nodes 22 edges maxiter=80 balance=1
-network simplex: 18 nodes 22 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=30 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  20 nodes 29 edges maxiter=114 balance=1
-network simplex: 20 nodes 29 edges 1 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=32 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  34 nodes 35 edges maxiter=160 balance=1
-network simplex: 34 nodes 35 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=46 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=46 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=18 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=30 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  11 nodes 11 edges maxiter=62 balance=1
-network simplex: 11 nodes 11 edges 0 iter 0.00 sec
-network simplex:  9 nodes 8 edges maxiter=30 balance=1
-network simplex: 9 nodes 8 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  12 nodes 13 edges maxiter=64 balance=1
 network simplex: 12 nodes 13 edges 0 iter 0.00 sec
 network simplex:  13 nodes 15 edges maxiter=74 balance=1
@@ -334,64 +326,46 @@ network simplex:  8 nodes 8 edges maxiter=54 balance=1
 network simplex: 8 nodes 8 edges 0 iter 0.00 sec
 network simplex:  45 nodes 48 edges maxiter=126 balance=1
 network simplex: 45 nodes 48 edges 0 iter 0.00 sec
-network simplex:  28 nodes 43 edges maxiter=164 balance=1
-network simplex: 28 nodes 43 edges 0 iter 0.00 sec
-network simplex:  9 nodes 8 edges maxiter=30 balance=1
-network simplex: 9 nodes 8 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=38 balance=1
+network simplex:  9 nodes 9 edges maxiter=46 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=46 balance=1
 network simplex: 9 nodes 9 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=18 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  12 nodes 13 edges maxiter=64 balance=1
-network simplex: 12 nodes 13 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=30 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  33 nodes 32 edges maxiter=102 balance=1
-network simplex: 33 nodes 32 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=20 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  11 nodes 11 edges maxiter=62 balance=1
+network simplex: 11 nodes 11 edges 0 iter 0.00 sec
 network simplex:  9 nodes 8 edges maxiter=30 balance=1
 network simplex: 9 nodes 8 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=36 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  13 nodes 14 edges maxiter=56 balance=1
-network simplex: 13 nodes 14 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  10 nodes 10 edges maxiter=42 balance=1
-network simplex: 10 nodes 10 edges 0 iter 0.00 sec
-network simplex:  10 nodes 10 edges maxiter=42 balance=1
-network simplex: 10 nodes 10 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  17 nodes 22 edges maxiter=98 balance=1
-network simplex: 17 nodes 22 edges 0 iter 0.00 sec
-network simplex:  8 nodes 8 edges maxiter=42 balance=1
-network simplex: 8 nodes 8 edges 0 iter 0.00 sec
+network simplex:  20 nodes 29 edges maxiter=114 balance=1
+network simplex: 20 nodes 29 edges 1 iter 0.00 sec
+network simplex:  4 nodes 3 edges maxiter=16 balance=1
+network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  4 nodes 3 edges maxiter=16 balance=1
+network simplex: 4 nodes 3 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  15 nodes 14 edges maxiter=48 balance=1
+network simplex: 15 nodes 14 edges 0 iter 0.00 sec
+network simplex:  9 nodes 8 edges maxiter=30 balance=1
+network simplex: 9 nodes 8 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=18 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  11 nodes 10 edges maxiter=70 balance=1
+network simplex: 11 nodes 10 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=30 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
@@ -416,26 +390,52 @@ network simplex:  9 nodes 8 edges maxiter=30 balance=1
 network simplex: 9 nodes 8 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex:  7 nodes 7 edges maxiter=36 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  13 nodes 14 edges maxiter=56 balance=1
+network simplex: 13 nodes 14 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  10 nodes 10 edges maxiter=42 balance=1
+network simplex: 10 nodes 10 edges 0 iter 0.00 sec
+network simplex:  10 nodes 10 edges maxiter=42 balance=1
+network simplex: 10 nodes 10 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  17 nodes 22 edges maxiter=98 balance=1
+network simplex: 17 nodes 22 edges 0 iter 0.00 sec
+network simplex:  8 nodes 8 edges maxiter=42 balance=1
+network simplex: 8 nodes 8 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  15 nodes 14 edges maxiter=48 balance=1
-network simplex: 15 nodes 14 edges 0 iter 0.00 sec
-network simplex:  9 nodes 8 edges maxiter=30 balance=1
-network simplex: 9 nodes 8 edges 0 iter 0.00 sec
+network simplex:  10 nodes 10 edges maxiter=46 balance=1
+network simplex: 10 nodes 10 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=30 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=18 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  11 nodes 10 edges maxiter=70 balance=1
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  12 nodes 14 edges maxiter=58 balance=1
+network simplex: 12 nodes 14 edges 0 iter 0.00 sec
+network simplex:  20 nodes 27 edges maxiter=80 balance=1
+network simplex: 20 nodes 27 edges 0 iter 0.00 sec
+network simplex:  11 nodes 10 edges maxiter=36 balance=1
 network simplex: 11 nodes 10 edges 0 iter 0.00 sec
+network simplex:  29 nodes 40 edges maxiter=140 balance=1
+network simplex: 29 nodes 40 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  4 nodes 3 edges maxiter=16 balance=1
+network simplex: 4 nodes 3 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=18 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  13 nodes 12 edges maxiter=40 balance=1
 network simplex: 13 nodes 12 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
@@ -454,286 +454,286 @@ network simplex:  8 nodes 8 edges maxiter=36 balance=1
 network simplex: 8 nodes 8 edges 0 iter 0.00 sec
 network simplex:  31 nodes 38 edges maxiter=246 balance=1
 network simplex: 31 nodes 38 edges 1 iter 0.00 sec
+network simplex:  17 nodes 20 edges maxiter=120 balance=1
+network simplex: 17 nodes 20 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=18 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  12 nodes 14 edges maxiter=64 balance=1
 network simplex: 12 nodes 14 edges 0 iter 0.00 sec
-network simplex:  32 nodes 36 edges maxiter=112 balance=1
-network simplex: 32 nodes 36 edges 1 iter 0.00 sec
-network simplex:  10 nodes 10 edges maxiter=46 balance=1
-network simplex: 10 nodes 10 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=20 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  9 nodes 8 edges maxiter=30 balance=1
 network simplex: 9 nodes 8 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=18 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=20 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  10 nodes 10 edges maxiter=46 balance=1
+network simplex: 10 nodes 10 edges 0 iter 0.00 sec
+network simplex:  32 nodes 36 edges maxiter=112 balance=1
+network simplex: 32 nodes 36 edges 1 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  6 nodes 5 edges maxiter=24 balance=1
-network simplex: 6 nodes 5 edges 0 iter 0.00 sec
 network simplex:  15 nodes 16 edges maxiter=96 balance=1
 network simplex: 15 nodes 16 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=36 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  6 nodes 5 edges maxiter=24 balance=1
+network simplex: 6 nodes 5 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=24 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  10 nodes 11 edges maxiter=46 balance=1
-network simplex: 10 nodes 11 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex:  7 nodes 7 edges maxiter=36 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  9 nodes 8 edges maxiter=42 balance=1
 network simplex: 9 nodes 8 edges 0 iter 0.00 sec
-network simplex:  8 nodes 7 edges maxiter=36 balance=1
-network simplex: 8 nodes 7 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  10 nodes 11 edges maxiter=46 balance=1
+network simplex: 10 nodes 11 edges 0 iter 0.00 sec
 network simplex:  13 nodes 15 edges maxiter=84 balance=1
 network simplex: 13 nodes 15 edges 0 iter 0.00 sec
+network simplex:  8 nodes 7 edges maxiter=36 balance=1
+network simplex: 8 nodes 7 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=36 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  6 nodes 5 edges maxiter=24 balance=1
 network simplex: 6 nodes 5 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=36 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  11 nodes 10 edges maxiter=36 balance=1
-network simplex: 11 nodes 10 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  13 nodes 15 edges maxiter=58 balance=1
 network simplex: 13 nodes 15 edges 0 iter 0.00 sec
+network simplex:  11 nodes 10 edges maxiter=36 balance=1
+network simplex: 11 nodes 10 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  6 nodes 5 edges maxiter=24 balance=1
 network simplex: 6 nodes 5 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  257 nodes 256 edges maxiter=774 balance=1
-network simplex: 257 nodes 256 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=20 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-network simplex:  5 nodes 5 edges maxiter=24 balance=1
-network simplex: 5 nodes 5 edges 0 iter 0.00 sec
-network simplex:  18 nodes 18 edges maxiter=56 balance=1
-network simplex: 18 nodes 18 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=38 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  10 nodes 10 edges maxiter=46 balance=1
-network simplex: 10 nodes 10 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  19 nodes 22 edges maxiter=94 balance=1
-network simplex: 19 nodes 22 edges 1 iter 0.00 sec
-network simplex:  8 nodes 8 edges maxiter=42 balance=1
-network simplex: 8 nodes 8 edges 0 iter 0.00 sec
-network simplex:  13 nodes 12 edges maxiter=42 balance=1
-network simplex: 13 nodes 12 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=20 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  18 nodes 17 edges maxiter=80 balance=1
-network simplex: 18 nodes 17 edges 0 iter 0.00 sec
+network simplex:  257 nodes 256 edges maxiter=774 balance=1
+network simplex: 257 nodes 256 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  18 nodes 18 edges maxiter=56 balance=1
+network simplex: 18 nodes 18 edges 0 iter 0.00 sec
+network simplex:  5 nodes 5 edges maxiter=24 balance=1
+network simplex: 5 nodes 5 edges 0 iter 0.00 sec
+network simplex:  10 nodes 10 edges maxiter=46 balance=1
+network simplex: 10 nodes 10 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=38 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
+network simplex:  19 nodes 22 edges maxiter=94 balance=1
+network simplex: 19 nodes 22 edges 1 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  8 nodes 8 edges maxiter=42 balance=1
+network simplex: 8 nodes 8 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  13 nodes 12 edges maxiter=42 balance=1
+network simplex: 13 nodes 12 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  18 nodes 17 edges maxiter=80 balance=1
+network simplex: 18 nodes 17 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=20 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=20 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=18 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  6 nodes 5 edges maxiter=24 balance=1
 network simplex: 6 nodes 5 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=18 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=18 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=36 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  13 nodes 12 edges maxiter=40 balance=1
 network simplex: 13 nodes 12 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  28 nodes 38 edges maxiter=156 balance=1
-network simplex: 28 nodes 38 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=24 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=36 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=24 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  28 nodes 38 edges maxiter=156 balance=1
+network simplex: 28 nodes 38 edges 0 iter 0.00 sec
 network simplex:  10 nodes 11 edges maxiter=40 balance=1
 network simplex: 10 nodes 11 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  16 nodes 20 edges maxiter=114 balance=1
-network simplex: 16 nodes 20 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  17 nodes 20 edges maxiter=120 balance=1
-network simplex: 17 nodes 20 edges 0 iter 0.00 sec
+network simplex:  16 nodes 20 edges maxiter=114 balance=1
+network simplex: 16 nodes 20 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=24 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  4 nodes 3 edges maxiter=16 balance=1
+network simplex: 4 nodes 3 edges 0 iter 0.00 sec
+network simplex:  4 nodes 3 edges maxiter=16 balance=1
+network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=24 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-network simplex:  6 nodes 5 edges maxiter=24 balance=1
-network simplex: 6 nodes 5 edges 0 iter 0.00 sec
 network simplex:  10 nodes 10 edges maxiter=46 balance=1
 network simplex: 10 nodes 10 edges 0 iter 0.00 sec
+network simplex:  6 nodes 5 edges maxiter=24 balance=1
+network simplex: 6 nodes 5 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  14 nodes 14 edges maxiter=60 balance=1
+network simplex: 14 nodes 14 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=24 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
 network simplex:  6 nodes 5 edges maxiter=24 balance=1
 network simplex: 6 nodes 5 edges 0 iter 0.00 sec
 network simplex:  10 nodes 10 edges maxiter=40 balance=1
 network simplex: 10 nodes 10 edges 1 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=24 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  14 nodes 14 edges maxiter=60 balance=1
-network simplex: 14 nodes 14 edges 0 iter 0.00 sec
-network simplex:  15 nodes 16 edges maxiter=50 balance=1
-network simplex: 15 nodes 16 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=24 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  15 nodes 16 edges maxiter=50 balance=1
+network simplex: 15 nodes 16 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=20 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  6 nodes 6 edges maxiter=30 balance=1
 network simplex: 6 nodes 6 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=18 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=20 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=20 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=38 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  11 nodes 11 edges maxiter=48 balance=1
 network simplex: 11 nodes 11 edges 1 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=38 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  11 nodes 10 edges maxiter=36 balance=1
-network simplex: 11 nodes 10 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=20 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  11 nodes 10 edges maxiter=36 balance=1
+network simplex: 11 nodes 10 edges 0 iter 0.00 sec
 network simplex:  13 nodes 12 edges maxiter=58 balance=1
 network simplex: 13 nodes 12 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=38 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  7 nodes 6 edges maxiter=24 balance=1
 network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=38 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=30 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  12 nodes 12 edges maxiter=48 balance=1
 network simplex: 12 nodes 12 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=30 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  45 nodes 61 edges maxiter=240 balance=1
-network simplex: 45 nodes 61 edges 0 iter 0.00 sec
 network simplex:  8 nodes 8 edges maxiter=30 balance=1
 network simplex: 8 nodes 8 edges 0 iter 0.00 sec
+network simplex:  45 nodes 61 edges maxiter=240 balance=1
+network simplex: 45 nodes 61 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=36 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  12 nodes 13 edges maxiter=44 balance=1
-network simplex: 12 nodes 13 edges 0 iter 0.00 sec
-network simplex:  5 nodes 4 edges maxiter=20 balance=1
-network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  21 nodes 25 edges maxiter=80 balance=1
-network simplex: 21 nodes 25 edges 0 iter 0.00 sec
 network simplex:  9 nodes 9 edges maxiter=36 balance=1
 network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  10 nodes 11 edges maxiter=46 balance=1
-network simplex: 10 nodes 11 edges 0 iter 0.00 sec
-network simplex:  12 nodes 12 edges maxiter=74 balance=1
-network simplex: 12 nodes 12 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=24 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  15 nodes 16 edges maxiter=96 balance=1
-network simplex: 15 nodes 16 edges 0 iter 0.00 sec
-network simplex:  9 nodes 9 edges maxiter=38 balance=1
-network simplex: 9 nodes 9 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  21 nodes 25 edges maxiter=80 balance=1
+network simplex: 21 nodes 25 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
+network simplex:  12 nodes 13 edges maxiter=44 balance=1
+network simplex: 12 nodes 13 edges 0 iter 0.00 sec
+network simplex:  12 nodes 12 edges maxiter=74 balance=1
+network simplex: 12 nodes 12 edges 0 iter 0.00 sec
+network simplex:  10 nodes 11 edges maxiter=46 balance=1
+network simplex: 10 nodes 11 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=24 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  9 nodes 9 edges maxiter=38 balance=1
+network simplex: 9 nodes 9 edges 0 iter 0.00 sec
+network simplex:  15 nodes 16 edges maxiter=96 balance=1
+network simplex: 15 nodes 16 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  11 nodes 10 edges maxiter=46 balance=1
 network simplex: 11 nodes 10 edges 0 iter 0.00 sec
-network simplex:  11 nodes 10 edges maxiter=36 balance=1
-network simplex: 11 nodes 10 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  5 nodes 4 edges maxiter=20 balance=1
+network simplex: 5 nodes 4 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
+network simplex:  11 nodes 10 edges maxiter=36 balance=1
+network simplex: 11 nodes 10 edges 0 iter 0.00 sec
 network simplex:  23 nodes 28 edges maxiter=154 balance=1
 network simplex: 23 nodes 28 edges 2 iter 0.00 sec
 network simplex:  10 nodes 11 edges maxiter=62 balance=1
 network simplex: 10 nodes 11 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=24 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
 network simplex:  11 nodes 13 edges maxiter=50 balance=1
 network simplex: 11 nodes 13 edges 0 iter 0.00 sec
+network simplex:  7 nodes 6 edges maxiter=24 balance=1
+network simplex: 7 nodes 6 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  4 nodes 3 edges maxiter=16 balance=1
 network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=30 balance=1
 network simplex: 7 nodes 7 edges 0 iter 0.00 sec
+network simplex:  9 nodes 8 edges maxiter=30 balance=1
+network simplex: 9 nodes 8 edges 0 iter 0.00 sec
 network simplex:  3 nodes 2 edges maxiter=12 balance=1
 network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  5 nodes 4 edges maxiter=20 balance=1
 network simplex: 5 nodes 4 edges 0 iter 0.00 sec
-network simplex:  9 nodes 8 edges maxiter=30 balance=1
-network simplex: 9 nodes 8 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  6 nodes 6 edges maxiter=30 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
 network simplex:  10 nodes 12 edges maxiter=58 balance=1
 network simplex: 10 nodes 12 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=30 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=91432 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=91432 balance=0
