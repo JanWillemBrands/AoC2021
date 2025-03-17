@@ -30,20 +30,17 @@ func resetMessageParser() {
 }
 
 func parseMessage() {
-    
     nextDescriptor: while getDescriptor() {
         
         while true {
             
-#if DEBUG
-            trace("parse slot", currentSlot, currentSlot.kindName)
-#endif
-
+            #if DEBUG
+            trace("slot: \(currentSlot.kindName) \(currentSlot.str) first \(currentSlot.first) follow \(currentSlot.follow) token: \(token.kind) \(token.image)")
+            #endif
             // TODO: add first check before each instance of addDescriptor
             // TODO: verify testSelect()
             // TODO: switch to .LL1 mode if only one single path is possible
             // TODO: let _isAmbiguous = _currentSlot.ambiguous.contains(token.kind)
-            
             switch currentSlot.kind {
             case .EOS:
                 break
@@ -52,11 +49,16 @@ func parseMessage() {
                     next()
                     currentSlot = currentSlot.seq!
                 } else {
-                    failedParses += 1
-#if DEBUG
-                   trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
-#endif
-                    continue nextDescriptor
+                    if schrödingerTokenMatch() {
+                        next()
+                        currentSlot = currentSlot.seq!
+                    } else {
+                        failedParses += 1
+                        #if DEBUG
+                        trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
+                        #endif
+                        continue nextDescriptor
+                    }
                 }
             case .EPS:
                 // do nothing, move to the next slot
@@ -65,21 +67,29 @@ func parseMessage() {
                 call(slot: currentSlot)
                 continue nextDescriptor
             case .ALT:
-                if let alt = currentSlot.alt {
-                    // schedule the current branch
-                    addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: currentIndex)
-                    // move to the next branch
-                    currentSlot = alt
-                } else {
-                    // handle the last branch
-                    currentSlot = currentSlot.seq!
-                }
+                    if let alt = currentSlot.alt {
+                        // schedule the current branch with a descriptor
+                        if testSelect() {
+                            addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: currentIndex)
+                        }
+                        // move to the next branch
+                        currentSlot = alt
+                    } else {
+                        // the last branch does not need a descriptor (with last-in-first-out descriptor scheduling)
+                        if testSelect() {
+                            currentSlot = currentSlot.seq!
+                        } else {
+                            continue nextDescriptor
+                        }
+                    }
             case .DO, .POS:
                 // move to the first branch
                 currentSlot = currentSlot.alt!
             case .OPT, .KLN:
                 // schedule the optional branch
-                addDescriptor(slot: currentSlot.alt!, stack: currentStack, index: currentIndex)
+                if testSelect() {
+                    addDescriptor(slot: currentSlot.alt!, stack: currentStack, index: currentIndex)
+                }
                 // move to the next slot
                 currentSlot = currentSlot.seq!
             case .END:
@@ -100,7 +110,9 @@ func parseMessage() {
                     currentSlot = bracket.seq!
                 case .KLN, .POS:
                     // schedule the branch again
-                    addDescriptor(slot: bracket.alt!, stack: currentStack, index: currentIndex)
+                    if testSelect() {
+                        addDescriptor(slot: bracket.alt!, stack: currentStack, index: currentIndex)
+                    }
                     // move to the next slot
                     currentSlot = bracket.seq!
                 default:
@@ -110,7 +122,6 @@ func parseMessage() {
         }
     }
     
-//#if DEBUG
     print(
         "\nmatched:", successfullParses,
         "  failed:", failedParses,
@@ -118,11 +129,9 @@ func parseMessage() {
         "  descriptors:", descriptorCount,
         "  duplicateDescriptors:", duplicateDescriptorCount
     )
-//#endif
 }
 
-
-func testSelect() -> Bool {
+func _testSelect() -> Bool {
     if currentSlot.first.contains(token.kind) ||
         currentSlot.first.contains("") && currentSlot.follow.contains(token.kind) {
         return true
@@ -130,3 +139,30 @@ func testSelect() -> Bool {
     return false
 }
 
+func testSelect() -> Bool {
+//    return true
+    // handling Schrödinger tokens
+    var current = token
+    while true {
+        if currentSlot.first.contains(current.kind) ||
+            currentSlot.first.contains("") && currentSlot.follow.contains(current.kind) {
+            return true
+        }
+        if let node = current.dual {
+            current = node
+        } else {
+            return false
+        }
+    }
+}
+
+func schrödingerTokenMatch() -> Bool {
+    var current = token
+    while let node = current.dual {
+        if currentSlot.str == node.kind {
+            return true
+        }
+        current = node
+    }
+    return false
+}

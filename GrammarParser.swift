@@ -21,7 +21,7 @@ class GrammarParser {
         // Define a list of commonly supported encodings
         let encodings: [String.Encoding] = [
             .utf8,                // UTF-8
-            .macOSRoman,          // Mac Roman (classic Mac OS encoding) PUT HIGH ON THE LIST BECAUSE OF^^^ QUIRK
+            .macOSRoman,          // Mac Roman (classic Mac OS encoding) PUT HIGH ON THE LIST BECAUSE OF PILCROW QUIRK
             .isoLatin1,           // ISO-8859-1 (Western European)
             .isoLatin2,           // ISO-8859-2 (Central/Eastern European)
             .ascii,               // ASCII
@@ -92,7 +92,7 @@ class GrammarParser {
         
         // TODO: finalize representation for EOS
         root.follow.insert("$")
-        trace = true
+        trace = false
         trace("start symbol '\(startSymbol)' first:", root.first, "follow:", root.follow)
         
         trace = false
@@ -246,8 +246,8 @@ class GrammarParser {
 
     func regex() -> GrammarNode {
         trace("regex", token)
-        let name = terminalAlias ?? input.linePosition(of: token.range.lowerBound)
-        
+        let name = terminalAlias ?? input.linePosition(of: token.image.startIndex)
+
         if let definition = terminals[name] {
             if definition.isSkip != skip {
                 print("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")

@@ -42,7 +42,8 @@ let apusTerminals: [String:TokenPattern] = [
     "literal":      (#""(?:[^"\\]|\\.)*""#,     /\"(?:[^\"\\]|\\.)*\"/,             false, false),
     "regex":        (#"/(?:[^\/\\]|\\.)+/"#,    /\/(?:[^\/\\]|\\.)+\//,             false, false),
     "action":       (#"@(?:[^@\\]|\\.)*@"#,     /@(?:[^@\\]|\\.)*@/,                false, false),
-    "message":      (#"\^\^\^(?:(?s).*?)(?=\^\^\^|$)"#,    /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,                 false, false),
+    "message":      (#"\^\^\^(?:(?s).*?)(?=\^\^\^|$)"#,
+                                                /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,    false, false),
     ".":            (".",                       Regex { "." },                      true,  false),
     ";":            (";",                       Regex { ";" },                      true,  false),
     ":":            (":",                       Regex { ":" },                      true,  false),
@@ -65,9 +66,15 @@ let apusTerminals: [String:TokenPattern] = [
 //    ")+":           (")+",                      Regex { ")+" },                     true,  false),
 ]
 
-struct Token {
+    
+final class Token: CustomStringConvertible {
     var image: Substring
     var kind: String
+    var dual: Token?                            // multiple regex matches of equal length create a 'Schrödinger' token linked list
+    init(image: Substring, kind: String) {
+        self.image = image
+        self.kind = kind
+    }
     var stripped: String {
         switch kind {
         case "literal":
@@ -83,12 +90,15 @@ struct Token {
             return String(image)
         }
     }
-    var range: Range<String.Index> {
-        self.image.startIndex ..< self.image.endIndex
+    var description: String {
+        if let dual {
+            return kind + " " + dual.description
+        }
+        return kind
     }
 }
 
-func scanTokens() {
+func _scanTokens() {
     var matchStart = input.startIndex
     while matchStart != input.endIndex {
         var skip = true
@@ -105,19 +115,57 @@ func scanTokens() {
             }
         }
         if let matchedToken {
-            if matchedToken.image == "0" { print("match", matchedToken.image, matchedToken.kind) }
             if !skip {
                 tokens.append(matchedToken)
             }
             matchStart = matchEnd
         } else {
-//            if input[matchStart] == "¦" {
-//                print("found a ^^^")
-//                let bytes = String(input[matchStart]).utf8
-//                for byte in bytes {
-//                    print(String(format: "0x%02X", byte), terminator: " ")
-//                }
-//            }
+            scanError(position: matchStart)
+        }
+    }
+    // append EndOfString token
+    // TODO: re-implement tokenKind as an Int, with 0 as EndOfString
+    tokens.append(Token(image: "$", kind: "$"))
+}
+
+func scanTokens() {
+    var matchStart = input.startIndex
+    while matchStart != input.endIndex {
+        var skip = true
+        var matchEnd = matchStart
+        var headMatch: Token?                // stores the most common match
+        var tailMatch: Token?                // tracks any subsequent matches for Scrödinger tokens
+        for (kind, pattern) in tokenPatterns {
+            if let match = input[matchStart...].prefixMatch(of: pattern.regex) {
+                if match.0.endIndex > matchEnd {
+                    // longest match always wins
+                    matchEnd = match.0.endIndex
+                    headMatch = Token(image: match.0, kind: kind)
+                    tailMatch = headMatch
+                    skip = pattern.isSkip
+                } else if match.0.endIndex == matchEnd {
+                    if pattern.isKeyword {
+                        // insert the new match at the front of the list to optimize parsing of keywords
+                        let oldHead = headMatch
+                        headMatch = Token(image: match.0, kind: kind)
+                        headMatch?.dual = oldHead
+                    } else {
+                        // append the new match to the end of the list
+                        tailMatch?.dual = Token(image: match.0, kind: kind)
+                        tailMatch = tailMatch?.dual
+                    }
+                    #if DEBUG
+                    trace("Schrödinger strikes again! \(headMatch!)")
+                    #endif
+                }
+            }
+        }
+        if let headMatch {
+            if !skip || headMatch.dual != nil {
+                tokens.append(headMatch)
+            }
+            matchStart = matchEnd
+        } else {
             scanError(position: matchStart)
         }
     }
@@ -128,9 +176,9 @@ func scanTokens() {
 
 func next() {
     currentIndex += 1
-#if DEBUG
+    #if DEBUG
     trace("next", token.image, token.kind)
-#endif
+    #endif
 }
 
 // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern

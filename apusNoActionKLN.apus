@@ -6,7 +6,7 @@ identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)+\// .
 action      = /@(?:[^@\\]|\\.)+@/ .
-message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
+message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = { production } { message } .
               
@@ -29,7 +29,7 @@ identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)+\// .
 action      = /@(?:[^@\\]|\\.)+@/ .
-message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
+message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = { production } { message } .
               

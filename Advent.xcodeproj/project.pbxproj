@@ -34,7 +34,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4E1E47512D7A2CE100EECD17 /* Swift6Grammar.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Swift6Grammar.apus; sourceTree = "<group>"; };
 		4E1E47522D7A352D00EECD17 /* clean.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = clean.apus; sourceTree = "<group>"; };
 		4E1E47532D82CFEF00EECD17 /* apus.xclangspec */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xclangspec; path = apus.xclangspec; sourceTree = "<group>"; };
 		4E1E47542D82D00B00EECD17 /* Swift.xclangspec */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xclangspec; path = Swift.xclangspec; sourceTree = "<group>"; };
@@ -45,7 +44,6 @@
 		4E333D672629D5E400640821 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
 		4E333D692629D5E500640821 /* TortureSyntax.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = TortureSyntax.apus; sourceTree = "<group>"; };
 		4E333D6A2629D5E500640821 /* test.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = test.apus; sourceTree = "<group>"; };
-		4E333D6C2629D5E500640821 /* apusNoAction.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusNoAction.apus; sourceTree = "<group>"; };
 		4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateDiagrams.swift; sourceTree = "<group>"; };
 		4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusNoActionKLN.apus; sourceTree = "<group>"; };
 		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
@@ -61,6 +59,7 @@
 		4E89AAEE2D6DF2EE006A0BBA /* postRunActions.log */ = {isa = PBXFileReference; lastKnownFileType = text; path = postRunActions.log; sourceTree = "<group>"; };
 		4E89AAF32D7667C3006A0BBA /* tortureART.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = tortureART.apus; sourceTree = "<group>"; };
 		4E94E9942C2913F600746EB7 /* SymbolTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolTable.swift; sourceTree = "<group>"; };
+		4E951C132D8874BD008B1012 /* Swift.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = Swift.apus; sourceTree = "<group>"; };
 		4EA293992BAACF9A0014546F /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
 		4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
 		4EBBDFF52B935BB90049A17F /* diagram.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = diagram.svg; sourceTree = "<group>"; };
@@ -87,7 +86,6 @@
 				4E1E47522D7A352D00EECD17 /* clean.apus */,
 				4E333D622629D5E400640821 /* apus.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
-				4E333D6C2629D5E500640821 /* apusNoAction.apus */,
 				4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */,
 				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
@@ -107,7 +105,7 @@
 				4E1E47532D82CFEF00EECD17 /* apus.xclangspec */,
 				4E1E47572D82D4DF00EECD17 /* Xcode.SourceCodeLanguage.apus.plist     */,
 				4E1E47542D82D00B00EECD17 /* Swift.xclangspec */,
-				4E1E47512D7A2CE100EECD17 /* Swift6Grammar.apus */,
+				4E951C132D8874BD008B1012 /* Swift.apus */,
 				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
 				4E4213852D19CA1200CE6493 /* MessageParser.swift */,
 				4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */,

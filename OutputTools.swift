@@ -7,9 +7,10 @@
 
 import Foundation
 
-var trace = true
-var traceIndent = 0
+public var trace = true
+public var traceIndent = 0
 
+@inlinable
 func trace(_ items: Any..., terminator term: String = "") {
 #if DEBUG
     if trace {

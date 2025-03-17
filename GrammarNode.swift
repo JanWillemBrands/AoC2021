@@ -35,6 +35,8 @@ enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KL
 
 
 final class GrammarNode {
+//    static var nodesWithLet: Set<String> = []
+
     static var count = 0
     let number: Int
     
@@ -287,7 +289,8 @@ extension GrammarNode {
         switch kind {
         case .EPS:
             seq!.populateFirstFollowSets()
-            first = [""]
+//            first = [""]
+            first = seq!.first
             updateFollow()
         case .EOS, .T, .TI, .C, .B:
             seq!.populateFirstFollowSets()
@@ -297,7 +300,9 @@ extension GrammarNode {
             handleNonTerminal()
         case .ALT:
             seq!.populateFirstFollowSets()
+            // copy first & follow from the first (real) node in the sequence
             first = seq!.first
+            follow = seq!.follow
         case .DO:
             handleBracket()
         case .OPT:
@@ -315,15 +320,21 @@ extension GrammarNode {
         case .POS:
             handleBracket()
         case .END:
+            // .END first is epsilon so that the follow of the previous node copies the follow of the .END
             first = [""]
-            // the follow of .END is the follow of the .seq that started it
+            // the follow of .END is the follow of the starting bracket or nonterminal node
             follow = seq!.follow
-            // if the starting node was a closure node (POS, KLN) then the first folds into the follow
+            // if the starting node was a closure (POS, KLN) then the first of the starting node folds into the follow
             if seq!.kind == .KLN || seq!.kind == .POS {
                 follow.formUnion(seq!.first.subtracting([""]))
             }
        }
         GrammarNode.sizeofSets += first.count + follow.count
+//        if first.contains("let") && kind == .N {
+//            print(str)
+//            print(GrammarNode.nodesWithLet)
+//            GrammarNode.nodesWithLet.insert(str)
+//        }
     }
     
     private func handleNonTerminal() {
@@ -336,6 +347,10 @@ extension GrammarNode {
                 alt = production.alt
                 // rhs first of the rhs nonterminal is equal to the first of lhs production rule
                 first = production.first
+                if first.contains("") {
+                    first.remove("")
+                    first.formUnion(seq.first)
+                }
                 // update the follow of the lhs nonterminal as the union of the follows of all rhs nonterminals
                 production.follow.formUnion(follow)
             } else {
@@ -349,13 +364,17 @@ extension GrammarNode {
             // a lhs nonterminal defines a production rule and is NOT part of a sequence
             handleAlternatives()
             // the follow set of a lhs nonterminal production rule is [“$”] if startsymbol, and [] otherwise.
-            // both have already been set before calling populateFirstFollowSets.
+            // this is already set before calling populateFirstFollowSets.
         }
     }
     
     private func handleBracket() {
         handleAlternatives()
         seq!.populateFirstFollowSets()
+        if first.contains("") {
+            first.remove("")
+            first.formUnion(seq!.first)
+        }
         updateFollow()
     }
     
@@ -365,8 +384,6 @@ extension GrammarNode {
         while let altNode = current {
             altNode.populateFirstFollowSets()
             first.formUnion(altNode.first)
-            // set the follow ALT node to the follow of the bracket so that the ALT node represents the whole sequence
-            altNode.follow = follow
             current = altNode.alt
         }
     }

@@ -9,12 +9,12 @@ final class StackNode: Hashable, CustomStringConvertible, Comparable {
     let slot: GrammarNode
     let index: Int
     // Afroozeh: set can be array
-//    var edges: [Edge] = []
-//    var edges: Set<Edge> = []
+    //    var edges: [Edge] = []
+    //    var edges: Set<Edge> = []
     var edges: Set<StackNode> = []
     var pops: Set<Int> = []
     var unique: Set<SlotIndex> = []
-
+    
     init(slot: GrammarNode, index: Int) {
         self.slot = slot
         self.index = index
@@ -28,7 +28,7 @@ final class StackNode: Hashable, CustomStringConvertible, Comparable {
     }
     var description: String {
         if slot.kind == .EOS { return "●○" }
-//        return slot.description + "," + index.description
+        //        return slot.description + "," + index.description
         return slot.description + index.description
     }
     static func < (lhs: StackNode, rhs: StackNode) -> Bool {
@@ -38,18 +38,18 @@ final class StackNode: Hashable, CustomStringConvertible, Comparable {
 
 // TODO: simplify!  does Edge need all this?
 //struct Edge: CustomStringConvertible, Comparable {
-    struct Edge: Hashable, CustomStringConvertible, Comparable {
+struct Edge: Hashable, CustomStringConvertible, Comparable {
     let towards: StackNode
-//    var dummy: [GrammarNode] = []
+    //    var dummy: [GrammarNode] = []
     init(towards: StackNode) {
         self.towards = towards
     }
-//    static func == (lhs: Edge, rhs: Edge) -> Bool {
-//        lhs.towards == rhs.towards
-//    }
-//    func hash(into hasher: inout Hasher) {
-//        hasher.combine(towards)
-//    }
+    //    static func == (lhs: Edge, rhs: Edge) -> Bool {
+    //        lhs.towards == rhs.towards
+    //    }
+    //    func hash(into hasher: inout Hasher) {
+    //        hasher.combine(towards)
+    //    }
     var description: String {
         towards.description
     }
@@ -85,33 +85,33 @@ struct SlotIndex: Hashable, CustomStringConvertible {
 // add an edge from that node to the current stack top
 // add descriptors for previous pop actions from v
 func call(slot: GrammarNode) {
-#if DEBUG
+    #if DEBUG
     trace("call", slot)
-#endif
+    #endif
     let node = StackNode(slot: slot.seq!, index: currentIndex)
     let actualNode = gss.insert(node).memberAfterInsert
-//    let edge = Edge(towards: currentStack)
-#if DEBUG
+    //    let edge = Edge(towards: currentStack)
+    #if DEBUG
     trace("create edge from \(actualNode) to \(currentStack)")
-#endif
+    #endif
 
     // TODO: change edges from array to set
-//    assert(!actualNode.edges.contains(edge), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
-//    assert(!actualNode.edges.contains(where: { $0.towards === currentStack }), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
-//    actualNode.edges.append(edge)
-//    print("inserting \(edge) into \(actualNode) (\(actualNode.edges))")
-//    actualNode.edges.insert(edge)
+    //    assert(!actualNode.edges.contains(edge), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
+    //    assert(!actualNode.edges.contains(where: { $0.towards === currentStack }), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
+    //    actualNode.edges.append(edge)
+    //    print("inserting \(edge) into \(actualNode) (\(actualNode.edges))")
+    //    actualNode.edges.insert(edge)
     actualNode.edges.insert(currentStack)
-
+    
     trace = false
     for pop in actualNode.pops {
-#if DEBUG
+    #if DEBUG
         trace("contingent Descriptor")
-#endif
+    #endif
         addDescriptor(slot: slot.seq!, stack: currentStack, index: pop)
     }
     trace = false
-
+    
     // TODO: iterate over all ALT nodes in parseMessage
     var current = slot
     while let next = current.alt, let seq = next.seq {
@@ -120,9 +120,28 @@ func call(slot: GrammarNode) {
     }
 }
 
+func enter() {
+    trace("enter", currentSlot)
+    let node = StackNode(slot: currentSlot.seq!, index: currentIndex)
+    let actualNode = gss.insert(node).memberAfterInsert
+    trace("create edge from \(actualNode) to \(currentStack)")
+    actualNode.edges.insert(currentStack)
+    for pop in actualNode.pops {
+        trace("contingent Descriptor")
+        addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: pop)
+    }
+    // TODO: iterate over all ALT nodes in parseMessage
+    while let next = currentSlot.alt, let seq = next.seq {
+        if testSelect() {
+            addDescriptor(slot: seq, stack: actualNode, index: currentIndex)
+        }
+        currentSlot = next
+    }
+}
+
 // TODO: the first edge can be popped without addDescriptor
 func ret() {
-#if DEBUG
+    #if DEBUG
     trace("ret", currentStack)
     if currentIndex == tokens.count - 1 && currentStack == gssRoot {
         successfullParses += 1
@@ -131,47 +150,75 @@ func ret() {
         currentStack.pops.insert(currentIndex)
         for edge in currentStack.edges {
             trace("pop \(edge)")
-//            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
+            //            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
             addDescriptor(slot: currentStack.slot, stack: edge, index: currentIndex)
         }
     }
-#else
+    #else
     if currentIndex == tokens.count - 1 && currentStack == gssRoot {
         successfullParses += 1
     } else {
         currentStack.pops.insert(currentIndex)
         for edge in currentStack.edges {
-//            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
+            //            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
             addDescriptor(slot: currentStack.slot, stack: edge, index: currentIndex)
         }
     }
-#endif
+    #endif
+}
+
+// TODO: the first edge can be popped without addDescriptor
+func leave() {
+    #if DEBUG
+    trace("leave", currentStack)
+    if currentIndex == tokens.count - 1 && currentStack == gssRoot {
+        successfullParses += 1
+        trace("HURRAH token = \(token)", terminator: "\n")
+    } else {
+        currentStack.pops.insert(currentIndex)
+        for edge in currentStack.edges {
+            trace("pop \(edge)")
+            //            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
+            addDescriptor(slot: currentStack.slot, stack: edge, index: currentIndex)
+        }
+    }
+    #else
+    if currentIndex == tokens.count - 1 && currentStack == gssRoot {
+        successfullParses += 1
+    } else {
+        currentStack.pops.insert(currentIndex)
+        for edge in currentStack.edges {
+            //            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
+            addDescriptor(slot: currentStack.slot, stack: edge, index: currentIndex)
+        }
+    }
+    #endif
 }
 
 func addDescriptor(slot: GrammarNode, stack: StackNode, index: Int) {
-//    if stack.unique.contains(SlotIndex(slot: slot, index: index)) {
-//        duplicateDescriptorCount += 1
-//        print("duplicate Descriptor(slot \(slot), stack \(stack), index \(index))")
-//    } else {
-//        stack.unique.insert(SlotIndex(slot: slot, index: index))
-//        remainder.append(Descriptor(slot: slot, stack: stack, index: index))
-//        descriptorCount += 1
-//        print("add Descriptor(slot \(slot), stack \(stack), index \(index))")
-//    }
-//    
+    //    if stack.unique.contains(SlotIndex(slot: slot, index: index)) {
+    //        duplicateDescriptorCount += 1
+    //        print("duplicate Descriptor(slot \(slot), stack \(stack), index \(index))")
+    //    } else {
+    //        stack.unique.insert(SlotIndex(slot: slot, index: index))
+    //        remainder.append(Descriptor(slot: slot, stack: stack, index: index))
+    //        descriptorCount += 1
+    //        print("add Descriptor(slot \(slot), stack \(stack), index \(index))")
+    //    }
+    //
     if stack.unique.insert(SlotIndex(slot: slot, index: index)).inserted {
         remainder.append(Descriptor(slot: slot, stack: stack, index: index))
-//        if first1000.count < 1000 {
-//            first1000.append(Descriptor(slot: slot, stack: stack, index: index))
-//        }
+        //        if first1000.count < 1000 {
+        //            first1000.append(Descriptor(slot: slot, stack: stack, index: index))
+        //        }
         descriptorCount += 1
-#if DEBUG
+        #if DEBUG
         trace("add Descriptor(slot \(slot), stack \(stack), index \(index))")
-#endif
+        #endif
     } else {
-#if DEBUG
+        #if DEBUG
         trace("duplicate Descriptor(slot \(slot), stack \(stack), index \(index))")
-#endif
+        #endif
         duplicateDescriptorCount += 1
     }
 }

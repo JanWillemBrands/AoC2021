@@ -13,7 +13,7 @@ trace = false
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
 //    .appendingPathComponent("test")
-    .appendingPathComponent("Swift6Grammar")
+    .appendingPathComponent("Swift")
 //    .appendingPathComponent("apusNoAction")
 //    .appendingPathComponent("apusNoActionKLN")
 //    .appendingPathComponent("TortureSyntax")
@@ -39,9 +39,9 @@ guard let root = grammarParser.parseGrammar(explicitStartSymbol: startSymbol) el
 grammarRoot = root
 
 trace = false
-trace("all grammar tokens:")
+print("all grammar tokens:")
 for t in tokens {
-    trace(t.kind)
+    print(t.kind)
 }
 
 // the GrammarNode being processed
@@ -55,10 +55,13 @@ var successfullParses = 0
 var descriptorCount = 0
 var duplicateDescriptorCount = 0
 
-//var first1000: [Descriptor] = []
-
+//let a = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
+//let b = token.image.startIndex ..< token.image.endIndex
+//let y = 1
+//let x = y as? Int
+//let t = 0 ... 10
 /*
- @available(*, unavailable, renamed: "test")
+@available(*, unavailable, renamed: "test")
 func test() {}
 let r = /\/[^\s](?:(?:[^\/\\\s]|\\.)*[^\s])?\//
 let e = #/
@@ -76,6 +79,8 @@ let e = #/
 /#
  */
 
+
+
 //while let m = messages.first {
 for m in messages {
     trace = false
@@ -84,7 +89,7 @@ for m in messages {
     trace = true
     trace("all message tokens:")
     for t in tokens {
-        trace(t.kind, t.image)
+        trace("'\(t.image)' \(t)")
     }
 
     trace = false
@@ -94,7 +99,7 @@ for m in messages {
     currentStack = gssRoot
 
     addDescriptor(slot: grammarRoot.alt!, stack: currentStack, index: currentIndex)
-
+    
     // use the AST to parse the message
     let start = clock()
     parseMessage()
@@ -102,36 +107,32 @@ for m in messages {
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
     print("cpuTime, descriptorCount, gss.count")
     print(cpuTime, descriptorCount, gss.count)
-//    for d in first1000 {
-//        print(d)
-//    }
 }
 
-#if DEBUG
-trace = false
-let generatedParserFile = URL(fileURLWithPath: #filePath)
-    .deletingLastPathComponent()
-    .appendingPathComponent("output")
-    .appendingPathExtension("swift")
-let parserGenerator = ParserGenerator(outputFile: generatedParserFile)
-do {
-    try parserGenerator.generateParser()
-} catch {
-    print("error: could not write to \(generatedParserFile.absoluteString)")
-    exit(5)
+if nonTerminals.count < 100 && gss.count < 100 {    // to avoid huge diagrams and parsers
+    trace = false
+    let generatedParserFile = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .appendingPathComponent("output")
+        .appendingPathExtension("swift")
+    let parserGenerator = ParserGenerator(outputFile: generatedParserFile)
+    do {
+        try parserGenerator.generateParser()
+    } catch {
+        print("error: could not write to \(generatedParserFile.absoluteString)")
+        exit(5)
+    }
+    
+    trace = false
+    let generatedDiagramFile = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .appendingPathComponent("ART")
+        .appendingPathExtension("gv")
+    let diagramsGenerator = DiagramsGenerator(outputFile: generatedDiagramFile)
+    do {
+        try diagramsGenerator.generateDiagrams()
+    } catch {
+        print("error: could not write to \(generatedDiagramFile.absoluteString)")
+        exit(6)
+    }
 }
-
-
-trace = false
-let generatedDiagramFile = URL(fileURLWithPath: #filePath)
-    .deletingLastPathComponent()
-    .appendingPathComponent("ART")
-    .appendingPathExtension("gv")
-let diagramsGenerator = DiagramsGenerator(outputFile: generatedDiagramFile)
-do {
-    try diagramsGenerator.generateDiagrams()
-} catch {
-    print("error: could not write to \(generatedDiagramFile.absoluteString)")
-    exit(6)
-}
-#endif

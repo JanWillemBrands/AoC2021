@@ -149,5 +149,23 @@ whitespace : /\s+/.
 
 //S = "b" | { "b" S | S "b" } .
 
-S = { "b" } { "b" } .
-^^^bbbbb
+//S = { "b" } { "b" } .
+
+//S = [ "a" | "b" ] [ "c" ].
+
+//S = "a" ( "b" ) "c".                  // PASS first & follow test for EBNF brackets
+//S = "a" [ "b" ] "c".                  // PASS first & follow test for EBNF brackets
+//S = "a" { "b" } "c".                  // PASS first & follow test for EBNF brackets
+//S = "a" < "b" > "c".                  // PASS first & follow test for EBNF brackets
+
+//S = { T ["a"] } . T = "t".            // PASS first & follow test for nullable tails
+
+//S = T. T = "a" | "b" | "c".
+
+//S = ["a"] ["b"] ["c"].                // PASS first & follow test for nullable sequence
+
+//S = T "a" T "b". T = [ "t" ].
+
+identifier = /\p{XID_Start}\p{XID_Continue}*/.
+S = "for" identifier.
+^^^for for
