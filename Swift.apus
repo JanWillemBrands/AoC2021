@@ -97,13 +97,7 @@ regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpres
 // STRINGS
 
 // this is a catchall for staticStringLiteral and interpolatedStringLiteral (which includes staticStringLiteral), the parser will need to validate
-
-// test of single line strings
-stringLiteral = /"(?:\\(?:#*\([^)]*\)|#*[0\\tnr"']|#*u\{[0-9a-fA-F]{1,8}\}|#*\s*\n)|[^\\"])*"/ .
-
-//stringLiteral = /#*"(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"#*|#*"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"""#*/ .
-
-//stringLiteral = /#*"(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|[^"\\\n\r])*"#*|#*"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"""#*/ .
+stringLiteral = /"(?:\\(?:#*\([^)]*\)|#*[0\\tnr"']|#*u\{[0-9a-fA-F]{1,8}\}|#*\s*\n)|[^\\"])*"|#*"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"""#*/ .
 
 //stringLiteralOpeningDelimiter = extendedStringLiteralDelimiter? "\"" .
 //stringLiteralClosingDelimiter = "\"" extendedStringLiteralDelimiter? .
