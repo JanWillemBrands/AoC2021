@@ -160,12 +160,24 @@ whitespace : /\s+/.
 
 //S = { T ["a"] } . T = "t".            // PASS first & follow test for nullable tails
 
-//S = T. T = "a" | "b" | "c".
+//S = T "t". T = "a" | "b" | "c".         // PASS
 
-//S = ["a"] ["b"] ["c"].                // PASS first & follow test for nullable sequence
+//S = ("a") ("b") ("c").                // PASS first & follow test for nullable sequence
+//S = ["a"] ["b"] ["c"].                // FAIL first & follow test for nullable sequence
+S = {"a"} {"b"} {"c"}.                // FAIL first & follow test for nullable sequence
+//S = <"a"> <"b"> <"c">.                // PASS first & follow test for nullable sequence
 
-//S = T "a" T "b". T = [ "t" ].
+//S = A B C. A = "a" | "". B = "b" | "". C = "c" | "".
 
-identifier = /\p{XID_Start}\p{XID_Continue}*/.
-S = "for" identifier.
-^^^for for
+//S = "" "" "x" .
+
+//S = T "a" T "b". T = [ "t" ].           // PASS follow of lhs nonterminal gathers follow of lhs instances
+
+//class c: p {                          // FAIL with Swift.apus
+//    func f () -> Int {}
+//}
+
+//tr = /testRegex/.                     // FAIL tr shows up as "tr" in syntax diagrams
+
+^^^
+abc

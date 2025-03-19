@@ -13,12 +13,11 @@ trace = false
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
 //    .appendingPathComponent("test")
-//    .appendingPathComponent("Swift")
-//    .appendingPathComponent("apusNoAction")
+    .appendingPathComponent("Swift")
 //    .appendingPathComponent("apusNoActionKLN")
 //    .appendingPathComponent("TortureSyntax")
 //    .appendingPathComponent("apus")
-    .appendingPathComponent("tortureART")
+//    .appendingPathComponent("tortureART")
 //    .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
 
@@ -39,9 +38,9 @@ guard let root = grammarParser.parseGrammar(explicitStartSymbol: startSymbol) el
 grammarRoot = root
 
 trace = false
-print("all grammar tokens:")
+trace("all grammar tokens:")
 for t in tokens {
-    print(t.kind)
+    trace(t)
 }
 
 // the GrammarNode being processed
@@ -87,9 +86,9 @@ for m in messages {
     initScanner(fromString: m, patterns: terminals)
 
     trace = true
-    trace("all message tokens:")
+    print("all message tokens:")
     for t in tokens {
-        trace("'\(t.image)' \(t)")
+        print("'\(t.image)' \(t)")
     }
 
     trace = false
@@ -107,9 +106,11 @@ for m in messages {
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
     print("cpuTime, descriptorCount, gss.count")
     print(cpuTime, descriptorCount, gss.count)
+    print(immediateMatch, subsequentMatch, ultimateFail)
+
 }
 
-if nonTerminals.count < 100 && gss.count < 100 {    // to avoid huge diagrams and parsers
+if nonTerminals.count < 1000 && gss.count < 1000 {    // to avoid huge diagrams and parsers
     trace = false
     let generatedParserFile = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()

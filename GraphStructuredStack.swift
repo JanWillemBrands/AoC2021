@@ -11,7 +11,8 @@ final class StackNode: Hashable, CustomStringConvertible, Comparable {
     // Afroozeh: set can be array
     //    var edges: [Edge] = []
     //    var edges: Set<Edge> = []
-    var edges: Set<StackNode> = []
+//    var edges: Set<StackNode> = []
+    var edges: [StackNode] = []
     var pops: Set<Int> = []
     var unique: Set<SlotIndex> = []
     
@@ -64,6 +65,9 @@ struct Descriptor: Hashable {
     let index: Int
 }
 
+var U: Set<Descriptor> = []
+var R: [Descriptor] = []
+
 // TODO: replace with tuple?
 struct SlotIndex: Hashable, CustomStringConvertible {
     let slot: GrammarNode
@@ -96,13 +100,15 @@ func call(slot: GrammarNode) {
     #endif
 
     // TODO: change edges from array to set
-    //    assert(!actualNode.edges.contains(edge), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
+    assert(!actualNode.edges.contains(currentStack), "Afroozeh was wrong, edge \(currentStack.slot.seq!.str) was already in node \(actualNode.slot.seq!.str) \(actualNode.edges)")
+    //        assert(!actualNode.edges.contains(edge), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
     //    assert(!actualNode.edges.contains(where: { $0.towards === currentStack }), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
     //    actualNode.edges.append(edge)
     //    print("inserting \(edge) into \(actualNode) (\(actualNode.edges))")
     //    actualNode.edges.insert(edge)
-    actualNode.edges.insert(currentStack)
-    
+//    actualNode.edges.insert(currentStack)
+    actualNode.edges.append(currentStack)
+
     trace = false
     for pop in actualNode.pops {
     #if DEBUG
@@ -125,7 +131,8 @@ func enter() {
     let node = StackNode(slot: currentSlot.seq!, index: currentIndex)
     let actualNode = gss.insert(node).memberAfterInsert
     trace("create edge from \(actualNode) to \(currentStack)")
-    actualNode.edges.insert(currentStack)
+//    actualNode.edges.insert(currentStack)
+    actualNode.edges.append(currentStack)
     for pop in actualNode.pops {
         trace("contingent Descriptor")
         addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: pop)
@@ -196,21 +203,12 @@ func leave() {
 }
 
 func addDescriptor(slot: GrammarNode, stack: StackNode, index: Int) {
-    //    if stack.unique.contains(SlotIndex(slot: slot, index: index)) {
-    //        duplicateDescriptorCount += 1
-    //        print("duplicate Descriptor(slot \(slot), stack \(stack), index \(index))")
-    //    } else {
-    //        stack.unique.insert(SlotIndex(slot: slot, index: index))
-    //        remainder.append(Descriptor(slot: slot, stack: stack, index: index))
-    //        descriptorCount += 1
-    //        print("add Descriptor(slot \(slot), stack \(stack), index \(index))")
-    //    }
-    //
+//    let d = Descriptor(slot: slot, stack: stack, index: index)
+//    if U.insert(d).inserted {
+//        R.append(d)
+//    }
     if stack.unique.insert(SlotIndex(slot: slot, index: index)).inserted {
         remainder.append(Descriptor(slot: slot, stack: stack, index: index))
-        //        if first1000.count < 1000 {
-        //            first1000.append(Descriptor(slot: slot, stack: stack, index: index))
-        //        }
         descriptorCount += 1
         #if DEBUG
         trace("add Descriptor(slot \(slot), stack \(stack), index \(index))")
@@ -224,6 +222,16 @@ func addDescriptor(slot: GrammarNode, stack: StackNode, index: Int) {
 }
 
 func getDescriptor() -> Bool {
+//    if R.isEmpty {
+//        return false
+//    } else {
+//        let d = R.removeLast()
+//        currentSlot = d.slot
+//        currentStack = d.stack
+//        currentIndex = d.index
+//        return true
+//
+//    }
     if remainder.isEmpty {
         return false
     } else {
@@ -231,9 +239,9 @@ func getDescriptor() -> Bool {
         currentSlot = d.slot
         currentStack = d.stack
         currentIndex = d.index
-#if DEBUG
+        #if DEBUG
         trace("get Descriptor(slot \(currentSlot), stack \(currentStack), index \(currentIndex))")
-#endif
+        #endif
         return true
     }
 }

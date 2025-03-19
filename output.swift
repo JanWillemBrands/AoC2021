@@ -8,241 +8,1888 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 
 //: start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"dotOperator":	("/\\.[\\.\\/=+\\-*%!&|^~?<>\\p{Sm}\\p{So}\\p{Mn}]+/",	/\.[\.\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/,	false,	false),
+	"decimalNumber":	("/-?[0-9][0-9_]*/",	/-?[0-9][0-9_]*/,	false,	false),
+	"comment":	("/\\/\\/.*\\r?\\n?/",	/\/\/.*\r?\n?/,	false,	true),
+	"propertyWrapperProjection":	("/\\$\\p{XID_Continue}+/",	/\$\p{XID_Continue}+/,	false,	false),
+	"macroIdentifier":	("/#\\p{XID_Start}\\p{XID_Continue}*/",	/#\p{XID_Start}\p{XID_Continue}*/,	false,	false),
+	"stringLiteral":	("/#*\"(?:\\\\#*\\([^)]*\\)|\\\\#*[0\\\\tnr\"\']|\\\\#*u\\{[0-9a-fA-F]{1,8}\\}|\\\\#*\\s*\\n|[^\\\\])*\"#*|#*\"\"\"(?:\\\\#*\\([^)]*\\)|\\\\#*[0\\\\tnr\"\']|\\\\#*u\\{[0-9a-fA-F]{1,8}\\}|\\\\#*\\s*\\n|[^\\\\])*\"\"\"#*/",	/#*"(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"#*|#*"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"""#*/,	false,	false),
+	"decimalFloatingPointLiteral":	("/-?[0-9][0-9_]*(?:\\.[0-9][0-9_]*)(?:[eE][+-]?[0-9][0-9_]*)?/",	/-?[0-9][0-9_]*(?:\.[0-9][0-9_]*)(?:[eE][+-]?[0-9][0-9_]*)?/,	false,	false),
+	"plainIdentifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
+	"escapedIdentifier":	("/`\\p{XID_Start}\\p{XID_Continue}*`/",	/`\p{XID_Start}\p{XID_Continue}*`/,	false,	false),
 	"multilineComment":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"macroIdentifier":	("/#\\p{XID_Start}\\p{XID_Continue}*/",	/#\p{XID_Start}\p{XID_Continue}*/,	false,	false),
-	"hexadecimalFloatingPointLiteral":	("/-?0x[0-9a-fA-F][0-9a-fA-F_]*(?:\\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/",	/-?0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/,	false,	false),
-	"plainIdentifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
-	"comment":	("/\\/\\/.*\\r?\\n?/",	/\/\/.*\r?\n?/,	false,	true),
-	"stringLiteral":	("/#*\"(?:\\\\#*\\([^)]*\\)|\\\\#*[0\\\\tnr\"\']|\\\\#*u\\{[0-9a-fA-F]{1,8}\\}|[^\"\\\\\\n\\r])*\"#*|#*\"\"\"(?:\\\\#*\\([^)]*\\)|\\\\#*[0\\\\tnr\"\']|\\\\#*u\\{[0-9a-fA-F]{1,8}\\}|\\\\#*\\s*\\n|[^\\\\])*\"\"\"#*/",	/#*"(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|[^"\\\n\r])*"#*|#*"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"""#*/,	false,	false),
-	"propertyWrapperProjection":	("/\\$\\p{XID_Continue}+/",	/\$\p{XID_Continue}+/,	false,	false),
 	"octalLiteral":	("/-?0o[0-7][0-7_]*/",	/-?0o[0-7][0-7_]*/,	false,	false),
-	"binaryLiteral":	("/-?0b[0-1][0-1_]*/",	/-?0b[0-1][0-1_]*/,	false,	false),
-	"hexadecimalLiteral":	("/-?0x[0-9a-fA-F][0-9a-fA-F_]*/",	/-?0x[0-9a-fA-F][0-9a-fA-F_]*/,	false,	false),
-	"plainOperator":	("/[\\/=+\\-*%!&|^~?<>\\p{Sm}\\p{So}][\\/=+\\-*%!&|^~?<>\\p{Sm}\\p{So}\\p{Mn}]*/",	/[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/,	false,	false),
-	"extendedRegularExpressionLiteral":	("/#+\\/(?:[^\\/\\\\]|\\\\.)+\\/#+/",	/#+\/(?:[^\/\\]|\\.)+\/#+/,	false,	false),
-	"escapedIdentifier":	("/`\\p{XID_Start}\\p{XID_Continue}*`/",	/`\p{XID_Start}\p{XID_Continue}*`/,	false,	false),
-	"decimalNumber":	("/-?[0-9][0-9_]*/",	/-?[0-9][0-9_]*/,	false,	false),
-	"decimalFloatingPointLiteral":	("/-?[0-9][0-9_]*(?:\\.[0-9][0-9_]*)(?:[eE][+-]?[0-9][0-9_]*)?/",	/-?[0-9][0-9_]*(?:\.[0-9][0-9_]*)(?:[eE][+-]?[0-9][0-9_]*)?/,	false,	false),
-	"plainRegularExpressionLiteral":	("/\\/[^\\s](?:(?:[^\\/\\\\\\s]|\\\\.)*[^\\s])?\\//",	/\/[^\s](?:(?:[^\/\\\s]|\\.)*[^\s])?\//,	false,	false),
 	"implicitParameterName":	("/\\$[0-9]+/",	/\$[0-9]+/,	false,	false),
-	"#warning":	("#warning",	Regex { "#warning" },	true,	false),
-	"=":	("=",	Regex { "=" },	true,	false),
-	"prefix":	("prefix",	Regex { "prefix" },	true,	false),
-	"]":	("]",	Regex { "]" },	true,	false),
-	"right":	("right",	Regex { "right" },	true,	false),
-	"operator":	("operator",	Regex { "operator" },	true,	false),
-	"defer":	("defer",	Regex { "defer" },	true,	false),
-	"assignment":	("assignment",	Regex { "assignment" },	true,	false),
+	"extendedRegularExpressionLiteral":	("/#+\\/(?:[^\\/\\\\]|\\\\.)+\\/#+/",	/#+\/(?:[^\/\\]|\\.)+\/#+/,	false,	false),
+	"dotOperator":	("/\\.[\\.\\/=+\\-*%!&|^~?<>\\p{Sm}\\p{So}\\p{Mn}]+/",	/\.[\.\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/,	false,	false),
+	"plainOperator":	("/[\\/=+\\-*%!&|^~?<>\\p{Sm}\\p{So}][\\/=+\\-*%!&|^~?<>\\p{Sm}\\p{So}\\p{Mn}]*/",	/[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/,	false,	false),
+	"plainRegularExpressionLiteral":	("/\\/[^\\s](?:(?:[^\\/\\\\\\s]|\\\\.)*[^\\s])?\\//",	/\/[^\s](?:(?:[^\/\\\s]|\\.)*[^\s])?\//,	false,	false),
+	"hexadecimalLiteral":	("/-?0x[0-9a-fA-F][0-9a-fA-F_]*/",	/-?0x[0-9a-fA-F][0-9a-fA-F_]*/,	false,	false),
+	"hexadecimalFloatingPointLiteral":	("/-?0x[0-9a-fA-F][0-9a-fA-F_]*(?:\\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/",	/-?0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/,	false,	false),
+	"binaryLiteral":	("/-?0b[0-1][0-1_]*/",	/-?0b[0-1][0-1_]*/,	false,	false),
 	"(":	("(",	Regex { "(" },	true,	false),
-	".":	(".",	Regex { "." },	true,	false),
-	"i386":	("i386",	Regex { "i386" },	true,	false),
-	"#unavailable":	("#unavailable",	Regex { "#unavailable" },	true,	false),
-	"compiler":	("compiler",	Regex { "compiler" },	true,	false),
-	"init":	("init",	Regex { "init" },	true,	false),
-	"#selector":	("#selector",	Regex { "#selector" },	true,	false),
-	"_unsafeInheritExecutor":	("_unsafeInheritExecutor",	Regex { "_unsafeInheritExecutor" },	true,	false),
-	"macCatalyst":	("macCatalyst",	Regex { "macCatalyst" },	true,	false),
-	"infix":	("infix",	Regex { "infix" },	true,	false),
-	"repeat":	("repeat",	Regex { "repeat" },	true,	false),
-	"some":	("some",	Regex { "some" },	true,	false),
-	"yield":	("yield",	Regex { "yield" },	true,	false),
-	"import":	("import",	Regex { "import" },	true,	false),
-	"red":	("red",	Regex { "red" },	true,	false),
-	"none":	("none",	Regex { "none" },	true,	false),
-	"actor":	("actor",	Regex { "actor" },	true,	false),
+	"#colorLiteral":	("#colorLiteral",	Regex { "#colorLiteral" },	true,	false),
 	"public":	("public",	Regex { "public" },	true,	false),
-	":":	(":",	Regex { ":" },	true,	false),
-	"nonisolated":	("nonisolated",	Regex { "nonisolated" },	true,	false),
-	"&&":	("&&",	Regex { "&&" },	true,	false),
 	"each":	("each",	Regex { "each" },	true,	false),
-	"default":	("default",	Regex { "default" },	true,	false),
-	"_":	("_",	Regex { "_" },	true,	false),
-	"isolated":	("isolated",	Regex { "isolated" },	true,	false),
-	"consuming":	("consuming",	Regex { "consuming" },	true,	false),
-	"^":	("^",	Regex { "^" },	true,	false),
-	"safe":	("safe",	Regex { "safe" },	true,	false),
-	"#error":	("#error",	Regex { "#error" },	true,	false),
-	"is":	("is",	Regex { "is" },	true,	false),
-	"Windows":	("Windows",	Regex { "Windows" },	true,	false),
-	"false":	("false",	Regex { "false" },	true,	false),
-	"watchOSApplicationExtension":	("watchOSApplicationExtension",	Regex { "watchOSApplicationExtension" },	true,	false),
-	"#imageLiteral":	("#imageLiteral",	Regex { "#imageLiteral" },	true,	false),
-	"required":	("required",	Regex { "required" },	true,	false),
-	"line:":	("line:",	Regex { "line:" },	true,	false),
-	"func":	("func",	Regex { "func" },	true,	false),
-	"unowned(unsafe)":	("unowned(unsafe)",	Regex { "unowned(unsafe)" },	true,	false),
-	"class":	("class",	Regex { "class" },	true,	false),
-	"for":	("for",	Regex { "for" },	true,	false),
-	"\\":	("\\",	Regex { "\\" },	true,	false),
-	"targetEnvironment":	("targetEnvironment",	Regex { "targetEnvironment" },	true,	false),
-	"move":	("move",	Regex { "move" },	true,	false),
-	"#available":	("#available",	Regex { "#available" },	true,	false),
-	"try":	("try",	Regex { "try" },	true,	false),
-	"extension":	("extension",	Regex { "extension" },	true,	false),
-	"macCatalystApplicationExtension":	("macCatalystApplicationExtension",	Regex { "macCatalystApplicationExtension" },	true,	false),
-	"while":	("while",	Regex { "while" },	true,	false),
-	"Linux":	("Linux",	Regex { "Linux" },	true,	false),
-	"tvOS":	("tvOS",	Regex { "tvOS" },	true,	false),
-	"#endif":	("#endif",	Regex { "#endif" },	true,	false),
-	"await":	("await",	Regex { "await" },	true,	false),
-	"canImport":	("canImport",	Regex { "canImport" },	true,	false),
-	"rethrows":	("rethrows",	Regex { "rethrows" },	true,	false),
-	"catch":	("catch",	Regex { "catch" },	true,	false),
-	"tvOSApplicationExtension":	("tvOSApplicationExtension",	Regex { "tvOSApplicationExtension" },	true,	false),
-	"...":	("...",	Regex { "..." },	true,	false),
-	"Type":	("Type",	Regex { "Type" },	true,	false),
-	"dynamic":	("dynamic",	Regex { "dynamic" },	true,	false),
-	"left":	("left",	Regex { "left" },	true,	false),
+	"get":	("get",	Regex { "get" },	true,	false),
+	"enum":	("enum",	Regex { "enum" },	true,	false),
+	"prefix":	("prefix",	Regex { "prefix" },	true,	false),
+	"#elseif":	("#elseif",	Regex { "#elseif" },	true,	false),
 	"precedencegroup":	("precedencegroup",	Regex { "precedencegroup" },	true,	false),
-	"arch":	("arch",	Regex { "arch" },	true,	false),
-	"postfix":	("postfix",	Regex { "postfix" },	true,	false),
-	"simulator":	("simulator",	Regex { "simulator" },	true,	false),
-	"fallthrough":	("fallthrough",	Regex { "fallthrough" },	true,	false),
-	"#":	("#",	Regex { "#" },	true,	false),
-	"Any":	("Any",	Regex { "Any" },	true,	false),
-	"/":	("/",	Regex { "/" },	true,	false),
-	"package":	("package",	Regex { "package" },	true,	false),
-	"throws":	("throws",	Regex { "throws" },	true,	false),
+	"%":	("%",	Regex { "%" },	true,	false),
 	"switch":	("switch",	Regex { "switch" },	true,	false),
-	"open":	("open",	Regex { "open" },	true,	false),
-	"associatedtype":	("associatedtype",	Regex { "associatedtype" },	true,	false),
-	"}":	("}",	Regex { "}" },	true,	false),
-	"{":	("{",	Regex { "{" },	true,	false),
-	"!":	("!",	Regex { "!" },	true,	false),
-	"struct":	("struct",	Regex { "struct" },	true,	false),
-	"*":	("*",	Regex { "*" },	true,	false),
-	"lowerThan":	("lowerThan",	Regex { "lowerThan" },	true,	false),
-	"protocol":	("protocol",	Regex { "protocol" },	true,	false),
-	"var":	("var",	Regex { "var" },	true,	false),
-	"deinit":	("deinit",	Regex { "deinit" },	true,	false),
-	"throw":	("throw",	Regex { "throw" },	true,	false),
-	"self":	("self",	Regex { "self" },	true,	false),
-	"blue":	("blue",	Regex { "blue" },	true,	false),
-	"arm":	("arm",	Regex { "arm" },	true,	false),
-	"==":	("==",	Regex { "==" },	true,	false),
-	"||":	("||",	Regex { "||" },	true,	false),
-	"optional":	("optional",	Regex { "optional" },	true,	false),
+	"iOS":	("iOS",	Regex { "iOS" },	true,	false),
+	"isolated":	("isolated",	Regex { "isolated" },	true,	false),
+	"]":	("]",	Regex { "]" },	true,	false),
+	"required":	("required",	Regex { "required" },	true,	false),
+	"private":	("private",	Regex { "private" },	true,	false),
+	"safe":	("safe",	Regex { "safe" },	true,	false),
+	"Any":	("Any",	Regex { "Any" },	true,	false),
+	"any":	("any",	Regex { "any" },	true,	false),
+	"subscript":	("subscript",	Regex { "subscript" },	true,	false),
+	"super":	("super",	Regex { "super" },	true,	false),
 	"as":	("as",	Regex { "as" },	true,	false),
-	"final":	("final",	Regex { "final" },	true,	false),
-	"static":	("static",	Regex { "static" },	true,	false),
-	"willSet":	("willSet",	Regex { "willSet" },	true,	false),
-	"nil":	("nil",	Regex { "nil" },	true,	false),
-	"unowned(safe)":	("unowned(safe)",	Regex { "unowned(safe)" },	true,	false),
-	"discard":	("discard",	Regex { "discard" },	true,	false),
-	"arm64":	("arm64",	Regex { "arm64" },	true,	false),
+	"getter:":	("getter:",	Regex { "getter:" },	true,	false),
+	"#imageLiteral":	("#imageLiteral",	Regex { "#imageLiteral" },	true,	false),
+	"?":	("?",	Regex { "?" },	true,	false),
+	"visionOS":	("visionOS",	Regex { "visionOS" },	true,	false),
+	"alpha":	("alpha",	Regex { "alpha" },	true,	false),
+	"throws":	("throws",	Regex { "throws" },	true,	false),
+	"self":	("self",	Regex { "self" },	true,	false),
+	"nonmutating":	("nonmutating",	Regex { "nonmutating" },	true,	false),
+	"#if":	("#if",	Regex { "#if" },	true,	false),
+	"lazy":	("lazy",	Regex { "lazy" },	true,	false),
+	"package":	("package",	Regex { "package" },	true,	false),
+	"fileprivate":	("fileprivate",	Regex { "fileprivate" },	true,	false),
+	"postfix":	("postfix",	Regex { "postfix" },	true,	false),
+	"borrowing":	("borrowing",	Regex { "borrowing" },	true,	false),
+	"targetEnvironment":	("targetEnvironment",	Regex { "targetEnvironment" },	true,	false),
+	"rethrows":	("rethrows",	Regex { "rethrows" },	true,	false),
+	"#selector":	("#selector",	Regex { "#selector" },	true,	false),
+	"#unavailable":	("#unavailable",	Regex { "#unavailable" },	true,	false),
+	"if":	("if",	Regex { "if" },	true,	false),
+	"x86_64":	("x86_64",	Regex { "x86_64" },	true,	false),
+	"||":	("||",	Regex { "||" },	true,	false),
+	"guard":	("guard",	Regex { "guard" },	true,	false),
+	"yield":	("yield",	Regex { "yield" },	true,	false),
+	";":	(";",	Regex { ";" },	true,	false),
+	"move":	("move",	Regex { "move" },	true,	false),
+	"...":	("...",	Regex { "..." },	true,	false),
+	">":	(">",	Regex { ">" },	true,	false),
+	"#warning":	("#warning",	Regex { "#warning" },	true,	false),
+	"watchOSApplicationExtension":	("watchOSApplicationExtension",	Regex { "watchOSApplicationExtension" },	true,	false),
+	"set":	("set",	Regex { "set" },	true,	false),
+	"#":	("#",	Regex { "#" },	true,	false),
+	"#else":	("#else",	Regex { "#else" },	true,	false),
+	"Self":	("Self",	Regex { "Self" },	true,	false),
 	"copy":	("copy",	Regex { "copy" },	true,	false),
 	"-":	("-",	Regex { "-" },	true,	false),
-	"guard":	("guard",	Regex { "guard" },	true,	false),
-	"macOSApplicationExtension":	("macOSApplicationExtension",	Regex { "macOSApplicationExtension" },	true,	false),
-	"watchOS":	("watchOS",	Regex { "watchOS" },	true,	false),
-	"#keyPath":	("#keyPath",	Regex { "#keyPath" },	true,	false),
-	"do":	("do",	Regex { "do" },	true,	false),
-	"nonmutating":	("nonmutating",	Regex { "nonmutating" },	true,	false),
-	"|":	("|",	Regex { "|" },	true,	false),
-	"iOS":	("iOS",	Regex { "iOS" },	true,	false),
-	"#sourceLocation":	("#sourceLocation",	Regex { "#sourceLocation" },	true,	false),
-	";":	(";",	Regex { ";" },	true,	false),
-	")":	(")",	Regex { ")" },	true,	false),
-	"#elseif":	("#elseif",	Regex { "#elseif" },	true,	false),
-	"+":	("+",	Regex { "+" },	true,	false),
-	"#else":	("#else",	Regex { "#else" },	true,	false),
-	"x86_64":	("x86_64",	Regex { "x86_64" },	true,	false),
-	"?":	("?",	Regex { "?" },	true,	false),
-	"where":	("where",	Regex { "where" },	true,	false),
+	"nonisolated":	("nonisolated",	Regex { "nonisolated" },	true,	false),
+	"arm64":	("arm64",	Regex { "arm64" },	true,	false),
+	"deinit":	("deinit",	Regex { "deinit" },	true,	false),
+	"willSet":	("willSet",	Regex { "willSet" },	true,	false),
+	"Windows":	("Windows",	Regex { "Windows" },	true,	false),
+	"=":	("=",	Regex { "=" },	true,	false),
+	"==":	("==",	Regex { "==" },	true,	false),
+	"resourceName":	("resourceName",	Regex { "resourceName" },	true,	false),
 	"#fileLiteral":	("#fileLiteral",	Regex { "#fileLiteral" },	true,	false),
-	"true":	("true",	Regex { "true" },	true,	false),
-	"[":	("[",	Regex { "[" },	true,	false),
-	"break":	("break",	Regex { "break" },	true,	false),
-	",":	(",",	Regex { "," },	true,	false),
-	"#if":	("#if",	Regex { "#if" },	true,	false),
-	"async":	("async",	Regex { "async" },	true,	false),
-	"&":	("&",	Regex { "&" },	true,	false),
-	"set":	("set",	Regex { "set" },	true,	false),
-	"typealias":	("typealias",	Regex { "typealias" },	true,	false),
-	"super":	("super",	Regex { "super" },	true,	false),
-	"iOSApplicationExtension":	("iOSApplicationExtension",	Regex { "iOSApplicationExtension" },	true,	false),
-	"macro":	("macro",	Regex { "macro" },	true,	false),
-	"associativity":	("associativity",	Regex { "associativity" },	true,	false),
-	"enum":	("enum",	Regex { "enum" },	true,	false),
-	"visionOS":	("visionOS",	Regex { "visionOS" },	true,	false),
-	"green":	("green",	Regex { "green" },	true,	false),
-	"continue":	("continue",	Regex { "continue" },	true,	false),
+	"|":	("|",	Regex { "|" },	true,	false),
+	"tvOSApplicationExtension":	("tvOSApplicationExtension",	Regex { "tvOSApplicationExtension" },	true,	false),
+	"false":	("false",	Regex { "false" },	true,	false),
+	"override":	("override",	Regex { "override" },	true,	false),
+	"^":	("^",	Regex { "^" },	true,	false),
+	"\\":	("\\",	Regex { "\\" },	true,	false),
+	"internal":	("internal",	Regex { "internal" },	true,	false),
+	"convenience":	("convenience",	Regex { "convenience" },	true,	false),
+	"/":	("/",	Regex { "/" },	true,	false),
 	"case":	("case",	Regex { "case" },	true,	false),
-	"if":	("if",	Regex { "if" },	true,	false),
-	"fileprivate":	("fileprivate",	Regex { "fileprivate" },	true,	false),
-	"subscript":	("subscript",	Regex { "subscript" },	true,	false),
-	"else":	("else",	Regex { "else" },	true,	false),
-	"<":	("<",	Regex { "<" },	true,	false),
-	"macOS":	("macOS",	Regex { "macOS" },	true,	false),
+	"is":	("is",	Regex { "is" },	true,	false),
+	"associatedtype":	("associatedtype",	Regex { "associatedtype" },	true,	false),
+	"in":	("in",	Regex { "in" },	true,	false),
+	",":	(",",	Regex { "," },	true,	false),
 	">=":	(">=",	Regex { ">=" },	true,	false),
-	"borrowing":	("borrowing",	Regex { "borrowing" },	true,	false),
 	"mutating":	("mutating",	Regex { "mutating" },	true,	false),
-	"setter:":	("setter:",	Regex { "setter:" },	true,	false),
+	"final":	("final",	Regex { "final" },	true,	false),
+	"@":	("@",	Regex { "@" },	true,	false),
+	"continue":	("continue",	Regex { "continue" },	true,	false),
+	"visionOSApplicationExtension":	("visionOSApplicationExtension",	Regex { "visionOSApplicationExtension" },	true,	false),
+	"await":	("await",	Regex { "await" },	true,	false),
+	"right":	("right",	Regex { "right" },	true,	false),
+	"unsafe":	("unsafe",	Regex { "unsafe" },	true,	false),
+	"_unsafeInheritExecutor":	("_unsafeInheritExecutor",	Regex { "_unsafeInheritExecutor" },	true,	false),
+	"class":	("class",	Regex { "class" },	true,	false),
+	"operator":	("operator",	Regex { "operator" },	true,	false),
+	"unowned":	("unowned",	Regex { "unowned" },	true,	false),
+	"#available":	("#available",	Regex { "#available" },	true,	false),
+	"<":	("<",	Regex { "<" },	true,	false),
+	"Type":	("Type",	Regex { "Type" },	true,	false),
+	"try":	("try",	Regex { "try" },	true,	false),
+	"unowned(safe)":	("unowned(safe)",	Regex { "unowned(safe)" },	true,	false),
+	"import":	("import",	Regex { "import" },	true,	false),
+	"init":	("init",	Regex { "init" },	true,	false),
+	"+":	("+",	Regex { "+" },	true,	false),
+	"Protocol":	("Protocol",	Regex { "Protocol" },	true,	false),
+	"macCatalystApplicationExtension":	("macCatalystApplicationExtension",	Regex { "macCatalystApplicationExtension" },	true,	false),
+	"break":	("break",	Regex { "break" },	true,	false),
+	"green":	("green",	Regex { "green" },	true,	false),
+	"watchOS":	("watchOS",	Regex { "watchOS" },	true,	false),
+	"macro":	("macro",	Regex { "macro" },	true,	false),
+	"weak":	("weak",	Regex { "weak" },	true,	false),
+	"default":	("default",	Regex { "default" },	true,	false),
+	"static":	("static",	Regex { "static" },	true,	false),
+	"#keyPath":	("#keyPath",	Regex { "#keyPath" },	true,	false),
+	"dynamic":	("dynamic",	Regex { "dynamic" },	true,	false),
+	"arm":	("arm",	Regex { "arm" },	true,	false),
+	"where":	("where",	Regex { "where" },	true,	false),
+	"nil":	("nil",	Regex { "nil" },	true,	false),
+	"macOSApplicationExtension":	("macOSApplicationExtension",	Regex { "macOSApplicationExtension" },	true,	false),
+	"higherThan":	("higherThan",	Regex { "higherThan" },	true,	false),
+	"line:":	("line:",	Regex { "line:" },	true,	false),
+	"associativity":	("associativity",	Regex { "associativity" },	true,	false),
+	"os":	("os",	Regex { "os" },	true,	false),
+	"_":	("_",	Regex { "_" },	true,	false),
+	"blue":	("blue",	Regex { "blue" },	true,	false),
+	"while":	("while",	Regex { "while" },	true,	false),
+	"discard":	("discard",	Regex { "discard" },	true,	false),
+	"macCatalyst":	("macCatalyst",	Regex { "macCatalyst" },	true,	false),
+	"var":	("var",	Regex { "var" },	true,	false),
+	"swift":	("swift",	Regex { "swift" },	true,	false),
+	"left":	("left",	Regex { "left" },	true,	false),
+	"lowerThan":	("lowerThan",	Regex { "lowerThan" },	true,	false),
+	"repeat":	("repeat",	Regex { "repeat" },	true,	false),
+	"return":	("return",	Regex { "return" },	true,	false),
+	"for":	("for",	Regex { "for" },	true,	false),
+	"inout":	("inout",	Regex { "inout" },	true,	false),
+	"assignment":	("assignment",	Regex { "assignment" },	true,	false),
+	"struct":	("struct",	Regex { "struct" },	true,	false),
+	"simulator":	("simulator",	Regex { "simulator" },	true,	false),
+	"fallthrough":	("fallthrough",	Regex { "fallthrough" },	true,	false),
+	"~":	("~",	Regex { "~" },	true,	false),
+	"typealias":	("typealias",	Regex { "typealias" },	true,	false),
 	"didSet":	("didSet",	Regex { "didSet" },	true,	false),
 	"let":	("let",	Regex { "let" },	true,	false),
-	"weak":	("weak",	Regex { "weak" },	true,	false),
-	"any":	("any",	Regex { "any" },	true,	false),
-	"Self":	("Self",	Regex { "Self" },	true,	false),
-	"private":	("private",	Regex { "private" },	true,	false),
-	"indirect":	("indirect",	Regex { "indirect" },	true,	false),
-	"internal":	("internal",	Regex { "internal" },	true,	false),
-	"resourceName":	("resourceName",	Regex { "resourceName" },	true,	false),
-	"swift":	("swift",	Regex { "swift" },	true,	false),
-	"%":	("%",	Regex { "%" },	true,	false),
-	"visionOSApplicationExtension":	("visionOSApplicationExtension",	Regex { "visionOSApplicationExtension" },	true,	false),
-	"return":	("return",	Regex { "return" },	true,	false),
-	"Protocol":	("Protocol",	Regex { "Protocol" },	true,	false),
-	"convenience":	("convenience",	Regex { "convenience" },	true,	false),
-	"override":	("override",	Regex { "override" },	true,	false),
-	"unsafe":	("unsafe",	Regex { "unsafe" },	true,	false),
-	"~":	("~",	Regex { "~" },	true,	false),
-	"inout":	("inout",	Regex { "inout" },	true,	false),
-	"unowned":	("unowned",	Regex { "unowned" },	true,	false),
-	"in":	("in",	Regex { "in" },	true,	false),
-	"get":	("get",	Regex { "get" },	true,	false),
-	"@":	("@",	Regex { "@" },	true,	false),
-	">":	(">",	Regex { ">" },	true,	false),
-	"alpha":	("alpha",	Regex { "alpha" },	true,	false),
 	"file:":	("file:",	Regex { "file:" },	true,	false),
-	"getter:":	("getter:",	Regex { "getter:" },	true,	false),
-	"#colorLiteral":	("#colorLiteral",	Regex { "#colorLiteral" },	true,	false),
-	"higherThan":	("higherThan",	Regex { "higherThan" },	true,	false),
-	"lazy":	("lazy",	Regex { "lazy" },	true,	false),
-	"os":	("os",	Regex { "os" },	true,	false),
+	"macOS":	("macOS",	Regex { "macOS" },	true,	false),
+	"&&":	("&&",	Regex { "&&" },	true,	false),
+	":":	(":",	Regex { ":" },	true,	false),
+	"}":	("}",	Regex { "}" },	true,	false),
+	"!":	("!",	Regex { "!" },	true,	false),
+	"async":	("async",	Regex { "async" },	true,	false),
+	"infix":	("infix",	Regex { "infix" },	true,	false),
+	"compiler":	("compiler",	Regex { "compiler" },	true,	false),
+	"arch":	("arch",	Regex { "arch" },	true,	false),
+	"func":	("func",	Regex { "func" },	true,	false),
+	"defer":	("defer",	Regex { "defer" },	true,	false),
+	"do":	("do",	Regex { "do" },	true,	false),
+	"i386":	("i386",	Regex { "i386" },	true,	false),
+	"extension":	("extension",	Regex { "extension" },	true,	false),
+	"optional":	("optional",	Regex { "optional" },	true,	false),
+	"none":	("none",	Regex { "none" },	true,	false),
+	"catch":	("catch",	Regex { "catch" },	true,	false),
+	"else":	("else",	Regex { "else" },	true,	false),
+	"#error":	("#error",	Regex { "#error" },	true,	false),
+	"red":	("red",	Regex { "red" },	true,	false),
+	"setter:":	("setter:",	Regex { "setter:" },	true,	false),
+	"#sourceLocation":	("#sourceLocation",	Regex { "#sourceLocation" },	true,	false),
+	"#endif":	("#endif",	Regex { "#endif" },	true,	false),
+	"open":	("open",	Regex { "open" },	true,	false),
+	"&":	("&",	Regex { "&" },	true,	false),
+	")":	(")",	Regex { ")" },	true,	false),
+	"unowned(unsafe)":	("unowned(unsafe)",	Regex { "unowned(unsafe)" },	true,	false),
+	"canImport":	("canImport",	Regex { "canImport" },	true,	false),
+	"some":	("some",	Regex { "some" },	true,	false),
+	"Linux":	("Linux",	Regex { "Linux" },	true,	false),
+	"indirect":	("indirect",	Regex { "indirect" },	true,	false),
+	"throw":	("throw",	Regex { "throw" },	true,	false),
+	"{":	("{",	Regex { "{" },	true,	false),
+	"*":	("*",	Regex { "*" },	true,	false),
+	"consuming":	("consuming",	Regex { "consuming" },	true,	false),
+	"iOSApplicationExtension":	("iOSApplicationExtension",	Regex { "iOSApplicationExtension" },	true,	false),
+	"[":	("[",	Regex { "[" },	true,	false),
+	"protocol":	("protocol",	Regex { "protocol" },	true,	false),
+	"true":	("true",	Regex { "true" },	true,	false),
+	".":	(".",	Regex { "." },	true,	false),
+	"actor":	("actor",	Regex { "actor" },	true,	false),
+	"tvOS":	("tvOS",	Regex { "tvOS" },	true,	false),
 ]
-func infixOperatorDeclaration() {
+func prefixExpression() {
+	if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	}
+	expect(["[", "#selector", "_", "hexadecimalLiteral", "decimalFloatingPointLiteral", "implicitParameterName", "true", "#keyPath", "#fileLiteral", "stringLiteral", "false", "binaryLiteral", "if", "plainOperator", "(", "decimalNumber", "propertyWrapperProjection", "self", "octalLiteral", ".", "\\\\", "macroIdentifier", "escapedIdentifier", "#colorLiteral", "nil", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "{", "plainIdentifier", "dotOperator", "super", "switch", "hexadecimalFloatingPointLiteral", "#imageLiteral"])
+}
+func availabilityCondition() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["#available"])
+}
+func isPattern() {
 	if token.type = .ALT {
 		next()
 	}
-	expect(["infix"])
+	expect(["is"])
 }
-func labeledStatement() {
+func setterKeywordClause() {
 	if token.type = .ALT {
-		statementLabel()
-		loopStatement()
+		// OPT
+	}
+	expect(["mutating", "set", "@", "nonmutating"])
+}
+func balancedTokens() {
+	if token.type = .ALT {
+		balancedToken()
+		// OPT
+	}
+	expect(["lazy", "-", "plainOperator", "func", "_", "fallthrough", "/", "(", "subscript", "case", "*", "get", "struct", "#", "for", "#endif", "#fileLiteral", "#colorLiteral", "#unavailable", "public", "didSet", "enum", "deinit", "implicitParameterName", "higherThan", "try", "init", "protocol", "#selector", "|", "associatedtype", "right", "switch", "willSet", "postfix", "static", "await", "_unsafeInheritExecutor", "guard", "#warning", "[", "discard", "convenience", "#available", "mutating", "else", "nonisolated", "extendedRegularExpressionLiteral", "decimalNumber", "actor", "move", "typealias", "lowerThan", "Any", "some", "private", "indirect", "false", "dotOperator", "async", "class", "nil", "^", "weak", "!", "stringLiteral", "<", "while", "#keyPath", "#imageLiteral", ",", "=", "associativity", "#elseif", "#sourceLocation", "import", "?", "optional", "true", "if", "+", "internal", "repeat", "defer", "do", "escapedIdentifier", "inout", "prefix", "borrowing", "operator", ":", "let", "is", "#else", "continue", "in", "catch", "precedencegroup", "throw", ";", "set", "required", "dynamic", ".", ">", "&", "#error", "unowned", "{", "super", "package", "Self", "copy", "plainRegularExpressionLiteral", "left", "final", "consuming", "where", "as", "rethrows", "throws", "extension", "binaryLiteral", "isolated", "var", "fileprivate", "plainIdentifier", "~", "yield", "open", "hexadecimalLiteral", "@", "each", "return", "override", "nonmutating", "self", "none", "%", "propertyWrapperProjection", "hexadecimalFloatingPointLiteral", "decimalFloatingPointLiteral", "octalLiteral", "break", "#if", "default"])
+}
+func whereClause() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["where"])
+}
+func infixExpression() {
+	if token.type = .ALT {
+		infixOperator()
+		prefixExpression()
 		// END
 	} else if token.type = .ALT {
-		statementLabel()
-		loopStatement()
+		infixOperator()
+		prefixExpression()
 		// END
 	} else if token.type = .ALT {
-		statementLabel()
-		loopStatement()
+		infixOperator()
+		prefixExpression()
 		// END
 	} else if token.type = .ALT {
-		statementLabel()
-		loopStatement()
+		infixOperator()
+		prefixExpression()
 		// END
 	}
-	expect(["implicitParameterName", "propertyWrapperProjection", "_", "plainIdentifier", "escapedIdentifier"])
+	expect(["plainOperator", "dotOperator"])
+}
+func dictionaryType() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["["])
+}
+func functionCallArgument() {
+	if token.type = .ALT {
+		expression()
+		// END
+	} else if token.type = .ALT {
+		expression()
+		// END
+	} else if token.type = .ALT {
+		expression()
+		// END
+	} else if token.type = .ALT {
+		expression()
+		// END
+	}
+	expect(["self", "await", "nil", "stringLiteral", "propertyWrapperProjection", "try", "#imageLiteral", "true", "\\\\", "_", "(", "{", "escapedIdentifier", "#fileLiteral", "plainOperator", "plainIdentifier", "decimalFloatingPointLiteral", "&", "binaryLiteral", "switch", "super", "[", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "plainRegularExpressionLiteral", "#selector", "macroIdentifier", "false", "octalLiteral", "#keyPath", "if", "implicitParameterName", "#colorLiteral", ".", "decimalNumber", "hexadecimalLiteral"])
+}
+func implicitMemberExpression() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["."])
+}
+func forcedValueExpression() {
+	if token.type = .ALT {
+		postfixExpression()
+		next()
+	}
+	expect(["#keyPath", "hexadecimalLiteral", "switch", "macroIdentifier", "[", "_", "#colorLiteral", "octalLiteral", "#selector", "false", "escapedIdentifier", "nil", "self", "implicitParameterName", "\\\\", "decimalFloatingPointLiteral", "super", "propertyWrapperProjection", "stringLiteral", "hexadecimalFloatingPointLiteral", "if", "(", "plainRegularExpressionLiteral", "#imageLiteral", "{", "plainIdentifier", "#fileLiteral", "decimalNumber", "binaryLiteral", "extendedRegularExpressionLiteral", ".", "true"])
+}
+func protocolMembers() {
+	if token.type = .ALT {
+		protocolMember()
+		// OPT
+	}
+	expect(["dynamic", "unowned", "infix", "@", "required", "nonmutating", "typealias", "prefix", "var", "#if", "static", "final", "convenience", "postfix", "func", "override", "package", "weak", "internal", "private", "associatedtype", "open", "public", "#error", "init", "optional", "#warning", "mutating", "fileprivate", "#sourceLocation", "class", "subscript", "lazy", "nonisolated"])
+}
+func labeledTrailingClosures() {
+	if token.type = .ALT {
+		labeledTrailingClosure()
+		// OPT
+	}
+	expect(["escapedIdentifier", "_", "implicitParameterName", "plainIdentifier", "propertyWrapperProjection"])
+}
+func nilLiteral() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["nil"])
+}
+func getterSetterBlock() {
+	if token.type = .ALT {
+		codeBlock()
+		// END
+	} else if token.type = .ALT {
+		codeBlock()
+		// END
+	} else if token.type = .ALT {
+		codeBlock()
+		// END
+	}
+	expect(["{"])
+}
+func rawValueStyleEnumCaseList() {
+	if token.type = .ALT {
+		rawValueStyleEnumCase()
+		// END
+	} else if token.type = .ALT {
+		rawValueStyleEnumCase()
+		// END
+	}
+	expect(["implicitParameterName", "plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_"])
+}
+func declarationModifiers() {
+	if token.type = .ALT {
+		declarationModifier()
+		// OPT
+	}
+	expect(["nonisolated", "postfix", "infix", "optional", "open", "internal", "package", "unowned", "class", "fileprivate", "prefix", "weak", "mutating", "private", "override", "lazy", "required", "nonmutating", "public", "static", "dynamic", "convenience", "final"])
+}
+func sameTypeRequirement() {
+	if token.type = .ALT {
+		typeIdentifier()
+		next()
+	}
+	expect(["plainIdentifier", "escapedIdentifier", "implicitParameterName", "propertyWrapperProjection", "_"])
+}
+func whereExpression() {
+	if token.type = .ALT {
+		expression()
+		// END
+	}
+	expect(["self", "await", "nil", "stringLiteral", "propertyWrapperProjection", "try", "#imageLiteral", "true", "\\\\", "_", "(", "{", "escapedIdentifier", "#fileLiteral", "plainOperator", "plainIdentifier", "decimalFloatingPointLiteral", "&", "binaryLiteral", "switch", "super", "[", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "plainRegularExpressionLiteral", "#selector", "macroIdentifier", "false", "octalLiteral", "#keyPath", "if", "implicitParameterName", "#colorLiteral", ".", "decimalNumber", "hexadecimalLiteral"])
+}
+func setterClause() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["mutating", "set", "@", "nonmutating"])
+}
+func genericParameterClause() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["<"])
+}
+func genericArgumentClause() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["<"])
+}
+func closureParameter() {
+	if token.type = .ALT {
+		closureParameterName()
+		// OPT
+	} else if token.type = .ALT {
+		closureParameterName()
+		// OPT
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func postfixOperator() {
+	if token.type = .ALT {
+		Operator()
+		// END
+	}
+	expect(["dotOperator", "plainOperator"])
+}
+func deferStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["defer"])
+}
+func rawValueLiteral() {
+	if token.type = .ALT {
+		numericLiteral()
+		// END
+	} else if token.type = .ALT {
+		numericLiteral()
+		// END
+	} else if token.type = .ALT {
+		numericLiteral()
+		// END
+	}
+	expect(["decimalNumber", "octalLiteral", "hexadecimalLiteral", "binaryLiteral", "hexadecimalFloatingPointLiteral", "decimalFloatingPointLiteral"])
+}
+func opaqueType() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["some"])
+}
+func protocolPropertyDeclaration() {
+	if token.type = .ALT {
+		variableDeclarationHead()
+		variableName()
+		typeAnnotation()
+		getterSetterKeywordBlock()
+		// END
+	}
+	expect(["package", "private", "fileprivate", "mutating", "@", "unowned", "lazy", "final", "convenience", "required", "var", "nonisolated", "class", "optional", "postfix", "override", "infix", "static", "dynamic", "public", "prefix", "weak", "internal", "open", "nonmutating"])
+}
+func compilationCondition() {
+	if token.type = .ALT {
+		platformCondition()
+		// END
+	} else if token.type = .ALT {
+		platformCondition()
+		// END
+	} else if token.type = .ALT {
+		platformCondition()
+		// END
+	} else if token.type = .ALT {
+		platformCondition()
+		// END
+	} else if token.type = .ALT {
+		platformCondition()
+		// END
+	} else if token.type = .ALT {
+		platformCondition()
+		// END
+	} else if token.type = .ALT {
+		platformCondition()
+		// END
+	}
+	expect(["swift", "canImport", "arch", "os", "compiler", "targetEnvironment"])
+}
+func precedenceGroupAssignment() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["assignment"])
+}
+func ifExpressionTail() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["else"])
+}
+func conditionalExpression() {
+	if token.type = .ALT {
+		ifExpression()
+		// END
+	} else if token.type = .ALT {
+		ifExpression()
+		// END
+	}
+	expect(["if"])
+}
+func Operator() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["plainOperator"])
+}
+func functionCallExpression() {
+	if token.type = .ALT {
+		postfixExpression()
+		functionCallArgumentClause()
+		// END
+	} else if token.type = .ALT {
+		postfixExpression()
+		functionCallArgumentClause()
+		// END
+	}
+	expect(["#keyPath", "hexadecimalLiteral", "switch", "macroIdentifier", "[", "_", "#colorLiteral", "octalLiteral", "#selector", "false", "escapedIdentifier", "nil", "self", "implicitParameterName", "\\\\", "decimalFloatingPointLiteral", "super", "propertyWrapperProjection", "stringLiteral", "hexadecimalFloatingPointLiteral", "if", "(", "plainRegularExpressionLiteral", "#imageLiteral", "{", "plainIdentifier", "#fileLiteral", "decimalNumber", "binaryLiteral", "extendedRegularExpressionLiteral", ".", "true"])
+}
+func precedenceGroupRelation() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["higherThan"])
+}
+func availabilityArguments() {
+	if token.type = .ALT {
+		availabilityArgument()
+		// END
+	} else if token.type = .ALT {
+		availabilityArgument()
+		// END
+	}
+	expect(["tvOS", "visionOS", "macOSApplicationExtension", "macOS", "watchOSApplicationExtension", "iOS", "iOSApplicationExtension", "watchOS", "macCatalystApplicationExtension", "macCatalyst", "tvOSApplicationExtension", "visionOSApplicationExtension", "*"])
+}
+func platformName() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["iOS"])
+}
+func architecture() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["i386"])
+}
+func controlTransferStatement() {
+	if token.type = .ALT {
+		breakStatement()
+		// END
+	} else if token.type = .ALT {
+		breakStatement()
+		// END
+	} else if token.type = .ALT {
+		breakStatement()
+		// END
+	} else if token.type = .ALT {
+		breakStatement()
+		// END
+	} else if token.type = .ALT {
+		breakStatement()
+		// END
+	}
+	expect(["break"])
+}
+func compilerControlStatement() {
+	if token.type = .ALT {
+		conditionalCompilationBlock()
+		// END
+	} else if token.type = .ALT {
+		conditionalCompilationBlock()
+		// END
+	} else if token.type = .ALT {
+		conditionalCompilationBlock()
+		// END
+	}
+	expect(["#if"])
+}
+func typeAnnotation() {
+	if token.type = .ALT {
+		next()
+	}
+	expect([":"])
+}
+func unionStyleEnumCaseList() {
+	if token.type = .ALT {
+		unionStyleEnumCase()
+		// END
+	} else if token.type = .ALT {
+		unionStyleEnumCase()
+		// END
+	}
+	expect(["plainIdentifier", "propertyWrapperProjection", "_", "escapedIdentifier", "implicitParameterName"])
+}
+func localParameterName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func functionCallArgumentClause() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["("])
+}
+func switchExpressionCases() {
+	if token.type = .ALT {
+		switchExpressionCase()
+		// OPT
+	}
+	expect(["@", "default", "case"])
+}
+func prefixOperator() {
+	if token.type = .ALT {
+		Operator()
+		// END
+	}
+	expect(["dotOperator", "plainOperator"])
+}
+func typeInheritanceList() {
+	if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	}
+	expect(["escapedIdentifier", "@", "propertyWrapperProjection", "_", "implicitParameterName", "plainIdentifier"])
+}
+func expressionPattern() {
+	if token.type = .ALT {
+		expression()
+		// END
+	}
+	expect(["self", "await", "nil", "stringLiteral", "propertyWrapperProjection", "try", "#imageLiteral", "true", "\\\\", "_", "(", "{", "escapedIdentifier", "#fileLiteral", "plainOperator", "plainIdentifier", "decimalFloatingPointLiteral", "&", "binaryLiteral", "switch", "super", "[", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "plainRegularExpressionLiteral", "#selector", "macroIdentifier", "false", "octalLiteral", "#keyPath", "if", "implicitParameterName", "#colorLiteral", ".", "decimalNumber", "hexadecimalLiteral"])
+}
+func functionCallArgumentList() {
+	if token.type = .ALT {
+		functionCallArgument()
+		// END
+	} else if token.type = .ALT {
+		functionCallArgument()
+		// END
+	}
+	expect(["await", "escapedIdentifier", "decimalFloatingPointLiteral", "propertyWrapperProjection", "{", "#imageLiteral", "[", "dotOperator", ".", "switch", "(", "#selector", "false", "implicitParameterName", "self", "try", "hexadecimalLiteral", "true", "stringLiteral", "#keyPath", "nil", "#colorLiteral", "_", "plainOperator", "macroIdentifier", "octalLiteral", "extendedRegularExpressionLiteral", "decimalNumber", "plainIdentifier", "hexadecimalFloatingPointLiteral", "if", "\\\\", "binaryLiteral", "&", "#fileLiteral", "super", "plainRegularExpressionLiteral"])
+}
+func implicitlyUnwrappedOptionalType() {
+	if token.type = .ALT {
+		type()
+		next()
+	}
+	expect(["Self", "plainIdentifier", "implicitParameterName", "propertyWrapperProjection", "escapedIdentifier", "[", "(", "@", "_", "some", "Any"])
+}
+func attributes() {
+	if token.type = .ALT {
+		attribute()
+		// OPT
+	}
+	expect(["@"])
+}
+func protocolName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func precedenceGroupDeclaration() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["precedencegroup"])
+}
+func protocolCompositionContinuation() {
+	if token.type = .ALT {
+		typeIdentifier()
+		// END
+	} else if token.type = .ALT {
+		typeIdentifier()
+		// END
+	}
+	expect(["plainIdentifier", "escapedIdentifier", "implicitParameterName", "propertyWrapperProjection", "_"])
+}
+func caseItemList() {
+	if token.type = .ALT {
+		pattern()
+		// OPT
+	} else if token.type = .ALT {
+		pattern()
+		// OPT
+	}
+	expect(["extendedRegularExpressionLiteral", "let", "false", "#keyPath", "stringLiteral", "binaryLiteral", "implicitParameterName", "dotOperator", "hexadecimalLiteral", ".", "var", "try", "\\\\", "_", "true", "#colorLiteral", "(", "hexadecimalFloatingPointLiteral", "nil", "is", "super", "#fileLiteral", "escapedIdentifier", "plainOperator", "plainRegularExpressionLiteral", "{", "switch", "#imageLiteral", "propertyWrapperProjection", "macroIdentifier", "decimalFloatingPointLiteral", "octalLiteral", "decimalNumber", "[", "plainIdentifier", "&", "self", "#selector", "if", "await"])
+}
+func assignmentOperator() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["="])
+}
+func awaitOperator() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["await"])
+}
+func prefixOperatorDeclaration() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["prefix"])
+}
+func throwStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["throw"])
+}
+func regularExpressionLiteral() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["plainRegularExpressionLiteral"])
+}
+func protocolBody() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["{"])
+}
+func functionType() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["(", "@"])
+}
+func argumentLabel() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func captureSpecifier() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["weak"])
+}
+func boxedProtocolType() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["any"])
+}
+func elseifDirectiveClauses() {
+	if token.type = .ALT {
+		elseifDirectiveClause()
+		// OPT
+	}
+	expect(["#elseif"])
+}
+func integerLiteral() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["binaryLiteral"])
 }
 func arrayType() {
 	if token.type = .ALT {
 		next()
 	}
 	expect(["["])
+}
+func typealiasDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["private", "typealias", "public", "open", "@", "package", "fileprivate", "internal"])
+}
+func closureExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["{"])
+}
+func defaultArgumentClause() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["="])
+}
+func selfSubscriptExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["self"])
+}
+func subscriptHead() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["fileprivate", "static", "required", "lazy", "public", "open", "mutating", "convenience", "override", "weak", "prefix", "nonmutating", "final", "nonisolated", "internal", "subscript", "@", "package", "unowned", "private", "class", "dynamic", "postfix", "optional", "infix"])
+}
+func guardStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["guard"])
+}
+func switchElseifDirectiveClause() {
+	if token.type = .ALT {
+		elseifDirective()
+		compilationCondition()
+		// OPT
+	}
+	expect(["#elseif"])
+}
+func functionTypeArgumentList() {
+	if token.type = .ALT {
+		functionTypeArgument()
+		// END
+	} else if token.type = .ALT {
+		functionTypeArgument()
+		// END
+	}
+	expect(["Self", "@", "propertyWrapperProjection", "inout", "(", "Any", "_", "implicitParameterName", "plainIdentifier", "escapedIdentifier", "some", "["])
+}
+func infixOperatorDeclaration() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["infix"])
+}
+func filePath() {
+	if token.type = .ALT {
+		staticStringLiteral()
+		// END
+	}
+	expect(["stringLiteral"])
+}
+func continueStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["continue"])
+}
+func elseDirectiveClause() {
+	if token.type = .ALT {
+		elseDirective()
+		// OPT
+	}
+	expect(["#else"])
+}
+func closureParameterName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func typeInheritanceClause() {
+	if token.type = .ALT {
+		next()
+	}
+	expect([":"])
+}
+func unionStyleEnumMember() {
+	if token.type = .ALT {
+		declaration()
+		// END
+	} else if token.type = .ALT {
+		declaration()
+		// END
+	} else if token.type = .ALT {
+		declaration()
+		// END
+	}
+	expect(["subscript", "nonmutating", "infix", "unowned", "internal", "deinit", "indirect", "precedencegroup", "fileprivate", "func", "class", "open", "static", "final", "required", "lazy", "import", "var", "postfix", "prefix", "nonisolated", "mutating", "package", "optional", "actor", "convenience", "extension", "protocol", "private", "typealias", "public", "@", "init", "weak", "struct", "dynamic", "enum", "override", "let"])
+}
+func superclassMethodExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["super"])
+}
+func typeIdentifier() {
+	if token.type = .ALT {
+		typeName()
+		// OPT
+	} else if token.type = .ALT {
+		typeName()
+		// OPT
+	}
+	expect(["_", "propertyWrapperProjection", "implicitParameterName", "escapedIdentifier", "plainIdentifier"])
+}
+func structMember() {
+	if token.type = .ALT {
+		declaration()
+		// END
+	} else if token.type = .ALT {
+		declaration()
+		// END
+	}
+	expect(["subscript", "nonmutating", "infix", "unowned", "internal", "deinit", "indirect", "precedencegroup", "fileprivate", "func", "class", "open", "static", "final", "required", "lazy", "import", "var", "postfix", "prefix", "nonisolated", "mutating", "package", "optional", "actor", "convenience", "extension", "protocol", "private", "typealias", "public", "@", "init", "weak", "struct", "dynamic", "enum", "override", "let"])
+}
+func extensionMember() {
+	if token.type = .ALT {
+		declaration()
+		// END
+	} else if token.type = .ALT {
+		declaration()
+		// END
+	}
+	expect(["subscript", "nonmutating", "infix", "unowned", "internal", "deinit", "indirect", "precedencegroup", "fileprivate", "func", "class", "open", "static", "final", "required", "lazy", "import", "var", "postfix", "prefix", "nonisolated", "mutating", "package", "optional", "actor", "convenience", "extension", "protocol", "private", "typealias", "public", "@", "init", "weak", "struct", "dynamic", "enum", "override", "let"])
+}
+func rawValueStyleEnumMembers() {
+	if token.type = .ALT {
+		rawValueStyleEnumMember()
+		// OPT
+	}
+	expect(["fileprivate", "func", "private", "#sourceLocation", "convenience", "weak", "infix", "package", "typealias", "open", "class", "var", "import", "mutating", "@", "subscript", "indirect", "case", "internal", "protocol", "enum", "extension", "precedencegroup", "init", "optional", "let", "#error", "#warning", "struct", "nonmutating", "final", "unowned", "required", "static", "actor", "lazy", "postfix", "nonisolated", "dynamic", "#if", "override", "deinit", "public", "prefix"])
+}
+func typeCastingPattern() {
+	if token.type = .ALT {
+		isPattern()
+		// END
+	} else if token.type = .ALT {
+		isPattern()
+		// END
+	}
+	expect(["is"])
+}
+func macroDefinition() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["="])
+}
+func diagnosticStatement() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["#warning"])
+}
+func switchExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["switch"])
+}
+func conditionList() {
+	if token.type = .ALT {
+		condition()
+		// END
+	} else if token.type = .ALT {
+		condition()
+		// END
+	}
+	expect(["_", "&", "binaryLiteral", "#keyPath", "await", "if", "implicitParameterName", "let", "dotOperator", "(", "[", "escapedIdentifier", "plainIdentifier", "case", "false", "var", "#available", "#fileLiteral", "decimalFloatingPointLiteral", "hexadecimalLiteral", "decimalNumber", "try", "#selector", "switch", "#colorLiteral", "\\\\", "plainRegularExpressionLiteral", "nil", "self", "super", "octalLiteral", "#unavailable", ".", "{", "propertyWrapperProjection", "true", "stringLiteral", "macroIdentifier", "#imageLiteral", "plainOperator", "extendedRegularExpressionLiteral", "hexadecimalFloatingPointLiteral"])
+}
+func externalParameterName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func decimalDigits() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["decimalNumber"])
+}
+func attributeArgumentClause() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["("])
+}
+func conditionalCompilationBlock() {
+	if token.type = .ALT {
+		ifDirectiveClause()
+		// OPT
+	}
+	expect(["#if"])
+}
+func rawValueStyleEnum() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["enum"])
+}
+func macroFunctionSignatureResult() {
+	if token.type = .ALT {
+		next()
+	}
+	expect([">"])
+}
+func requirement() {
+	if token.type = .ALT {
+		conformanceRequirement()
+		// END
+	} else if token.type = .ALT {
+		conformanceRequirement()
+		// END
+	}
+	expect(["implicitParameterName", "propertyWrapperProjection", "escapedIdentifier", "_", "plainIdentifier"])
+}
+func protocolDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["open", "@", "protocol", "private", "public", "internal", "package", "fileprivate"])
+}
+func expression() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["_", "hexadecimalFloatingPointLiteral", "[", "#selector", "plainOperator", "decimalNumber", "implicitParameterName", "nil", "await", "try", "extendedRegularExpressionLiteral", "false", "hexadecimalLiteral", "decimalFloatingPointLiteral", "#imageLiteral", "octalLiteral", "#keyPath", "dotOperator", "\\\\", "plainIdentifier", "binaryLiteral", "#colorLiteral", "super", "stringLiteral", "switch", "propertyWrapperProjection", "&", "escapedIdentifier", ".", "macroIdentifier", "if", "{", "self", "true", "(", "plainRegularExpressionLiteral", "#fileLiteral"])
+}
+func structName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func selfMethodExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["self"])
+}
+func mutationModifier() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["mutating"])
+}
+func functionHead() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["@", "prefix", "open", "optional", "fileprivate", "class", "unowned", "convenience", "nonisolated", "public", "package", "override", "lazy", "func", "final", "dynamic", "private", "infix", "weak", "internal", "required", "postfix", "nonmutating", "mutating", "static"])
+}
+func balancedToken() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	} else if token.type = .ALT {
+		identifier()
+		// END
+	} else if token.type = .ALT {
+		identifier()
+		// END
+	} else if token.type = .ALT {
+		identifier()
+		// END
+	} else if token.type = .ALT {
+		identifier()
+		// END
+	} else if token.type = .ALT {
+		identifier()
+		// END
+	} else if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func genericParameter() {
+	if token.type = .ALT {
+		typeName()
+		// END
+	} else if token.type = .ALT {
+		typeName()
+		// END
+	} else if token.type = .ALT {
+		typeName()
+		// END
+	}
+	expect(["_", "propertyWrapperProjection", "implicitParameterName", "escapedIdentifier", "plainIdentifier"])
+}
+func ifDirectiveClause() {
+	if token.type = .ALT {
+		ifDirective()
+		compilationCondition()
+		// OPT
+	}
+	expect(["#if"])
+}
+func typeCastingOperator() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["is"])
+}
+func typeName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func operatorDeclaration() {
+	if token.type = .ALT {
+		prefixOperatorDeclaration()
+		// END
+	} else if token.type = .ALT {
+		prefixOperatorDeclaration()
+		// END
+	} else if token.type = .ALT {
+		prefixOperatorDeclaration()
+		// END
+	}
+	expect(["prefix"])
+}
+func protocolCompositionType() {
+	if token.type = .ALT {
+		typeIdentifier()
+		next()
+	}
+	expect(["plainIdentifier", "escapedIdentifier", "implicitParameterName", "propertyWrapperProjection", "_"])
+}
+func arrayLiteral() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["["])
+}
+func initializerDeclaration() {
+	if token.type = .ALT {
+		initializerHead()
+		// OPT
+	} else if token.type = .ALT {
+		initializerHead()
+		// OPT
+	}
+	expect(["prefix", "package", "unowned", "optional", "internal", "lazy", "static", "convenience", "@", "public", "required", "class", "fileprivate", "private", "nonisolated", "override", "weak", "nonmutating", "final", "postfix", "dynamic", "mutating", "infix", "init", "open"])
+}
+func endifDirective() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["#endif"])
+}
+func rawValueStyleEnumCaseClause() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["@", "case"])
+}
+func rawValueAssignment() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["="])
+}
+func macroDeclaration() {
+	if token.type = .ALT {
+		macroHead()
+		identifier()
+		// OPT
+	}
+	expect(["private", "prefix", "required", "class", "nonisolated", "package", "nonmutating", "public", "lazy", "static", "postfix", "dynamic", "override", "weak", "mutating", "macro", "infix", "internal", "fileprivate", "convenience", "optional", "unowned", "final", "open", "@"])
+}
+func genericParameterList() {
+	if token.type = .ALT {
+		genericParameter()
+		// END
+	} else if token.type = .ALT {
+		genericParameter()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func elseClause() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["else"])
+}
+func actorMembers() {
+	if token.type = .ALT {
+		actorMember()
+		// OPT
+	}
+	expect(["dynamic", "private", "convenience", "protocol", "internal", "indirect", "fileprivate", "class", "func", "typealias", "mutating", "open", "subscript", "var", "#warning", "#if", "enum", "lazy", "nonisolated", "weak", "override", "#sourceLocation", "@", "nonmutating", "public", "unowned", "prefix", "required", "extension", "postfix", "actor", "struct", "optional", "precedencegroup", "package", "infix", "deinit", "let", "final", "import", "#error", "init", "static"])
+}
+func elseifDirective() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["#elseif"])
+}
+func captureList() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["["])
+}
+func unionStyleEnumCase() {
+	if token.type = .ALT {
+		enumCaseName()
+		// OPT
+	}
+	expect(["implicitParameterName", "plainIdentifier", "escapedIdentifier", "_", "propertyWrapperProjection"])
+}
+func unionStyleEnum() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["indirect", "enum"])
+}
+func dictionaryLiteral() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["["])
+}
+func type() {
+	if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	} else if token.type = .ALT {
+		functionType()
+		// END
+	}
+	expect(["(", "@"])
+}
+func protocolInitializerDeclaration() {
+	if token.type = .ALT {
+		initializerHead()
+		// OPT
+	} else if token.type = .ALT {
+		initializerHead()
+		// OPT
+	}
+	expect(["prefix", "package", "unowned", "optional", "internal", "lazy", "static", "convenience", "@", "public", "required", "class", "fileprivate", "private", "nonisolated", "override", "weak", "nonmutating", "final", "postfix", "dynamic", "mutating", "infix", "init", "open"])
+}
+func returnStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["return"])
+}
+func swiftVersionContinuation() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["."])
+}
+func getterKeywordClause() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["@", "nonmutating", "mutating", "get"])
+}
+func deinitializerDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["@", "deinit"])
+}
+func initializerBody() {
+	if token.type = .ALT {
+		codeBlock()
+		// END
+	}
+	expect(["{"])
+}
+func keyPathStringExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["#keyPath"])
+}
+func actorIsolationModifier() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["nonisolated"])
+}
+func decimalLiteral() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["decimalNumber"])
+}
+func conditionalOperator() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["?"])
+}
+func selfExpression() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["self"])
+}
+func functionBody() {
+	if token.type = .ALT {
+		codeBlock()
+		// END
+	}
+	expect(["{"])
+}
+func attribute() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["@"])
+}
+func whileStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["while"])
+}
+func enumCasePattern() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect([".", "escapedIdentifier", "_", "implicitParameterName", "propertyWrapperProjection", "plainIdentifier"])
+}
+func keyPathComponent() {
+	if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func importPath() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	} else if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func forInStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["for"])
+}
+func arrayLiteralItem() {
+	if token.type = .ALT {
+		expression()
+		// END
+	}
+	expect(["self", "await", "nil", "stringLiteral", "propertyWrapperProjection", "try", "#imageLiteral", "true", "\\\\", "_", "(", "{", "escapedIdentifier", "#fileLiteral", "plainOperator", "plainIdentifier", "decimalFloatingPointLiteral", "&", "binaryLiteral", "switch", "super", "[", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "plainRegularExpressionLiteral", "#selector", "macroIdentifier", "false", "octalLiteral", "#keyPath", "if", "implicitParameterName", "#colorLiteral", ".", "decimalNumber", "hexadecimalLiteral"])
+}
+func variableDeclaration() {
+	if token.type = .ALT {
+		variableDeclarationHead()
+		patternInitializerList()
+		// END
+	} else if token.type = .ALT {
+		variableDeclarationHead()
+		patternInitializerList()
+		// END
+	} else if token.type = .ALT {
+		variableDeclarationHead()
+		patternInitializerList()
+		// END
+	} else if token.type = .ALT {
+		variableDeclarationHead()
+		patternInitializerList()
+		// END
+	} else if token.type = .ALT {
+		variableDeclarationHead()
+		patternInitializerList()
+		// END
+	} else if token.type = .ALT {
+		variableDeclarationHead()
+		patternInitializerList()
+		// END
+	}
+	expect(["package", "private", "fileprivate", "mutating", "@", "unowned", "lazy", "final", "convenience", "required", "var", "nonisolated", "class", "optional", "postfix", "override", "infix", "static", "dynamic", "public", "prefix", "weak", "internal", "open", "nonmutating"])
+}
+func optionalPattern() {
+	if token.type = .ALT {
+		identifierPattern()
+		next()
+	}
+	expect(["_", "escapedIdentifier", "implicitParameterName", "plainIdentifier", "propertyWrapperProjection"])
+}
+func statementLabel() {
+	if token.type = .ALT {
+		labelName()
+		next()
+	}
+	expect(["plainIdentifier", "escapedIdentifier", "_", "implicitParameterName", "propertyWrapperProjection"])
+}
+func functionResult() {
+	if token.type = .ALT {
+		next()
+	}
+	expect([">"])
+}
+func primaryExpression() {
+	if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	} else if token.type = .ALT {
+		identifier()
+		// OPT
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func booleanLiteral() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["true"])
+}
+func superclassInitializerExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["super"])
+}
+func captureListItem() {
+	if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	}
+	expect(["weak", "plainIdentifier", "unowned", "implicitParameterName", "unowned(unsafe)", "propertyWrapperProjection", "escapedIdentifier", "unowned(safe)", "_"])
+}
+func setterName() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["("])
+}
+func declarationModifier() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["class"])
+}
+func actorBody() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["{"])
+}
+func catchPattern() {
+	if token.type = .ALT {
+		pattern()
+		// OPT
+	}
+	expect(["extendedRegularExpressionLiteral", "let", "false", "#keyPath", "stringLiteral", "binaryLiteral", "implicitParameterName", "dotOperator", "hexadecimalLiteral", ".", "var", "try", "\\\\", "_", "true", "#colorLiteral", "(", "hexadecimalFloatingPointLiteral", "nil", "is", "super", "#fileLiteral", "escapedIdentifier", "plainOperator", "plainRegularExpressionLiteral", "{", "switch", "#imageLiteral", "propertyWrapperProjection", "macroIdentifier", "decimalFloatingPointLiteral", "octalLiteral", "decimalNumber", "[", "plainIdentifier", "&", "self", "#selector", "if", "await"])
+}
+func anyType() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["Any"])
+}
+func parameterModifier() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["inout"])
+}
+func parenthesizedExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["("])
+}
+func platformCondition() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["os"])
+}
+func structDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["struct", "open", "internal", "@", "public", "fileprivate", "private", "package"])
+}
+func optionalType() {
+	if token.type = .ALT {
+		type()
+		next()
+	}
+	expect(["Self", "plainIdentifier", "implicitParameterName", "propertyWrapperProjection", "escapedIdentifier", "[", "(", "@", "_", "some", "Any"])
+}
+func classMember() {
+	if token.type = .ALT {
+		declaration()
+		// END
+	} else if token.type = .ALT {
+		declaration()
+		// END
+	}
+	expect(["subscript", "nonmutating", "infix", "unowned", "internal", "deinit", "indirect", "precedencegroup", "fileprivate", "func", "class", "open", "static", "final", "required", "lazy", "import", "var", "postfix", "prefix", "nonisolated", "mutating", "package", "optional", "actor", "convenience", "extension", "protocol", "private", "typealias", "public", "@", "init", "weak", "struct", "dynamic", "enum", "override", "let"])
+}
+func actorName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func structBody() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["{"])
+}
+func tupleElement() {
+	if token.type = .ALT {
+		expression()
+		// END
+	} else if token.type = .ALT {
+		expression()
+		// END
+	}
+	expect(["self", "await", "nil", "stringLiteral", "propertyWrapperProjection", "try", "#imageLiteral", "true", "\\\\", "_", "(", "{", "escapedIdentifier", "#fileLiteral", "plainOperator", "plainIdentifier", "decimalFloatingPointLiteral", "&", "binaryLiteral", "switch", "super", "[", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "plainRegularExpressionLiteral", "#selector", "macroIdentifier", "false", "octalLiteral", "#keyPath", "if", "implicitParameterName", "#colorLiteral", ".", "decimalNumber", "hexadecimalLiteral"])
+}
+func keyPathPostfixes() {
+	if token.type = .ALT {
+		keyPathPostfix()
+		// OPT
+	}
+	expect(["!", "?", "self", "["])
+}
+func subscriptResult() {
+	if token.type = .ALT {
+		next()
+	}
+	expect([">"])
+}
+func tupleType() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["("])
+}
+func optionalBindingCondition() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["let"])
+}
+func enumName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func protocolMemberDeclaration() {
+	if token.type = .ALT {
+		protocolPropertyDeclaration()
+		// END
+	} else if token.type = .ALT {
+		protocolPropertyDeclaration()
+		// END
+	} else if token.type = .ALT {
+		protocolPropertyDeclaration()
+		// END
+	} else if token.type = .ALT {
+		protocolPropertyDeclaration()
+		// END
+	} else if token.type = .ALT {
+		protocolPropertyDeclaration()
+		// END
+	} else if token.type = .ALT {
+		protocolPropertyDeclaration()
+		// END
+	}
+	expect(["class", "var", "nonmutating", "final", "internal", "public", "lazy", "unowned", "required", "open", "nonisolated", "package", "prefix", "optional", "private", "convenience", "fileprivate", "static", "override", "weak", "infix", "mutating", "@", "dynamic", "postfix"])
+}
+func macroExpansionExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["macroIdentifier"])
+}
+func statement() {
+	if token.type = .ALT {
+		expression()
+		// OPT
+	} else if token.type = .ALT {
+		expression()
+		// OPT
+	} else if token.type = .ALT {
+		expression()
+		// OPT
+	} else if token.type = .ALT {
+		expression()
+		// OPT
+	} else if token.type = .ALT {
+		expression()
+		// OPT
+	} else if token.type = .ALT {
+		expression()
+		// OPT
+	} else if token.type = .ALT {
+		expression()
+		// OPT
+	} else if token.type = .ALT {
+		expression()
+		// OPT
+	} else if token.type = .ALT {
+		expression()
+		// OPT
+	}
+	expect(["self", "await", "nil", "stringLiteral", "propertyWrapperProjection", "try", "#imageLiteral", "true", "\\\\", "_", "(", "{", "escapedIdentifier", "#fileLiteral", "plainOperator", "plainIdentifier", "decimalFloatingPointLiteral", "&", "binaryLiteral", "switch", "super", "[", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "plainRegularExpressionLiteral", "#selector", "macroIdentifier", "false", "octalLiteral", "#keyPath", "if", "implicitParameterName", "#colorLiteral", ".", "decimalNumber", "hexadecimalLiteral"])
+}
+func closureSignature() {
+	if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	}
+	expect(["plainIdentifier", "[", "propertyWrapperProjection", "escapedIdentifier", "(", "implicitParameterName", "_"])
+}
+func initializerHead() {
+	if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	}
+	expect(["fileprivate", "convenience", "required", "optional", "unowned", "package", "final", "postfix", "public", "@", "init", "class", "prefix", "nonisolated", "nonmutating", "static", "private", "dynamic", "override", "infix", "internal", "lazy", "weak", "mutating", "open"])
+}
+func catchClauses() {
+	if token.type = .ALT {
+		catchClause()
+		// OPT
+	}
+	expect(["catch"])
+}
+func valueBindingPattern() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["var"])
+}
+func rawValueStyleEnumCase() {
+	if token.type = .ALT {
+		enumCaseName()
+		// OPT
+	}
+	expect(["implicitParameterName", "plainIdentifier", "escapedIdentifier", "_", "propertyWrapperProjection"])
+}
+func ifExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["if"])
+}
+func importDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["@", "import"])
+}
+func structMembers() {
+	if token.type = .ALT {
+		structMember()
+		// OPT
+	}
+	expect(["deinit", "weak", "dynamic", "final", "unowned", "override", "public", "struct", "subscript", "func", "extension", "package", "class", "let", "required", "init", "convenience", "#sourceLocation", "enum", "prefix", "fileprivate", "typealias", "precedencegroup", "@", "nonmutating", "#if", "open", "internal", "postfix", "indirect", "protocol", "var", "#warning", "#error", "static", "lazy", "mutating", "optional", "infix", "import", "nonisolated", "actor", "private"])
+}
+func requirementList() {
+	if token.type = .ALT {
+		requirement()
+		// END
+	} else if token.type = .ALT {
+		requirement()
+		// END
+	}
+	expect(["propertyWrapperProjection", "escapedIdentifier", "_", "plainIdentifier", "implicitParameterName"])
+}
+func switchCases() {
+	if token.type = .ALT {
+		switchCase()
+		// OPT
+	}
+	expect(["case", "@", "default", "#if"])
 }
 func keyPathPostfix() {
 	if token.type = .ALT {
@@ -255,6 +1902,388 @@ func keyPathPostfix() {
 		next()
 	}
 	expect(["?"])
+}
+func didSetClause() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["didSet", "@"])
+}
+func typealiasAssignment() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["="])
+}
+func elseDirective() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["#else"])
+}
+func switchCase() {
+	if token.type = .ALT {
+		caseLabel()
+		statements()
+		// END
+	} else if token.type = .ALT {
+		caseLabel()
+		statements()
+		// END
+	} else if token.type = .ALT {
+		caseLabel()
+		statements()
+		// END
+	}
+	expect(["case", "@"])
+}
+func postfixExpression() {
+	if token.type = .ALT {
+		primaryExpression()
+		// END
+	} else if token.type = .ALT {
+		primaryExpression()
+		// END
+	} else if token.type = .ALT {
+		primaryExpression()
+		// END
+	} else if token.type = .ALT {
+		primaryExpression()
+		// END
+	} else if token.type = .ALT {
+		primaryExpression()
+		// END
+	} else if token.type = .ALT {
+		primaryExpression()
+		// END
+	} else if token.type = .ALT {
+		primaryExpression()
+		// END
+	} else if token.type = .ALT {
+		primaryExpression()
+		// END
+	} else if token.type = .ALT {
+		primaryExpression()
+		// END
+	}
+	expect(["#colorLiteral", "super", "nil", "switch", "#imageLiteral", ".", "decimalNumber", "implicitParameterName", "macroIdentifier", "plainRegularExpressionLiteral", "propertyWrapperProjection", "\\\\", "self", "stringLiteral", "false", "{", "binaryLiteral", "escapedIdentifier", "(", "hexadecimalLiteral", "#fileLiteral", "decimalFloatingPointLiteral", "#selector", "[", "_", "extendedRegularExpressionLiteral", "hexadecimalFloatingPointLiteral", "if", "#keyPath", "true", "plainIdentifier", "octalLiteral"])
+}
+func typealiasName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func functionSignature() {
+	if token.type = .ALT {
+		parameterClause()
+		// OPT
+	} else if token.type = .ALT {
+		parameterClause()
+		// OPT
+	}
+	expect(["("])
+}
+func parameterList() {
+	if token.type = .ALT {
+		parameter()
+		// END
+	} else if token.type = .ALT {
+		parameter()
+		// END
+	}
+	expect(["escapedIdentifier", "propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier"])
+}
+func protocolMethodDeclaration() {
+	if token.type = .ALT {
+		functionHead()
+		functionName()
+		// OPT
+	}
+	expect(["mutating", "unowned", "private", "func", "class", "weak", "internal", "static", "nonisolated", "required", "dynamic", "optional", "override", "public", "fileprivate", "lazy", "final", "convenience", "@", "nonmutating", "infix", "prefix", "open", "postfix", "package"])
+}
+func labelName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func protocolSubscriptDeclaration() {
+	if token.type = .ALT {
+		subscriptHead()
+		subscriptResult()
+		// OPT
+	}
+	expect(["class", "weak", "internal", "final", "@", "nonisolated", "lazy", "subscript", "postfix", "open", "package", "override", "convenience", "public", "unowned", "infix", "nonmutating", "private", "optional", "static", "fileprivate", "mutating", "required", "dynamic", "prefix"])
+}
+func extensionBody() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["{"])
+}
+func fallthroughStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["fallthrough"])
+}
+func patternInitializerList() {
+	if token.type = .ALT {
+		patternInitializer()
+		// END
+	} else if token.type = .ALT {
+		patternInitializer()
+		// END
+	}
+	expect(["plainRegularExpressionLiteral", "let", "escapedIdentifier", "decimalNumber", "await", "extendedRegularExpressionLiteral", "is", "_", "false", "implicitParameterName", "octalLiteral", "if", "self", "(", "#fileLiteral", "dotOperator", "stringLiteral", "hexadecimalFloatingPointLiteral", "try", "\\\\", "macroIdentifier", "propertyWrapperProjection", "var", "&", "[", "hexadecimalLiteral", "decimalFloatingPointLiteral", "binaryLiteral", "#keyPath", "plainIdentifier", "plainOperator", "super", "nil", "{", "switch", ".", "true", "#selector", "#colorLiteral", "#imageLiteral"])
+}
+func declaration() {
+	if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	} else if token.type = .ALT {
+		importDeclaration()
+		// END
+	}
+	expect(["import", "@"])
+}
+func parameterTypeAnnotation() {
+	if token.type = .ALT {
+		next()
+	}
+	expect([":"])
+}
+func enumDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	}
+	expect(["indirect", "private", "@", "internal", "fileprivate", "package", "public", "enum", "open"])
+}
+func subscriptDeclaration() {
+	if token.type = .ALT {
+		subscriptHead()
+		subscriptResult()
+		// OPT
+	} else if token.type = .ALT {
+		subscriptHead()
+		subscriptResult()
+		// OPT
+	} else if token.type = .ALT {
+		subscriptHead()
+		subscriptResult()
+		// OPT
+	}
+	expect(["class", "weak", "internal", "final", "@", "nonisolated", "lazy", "subscript", "postfix", "open", "package", "override", "convenience", "public", "unowned", "infix", "nonmutating", "private", "optional", "static", "fileprivate", "mutating", "required", "dynamic", "prefix"])
+}
+func wildcardPattern() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["_"])
+}
+func parameterClause() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["("])
+}
+func closureParameterClause() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["("])
+}
+func identifierPattern() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func genericArgument() {
+	if token.type = .ALT {
+		type()
+		// END
+	}
+	expect(["Self", "plainIdentifier", "implicitParameterName", "propertyWrapperProjection", "escapedIdentifier", "[", "(", "@", "_", "some", "Any"])
+}
+func caseLabel() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["@", "case"])
+}
+func interpolatedStringLiteral() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["stringLiteral"])
+}
+func accessLevelModifier() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["private"])
+}
+func identifier() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["_"])
+}
+func className() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func protocolMember() {
+	if token.type = .ALT {
+		protocolMemberDeclaration()
+		// END
+	} else if token.type = .ALT {
+		protocolMemberDeclaration()
+		// END
+	}
+	expect(["init", "prefix", "infix", "class", "nonisolated", "optional", "dynamic", "override", "internal", "package", "fileprivate", "var", "func", "unowned", "typealias", "static", "convenience", "mutating", "postfix", "@", "public", "nonmutating", "private", "subscript", "weak", "associatedtype", "open", "required", "lazy", "final"])
+}
+func breakStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["break"])
+}
+func staticStringLiteral() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["stringLiteral"])
+}
+func switchIfDirectiveClause() {
+	if token.type = .ALT {
+		ifDirective()
+		compilationCondition()
+		// OPT
+	}
+	expect(["#if"])
+}
+func ifDirective() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["#if"])
+}
+func tryOperator() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["try"])
+}
+func arrayLiteralItems() {
+	if token.type = .ALT {
+		arrayLiteralItem()
+		// OPT
+	} else if token.type = .ALT {
+		arrayLiteralItem()
+		// OPT
+	}
+	expect(["stringLiteral", "plainOperator", "decimalFloatingPointLiteral", "octalLiteral", "#colorLiteral", "#fileLiteral", "switch", ".", "binaryLiteral", "plainIdentifier", "hexadecimalLiteral", "plainRegularExpressionLiteral", "try", "implicitParameterName", "(", "false", "true", "macroIdentifier", "await", "dotOperator", "\\\\", "nil", "[", "&", "super", "#imageLiteral", "hexadecimalFloatingPointLiteral", "if", "propertyWrapperProjection", "self", "{", "_", "#keyPath", "decimalNumber", "extendedRegularExpressionLiteral", "#selector", "escapedIdentifier"])
+}
+func functionTypeArgument() {
+	if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	}
+	expect(["inout", "plainIdentifier", "Any", "propertyWrapperProjection", "_", "some", "(", "escapedIdentifier", "[", "@", "Self", "implicitParameterName"])
 }
 func explicitMemberExpression() {
 	if token.type = .ALT {
@@ -270,20 +2299,7 @@ func explicitMemberExpression() {
 		postfixExpression()
 		next()
 	}
-	expect(["hexadecimalLiteral", "#keyPath", "plainIdentifier", "extendedRegularExpressionLiteral", "{", "hexadecimalFloatingPointLiteral", "false", "_", "octalLiteral", "\\\\", "[", "#selector", "stringLiteral", "#imageLiteral", "escapedIdentifier", "true", "super", "propertyWrapperProjection", "#fileLiteral", "#colorLiteral", "nil", "macroIdentifier", "switch", "decimalFloatingPointLiteral", "binaryLiteral", "self", "plainRegularExpressionLiteral", "decimalNumber", "implicitParameterName", "(", "if", "."])
-}
-func captureList() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["["])
-}
-func labeledTrailingClosures() {
-	if token.type = .ALT {
-		labeledTrailingClosure()
-		// OPT
-	}
-	expect(["escapedIdentifier", "implicitParameterName", "propertyWrapperProjection", "_", "plainIdentifier"])
+	expect(["#keyPath", "hexadecimalLiteral", "switch", "macroIdentifier", "[", "_", "#colorLiteral", "octalLiteral", "#selector", "false", "escapedIdentifier", "nil", "self", "implicitParameterName", "\\\\", "decimalFloatingPointLiteral", "super", "propertyWrapperProjection", "stringLiteral", "hexadecimalFloatingPointLiteral", "if", "(", "plainRegularExpressionLiteral", "#imageLiteral", "{", "plainIdentifier", "#fileLiteral", "decimalNumber", "binaryLiteral", "extendedRegularExpressionLiteral", ".", "true"])
 }
 func importKind() {
 	if token.type = .ALT {
@@ -305,57 +2321,401 @@ func importKind() {
 	}
 	expect(["typealias"])
 }
-func inOutExpression() {
+func subscriptExpression() {
 	if token.type = .ALT {
+		postfixExpression()
 		next()
 	}
-	expect(["&"])
+	expect(["#keyPath", "hexadecimalLiteral", "switch", "macroIdentifier", "[", "_", "#colorLiteral", "octalLiteral", "#selector", "false", "escapedIdentifier", "nil", "self", "implicitParameterName", "\\\\", "decimalFloatingPointLiteral", "super", "propertyWrapperProjection", "stringLiteral", "hexadecimalFloatingPointLiteral", "if", "(", "plainRegularExpressionLiteral", "#imageLiteral", "{", "plainIdentifier", "#fileLiteral", "decimalNumber", "binaryLiteral", "extendedRegularExpressionLiteral", ".", "true"])
 }
-func parameterTypeAnnotation() {
-	if token.type = .ALT {
-		next()
-	}
-	expect([":"])
-}
-func catchPattern() {
-	if token.type = .ALT {
-		pattern()
-		// OPT
-	}
-	expect(["await", "#keyPath", "binaryLiteral", "try", "(", "if", "implicitParameterName", "#colorLiteral", "{", "decimalNumber", "plainOperator", "macroIdentifier", "let", "&", ".", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "#selector", "is", "#imageLiteral", "_", "propertyWrapperProjection", "decimalFloatingPointLiteral", "plainRegularExpressionLiteral", "var", "true", "escapedIdentifier", "\\\\", "stringLiteral", "octalLiteral", "super", "false", "self", "switch", "hexadecimalLiteral", "plainIdentifier", "[", "nil", "#fileLiteral"])
-}
-func throwsClause() {
+func willSetDidSetBlock() {
 	if token.type = .ALT {
 		next()
 	} else if token.type = .ALT {
 		next()
 	}
-	expect(["throws"])
+	expect(["{"])
 }
-func dictionaryLiteralItems() {
+func enumCaseName() {
 	if token.type = .ALT {
-		dictionaryLiteralItem()
-		// OPT
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func keyPathComponents() {
+	if token.type = .ALT {
+		keyPathComponent()
+		// END
 	} else if token.type = .ALT {
-		dictionaryLiteralItem()
-		// OPT
+		keyPathComponent()
+		// END
 	}
-	expect(["implicitParameterName", "\\\\", "#selector", "&", "super", "self", "plainOperator", "{", "#fileLiteral", "extendedRegularExpressionLiteral", "[", "true", "octalLiteral", "plainRegularExpressionLiteral", "false", "switch", "_", "plainIdentifier", "binaryLiteral", "#keyPath", "try", "await", "#colorLiteral", "decimalNumber", "hexadecimalFloatingPointLiteral", "hexadecimalLiteral", "stringLiteral", "propertyWrapperProjection", ".", "nil", "(", "if", "decimalFloatingPointLiteral", "escapedIdentifier", "dotOperator", "#imageLiteral", "macroIdentifier"])
+	expect(["propertyWrapperProjection", "[", "escapedIdentifier", "implicitParameterName", "plainIdentifier", "self", "_", "!", "?"])
 }
-func classDeclaration() {
+func tupleExpression() {
 	if token.type = .ALT {
-		// OPT
+		next()
 	} else if token.type = .ALT {
-		// OPT
+		next()
 	}
-	expect(["class", "package", "private", "internal", "public", "open", "final", "fileprivate", "@"])
+	expect(["("])
 }
-func declarationModifiers() {
+func caseCondition() {
 	if token.type = .ALT {
-		declarationModifier()
+		next()
+	}
+	expect(["case"])
+}
+func literal() {
+	if token.type = .ALT {
+		numericLiteral()
+		// END
+	} else if token.type = .ALT {
+		numericLiteral()
+		// END
+	} else if token.type = .ALT {
+		numericLiteral()
+		// END
+	} else if token.type = .ALT {
+		numericLiteral()
+		// END
+	} else if token.type = .ALT {
+		numericLiteral()
+		// END
+	}
+	expect(["decimalNumber", "octalLiteral", "hexadecimalLiteral", "binaryLiteral", "hexadecimalFloatingPointLiteral", "decimalFloatingPointLiteral"])
+}
+func functionDeclaration() {
+	if token.type = .ALT {
+		functionHead()
+		functionName()
 		// OPT
 	}
-	expect(["infix", "internal", "lazy", "package", "postfix", "required", "dynamic", "private", "class", "weak", "fileprivate", "nonisolated", "open", "optional", "public", "mutating", "convenience", "override", "static", "final", "nonmutating", "prefix", "unowned"])
+	expect(["mutating", "unowned", "private", "func", "class", "weak", "internal", "static", "nonisolated", "required", "dynamic", "optional", "override", "public", "fileprivate", "lazy", "final", "convenience", "@", "nonmutating", "infix", "prefix", "open", "postfix", "package"])
+}
+func swiftVersion() {
+	if token.type = .ALT {
+		decimalDigits()
+		// OPT
+	}
+	expect(["decimalNumber"])
+}
+func condition() {
+	if token.type = .ALT {
+		expression()
+		// END
+	} else if token.type = .ALT {
+		expression()
+		// END
+	} else if token.type = .ALT {
+		expression()
+		// END
+	} else if token.type = .ALT {
+		expression()
+		// END
+	}
+	expect(["self", "await", "nil", "stringLiteral", "propertyWrapperProjection", "try", "#imageLiteral", "true", "\\\\", "_", "(", "{", "escapedIdentifier", "#fileLiteral", "plainOperator", "plainIdentifier", "decimalFloatingPointLiteral", "&", "binaryLiteral", "switch", "super", "[", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "plainRegularExpressionLiteral", "#selector", "macroIdentifier", "false", "octalLiteral", "#keyPath", "if", "implicitParameterName", "#colorLiteral", ".", "decimalNumber", "hexadecimalLiteral"])
+}
+func precedenceGroupAssociativity() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["associativity"])
+}
+func precedenceGroupNames() {
+	if token.type = .ALT {
+		precedenceGroupName()
+		// END
+	} else if token.type = .ALT {
+		precedenceGroupName()
+		// END
+	}
+	expect(["propertyWrapperProjection", "_", "implicitParameterName", "plainIdentifier", "escapedIdentifier"])
+}
+func switchExpressionCase() {
+	if token.type = .ALT {
+		caseLabel()
+		statement()
+		// END
+	} else if token.type = .ALT {
+		caseLabel()
+		statement()
+		// END
+	}
+	expect(["case", "@"])
+}
+func variableName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func argumentNames() {
+	if token.type = .ALT {
+		argumentName()
+		// OPT
+	}
+	expect(["implicitParameterName", "_", "plainIdentifier", "propertyWrapperProjection", "escapedIdentifier"])
+}
+func repeatWhileStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["repeat"])
+}
+func functionTypeArgumentClause() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["("])
+}
+func macroHead() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["package", "private", "postfix", "dynamic", "class", "nonisolated", "weak", "nonmutating", "static", "@", "mutating", "required", "override", "public", "fileprivate", "lazy", "optional", "convenience", "macro", "internal", "open", "final", "prefix", "infix", "unowned"])
+}
+func postfixOperatorDeclaration() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["postfix"])
+}
+func labeledStatement() {
+	if token.type = .ALT {
+		statementLabel()
+		loopStatement()
+		// END
+	} else if token.type = .ALT {
+		statementLabel()
+		loopStatement()
+		// END
+	} else if token.type = .ALT {
+		statementLabel()
+		loopStatement()
+		// END
+	} else if token.type = .ALT {
+		statementLabel()
+		loopStatement()
+		// END
+	}
+	expect(["propertyWrapperProjection", "_", "escapedIdentifier", "implicitParameterName", "plainIdentifier"])
+}
+func lineNumber() {
+	if token.type = .ALT {
+		decimalDigits()
+		// END
+	}
+	expect(["decimalNumber"])
+}
+func switchElseDirectiveClause() {
+	if token.type = .ALT {
+		elseDirective()
+		// OPT
+	}
+	expect(["#else"])
+}
+func trailingClosures() {
+	if token.type = .ALT {
+		closureExpression()
+		// OPT
+	}
+	expect(["{"])
+}
+func catchClause() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["catch"])
+}
+func superclassSubscriptExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["super"])
+}
+func literalExpression() {
+	if token.type = .ALT {
+		literal()
+		// END
+	} else if token.type = .ALT {
+		literal()
+		// END
+	} else if token.type = .ALT {
+		literal()
+		// END
+	} else if token.type = .ALT {
+		literal()
+		// END
+	}
+	expect(["plainRegularExpressionLiteral", "stringLiteral", "nil", "hexadecimalFloatingPointLiteral", "false", "extendedRegularExpressionLiteral", "octalLiteral", "true", "decimalNumber", "hexadecimalLiteral", "binaryLiteral", "decimalFloatingPointLiteral"])
+}
+func selfType() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["Self"])
+}
+func constantDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["prefix", "lazy", "weak", "fileprivate", "mutating", "unowned", "nonisolated", "public", "final", "class", "optional", "required", "postfix", "package", "let", "private", "infix", "dynamic", "nonmutating", "internal", "override", "open", "static", "@", "convenience"])
+}
+func floatingPointLiteral() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["decimalFloatingPointLiteral"])
+}
+func topLevelDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["protocol", "@", "do", "prefix", "defer", "_", "nil", "plainOperator", "weak", "extendedRegularExpressionLiteral", "open", "decimalFloatingPointLiteral", "#colorLiteral", "init", "", "for", "required", "convenience", "true", "continue", "if", "break", "plainIdentifier", "#keyPath", "try", "private", "false", "&", "unowned", "binaryLiteral", "internal", "optional", "macroIdentifier", "let", "hexadecimalLiteral", "deinit", "func", "dynamic", "{", "dotOperator", "typealias", "mutating", "await", "plainRegularExpressionLiteral", "switch", "precedencegroup", "public", "throw", "#sourceLocation", "escapedIdentifier", "var", "subscript", "fileprivate", "indirect", "#warning", "enum", "#if", "hexadecimalFloatingPointLiteral", "nonisolated", "guard", "infix", "struct", "decimalNumber", "#imageLiteral", "lazy", "#error", "return", "postfix", "#fileLiteral", "octalLiteral", "actor", "super", ".", "repeat", "propertyWrapperProjection", "class", "implicitParameterName", "import", "#selector", "package", "while", "extension", "final", "nonmutating", "self", "static", "override", "stringLiteral", "[", "fallthrough", "\\\\", "("])
+}
+func metatypeType() {
+	if token.type = .ALT {
+		type()
+		next()
+	} else if token.type = .ALT {
+		type()
+		next()
+	}
+	expect(["Self", "plainIdentifier", "implicitParameterName", "propertyWrapperProjection", "escapedIdentifier", "[", "(", "@", "_", "some", "Any"])
+}
+func getterSetterKeywordBlock() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["{"])
+}
+func identifierList() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	} else if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func environment() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["simulator"])
+}
+func actorDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["private", "public", "@", "actor", "package", "open", "internal", "fileprivate"])
+}
+func branchStatement() {
+	if token.type = .ALT {
+		ifStatement()
+		// END
+	} else if token.type = .ALT {
+		ifStatement()
+		// END
+	} else if token.type = .ALT {
+		ifStatement()
+		// END
+	}
+	expect(["if"])
+}
+func tupleElementList() {
+	if token.type = .ALT {
+		tupleElement()
+		// END
+	} else if token.type = .ALT {
+		tupleElement()
+		// END
+	}
+	expect(["\\\\", "#imageLiteral", "hexadecimalLiteral", "try", "decimalFloatingPointLiteral", "[", "macroIdentifier", "#fileLiteral", "escapedIdentifier", "binaryLiteral", "dotOperator", "switch", "octalLiteral", "plainIdentifier", "if", "plainRegularExpressionLiteral", "propertyWrapperProjection", "plainOperator", "{", ".", "(", "extendedRegularExpressionLiteral", "super", "hexadecimalFloatingPointLiteral", "await", "self", "_", "&", "nil", "false", "#colorLiteral", "implicitParameterName", "#selector", "stringLiteral", "#keyPath", "true", "decimalNumber"])
+}
+func operatingSystem() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["macOS"])
+}
+func precedenceGroupAttributes() {
+	if token.type = .ALT {
+		precedenceGroupAttribute()
+		// OPT
+	}
+	expect(["assignment", "lowerThan", "associativity", "higherThan"])
+}
+func elementName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func codeBlock() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["{"])
+}
+func tuplePatternElementList() {
+	if token.type = .ALT {
+		tuplePatternElement()
+		// END
+	} else if token.type = .ALT {
+		tuplePatternElement()
+		// END
+	}
+	expect(["nil", "await", "plainRegularExpressionLiteral", "hexadecimalLiteral", "octalLiteral", "&", "stringLiteral", "decimalFloatingPointLiteral", "implicitParameterName", "{", "plainOperator", "binaryLiteral", "super", "dotOperator", "extendedRegularExpressionLiteral", "#colorLiteral", "#fileLiteral", "try", "hexadecimalFloatingPointLiteral", "macroIdentifier", "let", "\\\\", "var", "(", "_", "false", "self", "switch", "plainIdentifier", "if", "#keyPath", "#imageLiteral", "[", "#selector", ".", "is", "decimalNumber", "true", "escapedIdentifier", "propertyWrapperProjection"])
+}
+func tupleTypeElementList() {
+	if token.type = .ALT {
+		tupleTypeElement()
+		// END
+	} else if token.type = .ALT {
+		tupleTypeElement()
+		// END
+	}
+	expect(["implicitParameterName", "propertyWrapperProjection", "escapedIdentifier", "some", "@", "Any", "Self", "(", "plainIdentifier", "_", "["])
+}
+func genericArgumentList() {
+	if token.type = .ALT {
+		genericArgument()
+		// END
+	} else if token.type = .ALT {
+		genericArgument()
+		// END
+	}
+	expect(["(", "some", "[", "Any", "plainIdentifier", "implicitParameterName", "@", "_", "Self", "propertyWrapperProjection", "escapedIdentifier"])
 }
 func selectorExpression() {
 	if token.type = .ALT {
@@ -367,64 +2727,402 @@ func selectorExpression() {
 	}
 	expect(["#selector"])
 }
-func topLevelDeclaration() {
+func infixOperator() {
+	if token.type = .ALT {
+		Operator()
+		// END
+	}
+	expect(["dotOperator", "plainOperator"])
+}
+func conditionalSwitchCase() {
+	if token.type = .ALT {
+		switchIfDirectiveClause()
+		// OPT
+	}
+	expect(["#if"])
+}
+func variableDeclarationHead() {
 	if token.type = .ALT {
 		// OPT
 	}
-	expect(["#sourceLocation", "binaryLiteral", "init", "@", "propertyWrapperProjection", "#colorLiteral", "subscript", "plainIdentifier", "defer", "func", "#warning", "#imageLiteral", "_", "optional", "decimalNumber", "continue", "switch", "#fileLiteral", "override", "convenience", "class", "unowned", "hexadecimalFloatingPointLiteral", "decimalFloatingPointLiteral", "open", "#selector", "\\\\", "return", "#keyPath", "typealias", ".", "var", "let", "self", "stringLiteral", "lazy", "fileprivate", "required", "nonisolated", "internal", "false", "[", "extension", "throw", "guard", "super", "static", "final", "for", "protocol", "prefix", "do", "macroIdentifier", "nil", "hexadecimalLiteral", "#error", "weak", "precedencegroup", "infix", "actor", "public", "private", "if", "postfix", "escapedIdentifier", "extendedRegularExpressionLiteral", "nonmutating", "mutating", "octalLiteral", "fallthrough", "", "package", "(", "deinit", "implicitParameterName", "import", "indirect", "while", "try", "struct", "&", "dotOperator", "plainOperator", "break", "enum", "true", "{", "dynamic", "plainRegularExpressionLiteral", "#if", "repeat", "await"])
+	expect(["var", "optional", "unowned", "nonisolated", "@", "class", "public", "postfix", "infix", "lazy", "required", "open", "static", "weak", "override", "fileprivate", "private", "final", "mutating", "dynamic", "package", "nonmutating", "prefix", "internal", "convenience"])
 }
-func boxedProtocolType() {
+func rawValueStyleEnumMember() {
 	if token.type = .ALT {
-		next()
+		declaration()
+		// END
+	} else if token.type = .ALT {
+		declaration()
+		// END
+	} else if token.type = .ALT {
+		declaration()
+		// END
 	}
-	expect(["any"])
+	expect(["subscript", "nonmutating", "infix", "unowned", "internal", "deinit", "indirect", "precedencegroup", "fileprivate", "func", "class", "open", "static", "final", "required", "lazy", "import", "var", "postfix", "prefix", "nonisolated", "mutating", "package", "optional", "actor", "convenience", "extension", "protocol", "private", "typealias", "public", "@", "init", "weak", "struct", "dynamic", "enum", "override", "let"])
 }
-func classMembers() {
+func catchPatternList() {
 	if token.type = .ALT {
-		classMember()
+		catchPattern()
+		// END
+	} else if token.type = .ALT {
+		catchPattern()
+		// END
+	}
+	expect(["try", "macroIdentifier", "decimalFloatingPointLiteral", "await", "escapedIdentifier", "plainIdentifier", "true", "binaryLiteral", "{", "let", "var", "dotOperator", "is", "extendedRegularExpressionLiteral", "false", "switch", "[", "hexadecimalLiteral", "decimalNumber", "#imageLiteral", "propertyWrapperProjection", "implicitParameterName", "self", "plainRegularExpressionLiteral", "hexadecimalFloatingPointLiteral", "#fileLiteral", "super", "#keyPath", "plainOperator", "nil", "\\\\", "&", "#selector", "stringLiteral", "if", "octalLiteral", ".", "_", "(", "#colorLiteral"])
+}
+func classDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
 		// OPT
 	}
-	expect(["var", "nonmutating", "convenience", "fileprivate", "package", "struct", "weak", "#sourceLocation", "extension", "lazy", "actor", "#error", "subscript", "mutating", "postfix", "#warning", "#if", "let", "indirect", "class", "private", "infix", "override", "required", "optional", "@", "public", "import", "deinit", "internal", "dynamic", "open", "unowned", "final", "prefix", "static", "protocol", "nonisolated", "func", "precedencegroup", "enum", "typealias", "init"])
+	expect(["package", "internal", "public", "final", "fileprivate", "class", "open", "@", "private"])
 }
-func infixOperatorGroup() {
+func lineControlStatement() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["#sourceLocation"])
+}
+func macroSignature() {
+	if token.type = .ALT {
+		parameterClause()
+		// OPT
+	}
+	expect(["("])
+}
+func parameter() {
+	if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	} else if token.type = .ALT {
+		// OPT
+	}
+	expect(["propertyWrapperProjection", "escapedIdentifier", "implicitParameterName", "plainIdentifier", "_"])
+}
+func precedenceGroupAttribute() {
+	if token.type = .ALT {
+		precedenceGroupRelation()
+		// END
+	} else if token.type = .ALT {
+		precedenceGroupRelation()
+		// END
+	} else if token.type = .ALT {
+		precedenceGroupRelation()
+		// END
+	}
+	expect(["higherThan", "lowerThan"])
+}
+func tuplePattern() {
 	if token.type = .ALT {
 		next()
 	}
-	expect([":"])
+	expect(["("])
+}
+func pattern() {
+	if token.type = .ALT {
+		wildcardPattern()
+		// OPT
+	} else if token.type = .ALT {
+		wildcardPattern()
+		// OPT
+	} else if token.type = .ALT {
+		wildcardPattern()
+		// OPT
+	} else if token.type = .ALT {
+		wildcardPattern()
+		// OPT
+	} else if token.type = .ALT {
+		wildcardPattern()
+		// OPT
+	} else if token.type = .ALT {
+		wildcardPattern()
+		// OPT
+	} else if token.type = .ALT {
+		wildcardPattern()
+		// OPT
+	} else if token.type = .ALT {
+		wildcardPattern()
+		// OPT
+	}
+	expect(["_"])
+}
+func patternInitializer() {
+	if token.type = .ALT {
+		pattern()
+		// OPT
+	}
+	expect(["extendedRegularExpressionLiteral", "let", "false", "#keyPath", "stringLiteral", "binaryLiteral", "implicitParameterName", "dotOperator", "hexadecimalLiteral", ".", "var", "try", "\\\\", "_", "true", "#colorLiteral", "(", "hexadecimalFloatingPointLiteral", "nil", "is", "super", "#fileLiteral", "escapedIdentifier", "plainOperator", "plainRegularExpressionLiteral", "{", "switch", "#imageLiteral", "propertyWrapperProjection", "macroIdentifier", "decimalFloatingPointLiteral", "octalLiteral", "decimalNumber", "[", "plainIdentifier", "&", "self", "#selector", "if", "await"])
+}
+func doStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["do"])
+}
+func statements() {
+	if token.type = .ALT {
+		statement()
+		// OPT
+	}
+	expect(["#fileLiteral", "infix", "actor", "binaryLiteral", "return", "try", "weak", "_", "decimalNumber", "postfix", "escapedIdentifier", "continue", "#warning", "#if", "{", "if", "switch", "break", "defer", "#selector", "#keyPath", "dotOperator", "hexadecimalFloatingPointLiteral", "open", "[", "#colorLiteral", ".", "octalLiteral", "nonisolated", "extension", "fileprivate", "func", "extendedRegularExpressionLiteral", "init", "mutating", "self", "&", "prefix", "\\\\", "while", "protocol", "enum", "optional", "deinit", "dynamic", "override", "convenience", "macroIdentifier", "internal", "#sourceLocation", "nil", "guard", "throw", "precedencegroup", "plainIdentifier", "indirect", "package", "propertyWrapperProjection", "for", "public", "static", "import", "fallthrough", "#error", "(", "super", "false", "required", "implicitParameterName", "class", "subscript", "#imageLiteral", "decimalFloatingPointLiteral", "var", "do", "true", "nonmutating", "final", "plainOperator", "typealias", "private", "@", "struct", "plainRegularExpressionLiteral", "await", "stringLiteral", "let", "hexadecimalLiteral", "lazy", "unowned", "repeat"])
+}
+func availabilityArgument() {
+	if token.type = .ALT {
+		platformName()
+		platformVersion()
+		// END
+	} else if token.type = .ALT {
+		platformName()
+		platformVersion()
+		// END
+	}
+	expect(["watchOS", "macCatalyst", "watchOSApplicationExtension", "macCatalystApplicationExtension", "iOS", "macOS", "macOSApplicationExtension", "visionOSApplicationExtension", "tvOS", "iOSApplicationExtension", "tvOSApplicationExtension", "visionOS"])
+}
+func tupleTypeElement() {
+	if token.type = .ALT {
+		elementName()
+		typeAnnotation()
+		// END
+	} else if token.type = .ALT {
+		elementName()
+		typeAnnotation()
+		// END
+	}
+	expect(["_", "plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "implicitParameterName"])
+}
+func closureParameterList() {
+	if token.type = .ALT {
+		closureParameter()
+		// END
+	} else if token.type = .ALT {
+		closureParameter()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "plainIdentifier", "_", "escapedIdentifier"])
+}
+func getterClause() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["mutating", "get", "@", "nonmutating"])
+}
+func captureListItems() {
+	if token.type = .ALT {
+		captureListItem()
+		// END
+	} else if token.type = .ALT {
+		captureListItem()
+		// END
+	}
+	expect(["weak", "implicitParameterName", "propertyWrapperProjection", "unowned(safe)", "_", "self", "plainIdentifier", "escapedIdentifier", "unowned", "unowned(unsafe)"])
+}
+func initializer() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["="])
+}
+func keyPathExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["\\\\"])
+}
+func argumentName() {
+	if token.type = .ALT {
+		identifier()
+		next()
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func dictionaryLiteralItems() {
+	if token.type = .ALT {
+		dictionaryLiteralItem()
+		// OPT
+	} else if token.type = .ALT {
+		dictionaryLiteralItem()
+		// OPT
+	}
+	expect(["plainOperator", "#fileLiteral", "hexadecimalLiteral", "try", "true", "propertyWrapperProjection", "super", "_", "plainIdentifier", "&", "false", "self", "#colorLiteral", "binaryLiteral", "if", "implicitParameterName", "extendedRegularExpressionLiteral", "macroIdentifier", "switch", "dotOperator", "plainRegularExpressionLiteral", "\\\\", ".", "nil", "stringLiteral", "#keyPath", "#selector", "escapedIdentifier", "(", "await", "#imageLiteral", "decimalFloatingPointLiteral", "hexadecimalFloatingPointLiteral", "{", "octalLiteral", "decimalNumber", "["])
+}
+func attributeName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func loopStatement() {
+	if token.type = .ALT {
+		forInStatement()
+		// END
+	} else if token.type = .ALT {
+		forInStatement()
+		// END
+	} else if token.type = .ALT {
+		forInStatement()
+		// END
+	}
+	expect(["for"])
+}
+func wildcardExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["_"])
+}
+func initializerExpression() {
+	if token.type = .ALT {
+		postfixExpression()
+		next()
+	} else if token.type = .ALT {
+		postfixExpression()
+		next()
+	}
+	expect(["#keyPath", "hexadecimalLiteral", "switch", "macroIdentifier", "[", "_", "#colorLiteral", "octalLiteral", "#selector", "false", "escapedIdentifier", "nil", "self", "implicitParameterName", "\\\\", "decimalFloatingPointLiteral", "super", "propertyWrapperProjection", "stringLiteral", "hexadecimalFloatingPointLiteral", "if", "(", "plainRegularExpressionLiteral", "#imageLiteral", "{", "plainIdentifier", "#fileLiteral", "decimalNumber", "binaryLiteral", "extendedRegularExpressionLiteral", ".", "true"])
+}
+func infixExpressions() {
+	if token.type = .ALT {
+		infixExpression()
+		// OPT
+	}
+	expect(["=", "?", "as", "is", "plainOperator", "dotOperator"])
 }
 func postfixSelfExpression() {
 	if token.type = .ALT {
 		postfixExpression()
 		next()
 	}
-	expect(["hexadecimalLiteral", "#keyPath", "plainIdentifier", "extendedRegularExpressionLiteral", "{", "hexadecimalFloatingPointLiteral", "false", "_", "octalLiteral", "\\\\", "[", "#selector", "stringLiteral", "#imageLiteral", "escapedIdentifier", "true", "super", "propertyWrapperProjection", "#fileLiteral", "#colorLiteral", "nil", "macroIdentifier", "switch", "decimalFloatingPointLiteral", "binaryLiteral", "self", "plainRegularExpressionLiteral", "decimalNumber", "implicitParameterName", "(", "if", "."])
+	expect(["#keyPath", "hexadecimalLiteral", "switch", "macroIdentifier", "[", "_", "#colorLiteral", "octalLiteral", "#selector", "false", "escapedIdentifier", "nil", "self", "implicitParameterName", "\\\\", "decimalFloatingPointLiteral", "super", "propertyWrapperProjection", "stringLiteral", "hexadecimalFloatingPointLiteral", "if", "(", "plainRegularExpressionLiteral", "#imageLiteral", "{", "plainIdentifier", "#fileLiteral", "decimalNumber", "binaryLiteral", "extendedRegularExpressionLiteral", ".", "true"])
 }
-func importPath() {
+func classMembers() {
 	if token.type = .ALT {
-		identifier()
-		// END
-	} else if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func attributes() {
-	if token.type = .ALT {
-		attribute()
+		classMember()
 		// OPT
 	}
-	expect(["@"])
+	expect(["protocol", "init", "func", "open", "prefix", "let", "optional", "enum", "postfix", "private", "infix", "static", "lazy", "mutating", "weak", "#if", "var", "indirect", "fileprivate", "nonmutating", "package", "unowned", "nonisolated", "import", "#error", "extension", "dynamic", "subscript", "required", "internal", "convenience", "override", "deinit", "class", "@", "#warning", "typealias", "struct", "#sourceLocation", "public", "final", "actor", "precedencegroup"])
 }
-func availabilityArguments() {
+func extensionDeclaration() {
 	if token.type = .ALT {
-		availabilityArgument()
+		// OPT
+	}
+	expect(["internal", "extension", "public", "@", "package", "private", "open", "fileprivate"])
+}
+func switchElseifDirectiveClauses() {
+	if token.type = .ALT {
+		elseifDirectiveClause()
+		// OPT
+	}
+	expect(["#elseif"])
+}
+func numericLiteral() {
+	if token.type = .ALT {
+		integerLiteral()
 		// END
 	} else if token.type = .ALT {
-		availabilityArgument()
+		integerLiteral()
 		// END
 	}
-	expect(["iOS", "watchOSApplicationExtension", "visionOS", "watchOS", "macOSApplicationExtension", "tvOSApplicationExtension", "macOS", "iOSApplicationExtension", "tvOS", "visionOSApplicationExtension", "macCatalyst", "macCatalystApplicationExtension", "*"])
+	expect(["binaryLiteral", "octalLiteral", "decimalNumber", "hexadecimalLiteral"])
+}
+func throwsClause() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["throws"])
+}
+func switchStatement() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["switch"])
+}
+func elseifDirectiveClause() {
+	if token.type = .ALT {
+		elseifDirective()
+		compilationCondition()
+		// OPT
+	}
+	expect(["#elseif"])
+}
+func actorMember() {
+	if token.type = .ALT {
+		declaration()
+		// END
+	} else if token.type = .ALT {
+		declaration()
+		// END
+	}
+	expect(["subscript", "nonmutating", "infix", "unowned", "internal", "deinit", "indirect", "precedencegroup", "fileprivate", "func", "class", "open", "static", "final", "required", "lazy", "import", "var", "postfix", "prefix", "nonisolated", "mutating", "package", "optional", "actor", "convenience", "extension", "protocol", "private", "typealias", "public", "@", "init", "weak", "struct", "dynamic", "enum", "override", "let"])
+}
+func protocolAssociatedTypeDeclaration() {
+	if token.type = .ALT {
+		// OPT
+	}
+	expect(["internal", "associatedtype", "package", "public", "private", "open", "fileprivate", "@"])
+}
+func functionName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	} else if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func extensionMembers() {
+	if token.type = .ALT {
+		extensionMember()
+		// OPT
+	}
+	expect(["var", "infix", "postfix", "let", "static", "dynamic", "import", "optional", "init", "actor", "fileprivate", "package", "internal", "public", "final", "weak", "override", "prefix", "deinit", "nonmutating", "indirect", "@", "class", "required", "typealias", "protocol", "private", "lazy", "enum", "#warning", "precedencegroup", "extension", "unowned", "subscript", "#sourceLocation", "convenience", "#if", "func", "#error", "struct", "open", "nonisolated", "mutating"])
+}
+func inOutExpression() {
+	if token.type = .ALT {
+		next()
+	}
+	expect(["&"])
+}
+func dictionaryLiteralItem() {
+	if token.type = .ALT {
+		expression()
+		next()
+	}
+	expect(["self", "await", "nil", "stringLiteral", "propertyWrapperProjection", "try", "#imageLiteral", "true", "\\\\", "_", "(", "{", "escapedIdentifier", "#fileLiteral", "plainOperator", "plainIdentifier", "decimalFloatingPointLiteral", "&", "binaryLiteral", "switch", "super", "[", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "plainRegularExpressionLiteral", "#selector", "macroIdentifier", "false", "octalLiteral", "#keyPath", "if", "implicitParameterName", "#colorLiteral", ".", "decimalNumber", "hexadecimalLiteral"])
+}
+func precedenceGroupName() {
+	if token.type = .ALT {
+		identifier()
+		// END
+	}
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
+}
+func asPattern() {
+	if token.type = .ALT {
+		pattern()
+		next()
+	}
+	expect(["extendedRegularExpressionLiteral", "let", "false", "#keyPath", "stringLiteral", "binaryLiteral", "implicitParameterName", "dotOperator", "hexadecimalLiteral", ".", "var", "try", "\\\\", "_", "true", "#colorLiteral", "(", "hexadecimalFloatingPointLiteral", "nil", "is", "super", "#fileLiteral", "escapedIdentifier", "plainOperator", "plainRegularExpressionLiteral", "{", "switch", "#imageLiteral", "propertyWrapperProjection", "macroIdentifier", "decimalFloatingPointLiteral", "octalLiteral", "decimalNumber", "[", "plainIdentifier", "&", "self", "#selector", "if", "await"])
+}
+func superclassExpression() {
+	if token.type = .ALT {
+		superclassMethodExpression()
+		// END
+	} else if token.type = .ALT {
+		superclassMethodExpression()
+		// END
+	} else if token.type = .ALT {
+		superclassMethodExpression()
+		// END
+	}
+	expect(["super"])
 }
 func keywordMinusBrackets() {
 	if token.type = .ALT {
@@ -686,325 +3384,41 @@ func keywordMinusBrackets() {
 	}
 	expect(["actor"])
 }
-func optionalPattern() {
-	if token.type = .ALT {
-		identifierPattern()
-		next()
-	}
-	expect(["propertyWrapperProjection", "escapedIdentifier", "implicitParameterName", "_", "plainIdentifier"])
-}
-func structMembers() {
-	if token.type = .ALT {
-		structMember()
-		// OPT
-	}
-	expect(["postfix", "@", "final", "public", "#error", "internal", "class", "#warning", "init", "let", "mutating", "actor", "static", "open", "infix", "weak", "struct", "func", "nonisolated", "nonmutating", "var", "subscript", "typealias", "dynamic", "optional", "unowned", "#if", "indirect", "required", "import", "extension", "deinit", "#sourceLocation", "override", "private", "prefix", "package", "protocol", "fileprivate", "convenience", "lazy", "enum", "precedencegroup"])
-}
-func operatingSystem() {
+func classBody() {
 	if token.type = .ALT {
 		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["macOS"])
-}
-func metatypeType() {
-	if token.type = .ALT {
-		type()
-		next()
-	} else if token.type = .ALT {
-		type()
-		next()
-	}
-	expect(["implicitParameterName", "Any", "propertyWrapperProjection", "(", "@", "plainIdentifier", "some", "escapedIdentifier", "_", "Self", "["])
-}
-func Operator() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["plainOperator"])
-}
-func forInStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["for"])
-}
-func patternInitializerList() {
-	if token.type = .ALT {
-		patternInitializer()
-		// END
-	} else if token.type = .ALT {
-		patternInitializer()
-		// END
-	}
-	expect(["switch", "[", "macroIdentifier", "decimalFloatingPointLiteral", "nil", "octalLiteral", "var", "escapedIdentifier", "_", "super", "extendedRegularExpressionLiteral", "#keyPath", ".", "if", "true", "is", "decimalNumber", "\\\\", "dotOperator", "propertyWrapperProjection", "let", "hexadecimalFloatingPointLiteral", "implicitParameterName", "(", "#fileLiteral", "binaryLiteral", "false", "#colorLiteral", "{", "#selector", "stringLiteral", "hexadecimalLiteral", "plainIdentifier", "#imageLiteral", "self", "plainOperator", "plainRegularExpressionLiteral", "&", "try", "await"])
-}
-func subscriptResult() {
-	if token.type = .ALT {
-		next()
-	}
-	expect([">"])
-}
-func argumentNames() {
-	if token.type = .ALT {
-		argumentName()
-		// OPT
-	}
-	expect(["propertyWrapperProjection", "implicitParameterName", "plainIdentifier", "escapedIdentifier", "_"])
-}
-func precedenceGroupAssociativity() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["associativity"])
-}
-func precedenceGroupNames() {
-	if token.type = .ALT {
-		precedenceGroupName()
-		// END
-	} else if token.type = .ALT {
-		precedenceGroupName()
-		// END
-	}
-	expect(["_", "plainIdentifier", "implicitParameterName", "escapedIdentifier", "propertyWrapperProjection"])
-}
-func closureParameterName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func prefixOperator() {
-	if token.type = .ALT {
-		Operator()
-		// END
-	}
-	expect(["plainOperator", "dotOperator"])
-}
-func keyPathComponent() {
-	if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func switchIfDirectiveClause() {
-	if token.type = .ALT {
-		ifDirective()
-		compilationCondition()
-		// OPT
-	}
-	expect(["#if"])
-}
-func floatingPointLiteral() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["decimalFloatingPointLiteral"])
-}
-func captureListItems() {
-	if token.type = .ALT {
-		captureListItem()
-		// END
-	} else if token.type = .ALT {
-		captureListItem()
-		// END
-	}
-	expect(["propertyWrapperProjection", "_", "weak", "unowned(safe)", "unowned(unsafe)", "unowned", "self", "escapedIdentifier", "plainIdentifier", "implicitParameterName"])
-}
-func assignmentOperator() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["="])
-}
-func switchStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["switch"])
-}
-func switchExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["switch"])
-}
-func unionStyleEnumCaseList() {
-	if token.type = .ALT {
-		unionStyleEnumCase()
-		// END
-	} else if token.type = .ALT {
-		unionStyleEnumCase()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func switchCases() {
-	if token.type = .ALT {
-		switchCase()
-		// OPT
-	}
-	expect(["@", "case", "#if", "default"])
-}
-func whereExpression() {
-	if token.type = .ALT {
-		expression()
-		// END
-	}
-	expect(["{", "decimalFloatingPointLiteral", "nil", "#selector", "self", "#colorLiteral", "octalLiteral", "implicitParameterName", "super", "switch", "_", "macroIdentifier", "true", "try", "escapedIdentifier", "await", "stringLiteral", "\\\\", "dotOperator", "&", "#fileLiteral", "false", "propertyWrapperProjection", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "[", "if", "hexadecimalFloatingPointLiteral", "decimalNumber", ".", "#imageLiteral", "plainOperator", "#keyPath", "hexadecimalLiteral", "(", "plainIdentifier", "binaryLiteral"])
-}
-func rawValueStyleEnumCaseClause() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["case", "@"])
-}
-func protocolCompositionContinuation() {
-	if token.type = .ALT {
-		typeIdentifier()
-		// END
-	} else if token.type = .ALT {
-		typeIdentifier()
-		// END
-	}
-	expect(["propertyWrapperProjection", "plainIdentifier", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func getterSetterBlock() {
-	if token.type = .ALT {
-		codeBlock()
-		// END
-	} else if token.type = .ALT {
-		codeBlock()
-		// END
-	} else if token.type = .ALT {
-		codeBlock()
-		// END
 	}
 	expect(["{"])
 }
-func literalExpression() {
+func willSetClause() {
 	if token.type = .ALT {
-		literal()
-		// END
-	} else if token.type = .ALT {
-		literal()
-		// END
-	} else if token.type = .ALT {
-		literal()
-		// END
-	} else if token.type = .ALT {
-		literal()
-		// END
+		// OPT
 	}
-	expect(["stringLiteral", "decimalFloatingPointLiteral", "plainRegularExpressionLiteral", "hexadecimalFloatingPointLiteral", "nil", "octalLiteral", "hexadecimalLiteral", "false", "true", "extendedRegularExpressionLiteral", "decimalNumber", "binaryLiteral"])
+	expect(["@", "willSet"])
 }
-func protocolPropertyDeclaration() {
+func unionStyleEnumMembers() {
 	if token.type = .ALT {
-		variableDeclarationHead()
-		variableName()
-		typeAnnotation()
-		getterSetterKeywordBlock()
-		// END
+		unionStyleEnumMember()
+		// OPT
 	}
-	expect(["unowned", "prefix", "class", "dynamic", "private", "infix", "package", "static", "@", "var", "internal", "convenience", "weak", "mutating", "open", "override", "fileprivate", "nonmutating", "nonisolated", "postfix", "final", "required", "public", "lazy", "optional"])
+	expect(["subscript", "postfix", "lazy", "public", "nonisolated", "nonmutating", "actor", "typealias", "optional", "struct", "fileprivate", "override", "init", "mutating", "weak", "precedencegroup", "#if", "indirect", "case", "final", "infix", "@", "unowned", "extension", "var", "required", "protocol", "enum", "class", "deinit", "prefix", "package", "#error", "let", "convenience", "internal", "#warning", "open", "import", "#sourceLocation", "func", "dynamic", "private", "static"])
 }
-func superclassInitializerExpression() {
+func playgroundLiteral() {
 	if token.type = .ALT {
 		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
 	}
-	expect(["super"])
+	expect(["#colorLiteral"])
 }
-func typealiasName() {
+func labeledTrailingClosure() {
 	if token.type = .ALT {
 		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func elseDirectiveClause() {
-	if token.type = .ALT {
-		elseDirective()
-		// OPT
-	}
-	expect(["#else"])
-}
-func subscriptDeclaration() {
-	if token.type = .ALT {
-		subscriptHead()
-		subscriptResult()
-		// OPT
-	} else if token.type = .ALT {
-		subscriptHead()
-		subscriptResult()
-		// OPT
-	} else if token.type = .ALT {
-		subscriptHead()
-		subscriptResult()
-		// OPT
-	}
-	expect(["unowned", "override", "mutating", "private", "postfix", "nonmutating", "lazy", "subscript", "package", "infix", "@", "open", "static", "dynamic", "nonisolated", "internal", "class", "public", "weak", "final", "optional", "prefix", "required", "fileprivate", "convenience"])
-}
-func precedenceGroupAssignment() {
-	if token.type = .ALT {
 		next()
 	}
-	expect(["assignment"])
-}
-func sameTypeRequirement() {
-	if token.type = .ALT {
-		typeIdentifier()
-		next()
-	}
-	expect(["propertyWrapperProjection", "plainIdentifier", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func functionCallArgumentList() {
-	if token.type = .ALT {
-		functionCallArgument()
-		// END
-	} else if token.type = .ALT {
-		functionCallArgument()
-		// END
-	}
-	expect(["await", "_", "#selector", "escapedIdentifier", "plainIdentifier", "extendedRegularExpressionLiteral", "implicitParameterName", "#colorLiteral", "#keyPath", "try", "hexadecimalLiteral", "decimalFloatingPointLiteral", "[", "propertyWrapperProjection", "#imageLiteral", "binaryLiteral", "\\\\", "false", "true", "#fileLiteral", "super", "&", ".", "octalLiteral", "macroIdentifier", "if", "plainRegularExpressionLiteral", "plainOperator", "stringLiteral", "nil", "self", "dotOperator", "hexadecimalFloatingPointLiteral", "{", "(", "decimalNumber", "switch"])
-}
-func ifDirectiveClause() {
-	if token.type = .ALT {
-		ifDirective()
-		compilationCondition()
-		// OPT
-	}
-	expect(["#if"])
-}
-func externalParameterName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
+	expect(["propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier", "escapedIdentifier"])
 }
 func platformVersion() {
 	if token.type = .ALT {
@@ -1019,397 +3433,24 @@ func platformVersion() {
 	}
 	expect(["decimalNumber"])
 }
-func endifDirective() {
+func optionalChainingExpression() {
+	if token.type = .ALT {
+		postfixExpression()
+		next()
+	}
+	expect(["#keyPath", "hexadecimalLiteral", "switch", "macroIdentifier", "[", "_", "#colorLiteral", "octalLiteral", "#selector", "false", "escapedIdentifier", "nil", "self", "implicitParameterName", "\\\\", "decimalFloatingPointLiteral", "super", "propertyWrapperProjection", "stringLiteral", "hexadecimalFloatingPointLiteral", "if", "(", "plainRegularExpressionLiteral", "#imageLiteral", "{", "plainIdentifier", "#fileLiteral", "decimalNumber", "binaryLiteral", "extendedRegularExpressionLiteral", ".", "true"])
+}
+func infixOperatorGroup() {
 	if token.type = .ALT {
 		next()
 	}
-	expect(["#endif"])
+	expect([":"])
 }
-func protocolMemberDeclaration() {
-	if token.type = .ALT {
-		protocolPropertyDeclaration()
-		// END
-	} else if token.type = .ALT {
-		protocolPropertyDeclaration()
-		// END
-	} else if token.type = .ALT {
-		protocolPropertyDeclaration()
-		// END
-	} else if token.type = .ALT {
-		protocolPropertyDeclaration()
-		// END
-	} else if token.type = .ALT {
-		protocolPropertyDeclaration()
-		// END
-	} else if token.type = .ALT {
-		protocolPropertyDeclaration()
-		// END
-	}
-	expect(["nonisolated", "@", "lazy", "package", "convenience", "dynamic", "unowned", "infix", "required", "override", "static", "mutating", "optional", "internal", "final", "postfix", "fileprivate", "open", "private", "var", "class", "weak", "prefix", "public", "nonmutating"])
-}
-func ifDirective() {
+func genericWhereClause() {
 	if token.type = .ALT {
 		next()
 	}
-	expect(["#if"])
-}
-func tupleType() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func tupleExpression() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func lineNumber() {
-	if token.type = .ALT {
-		decimalDigits()
-		// END
-	}
-	expect(["decimalNumber"])
-}
-func functionSignature() {
-	if token.type = .ALT {
-		parameterClause()
-		// OPT
-	} else if token.type = .ALT {
-		parameterClause()
-		// OPT
-	}
-	expect(["("])
-}
-func ifStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["if"])
-}
-func continueStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["continue"])
-}
-func unionStyleEnumMember() {
-	if token.type = .ALT {
-		declaration()
-		// END
-	} else if token.type = .ALT {
-		declaration()
-		// END
-	} else if token.type = .ALT {
-		declaration()
-		// END
-	}
-	expect(["static", "open", "postfix", "deinit", "optional", "init", "unowned", "public", "dynamic", "var", "lazy", "internal", "extension", "import", "precedencegroup", "func", "package", "prefix", "enum", "@", "infix", "typealias", "subscript", "final", "actor", "override", "weak", "required", "struct", "private", "nonmutating", "indirect", "mutating", "fileprivate", "protocol", "nonisolated", "class", "convenience", "let"])
-}
-func conditionalOperator() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["?"])
-}
-func elementName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func decimalLiteral() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["decimalNumber"])
-}
-func postfixOperator() {
-	if token.type = .ALT {
-		Operator()
-		// END
-	}
-	expect(["plainOperator", "dotOperator"])
-}
-func elseifDirectiveClause() {
-	if token.type = .ALT {
-		elseifDirective()
-		compilationCondition()
-		// OPT
-	}
-	expect(["#elseif"])
-}
-func subscriptHead() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["final", "internal", "class", "convenience", "static", "postfix", "lazy", "mutating", "optional", "dynamic", "nonisolated", "fileprivate", "override", "private", "unowned", "weak", "subscript", "prefix", "nonmutating", "package", "@", "infix", "open", "required", "public"])
-}
-func classBody() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["{"])
-}
-func initializer() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["="])
-}
-func extensionDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["fileprivate", "@", "internal", "extension", "open", "package", "private", "public"])
-}
-func superclassSubscriptExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["super"])
-}
-func infixOperator() {
-	if token.type = .ALT {
-		Operator()
-		// END
-	}
-	expect(["plainOperator", "dotOperator"])
-}
-func declaration() {
-	if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	} else if token.type = .ALT {
-		importDeclaration()
-		// END
-	}
-	expect(["import", "@"])
-}
-func attributeName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func asPattern() {
-	if token.type = .ALT {
-		pattern()
-		next()
-	}
-	expect(["await", "#keyPath", "binaryLiteral", "try", "(", "if", "implicitParameterName", "#colorLiteral", "{", "decimalNumber", "plainOperator", "macroIdentifier", "let", "&", ".", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "#selector", "is", "#imageLiteral", "_", "propertyWrapperProjection", "decimalFloatingPointLiteral", "plainRegularExpressionLiteral", "var", "true", "escapedIdentifier", "\\\\", "stringLiteral", "octalLiteral", "super", "false", "self", "switch", "hexadecimalLiteral", "plainIdentifier", "[", "nil", "#fileLiteral"])
-}
-func tupleTypeElementList() {
-	if token.type = .ALT {
-		tupleTypeElement()
-		// END
-	} else if token.type = .ALT {
-		tupleTypeElement()
-		// END
-	}
-	expect(["plainIdentifier", "escapedIdentifier", "[", "Self", "_", "@", "propertyWrapperProjection", "some", "Any", "(", "implicitParameterName"])
-}
-func selfExpression() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["self"])
-}
-func statement() {
-	if token.type = .ALT {
-		expression()
-		// OPT
-	} else if token.type = .ALT {
-		expression()
-		// OPT
-	} else if token.type = .ALT {
-		expression()
-		// OPT
-	} else if token.type = .ALT {
-		expression()
-		// OPT
-	} else if token.type = .ALT {
-		expression()
-		// OPT
-	} else if token.type = .ALT {
-		expression()
-		// OPT
-	} else if token.type = .ALT {
-		expression()
-		// OPT
-	} else if token.type = .ALT {
-		expression()
-		// OPT
-	} else if token.type = .ALT {
-		expression()
-		// OPT
-	}
-	expect(["{", "decimalFloatingPointLiteral", "nil", "#selector", "self", "#colorLiteral", "octalLiteral", "implicitParameterName", "super", "switch", "_", "macroIdentifier", "true", "try", "escapedIdentifier", "await", "stringLiteral", "\\\\", "dotOperator", "&", "#fileLiteral", "false", "propertyWrapperProjection", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "[", "if", "hexadecimalFloatingPointLiteral", "decimalNumber", ".", "#imageLiteral", "plainOperator", "#keyPath", "hexadecimalLiteral", "(", "plainIdentifier", "binaryLiteral"])
-}
-func architecture() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["i386"])
-}
-func arrayLiteralItems() {
-	if token.type = .ALT {
-		arrayLiteralItem()
-		// OPT
-	} else if token.type = .ALT {
-		arrayLiteralItem()
-		// OPT
-	}
-	expect(["dotOperator", "macroIdentifier", "super", "decimalNumber", "{", "decimalFloatingPointLiteral", "implicitParameterName", "binaryLiteral", "(", "#colorLiteral", "try", "propertyWrapperProjection", "escapedIdentifier", "nil", "hexadecimalLiteral", "#keyPath", ".", "[", "self", "await", "#selector", "true", "octalLiteral", "false", "hexadecimalFloatingPointLiteral", "#fileLiteral", "if", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "_", "#imageLiteral", "&", "switch", "\\\\", "plainOperator", "plainIdentifier", "stringLiteral"])
-}
-func opaqueType() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["some"])
-}
-func prefixOperatorDeclaration() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["prefix"])
-}
-func precedenceGroupRelation() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["higherThan"])
-}
-func typeCastingPattern() {
-	if token.type = .ALT {
-		isPattern()
-		// END
-	} else if token.type = .ALT {
-		isPattern()
-		// END
-	}
-	expect(["is"])
-}
-func tupleElementList() {
-	if token.type = .ALT {
-		tupleElement()
-		// END
-	} else if token.type = .ALT {
-		tupleElement()
-		// END
-	}
-	expect([".", "[", "nil", "try", "hexadecimalFloatingPointLiteral", "(", "_", "false", "plainOperator", "extendedRegularExpressionLiteral", "hexadecimalLiteral", "switch", "escapedIdentifier", "self", "plainIdentifier", "{", "#keyPath", "\\\\", "#selector", "dotOperator", "#colorLiteral", "plainRegularExpressionLiteral", "propertyWrapperProjection", "decimalFloatingPointLiteral", "if", "octalLiteral", "stringLiteral", "macroIdentifier", "binaryLiteral", "true", "#fileLiteral", "super", "implicitParameterName", "#imageLiteral", "await", "decimalNumber", "&"])
-}
-func conditionalSwitchCase() {
-	if token.type = .ALT {
-		switchIfDirectiveClause()
-		// OPT
-	}
-	expect(["#if"])
-}
-func variableDeclaration() {
-	if token.type = .ALT {
-		variableDeclarationHead()
-		patternInitializerList()
-		// END
-	} else if token.type = .ALT {
-		variableDeclarationHead()
-		patternInitializerList()
-		// END
-	} else if token.type = .ALT {
-		variableDeclarationHead()
-		patternInitializerList()
-		// END
-	} else if token.type = .ALT {
-		variableDeclarationHead()
-		patternInitializerList()
-		// END
-	} else if token.type = .ALT {
-		variableDeclarationHead()
-		patternInitializerList()
-		// END
-	} else if token.type = .ALT {
-		variableDeclarationHead()
-		patternInitializerList()
-		// END
-	}
-	expect(["unowned", "prefix", "class", "dynamic", "private", "infix", "package", "static", "@", "var", "internal", "convenience", "weak", "mutating", "open", "override", "fileprivate", "nonmutating", "nonisolated", "postfix", "final", "required", "public", "lazy", "optional"])
-}
-func extensionMembers() {
-	if token.type = .ALT {
-		extensionMember()
-		// OPT
-	}
-	expect(["dynamic", "nonmutating", "precedencegroup", "#error", "func", "#sourceLocation", "static", "protocol", "final", "public", "private", "infix", "weak", "deinit", "nonisolated", "#warning", "lazy", "class", "subscript", "extension", "unowned", "actor", "convenience", "init", "open", "required", "@", "fileprivate", "import", "mutating", "#if", "prefix", "enum", "package", "optional", "indirect", "struct", "internal", "let", "var", "override", "typealias", "postfix"])
-}
-func breakStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["break"])
+	expect(["where"])
 }
 func defaultLabel() {
 	if token.type = .ALT {
@@ -1417,856 +3458,17 @@ func defaultLabel() {
 	}
 	expect(["@", "default"])
 }
-func setterClause() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["nonmutating", "@", "set", "mutating"])
-}
-func functionType() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["@", "("])
-}
-func initializerBody() {
-	if token.type = .ALT {
-		codeBlock()
-		// END
-	}
-	expect(["{"])
-}
-func identifierPattern() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func elseifDirective() {
+func ifStatement() {
 	if token.type = .ALT {
 		next()
 	}
-	expect(["#elseif"])
+	expect(["if"])
 }
-func regularExpressionLiteral() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["plainRegularExpressionLiteral"])
-}
-func tuplePattern() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func macroExpansionExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["macroIdentifier"])
-}
-func prefixExpression() {
-	if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	}
-	expect(["binaryLiteral", "#fileLiteral", "if", "#colorLiteral", "plainIdentifier", "#selector", "super", "switch", "decimalNumber", ".", "extendedRegularExpressionLiteral", "self", "nil", "#keyPath", "plainOperator", "{", "true", "plainRegularExpressionLiteral", "#imageLiteral", "decimalFloatingPointLiteral", "[", "implicitParameterName", "propertyWrapperProjection", "(", "octalLiteral", "stringLiteral", "hexadecimalLiteral", "hexadecimalFloatingPointLiteral", "false", "escapedIdentifier", "dotOperator", "_", "\\\\", "macroIdentifier"])
-}
-func caseItemList() {
-	if token.type = .ALT {
-		pattern()
-		// OPT
-	} else if token.type = .ALT {
-		pattern()
-		// OPT
-	}
-	expect(["await", "#keyPath", "binaryLiteral", "try", "(", "if", "implicitParameterName", "#colorLiteral", "{", "decimalNumber", "plainOperator", "macroIdentifier", "let", "&", ".", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "#selector", "is", "#imageLiteral", "_", "propertyWrapperProjection", "decimalFloatingPointLiteral", "plainRegularExpressionLiteral", "var", "true", "escapedIdentifier", "\\\\", "stringLiteral", "octalLiteral", "super", "false", "self", "switch", "hexadecimalLiteral", "plainIdentifier", "[", "nil", "#fileLiteral"])
-}
-func optionalType() {
-	if token.type = .ALT {
-		type()
-		next()
-	}
-	expect(["implicitParameterName", "Any", "propertyWrapperProjection", "(", "@", "plainIdentifier", "some", "escapedIdentifier", "_", "Self", "["])
-}
-func environment() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["simulator"])
-}
-func parameterClause() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func actorMember() {
-	if token.type = .ALT {
-		declaration()
-		// END
-	} else if token.type = .ALT {
-		declaration()
-		// END
-	}
-	expect(["static", "open", "postfix", "deinit", "optional", "init", "unowned", "public", "dynamic", "var", "lazy", "internal", "extension", "import", "precedencegroup", "func", "package", "prefix", "enum", "@", "infix", "typealias", "subscript", "final", "actor", "override", "weak", "required", "struct", "private", "nonmutating", "indirect", "mutating", "fileprivate", "protocol", "nonisolated", "class", "convenience", "let"])
-}
-func enumCasePattern() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["implicitParameterName", "escapedIdentifier", "plainIdentifier", "propertyWrapperProjection", "_", "."])
-}
-func rawValueStyleEnumMembers() {
-	if token.type = .ALT {
-		rawValueStyleEnumMember()
-		// OPT
-	}
-	expect(["mutating", "infix", "fileprivate", "weak", "protocol", "static", "deinit", "precedencegroup", "override", "nonisolated", "enum", "open", "private", "case", "optional", "postfix", "init", "var", "#warning", "class", "let", "@", "dynamic", "actor", "#if", "package", "typealias", "required", "internal", "prefix", "public", "struct", "extension", "final", "func", "#error", "import", "indirect", "subscript", "lazy", "convenience", "#sourceLocation", "nonmutating", "unowned"])
-}
-func platformCondition() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["os"])
-}
-func willSetClause() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["willSet", "@"])
-}
-func closureParameterList() {
-	if token.type = .ALT {
-		closureParameter()
-		// END
-	} else if token.type = .ALT {
-		closureParameter()
-		// END
-	}
-	expect(["plainIdentifier", "_", "propertyWrapperProjection", "implicitParameterName", "escapedIdentifier"])
-}
-func importDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["import", "@"])
-}
-func statementLabel() {
-	if token.type = .ALT {
-		labelName()
-		next()
-	}
-	expect(["_", "propertyWrapperProjection", "implicitParameterName", "plainIdentifier", "escapedIdentifier"])
-}
-func repeatWhileStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["repeat"])
-}
-func booleanLiteral() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["true"])
-}
-func protocolCompositionType() {
-	if token.type = .ALT {
-		typeIdentifier()
-		next()
-	}
-	expect(["propertyWrapperProjection", "plainIdentifier", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func wildcardPattern() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["_"])
-}
-func unionStyleEnumMembers() {
-	if token.type = .ALT {
-		unionStyleEnumMember()
-		// OPT
-	}
-	expect(["actor", "mutating", "indirect", "deinit", "import", "prefix", "extension", "init", "package", "unowned", "public", "optional", "lazy", "open", "nonmutating", "#error", "@", "protocol", "infix", "final", "dynamic", "subscript", "var", "precedencegroup", "weak", "nonisolated", "enum", "fileprivate", "func", "class", "private", "#warning", "#sourceLocation", "case", "override", "static", "required", "typealias", "struct", "#if", "convenience", "let", "internal", "postfix"])
-}
-func implicitlyUnwrappedOptionalType() {
-	if token.type = .ALT {
-		type()
-		next()
-	}
-	expect(["implicitParameterName", "Any", "propertyWrapperProjection", "(", "@", "plainIdentifier", "some", "escapedIdentifier", "_", "Self", "["])
-}
-func filePath() {
-	if token.type = .ALT {
-		staticStringLiteral()
-		// END
-	}
-	expect(["stringLiteral"])
-}
-func typeInheritanceList() {
-	if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	}
-	expect(["_", "plainIdentifier", "@", "escapedIdentifier", "propertyWrapperProjection", "implicitParameterName"])
-}
-func diagnosticStatement() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["#warning"])
-}
-func rawValueStyleEnumCase() {
-	if token.type = .ALT {
-		enumCaseName()
-		// OPT
-	}
-	expect(["escapedIdentifier", "propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier"])
-}
-func protocolBody() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["{"])
-}
-func macroDeclaration() {
-	if token.type = .ALT {
-		macroHead()
-		identifier()
-		// OPT
-	}
-	expect(["open", "unowned", "nonmutating", "lazy", "nonisolated", "override", "required", "weak", "private", "class", "convenience", "public", "static", "macro", "internal", "dynamic", "@", "optional", "package", "final", "fileprivate", "prefix", "infix", "postfix", "mutating"])
-}
-func captureSpecifier() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["weak"])
-}
-func pattern() {
-	if token.type = .ALT {
-		wildcardPattern()
-		// OPT
-	} else if token.type = .ALT {
-		wildcardPattern()
-		// OPT
-	} else if token.type = .ALT {
-		wildcardPattern()
-		// OPT
-	} else if token.type = .ALT {
-		wildcardPattern()
-		// OPT
-	} else if token.type = .ALT {
-		wildcardPattern()
-		// OPT
-	} else if token.type = .ALT {
-		wildcardPattern()
-		// OPT
-	} else if token.type = .ALT {
-		wildcardPattern()
-		// OPT
-	} else if token.type = .ALT {
-		wildcardPattern()
-		// OPT
-	}
-	expect(["_"])
-}
-func selfSubscriptExpression() {
+func selfInitializerExpression() {
 	if token.type = .ALT {
 		next()
 	}
 	expect(["self"])
-}
-func precedenceGroupAttributes() {
-	if token.type = .ALT {
-		precedenceGroupAttribute()
-		// OPT
-	}
-	expect(["lowerThan", "higherThan", "associativity", "assignment"])
-}
-func expressionPattern() {
-	if token.type = .ALT {
-		expression()
-		// END
-	}
-	expect(["{", "decimalFloatingPointLiteral", "nil", "#selector", "self", "#colorLiteral", "octalLiteral", "implicitParameterName", "super", "switch", "_", "macroIdentifier", "true", "try", "escapedIdentifier", "await", "stringLiteral", "\\\\", "dotOperator", "&", "#fileLiteral", "false", "propertyWrapperProjection", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "[", "if", "hexadecimalFloatingPointLiteral", "decimalNumber", ".", "#imageLiteral", "plainOperator", "#keyPath", "hexadecimalLiteral", "(", "plainIdentifier", "binaryLiteral"])
-}
-func variableName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func swiftVersionContinuation() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["."])
-}
-func switchCase() {
-	if token.type = .ALT {
-		caseLabel()
-		statements()
-		// END
-	} else if token.type = .ALT {
-		caseLabel()
-		statements()
-		// END
-	} else if token.type = .ALT {
-		caseLabel()
-		statements()
-		// END
-	}
-	expect(["case", "@"])
-}
-func playgroundLiteral() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["#colorLiteral"])
-}
-func switchElseifDirectiveClauses() {
-	if token.type = .ALT {
-		elseifDirectiveClause()
-		// OPT
-	}
-	expect(["#elseif"])
-}
-func patternInitializer() {
-	if token.type = .ALT {
-		pattern()
-		// OPT
-	}
-	expect(["await", "#keyPath", "binaryLiteral", "try", "(", "if", "implicitParameterName", "#colorLiteral", "{", "decimalNumber", "plainOperator", "macroIdentifier", "let", "&", ".", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "#selector", "is", "#imageLiteral", "_", "propertyWrapperProjection", "decimalFloatingPointLiteral", "plainRegularExpressionLiteral", "var", "true", "escapedIdentifier", "\\\\", "stringLiteral", "octalLiteral", "super", "false", "self", "switch", "hexadecimalLiteral", "plainIdentifier", "[", "nil", "#fileLiteral"])
-}
-func keyPathPostfixes() {
-	if token.type = .ALT {
-		keyPathPostfix()
-		// OPT
-	}
-	expect(["[", "self", "!", "?"])
-}
-func functionDeclaration() {
-	if token.type = .ALT {
-		functionHead()
-		functionName()
-		// OPT
-	}
-	expect(["postfix", "mutating", "open", "final", "internal", "infix", "class", "func", "unowned", "prefix", "private", "fileprivate", "package", "@", "override", "public", "static", "nonmutating", "optional", "required", "lazy", "nonisolated", "dynamic", "weak", "convenience"])
-}
-func functionHead() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["private", "nonmutating", "func", "nonisolated", "infix", "convenience", "required", "package", "public", "mutating", "override", "final", "prefix", "static", "postfix", "@", "class", "lazy", "unowned", "open", "dynamic", "fileprivate", "weak", "internal", "optional"])
-}
-func protocolSubscriptDeclaration() {
-	if token.type = .ALT {
-		subscriptHead()
-		subscriptResult()
-		// OPT
-	}
-	expect(["unowned", "override", "mutating", "private", "postfix", "nonmutating", "lazy", "subscript", "package", "infix", "@", "open", "static", "dynamic", "nonisolated", "internal", "class", "public", "weak", "final", "optional", "prefix", "required", "fileprivate", "convenience"])
-}
-func macroFunctionSignatureResult() {
-	if token.type = .ALT {
-		next()
-	}
-	expect([">"])
-}
-func precedenceGroupDeclaration() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["precedencegroup"])
-}
-func genericParameterList() {
-	if token.type = .ALT {
-		genericParameter()
-		// END
-	} else if token.type = .ALT {
-		genericParameter()
-		// END
-	}
-	expect(["_", "propertyWrapperProjection", "implicitParameterName", "plainIdentifier", "escapedIdentifier"])
-}
-func elseClause() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["else"])
-}
-func unionStyleEnumCaseClause() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["case", "@", "indirect"])
-}
-func actorDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["public", "fileprivate", "open", "private", "actor", "package", "@", "internal"])
-}
-func isPattern() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["is"])
-}
-func valueBindingPattern() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["var"])
-}
-func catchClauses() {
-	if token.type = .ALT {
-		catchClause()
-		// OPT
-	}
-	expect(["catch"])
-}
-func captureListItem() {
-	if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	}
-	expect(["weak", "plainIdentifier", "unowned", "unowned(safe)", "escapedIdentifier", "implicitParameterName", "propertyWrapperProjection", "unowned(unsafe)", "_"])
-}
-func codeBlock() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["{"])
-}
-func typealiasDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["open", "public", "package", "fileprivate", "internal", "typealias", "@", "private"])
-}
-func constantDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["dynamic", "unowned", "final", "class", "required", "let", "prefix", "postfix", "mutating", "nonmutating", "internal", "open", "fileprivate", "lazy", "weak", "private", "nonisolated", "convenience", "optional", "override", "public", "infix", "package", "static", "@"])
-}
-func implicitMemberExpression() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["."])
-}
-func compilationCondition() {
-	if token.type = .ALT {
-		platformCondition()
-		// END
-	} else if token.type = .ALT {
-		platformCondition()
-		// END
-	} else if token.type = .ALT {
-		platformCondition()
-		// END
-	} else if token.type = .ALT {
-		platformCondition()
-		// END
-	} else if token.type = .ALT {
-		platformCondition()
-		// END
-	} else if token.type = .ALT {
-		platformCondition()
-		// END
-	} else if token.type = .ALT {
-		platformCondition()
-		// END
-	}
-	expect(["targetEnvironment", "swift", "compiler", "os", "arch", "canImport"])
-}
-func argumentName() {
-	if token.type = .ALT {
-		identifier()
-		next()
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func tupleElement() {
-	if token.type = .ALT {
-		expression()
-		// END
-	} else if token.type = .ALT {
-		expression()
-		// END
-	}
-	expect(["{", "decimalFloatingPointLiteral", "nil", "#selector", "self", "#colorLiteral", "octalLiteral", "implicitParameterName", "super", "switch", "_", "macroIdentifier", "true", "try", "escapedIdentifier", "await", "stringLiteral", "\\\\", "dotOperator", "&", "#fileLiteral", "false", "propertyWrapperProjection", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "[", "if", "hexadecimalFloatingPointLiteral", "decimalNumber", ".", "#imageLiteral", "plainOperator", "#keyPath", "hexadecimalLiteral", "(", "plainIdentifier", "binaryLiteral"])
-}
-func parenthesizedExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func functionTypeArgument() {
-	if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	}
-	expect(["implicitParameterName", "@", "Any", "_", "escapedIdentifier", "inout", "some", "[", "propertyWrapperProjection", "(", "Self", "plainIdentifier"])
-}
-func closureParameter() {
-	if token.type = .ALT {
-		closureParameterName()
-		// OPT
-	} else if token.type = .ALT {
-		closureParameterName()
-		// OPT
-	}
-	expect(["implicitParameterName", "escapedIdentifier", "_", "propertyWrapperProjection", "plainIdentifier"])
-}
-func switchElseifDirectiveClause() {
-	if token.type = .ALT {
-		elseifDirective()
-		compilationCondition()
-		// OPT
-	}
-	expect(["#elseif"])
-}
-func primaryExpression() {
-	if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	} else if token.type = .ALT {
-		identifier()
-		// OPT
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func functionCallArgumentClause() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func declarationModifier() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["class"])
-}
-func actorMembers() {
-	if token.type = .ALT {
-		actorMember()
-		// OPT
-	}
-	expect(["public", "postfix", "required", "enum", "protocol", "subscript", "nonmutating", "#warning", "#sourceLocation", "import", "convenience", "weak", "lazy", "internal", "typealias", "unowned", "actor", "#if", "private", "open", "fileprivate", "#error", "class", "static", "func", "precedencegroup", "var", "mutating", "infix", "final", "deinit", "dynamic", "prefix", "struct", "nonisolated", "indirect", "package", "let", "@", "init", "override", "extension", "optional"])
-}
-func genericArgumentClause() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["<"])
-}
-func parameterModifier() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["inout"])
-}
-func interpolatedStringLiteral() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["stringLiteral"])
-}
-func balancedTokens() {
-	if token.type = .ALT {
-		balancedToken()
-		// OPT
-	}
-	expect(["final", "defer", "Any", "weak", "in", "protocol", "throw", "break", "else", "#imageLiteral", "move", "typealias", "#warning", "#elseif", "left", "nonisolated", "_unsafeInheritExecutor", "let", "right", "{", "inout", "#sourceLocation", "implicitParameterName", "postfix", "prefix", "rethrows", "borrowing", "|", "precedencegroup", "copy", "open", "propertyWrapperProjection", "hexadecimalLiteral", "override", "plainIdentifier", "return", "didSet", "#colorLiteral", "=", "willSet", "%", "indirect", "var", "<", "actor", "plainOperator", "[", "#", "enum", "associatedtype", "lazy", "package", "lowerThan", "true", "operator", "(", "false", "plainRegularExpressionLiteral", "?", "!", "deinit", "decimalFloatingPointLiteral", "required", ":", "continue", "private", "unowned", "fileprivate", ";", "higherThan", "init", "is", ".", "#selector", "self", "extendedRegularExpressionLiteral", "none", "binaryLiteral", "#endif", "super", "/", "subscript", "set", "static", "hexadecimalFloatingPointLiteral", "each", "mutating", "default", "throws", "optional", "consuming", "class", "@", "guard", "#fileLiteral", "octalLiteral", "#available", "fallthrough", "switch", "if", "extension", "~", "where", "public", "func", "convenience", ",", "case", "nil", "#keyPath", "async", "await", "Self", "try", "dotOperator", "internal", "^", "some", "yield", "struct", "escapedIdentifier", "#unavailable", "catch", "import", "get", "#else", ">", "+", "for", "do", "*", "as", "while", "discard", "_", "associativity", "stringLiteral", "isolated", "repeat", "-", "dynamic", "#if", "&", "nonmutating", "#error", "decimalNumber"])
-}
-func genericParameterClause() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["<"])
-}
-func initializerExpression() {
-	if token.type = .ALT {
-		postfixExpression()
-		next()
-	} else if token.type = .ALT {
-		postfixExpression()
-		next()
-	}
-	expect(["hexadecimalLiteral", "#keyPath", "plainIdentifier", "extendedRegularExpressionLiteral", "{", "hexadecimalFloatingPointLiteral", "false", "_", "octalLiteral", "\\\\", "[", "#selector", "stringLiteral", "#imageLiteral", "escapedIdentifier", "true", "super", "propertyWrapperProjection", "#fileLiteral", "#colorLiteral", "nil", "macroIdentifier", "switch", "decimalFloatingPointLiteral", "binaryLiteral", "self", "plainRegularExpressionLiteral", "decimalNumber", "implicitParameterName", "(", "if", "."])
-}
-func attributeArgumentClause() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func whereClause() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["where"])
-}
-func enumDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	}
-	expect(["enum", "indirect", "private", "fileprivate", "internal", "@", "public", "package", "open"])
-}
-func setterKeywordClause() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["nonmutating", "@", "set", "mutating"])
-}
-func protocolMembers() {
-	if token.type = .ALT {
-		protocolMember()
-		// OPT
-	}
-	expect(["unowned", "postfix", "required", "package", "class", "subscript", "override", "#if", "private", "prefix", "#sourceLocation", "fileprivate", "func", "nonmutating", "#warning", "mutating", "@", "dynamic", "static", "weak", "final", "optional", "init", "var", "typealias", "internal", "#error", "associatedtype", "infix", "convenience", "open", "nonisolated", "lazy", "public"])
-}
-func fallthroughStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["fallthrough"])
-}
-func switchExpressionCase() {
-	if token.type = .ALT {
-		caseLabel()
-		statement()
-		// END
-	} else if token.type = .ALT {
-		caseLabel()
-		statement()
-		// END
-	}
-	expect(["case", "@"])
-}
-func dictionaryType() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["["])
-}
-func classMember() {
-	if token.type = .ALT {
-		declaration()
-		// END
-	} else if token.type = .ALT {
-		declaration()
-		// END
-	}
-	expect(["static", "open", "postfix", "deinit", "optional", "init", "unowned", "public", "dynamic", "var", "lazy", "internal", "extension", "import", "precedencegroup", "func", "package", "prefix", "enum", "@", "infix", "typealias", "subscript", "final", "actor", "override", "weak", "required", "struct", "private", "nonmutating", "indirect", "mutating", "fileprivate", "protocol", "nonisolated", "class", "convenience", "let"])
-}
-func macroDefinition() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["="])
-}
-func functionName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	} else if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func functionBody() {
-	if token.type = .ALT {
-		codeBlock()
-		// END
-	}
-	expect(["{"])
-}
-func labelName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func deinitializerDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["deinit", "@"])
-}
-func conformanceRequirement() {
-	if token.type = .ALT {
-		typeIdentifier()
-		next()
-	} else if token.type = .ALT {
-		typeIdentifier()
-		next()
-	}
-	expect(["propertyWrapperProjection", "plainIdentifier", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func actorIsolationModifier() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["nonisolated"])
-}
-func superclassMethodExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["super"])
-}
-func getterClause() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["@", "nonmutating", "get", "mutating"])
-}
-func macroSignature() {
-	if token.type = .ALT {
-		parameterClause()
-		// OPT
-	}
-	expect(["("])
 }
 func tuplePatternElement() {
 	if token.type = .ALT {
@@ -2276,1223 +3478,21 @@ func tuplePatternElement() {
 		pattern()
 		// END
 	}
-	expect(["await", "#keyPath", "binaryLiteral", "try", "(", "if", "implicitParameterName", "#colorLiteral", "{", "decimalNumber", "plainOperator", "macroIdentifier", "let", "&", ".", "dotOperator", "hexadecimalFloatingPointLiteral", "extendedRegularExpressionLiteral", "#selector", "is", "#imageLiteral", "_", "propertyWrapperProjection", "decimalFloatingPointLiteral", "plainRegularExpressionLiteral", "var", "true", "escapedIdentifier", "\\\\", "stringLiteral", "octalLiteral", "super", "false", "self", "switch", "hexadecimalLiteral", "plainIdentifier", "[", "nil", "#fileLiteral"])
+	expect(["extendedRegularExpressionLiteral", "let", "false", "#keyPath", "stringLiteral", "binaryLiteral", "implicitParameterName", "dotOperator", "hexadecimalLiteral", ".", "var", "try", "\\\\", "_", "true", "#colorLiteral", "(", "hexadecimalFloatingPointLiteral", "nil", "is", "super", "#fileLiteral", "escapedIdentifier", "plainOperator", "plainRegularExpressionLiteral", "{", "switch", "#imageLiteral", "propertyWrapperProjection", "macroIdentifier", "decimalFloatingPointLiteral", "octalLiteral", "decimalNumber", "[", "plainIdentifier", "&", "self", "#selector", "if", "await"])
 }
-func optionalChainingExpression() {
+func conformanceRequirement() {
 	if token.type = .ALT {
-		postfixExpression()
+		typeIdentifier()
+		next()
+	} else if token.type = .ALT {
+		typeIdentifier()
 		next()
 	}
-	expect(["hexadecimalLiteral", "#keyPath", "plainIdentifier", "extendedRegularExpressionLiteral", "{", "hexadecimalFloatingPointLiteral", "false", "_", "octalLiteral", "\\\\", "[", "#selector", "stringLiteral", "#imageLiteral", "escapedIdentifier", "true", "super", "propertyWrapperProjection", "#fileLiteral", "#colorLiteral", "nil", "macroIdentifier", "switch", "decimalFloatingPointLiteral", "binaryLiteral", "self", "plainRegularExpressionLiteral", "decimalNumber", "implicitParameterName", "(", "if", "."])
+	expect(["plainIdentifier", "escapedIdentifier", "implicitParameterName", "propertyWrapperProjection", "_"])
 }
-func extensionMember() {
-	if token.type = .ALT {
-		declaration()
-		// END
-	} else if token.type = .ALT {
-		declaration()
-		// END
-	}
-	expect(["static", "open", "postfix", "deinit", "optional", "init", "unowned", "public", "dynamic", "var", "lazy", "internal", "extension", "import", "precedencegroup", "func", "package", "prefix", "enum", "@", "infix", "typealias", "subscript", "final", "actor", "override", "weak", "required", "struct", "private", "nonmutating", "indirect", "mutating", "fileprivate", "protocol", "nonisolated", "class", "convenience", "let"])
-}
-func rawValueStyleEnum() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["enum"])
-}
-func keyPathExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["\\\\"])
-}
-func actorBody() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["{"])
-}
-func functionCallArgument() {
-	if token.type = .ALT {
-		expression()
-		// END
-	} else if token.type = .ALT {
-		expression()
-		// END
-	} else if token.type = .ALT {
-		expression()
-		// END
-	} else if token.type = .ALT {
-		expression()
-		// END
-	}
-	expect(["{", "decimalFloatingPointLiteral", "nil", "#selector", "self", "#colorLiteral", "octalLiteral", "implicitParameterName", "super", "switch", "_", "macroIdentifier", "true", "try", "escapedIdentifier", "await", "stringLiteral", "\\\\", "dotOperator", "&", "#fileLiteral", "false", "propertyWrapperProjection", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "[", "if", "hexadecimalFloatingPointLiteral", "decimalNumber", ".", "#imageLiteral", "plainOperator", "#keyPath", "hexadecimalLiteral", "(", "plainIdentifier", "binaryLiteral"])
-}
-func infixExpression() {
-	if token.type = .ALT {
-		infixOperator()
-		prefixExpression()
-		// END
-	} else if token.type = .ALT {
-		infixOperator()
-		prefixExpression()
-		// END
-	} else if token.type = .ALT {
-		infixOperator()
-		prefixExpression()
-		// END
-	} else if token.type = .ALT {
-		infixOperator()
-		prefixExpression()
-		// END
-	}
-	expect(["plainOperator", "dotOperator"])
-}
-func operatorDeclaration() {
-	if token.type = .ALT {
-		prefixOperatorDeclaration()
-		// END
-	} else if token.type = .ALT {
-		prefixOperatorDeclaration()
-		// END
-	} else if token.type = .ALT {
-		prefixOperatorDeclaration()
-		// END
-	}
-	expect(["prefix"])
-}
-func catchPatternList() {
-	if token.type = .ALT {
-		catchPattern()
-		// END
-	} else if token.type = .ALT {
-		catchPattern()
-		// END
-	}
-	expect(["decimalNumber", "decimalFloatingPointLiteral", "self", "escapedIdentifier", "var", "is", "super", "[", ".", "if", "binaryLiteral", "await", "hexadecimalLiteral", "hexadecimalFloatingPointLiteral", "switch", "#imageLiteral", "nil", "macroIdentifier", "stringLiteral", "true", "dotOperator", "try", "&", "false", "#fileLiteral", "octalLiteral", "#selector", "#colorLiteral", "plainIdentifier", "propertyWrapperProjection", "(", "\\\\", "plainOperator", "implicitParameterName", "{", "_", "extendedRegularExpressionLiteral", "plainRegularExpressionLiteral", "let", "#keyPath"])
-}
-func parameter() {
-	if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	}
-	expect(["escapedIdentifier", "_", "propertyWrapperProjection", "implicitParameterName", "plainIdentifier"])
-}
-func protocolMethodDeclaration() {
-	if token.type = .ALT {
-		functionHead()
-		functionName()
-		// OPT
-	}
-	expect(["postfix", "mutating", "open", "final", "internal", "infix", "class", "func", "unowned", "prefix", "private", "fileprivate", "package", "@", "override", "public", "static", "nonmutating", "optional", "required", "lazy", "nonisolated", "dynamic", "weak", "convenience"])
-}
-func loopStatement() {
-	if token.type = .ALT {
-		forInStatement()
-		// END
-	} else if token.type = .ALT {
-		forInStatement()
-		// END
-	} else if token.type = .ALT {
-		forInStatement()
-		// END
-	}
-	expect(["for"])
-}
-func initializerDeclaration() {
-	if token.type = .ALT {
-		initializerHead()
-		// OPT
-	} else if token.type = .ALT {
-		initializerHead()
-		// OPT
-	}
-	expect(["required", "postfix", "public", "static", "open", "override", "weak", "convenience", "nonisolated", "prefix", "optional", "internal", "package", "@", "infix", "fileprivate", "dynamic", "init", "lazy", "final", "private", "nonmutating", "mutating", "class", "unowned"])
-}
-func typealiasAssignment() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["="])
-}
-func precedenceGroupName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func caseCondition() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["case"])
-}
-func didSetClause() {
+func unionStyleEnumCaseClause() {
 	if token.type = .ALT {
 		// OPT
 	}
-	expect(["didSet", "@"])
-}
-func wildcardExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["_"])
-}
-func doStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["do"])
-}
-func availabilityCondition() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["#available"])
-}
-func rawValueAssignment() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["="])
-}
-func getterSetterKeywordBlock() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["{"])
-}
-func arrayLiteral() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["["])
-}
-func deferStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["defer"])
-}
-func arrayLiteralItem() {
-	if token.type = .ALT {
-		expression()
-		// END
-	}
-	expect(["{", "decimalFloatingPointLiteral", "nil", "#selector", "self", "#colorLiteral", "octalLiteral", "implicitParameterName", "super", "switch", "_", "macroIdentifier", "true", "try", "escapedIdentifier", "await", "stringLiteral", "\\\\", "dotOperator", "&", "#fileLiteral", "false", "propertyWrapperProjection", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "[", "if", "hexadecimalFloatingPointLiteral", "decimalNumber", ".", "#imageLiteral", "plainOperator", "#keyPath", "hexadecimalLiteral", "(", "plainIdentifier", "binaryLiteral"])
-}
-func structBody() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["{"])
-}
-func selfMethodExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["self"])
-}
-func attribute() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["@"])
-}
-func branchStatement() {
-	if token.type = .ALT {
-		ifStatement()
-		// END
-	} else if token.type = .ALT {
-		ifStatement()
-		// END
-	} else if token.type = .ALT {
-		ifStatement()
-		// END
-	}
-	expect(["if"])
-}
-func elseDirective() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["#else"])
-}
-func enumName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func enumCaseName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func switchExpressionCases() {
-	if token.type = .ALT {
-		switchExpressionCase()
-		// OPT
-	}
-	expect(["default", "case", "@"])
-}
-func variableDeclarationHead() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["nonmutating", "optional", "required", "package", "public", "lazy", "open", "@", "final", "unowned", "weak", "var", "prefix", "infix", "nonisolated", "internal", "class", "mutating", "postfix", "convenience", "static", "fileprivate", "dynamic", "private", "override"])
-}
-func protocolDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["@", "internal", "package", "private", "fileprivate", "open", "protocol", "public"])
-}
-func forcedValueExpression() {
-	if token.type = .ALT {
-		postfixExpression()
-		next()
-	}
-	expect(["hexadecimalLiteral", "#keyPath", "plainIdentifier", "extendedRegularExpressionLiteral", "{", "hexadecimalFloatingPointLiteral", "false", "_", "octalLiteral", "\\\\", "[", "#selector", "stringLiteral", "#imageLiteral", "escapedIdentifier", "true", "super", "propertyWrapperProjection", "#fileLiteral", "#colorLiteral", "nil", "macroIdentifier", "switch", "decimalFloatingPointLiteral", "binaryLiteral", "self", "plainRegularExpressionLiteral", "decimalNumber", "implicitParameterName", "(", "if", "."])
-}
-func genericWhereClause() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["where"])
-}
-func selfInitializerExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["self"])
-}
-func rawValueStyleEnumMember() {
-	if token.type = .ALT {
-		declaration()
-		// END
-	} else if token.type = .ALT {
-		declaration()
-		// END
-	} else if token.type = .ALT {
-		declaration()
-		// END
-	}
-	expect(["static", "open", "postfix", "deinit", "optional", "init", "unowned", "public", "dynamic", "var", "lazy", "internal", "extension", "import", "precedencegroup", "func", "package", "prefix", "enum", "@", "infix", "typealias", "subscript", "final", "actor", "override", "weak", "required", "struct", "private", "nonmutating", "indirect", "mutating", "fileprivate", "protocol", "nonisolated", "class", "convenience", "let"])
-}
-func macroHead() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["convenience", "override", "nonisolated", "postfix", "infix", "@", "open", "static", "mutating", "macro", "lazy", "fileprivate", "dynamic", "unowned", "private", "weak", "package", "required", "internal", "class", "nonmutating", "public", "optional", "final", "prefix"])
-}
-func structDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["fileprivate", "private", "public", "internal", "@", "package", "open", "struct"])
-}
-func anyType() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["Any"])
-}
-func mutationModifier() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["mutating"])
-}
-func platformName() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["iOS"])
-}
-func nilLiteral() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["nil"])
-}
-func unionStyleEnum() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["indirect", "enum"])
-}
-func compilerControlStatement() {
-	if token.type = .ALT {
-		conditionalCompilationBlock()
-		// END
-	} else if token.type = .ALT {
-		conditionalCompilationBlock()
-		// END
-	} else if token.type = .ALT {
-		conditionalCompilationBlock()
-		// END
-	}
-	expect(["#if"])
-}
-func protocolAssociatedTypeDeclaration() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["package", "@", "open", "fileprivate", "public", "private", "associatedtype", "internal"])
-}
-func typeAnnotation() {
-	if token.type = .ALT {
-		next()
-	}
-	expect([":"])
-}
-func className() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func extensionBody() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["{"])
-}
-func structMember() {
-	if token.type = .ALT {
-		declaration()
-		// END
-	} else if token.type = .ALT {
-		declaration()
-		// END
-	}
-	expect(["static", "open", "postfix", "deinit", "optional", "init", "unowned", "public", "dynamic", "var", "lazy", "internal", "extension", "import", "precedencegroup", "func", "package", "prefix", "enum", "@", "infix", "typealias", "subscript", "final", "actor", "override", "weak", "required", "struct", "private", "nonmutating", "indirect", "mutating", "fileprivate", "protocol", "nonisolated", "class", "convenience", "let"])
-}
-func typeName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func parameterList() {
-	if token.type = .ALT {
-		parameter()
-		// END
-	} else if token.type = .ALT {
-		parameter()
-		// END
-	}
-	expect(["escapedIdentifier", "propertyWrapperProjection", "_", "implicitParameterName", "plainIdentifier"])
-}
-func genericArgumentList() {
-	if token.type = .ALT {
-		genericArgument()
-		// END
-	} else if token.type = .ALT {
-		genericArgument()
-		// END
-	}
-	expect(["Any", "(", "plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "some", "_", "Self", "implicitParameterName", "[", "@"])
-}
-func protocolInitializerDeclaration() {
-	if token.type = .ALT {
-		initializerHead()
-		// OPT
-	} else if token.type = .ALT {
-		initializerHead()
-		// OPT
-	}
-	expect(["required", "postfix", "public", "static", "open", "override", "weak", "convenience", "nonisolated", "prefix", "optional", "internal", "package", "@", "infix", "fileprivate", "dynamic", "init", "lazy", "final", "private", "nonmutating", "mutating", "class", "unowned"])
-}
-func typeIdentifier() {
-	if token.type = .ALT {
-		typeName()
-		// OPT
-	} else if token.type = .ALT {
-		typeName()
-		// OPT
-	}
-	expect(["propertyWrapperProjection", "plainIdentifier", "_", "implicitParameterName", "escapedIdentifier"])
-}
-func postfixExpression() {
-	if token.type = .ALT {
-		primaryExpression()
-		// END
-	} else if token.type = .ALT {
-		primaryExpression()
-		// END
-	} else if token.type = .ALT {
-		primaryExpression()
-		// END
-	} else if token.type = .ALT {
-		primaryExpression()
-		// END
-	} else if token.type = .ALT {
-		primaryExpression()
-		// END
-	} else if token.type = .ALT {
-		primaryExpression()
-		// END
-	} else if token.type = .ALT {
-		primaryExpression()
-		// END
-	} else if token.type = .ALT {
-		primaryExpression()
-		// END
-	} else if token.type = .ALT {
-		primaryExpression()
-		// END
-	}
-	expect(["if", "true", "{", "hexadecimalLiteral", "stringLiteral", "#imageLiteral", "switch", "octalLiteral", "propertyWrapperProjection", "escapedIdentifier", "(", "macroIdentifier", "#colorLiteral", "\\\\", "#fileLiteral", "#selector", "super", "nil", "implicitParameterName", "self", "#keyPath", "[", "hexadecimalFloatingPointLiteral", "binaryLiteral", "decimalNumber", "false", ".", "extendedRegularExpressionLiteral", "decimalFloatingPointLiteral", "plainRegularExpressionLiteral", "plainIdentifier", "_"])
-}
-func localParameterName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func identifier() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["_"])
-}
-func type() {
-	if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	} else if token.type = .ALT {
-		functionType()
-		// END
-	}
-	expect(["@", "("])
-}
-func closureParameterClause() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func selfType() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["Self"])
-}
-func rawValueStyleEnumCaseList() {
-	if token.type = .ALT {
-		rawValueStyleEnumCase()
-		// END
-	} else if token.type = .ALT {
-		rawValueStyleEnumCase()
-		// END
-	}
-	expect(["propertyWrapperProjection", "implicitParameterName", "escapedIdentifier", "_", "plainIdentifier"])
-}
-func throwStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["throw"])
-}
-func numericLiteral() {
-	if token.type = .ALT {
-		integerLiteral()
-		// END
-	} else if token.type = .ALT {
-		integerLiteral()
-		// END
-	}
-	expect(["octalLiteral", "binaryLiteral", "hexadecimalLiteral", "decimalNumber"])
-}
-func unionStyleEnumCase() {
-	if token.type = .ALT {
-		enumCaseName()
-		// OPT
-	}
-	expect(["escapedIdentifier", "propertyWrapperProjection", "implicitParameterName", "_", "plainIdentifier"])
-}
-func superclassExpression() {
-	if token.type = .ALT {
-		superclassMethodExpression()
-		// END
-	} else if token.type = .ALT {
-		superclassMethodExpression()
-		// END
-	} else if token.type = .ALT {
-		superclassMethodExpression()
-		// END
-	}
-	expect(["super"])
-}
-func ifExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["if"])
-}
-func protocolName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func accessLevelModifier() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["private"])
-}
-func willSetDidSetBlock() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["{"])
-}
-func typeInheritanceClause() {
-	if token.type = .ALT {
-		next()
-	}
-	expect([":"])
-}
-func functionTypeArgumentList() {
-	if token.type = .ALT {
-		functionTypeArgument()
-		// END
-	} else if token.type = .ALT {
-		functionTypeArgument()
-		// END
-	}
-	expect(["some", "_", "escapedIdentifier", "Any", "[", "@", "plainIdentifier", "propertyWrapperProjection", "Self", "(", "implicitParameterName", "inout"])
-}
-func rawValueLiteral() {
-	if token.type = .ALT {
-		numericLiteral()
-		// END
-	} else if token.type = .ALT {
-		numericLiteral()
-		// END
-	} else if token.type = .ALT {
-		numericLiteral()
-		// END
-	}
-	expect(["hexadecimalFloatingPointLiteral", "decimalNumber", "binaryLiteral", "decimalFloatingPointLiteral", "octalLiteral", "hexadecimalLiteral"])
-}
-func controlTransferStatement() {
-	if token.type = .ALT {
-		breakStatement()
-		// END
-	} else if token.type = .ALT {
-		breakStatement()
-		// END
-	} else if token.type = .ALT {
-		breakStatement()
-		// END
-	} else if token.type = .ALT {
-		breakStatement()
-		// END
-	} else if token.type = .ALT {
-		breakStatement()
-		// END
-	}
-	expect(["break"])
-}
-func awaitOperator() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["await"])
-}
-func swiftVersion() {
-	if token.type = .ALT {
-		decimalDigits()
-		// OPT
-	}
-	expect(["decimalNumber"])
-}
-func tupleTypeElement() {
-	if token.type = .ALT {
-		elementName()
-		typeAnnotation()
-		// END
-	} else if token.type = .ALT {
-		elementName()
-		typeAnnotation()
-		// END
-	}
-	expect(["implicitParameterName", "propertyWrapperProjection", "plainIdentifier", "escapedIdentifier", "_"])
-}
-func catchClause() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["catch"])
-}
-func getterKeywordClause() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["nonmutating", "@", "mutating", "get"])
-}
-func returnStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["return"])
-}
-func integerLiteral() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["binaryLiteral"])
-}
-func defaultArgumentClause() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["="])
-}
-func functionTypeArgumentClause() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func protocolMember() {
-	if token.type = .ALT {
-		protocolMemberDeclaration()
-		// END
-	} else if token.type = .ALT {
-		protocolMemberDeclaration()
-		// END
-	}
-	expect(["nonmutating", "unowned", "mutating", "var", "convenience", "dynamic", "infix", "final", "open", "class", "override", "subscript", "public", "optional", "@", "fileprivate", "internal", "package", "lazy", "postfix", "typealias", "func", "associatedtype", "prefix", "weak", "init", "private", "nonisolated", "required", "static"])
-}
-func postfixOperatorDeclaration() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["postfix"])
-}
-func requirement() {
-	if token.type = .ALT {
-		conformanceRequirement()
-		// END
-	} else if token.type = .ALT {
-		conformanceRequirement()
-		// END
-	}
-	expect(["escapedIdentifier", "plainIdentifier", "implicitParameterName", "propertyWrapperProjection", "_"])
-}
-func labeledTrailingClosure() {
-	if token.type = .ALT {
-		identifier()
-		next()
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func expression() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect([".", "#imageLiteral", "#fileLiteral", "extendedRegularExpressionLiteral", "implicitParameterName", "#colorLiteral", "decimalNumber", "stringLiteral", "plainIdentifier", "#keyPath", "try", "{", "if", "await", "self", "octalLiteral", "escapedIdentifier", "dotOperator", "\\\\", "macroIdentifier", "super", "_", "#selector", "false", "hexadecimalLiteral", "[", "plainOperator", "binaryLiteral", "propertyWrapperProjection", "decimalFloatingPointLiteral", "&", "switch", "hexadecimalFloatingPointLiteral", "nil", "(", "plainRegularExpressionLiteral", "true"])
-}
-func tuplePatternElementList() {
-	if token.type = .ALT {
-		tuplePatternElement()
-		// END
-	} else if token.type = .ALT {
-		tuplePatternElement()
-		// END
-	}
-	expect(["_", "extendedRegularExpressionLiteral", "switch", "try", "#fileLiteral", "var", "escapedIdentifier", "super", "#imageLiteral", "[", "octalLiteral", "decimalFloatingPointLiteral", "(", "hexadecimalFloatingPointLiteral", "propertyWrapperProjection", "&", "macroIdentifier", "is", "{", "let", "await", "if", "#colorLiteral", "plainRegularExpressionLiteral", "true", "false", "stringLiteral", "plainOperator", "implicitParameterName", "\\\\", "hexadecimalLiteral", "#selector", "decimalNumber", ".", "#keyPath", "self", "nil", "plainIdentifier", "binaryLiteral", "dotOperator"])
-}
-func switchElseDirectiveClause() {
-	if token.type = .ALT {
-		elseDirective()
-		// OPT
-	}
-	expect(["#else"])
-}
-func conditionalExpression() {
-	if token.type = .ALT {
-		ifExpression()
-		// END
-	} else if token.type = .ALT {
-		ifExpression()
-		// END
-	}
-	expect(["if"])
-}
-func precedenceGroupAttribute() {
-	if token.type = .ALT {
-		precedenceGroupRelation()
-		// END
-	} else if token.type = .ALT {
-		precedenceGroupRelation()
-		// END
-	} else if token.type = .ALT {
-		precedenceGroupRelation()
-		// END
-	}
-	expect(["higherThan", "lowerThan"])
-}
-func dictionaryLiteral() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["["])
-}
-func closureExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["{"])
-}
-func typeCastingOperator() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["is"])
-}
-func trailingClosures() {
-	if token.type = .ALT {
-		closureExpression()
-		// OPT
-	}
-	expect(["{"])
-}
-func tryOperator() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["try"])
-}
-func lineControlStatement() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["#sourceLocation"])
-}
-func decimalDigits() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["decimalNumber"])
-}
-func availabilityArgument() {
-	if token.type = .ALT {
-		platformName()
-		platformVersion()
-		// END
-	} else if token.type = .ALT {
-		platformName()
-		platformVersion()
-		// END
-	}
-	expect(["iOS", "visionOS", "iOSApplicationExtension", "tvOSApplicationExtension", "macCatalyst", "macOS", "visionOSApplicationExtension", "watchOSApplicationExtension", "watchOS", "tvOS", "macOSApplicationExtension", "macCatalystApplicationExtension"])
-}
-func subscriptExpression() {
-	if token.type = .ALT {
-		postfixExpression()
-		next()
-	}
-	expect(["hexadecimalLiteral", "#keyPath", "plainIdentifier", "extendedRegularExpressionLiteral", "{", "hexadecimalFloatingPointLiteral", "false", "_", "octalLiteral", "\\\\", "[", "#selector", "stringLiteral", "#imageLiteral", "escapedIdentifier", "true", "super", "propertyWrapperProjection", "#fileLiteral", "#colorLiteral", "nil", "macroIdentifier", "switch", "decimalFloatingPointLiteral", "binaryLiteral", "self", "plainRegularExpressionLiteral", "decimalNumber", "implicitParameterName", "(", "if", "."])
-}
-func functionCallExpression() {
-	if token.type = .ALT {
-		postfixExpression()
-		functionCallArgumentClause()
-		// END
-	} else if token.type = .ALT {
-		postfixExpression()
-		functionCallArgumentClause()
-		// END
-	}
-	expect(["hexadecimalLiteral", "#keyPath", "plainIdentifier", "extendedRegularExpressionLiteral", "{", "hexadecimalFloatingPointLiteral", "false", "_", "octalLiteral", "\\\\", "[", "#selector", "stringLiteral", "#imageLiteral", "escapedIdentifier", "true", "super", "propertyWrapperProjection", "#fileLiteral", "#colorLiteral", "nil", "macroIdentifier", "switch", "decimalFloatingPointLiteral", "binaryLiteral", "self", "plainRegularExpressionLiteral", "decimalNumber", "implicitParameterName", "(", "if", "."])
-}
-func identifierList() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	} else if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func whileStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["while"])
-}
-func dictionaryLiteralItem() {
-	if token.type = .ALT {
-		expression()
-		next()
-	}
-	expect(["{", "decimalFloatingPointLiteral", "nil", "#selector", "self", "#colorLiteral", "octalLiteral", "implicitParameterName", "super", "switch", "_", "macroIdentifier", "true", "try", "escapedIdentifier", "await", "stringLiteral", "\\\\", "dotOperator", "&", "#fileLiteral", "false", "propertyWrapperProjection", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "[", "if", "hexadecimalFloatingPointLiteral", "decimalNumber", ".", "#imageLiteral", "plainOperator", "#keyPath", "hexadecimalLiteral", "(", "plainIdentifier", "binaryLiteral"])
-}
-func setterName() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["("])
-}
-func keyPathComponents() {
-	if token.type = .ALT {
-		keyPathComponent()
-		// END
-	} else if token.type = .ALT {
-		keyPathComponent()
-		// END
-	}
-	expect(["self", "propertyWrapperProjection", "_", "[", "escapedIdentifier", "implicitParameterName", "!", "plainIdentifier", "?"])
-}
-func closureSignature() {
-	if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	}
-	expect(["(", "[", "propertyWrapperProjection", "_", "plainIdentifier", "escapedIdentifier", "implicitParameterName"])
-}
-func ifExpressionTail() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["else"])
-}
-func conditionalCompilationBlock() {
-	if token.type = .ALT {
-		ifDirectiveClause()
-		// OPT
-	}
-	expect(["#if"])
-}
-func conditionList() {
-	if token.type = .ALT {
-		condition()
-		// END
-	} else if token.type = .ALT {
-		condition()
-		// END
-	}
-	expect(["#fileLiteral", "_", "escapedIdentifier", "nil", "true", "[", "extendedRegularExpressionLiteral", "octalLiteral", "var", "stringLiteral", "propertyWrapperProjection", "plainRegularExpressionLiteral", "{", "#selector", "(", "#unavailable", "macroIdentifier", "decimalFloatingPointLiteral", "plainIdentifier", "dotOperator", "self", "binaryLiteral", "&", "#colorLiteral", "false", "if", "hexadecimalFloatingPointLiteral", "#keyPath", "hexadecimalLiteral", "\\\\", "case", "try", "#available", "decimalNumber", "super", "plainOperator", "await", ".", "#imageLiteral", "switch", "implicitParameterName", "let"])
-}
-func infixExpressions() {
-	if token.type = .ALT {
-		infixExpression()
-		// OPT
-	}
-	expect(["is", "?", "plainOperator", "=", "as", "dotOperator"])
-}
-func keyPathStringExpression() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["#keyPath"])
-}
-func caseLabel() {
-	if token.type = .ALT {
-		// OPT
-	}
-	expect(["@", "case"])
-}
-func argumentLabel() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func condition() {
-	if token.type = .ALT {
-		expression()
-		// END
-	} else if token.type = .ALT {
-		expression()
-		// END
-	} else if token.type = .ALT {
-		expression()
-		// END
-	} else if token.type = .ALT {
-		expression()
-		// END
-	}
-	expect(["{", "decimalFloatingPointLiteral", "nil", "#selector", "self", "#colorLiteral", "octalLiteral", "implicitParameterName", "super", "switch", "_", "macroIdentifier", "true", "try", "escapedIdentifier", "await", "stringLiteral", "\\\\", "dotOperator", "&", "#fileLiteral", "false", "propertyWrapperProjection", "plainRegularExpressionLiteral", "extendedRegularExpressionLiteral", "[", "if", "hexadecimalFloatingPointLiteral", "decimalNumber", ".", "#imageLiteral", "plainOperator", "#keyPath", "hexadecimalLiteral", "(", "plainIdentifier", "binaryLiteral"])
-}
-func optionalBindingCondition() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["let"])
-}
-func statements() {
-	if token.type = .ALT {
-		statement()
-		// OPT
-	}
-	expect(["extendedRegularExpressionLiteral", "actor", "nonisolated", "guard", "octalLiteral", "enum", "decimalNumber", "#warning", "func", "break", "package", "hexadecimalLiteral", "stringLiteral", "public", "infix", "dotOperator", "(", "#selector", "macroIdentifier", "implicitParameterName", "weak", "true", "escapedIdentifier", "continue", "mutating", "#if", "binaryLiteral", "do", "init", "convenience", "private", "override", "{", "nil", "prefix", "super", "plainRegularExpressionLiteral", "plainIdentifier", "var", "subscript", "decimalFloatingPointLiteral", "await", "static", "final", "for", "optional", "try", "while", "#colorLiteral", "postfix", "typealias", "struct", "internal", "#keyPath", "unowned", "let", "indirect", "[", "propertyWrapperProjection", "protocol", "&", "#error", "fileprivate", "self", "repeat", "precedencegroup", "#sourceLocation", "nonmutating", "\\\\", "deinit", "#fileLiteral", "if", "class", "defer", "dynamic", "return", "switch", "false", "open", "throw", "hexadecimalFloatingPointLiteral", "#imageLiteral", "@", ".", "fallthrough", "extension", "plainOperator", "lazy", "required", "import", "_"])
-}
-func elseifDirectiveClauses() {
-	if token.type = .ALT {
-		elseifDirectiveClause()
-		// OPT
-	}
-	expect(["#elseif"])
-}
-func staticStringLiteral() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["stringLiteral"])
-}
-func actorName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func balancedToken() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	} else if token.type = .ALT {
-		identifier()
-		// END
-	} else if token.type = .ALT {
-		identifier()
-		// END
-	} else if token.type = .ALT {
-		identifier()
-		// END
-	} else if token.type = .ALT {
-		identifier()
-		// END
-	} else if token.type = .ALT {
-		identifier()
-		// END
-	} else if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func requirementList() {
-	if token.type = .ALT {
-		requirement()
-		// END
-	} else if token.type = .ALT {
-		requirement()
-		// END
-	}
-	expect(["escapedIdentifier", "propertyWrapperProjection", "plainIdentifier", "_", "implicitParameterName"])
-}
-func genericArgument() {
-	if token.type = .ALT {
-		type()
-		// END
-	}
-	expect(["implicitParameterName", "Any", "propertyWrapperProjection", "(", "@", "plainIdentifier", "some", "escapedIdentifier", "_", "Self", "["])
-}
-func structName() {
-	if token.type = .ALT {
-		identifier()
-		// END
-	}
-	expect(["plainIdentifier", "propertyWrapperProjection", "escapedIdentifier", "_", "implicitParameterName"])
-}
-func functionResult() {
-	if token.type = .ALT {
-		next()
-	}
-	expect([">"])
-}
-func guardStatement() {
-	if token.type = .ALT {
-		next()
-	}
-	expect(["guard"])
-}
-func initializerHead() {
-	if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	} else if token.type = .ALT {
-		// OPT
-	}
-	expect(["static", "package", "private", "weak", "unowned", "infix", "final", "internal", "nonisolated", "required", "postfix", "nonmutating", "override", "dynamic", "init", "class", "public", "convenience", "prefix", "fileprivate", "optional", "lazy", "open", "mutating", "@"])
-}
-func literal() {
-	if token.type = .ALT {
-		numericLiteral()
-		// END
-	} else if token.type = .ALT {
-		numericLiteral()
-		// END
-	} else if token.type = .ALT {
-		numericLiteral()
-		// END
-	} else if token.type = .ALT {
-		numericLiteral()
-		// END
-	} else if token.type = .ALT {
-		numericLiteral()
-		// END
-	}
-	expect(["hexadecimalFloatingPointLiteral", "decimalNumber", "binaryLiteral", "decimalFloatingPointLiteral", "octalLiteral", "hexadecimalLiteral"])
-}
-func genericParameter() {
-	if token.type = .ALT {
-		typeName()
-		// END
-	} else if token.type = .ALT {
-		typeName()
-		// END
-	} else if token.type = .ALT {
-		typeName()
-		// END
-	}
-	expect(["propertyWrapperProjection", "plainIdentifier", "_", "implicitParameterName", "escapedIdentifier"])
+	expect(["@", "indirect", "case"])
 }

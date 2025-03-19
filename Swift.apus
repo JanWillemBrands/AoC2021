@@ -4,25 +4,25 @@ topLevelDeclaration = statements? .
 
 // WHITESPACE AND COMMENT
 
-whitespace : /\s+/.                             // simplified
+whitespace : /\s+/.                                                     // simplified
 //whitespace = whitespaceItem whitespace? .
 //whitespaceItem = lineBreak .
 //whitespaceItem = inlineSpace .
 //whitespaceItem = comment .
 //whitespaceItem = multilineComment .
-//whitespaceItem = U+0000, U+000B, or U+000C.     // NULL or \0 or \u{0000}, VERTICAL TAB or \u{000B}, or FORM FEED or \u{000C}
+//whitespaceItem = U+0000, U+000B, or U+000C.                           // NULL or \0 or \u{0000}, VERTICAL TAB or \u{000B}, or FORM FEED or \u{000C}
 
-//lineBreak = U+000A                             // NEWLINE or \n or \u{000A}
-//lineBreak = U+000D                             // CARRIAGE RETURN or \r or \u{000D}
+//lineBreak = U+000A                                                    // NEWLINE or \n or \u{000A}
+//lineBreak = U+000D                                                    // CARRIAGE RETURN or \r or \u{000D}
 //lineBreak = U+000D followed by U+000A
 
 //inlineSpaces = inlineSpace inlineSpaces? .
-//inlineSpace = U+0009 or U+0020                 // HORIZONTAL TAB or \t or \u{0009}, SPACE or \u{0020}
+//inlineSpace = U+0009 or U+0020                                        // HORIZONTAL TAB or \t or \u{0009}, SPACE or \u{0020}
 
-comment : /\/\/.*\r?\n?/ .                      // simplified
+comment : /\/\/.*\r?\n?/ .                                              // simplified
 // comment = "//" commentText lineBreak .
 
-multilineComment : /\/\*(?s).*?\*\// .          // simplified
+multilineComment : /\/\*(?s).*?\*\// .                                  // simplified
 //multilineComment = "/*" multilineCommentText "*/" .
 
 //commentText = commentTextItem commentText? .
@@ -49,7 +49,7 @@ identifier = "_" | plainIdentifier | escapedIdentifier | implicitParameterName |
 //identifier = propertyWrapperProjection .
 
 identifierList = identifier | identifier "," identifierList .
-//identifierList = identifier { "," identifier } .                  // EBNF
+//identifierList = identifier { "," identifier } .                      // EBNF
 
 // these are included in XID_Start
 //identifierHead = Upper or lowercase letter A through Z
@@ -81,8 +81,8 @@ identifierList = identifier | identifier "," identifierList .
 
 // REGULAR EXPRESSIONS
 
-plainRegularExpressionLiteral = /\/[^\s](?:(?:[^\/\\\s]|\\.)*[^\s])?\// .  // eliminates start or end whitespace, helps with / division sign
-extendedRegularExpressionLiteral = /#+\/(?:[^\/\\]|\\.)+\/#+/ .           // captures legal Swift regex already validated by the compiler
+plainRegularExpressionLiteral = /\/[^\s](?:(?:[^\/\\\s]|\\.)*[^\s])?\// .       // eliminates start or end whitespace, helps with / division sign
+extendedRegularExpressionLiteral = /#+\/(?:[^\/\\]|\\.)+\/#+/ .                 // captures legal Swift regex already validated by the compiler
 regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpressionLiteral .
 
 //regularExpressionLiteral = regularExpressionLiteralOpeningDelimiter regularExpression regularExpressionLiteralClosingDelimiter .
@@ -97,6 +97,8 @@ regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpres
 // STRINGS
 
 // this is a catchall for staticStringLiteral and interpolatedStringLiteral (which includes staticStringLiteral), the parser will need to validate
+
+//stringLiteral = /#*"(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"#*|#*"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"""#*/ .
 
 stringLiteral = /#*"(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|[^"\\\n\r])*"#*|#*"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]{1,8}\}|\\#*\s*\n|[^\\])*"""#*/ .
 
@@ -158,12 +160,12 @@ octalLiteral = /-?0o[0-7][0-7_]*/ .
 //octalLiteralCharacter = octalDigit | "_" .
 //octalLiteralCharacters = octalLiteralCharacter octalLiteralCharacters? .
 
-decimalNumber = /-?[0-9][0-9_]*/ .  // this is the catchall for decimalLiteral and decimalDigits
+decimalNumber = /-?[0-9][0-9_]*/ .                                      // this is the catchall for decimalLiteral and decimalDigits
 decimalLiteral = decimalNumber .
 //decimalLiteral = decimalDigit decimalLiteralCharacters? .
 //decimalDigit = Digit 0 through 9
 
-decimalDigits = decimalNumber .     // parser to verify it matches /[0-9]+/ !!!
+decimalDigits = decimalNumber .                                         // parser to verify it matches /[0-9]+/ !!!
 //decimalDigits = decimalDigit decimalDigits? .
 //decimalLiteralCharacter = decimalDigit | "_" .
 //decimalLiteralCharacters = decimalLiteralCharacter decimalLiteralCharacters? .
@@ -209,9 +211,9 @@ integerLiteral = hexadecimalLiteral .
 
 // OPERATORS
 
-//simpleOperator = "/" | "=" | "-" | "+" | "!" | "*" | "%" | "<" | ">" | "&" | "|" | "^" | "~" | "?" .    // captured as literals used elsewhere ("/")
-//compoundOperator = /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .              // overlaps with simpleOperator, and literals win
-plainOperator = /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .              // overlaps with literals like '/' and '='
+//simpleOperator = "/" | "=" | "-" | "+" | "!" | "*" | "%" | "<" | ">" | "&" | "|" | "^" | "~" | "?" .      // captured as literals used elsewhere ("/")
+//compoundOperator = /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                // overlaps with simpleOperator, and literals win
+plainOperator = /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                     // overlaps with literals like '/' and '='
 
 dotOperator   = /\.[\.\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .           // captures legal Swift operators already validated by the compiler
 
@@ -914,7 +916,7 @@ wildcardPattern = "_" .
 
 identifierPattern = identifier .
 
-valueBindingPattern = "var" pattern | "let" pattern .   // WTF  let let pattern is not allowed by compiler
+valueBindingPattern = "var" pattern | "let" pattern .               // WTF  'let let' pattern is not allowed by compiler
 
 tuplePattern = "(" tuplePatternElementList? ")" .
 tuplePatternElementList = tuplePatternElement | tuplePatternElement "," tuplePatternElementList .
@@ -952,6 +954,9 @@ genericArgumentList = genericArgument | genericArgument "," genericArgumentList 
 genericArgument = type .
 
 ^^^
+//class c: p {                          // FAIL with Swift.apus
+//    func f () -> Int {}
+//}
 //
 //  GraphStructuredStack.swift
 //  Advent
@@ -965,7 +970,8 @@ final class StackNode: Hashable, CustomStringConvertible, Comparable {
     // Afroozeh: set can be array
     //    var edges: [Edge] = []
     //    var edges: Set<Edge> = []
-    var edges: Set<StackNode> = []
+//    var edges: Set<StackNode> = []
+    var edges: [StackNode] = []
     var pops: Set<Int> = []
     var unique: Set<SlotIndex> = []
     
@@ -1018,6 +1024,9 @@ struct Descriptor: Hashable {
     let index: Int
 }
 
+var U: Set<Descriptor> = []
+var R: [Descriptor] = []
+
 // TODO: replace with tuple?
 struct SlotIndex: Hashable, CustomStringConvertible {
     let slot: GrammarNode
@@ -1050,13 +1059,15 @@ func call(slot: GrammarNode) {
     #endif
 
     // TODO: change edges from array to set
-    //    assert(!actualNode.edges.contains(edge), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
+    assert(!actualNode.edges.contains(currentStack), "Afroozeh was wrong, edge \(currentStack.slot.seq!.str) was already in node \(actualNode.slot.seq!.str) \(actualNode.edges)")
+    //        assert(!actualNode.edges.contains(edge), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
     //    assert(!actualNode.edges.contains(where: { $0.towards === currentStack }), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
     //    actualNode.edges.append(edge)
     //    print("inserting \(edge) into \(actualNode) (\(actualNode.edges))")
     //    actualNode.edges.insert(edge)
-    actualNode.edges.insert(currentStack)
-    
+//    actualNode.edges.insert(currentStack)
+    actualNode.edges.append(currentStack)
+
     trace = false
     for pop in actualNode.pops {
     #if DEBUG
@@ -1079,7 +1090,8 @@ func enter() {
     let node = StackNode(slot: currentSlot.seq!, index: currentIndex)
     let actualNode = gss.insert(node).memberAfterInsert
     trace("create edge from \(actualNode) to \(currentStack)")
-    actualNode.edges.insert(currentStack)
+//    actualNode.edges.insert(currentStack)
+    actualNode.edges.append(currentStack)
     for pop in actualNode.pops {
         trace("contingent Descriptor")
         addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: pop)
@@ -1150,21 +1162,12 @@ func leave() {
 }
 
 func addDescriptor(slot: GrammarNode, stack: StackNode, index: Int) {
-    //    if stack.unique.contains(SlotIndex(slot: slot, index: index)) {
-    //        duplicateDescriptorCount += 1
-    //        print("duplicate Descriptor(slot \(slot), stack \(stack), index \(index))")
-    //    } else {
-    //        stack.unique.insert(SlotIndex(slot: slot, index: index))
-    //        remainder.append(Descriptor(slot: slot, stack: stack, index: index))
-    //        descriptorCount += 1
-    //        print("add Descriptor(slot \(slot), stack \(stack), index \(index))")
-    //    }
-    //
+//    let d = Descriptor(slot: slot, stack: stack, index: index)
+//    if U.insert(d).inserted {
+//        R.append(d)
+//    }
     if stack.unique.insert(SlotIndex(slot: slot, index: index)).inserted {
         remainder.append(Descriptor(slot: slot, stack: stack, index: index))
-        //        if first1000.count < 1000 {
-        //            first1000.append(Descriptor(slot: slot, stack: stack, index: index))
-        //        }
         descriptorCount += 1
         #if DEBUG
         trace("add Descriptor(slot \(slot), stack \(stack), index \(index))")
@@ -1178,6 +1181,16 @@ func addDescriptor(slot: GrammarNode, stack: StackNode, index: Int) {
 }
 
 func getDescriptor() -> Bool {
+//    if R.isEmpty {
+//        return false
+//    } else {
+//        let d = R.removeLast()
+//        currentSlot = d.slot
+//        currentStack = d.stack
+//        currentIndex = d.index
+//        return true
+//
+//    }
     if remainder.isEmpty {
         return false
     } else {
@@ -1185,9 +1198,9 @@ func getDescriptor() -> Bool {
         currentSlot = d.slot
         currentStack = d.stack
         currentIndex = d.index
-#if DEBUG
+        #if DEBUG
         trace("get Descriptor(slot \(currentSlot), stack \(currentStack), index \(currentIndex))")
-#endif
+        #endif
         return true
     }
 }

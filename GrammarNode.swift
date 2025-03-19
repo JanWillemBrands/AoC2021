@@ -183,6 +183,8 @@ extension GrammarNode {
 
 extension GrammarNode {
     // TODO: doublecheck the role of "" in first/follow/ambiguity
+    
+    // TODO: ambiguity set of KLN and POS is the intersection of follow(KLN) with the union of the pairwise intersections of all its first(ALT)'s ('duplicates')
     func detectAmbiguity() {
         if kind == .N, seq == nil {
             trace("_RULE:", str)
@@ -339,7 +341,7 @@ extension GrammarNode {
     
     private func handleNonTerminal() {
         if let seq {
-            // a rhs nonterminal instance is part of a sequence
+            // a RHS nonterminal instance is part of a sequence
             seq.populateFirstFollowSets()
             updateFollow()
             if let production = nonTerminals[str] {
@@ -361,15 +363,15 @@ extension GrammarNode {
                 exit(4)
             }
         } else {
-            // a lhs nonterminal defines a production rule and is NOT part of a sequence
-            handleAlternatives()
+            // a LHS nonterminal defines a production rule and is NOT part of a sequence
+            assignUnionOfAltFirst()
             // the follow set of a lhs nonterminal production rule is [“$”] if startsymbol, and [] otherwise.
             // this is already set before calling populateFirstFollowSets.
         }
     }
     
     private func handleBracket() {
-        handleAlternatives()
+        assignUnionOfAltFirst()
         seq!.populateFirstFollowSets()
         if first.contains("") {
             first.remove("")
@@ -378,7 +380,7 @@ extension GrammarNode {
         updateFollow()
     }
     
-    private func handleAlternatives() {
+    private func assignUnionOfAltFirst() {
         // set the first set of a lhs nonterminal production rule, or a bracketed expression, to the union of first sets of all its .alt's
         var current = alt
         while let altNode = current {
