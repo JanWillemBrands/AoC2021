@@ -83,14 +83,16 @@
 		CB6B730C257EA9F400B929C6 = {
 			isa = PBXGroup;
 			children = (
-				4E1E47522D7A352D00EECD17 /* clean.apus */,
+				4E1E47572D82D4DF00EECD17 /* Xcode.SourceCodeLanguage.apus.plist     */,
 				4E333D622629D5E400640821 /* apus.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
 				4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */,
 				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
+				4E1E47522D7A352D00EECD17 /* clean.apus */,
+				4E951C132D8874BD008B1012 /* Swift.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
-				4E333D692629D5E500640821 /* TortureSyntax.apus */,
 				4E89AAF32D7667C3006A0BBA /* tortureART.apus */,
+				4E333D692629D5E500640821 /* TortureSyntax.apus */,
 				4E89AAED2D6DF2EE006A0BBA /* ART.gv */,
 				4ECF78982BF8C3CE00B9F1F4 /* diagram.gv */,
 				4E89AAEE2D6DF2EE006A0BBA /* postRunActions.log */,
@@ -102,10 +104,6 @@
 				4E4213892D19E31200CE6493 /* GrammarParser.swift */,
 				4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */,
 				4E333D632629D5E400640821 /* main.swift */,
-				4E1E47532D82CFEF00EECD17 /* apus.xclangspec */,
-				4E1E47572D82D4DF00EECD17 /* Xcode.SourceCodeLanguage.apus.plist     */,
-				4E1E47542D82D00B00EECD17 /* Swift.xclangspec */,
-				4E951C132D8874BD008B1012 /* Swift.apus */,
 				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
 				4E4213852D19CA1200CE6493 /* MessageParser.swift */,
 				4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */,
@@ -115,6 +113,8 @@
 				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
 				4E333D672629D5E400640821 /* StringExtensions.swift */,
 				4E94E9942C2913F600746EB7 /* SymbolTable.swift */,
+				4E1E47532D82CFEF00EECD17 /* apus.xclangspec */,
+				4E1E47542D82D00B00EECD17 /* Swift.xclangspec */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 			);
 			sourceTree = "<group>";
