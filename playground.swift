@@ -52,8 +52,7 @@ struct Token {
             return image.dropFirst().dropLast()
                 .replacingOccurrences(of: "\\@", with: "@")
         case .message:
-            return image.dropFirst()
-                .replacingOccurrences(of: "\\^^^", with: "^^^")
+            return image.dropFirst(3)
         default:
             return String(image)
         }
@@ -114,13 +113,13 @@ let actionRegex = Regex {
     "@"
 }
 let messageRegex = Regex {
-    "^^^"
+    /\/^\^\^/
     ZeroOrMore {
         ChoiceOf {
-            CharacterClass(.anyOf("^^^\\").inverted)
-            // any character that is not a '^^^' or a backward slash '\'
+            CharacterClass(.anyOf("^\\").inverted)
+            // any character that is not a '^' or a backward slash '\'
             /\\./
-            // a backward slash '\' followed by single character, to escape '^^^' or '\', but catches more than legal escapes
+            // a backward slash '\' followed by single character, to escape '^ ^ ^' or '\', but catches more than legal escapes
         }
     }
 }

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import RegexBuilder
 
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
 // by using grammarParser, which is a hand-built recursive descent parser

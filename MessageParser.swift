@@ -133,7 +133,7 @@ func parseMessage() {
     )
 }
 
-func _testSelect() -> Bool {
+func _testSelect() -> Bool {    // does NOT handle Schrödinger tokens
     if currentSlot.first.contains(token.kind) ||
         currentSlot.first.contains("") && currentSlot.follow.contains(token.kind) {
         return true
@@ -166,11 +166,9 @@ func testSelect() -> Bool {
 }
 
 
-func __testSelect() -> Bool {
-    return true
-    // handling Schrödinger tokens
+func __testSelect() -> Bool {    // handles Schrödinger tokens
     var current = token
-    while true {
+    repeat {
         if currentSlot.first.contains(current.kind) ||
             currentSlot.first.contains("") && currentSlot.follow.contains(current.kind) {
             return true
@@ -180,16 +178,38 @@ func __testSelect() -> Bool {
         } else {
             return false
         }
-    }
+    } while true
 }
 
-func schrödingerTokenMatch() -> Bool {
+func ___testSelect() -> Bool {    // handles Schrödinger tokens
     var current = token
-    while let node = current.dual {
-        if currentSlot.str == node.kind {
+    repeat {
+        if currentSlot.first.contains(current.kind) ||
+            currentSlot.first.contains("") && currentSlot.follow.contains(current.kind) {
             return true
         }
+        guard let next = current.dual else { return false }
+        current = next
+    } while true
+}
+
+
+
+func schrödingerTokenMatch() -> Bool {    // handles only Schrödinger tokens
+    var current = token
+    while let node = current.dual {
+        if currentSlot.str == node.kind { return true }
         current = node
     }
     return false
 }
+
+func tokenMatch() -> Bool {    // handles all tokens including Schrödinger tokens
+    var current = token
+    repeat {
+        if currentSlot.str == current.kind { return true }
+        guard let next = current.dual else { return false }
+        current = next
+    } while true
+}
+

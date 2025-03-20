@@ -163,9 +163,11 @@ func scanTokens() {
         if let headMatch {
             if !skip || headMatch.dual != nil {
                 tokens.append(headMatch)
+                print("'\(headMatch.image)' \(headMatch)")
             }
             matchStart = matchEnd
         } else {
+            print(input[matchStart...])
             scanError(position: matchStart)
         }
     }
@@ -260,13 +262,15 @@ let actionRegex = Regex {
     }
     "@"
 }
+
 let messageRegex = Regex {
-    "^^^"
+//    "^ ^ ^"
+    /\^\^\^/
     ZeroOrMore {
         ChoiceOf {
-            // any character that is not a '^^^' or a backward slash '\'
-            CharacterClass(.anyOf("^^^\\").inverted)
-            // a backward slash '\' followed by single character, to escape '^^^' or '\', but catches more than legal escapes
+            // any character that is not a '^ ^ ^' or a backward slash '\'
+            CharacterClass(.anyOf("^\\").inverted)
+            // a backward slash '\' followed by single character, to escape '^ ^ ^' or '\', but catches more than legal escapes
             /\\./
         }
     }

@@ -173,7 +173,7 @@ S = {"a"} {"b"} {"c"}.                // FAIL first & follow test for nullable s
 
 //S = T "a" T "b". T = [ "t" ].           // PASS follow of lhs nonterminal gathers follow of lhs instances
 
-//class c: p {                          // FAIL with Swift.apus
+//class c: p {                          // FAIL with Swift.apus, but no Afroozeh assertion
 //    func f () -> Int {}
 //}
 
