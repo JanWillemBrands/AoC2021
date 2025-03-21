@@ -29,6 +29,8 @@ func resetMessageParser() {
     duplicateDescriptorCount = 0
 }
 
+var furthestMismatch: (Token, Set<String>) = (tokens[0], [])        // there is always at least the '$' a.k.a. EOS token
+
 func parseMessage() {
     nextDescriptor: while getDescriptor() {
         
@@ -54,6 +56,9 @@ func parseMessage() {
                         currentSlot = currentSlot.seq!
                     } else {
                         failedParses += 1
+                        if token.image.startIndex > furthestMismatch.0.image.endIndex {
+                            furthestMismatch = (token, [currentSlot.str])
+                        }
                         #if DEBUG
                         trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
                         #endif
@@ -75,14 +80,14 @@ func parseMessage() {
                         // move to the next branch
                         currentSlot = alt
                     } else {
-                        addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: currentIndex)
-                        continue nextDescriptor
+//                        addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: currentIndex)
+//                        continue nextDescriptor
                         // the last branch does not need a descriptor (with last-in-first-out descriptor scheduling)
-//                        if testSelect() {
-//                            currentSlot = currentSlot.seq!
-//                        } else {
-//                            continue nextDescriptor
-//                        }
+                        if testSelect() {
+                            currentSlot = currentSlot.seq!
+                        } else {
+                            continue nextDescriptor
+                        }
                     }
             case .DO, .POS:
                 // move to the first branch
@@ -131,6 +136,11 @@ func parseMessage() {
         "  descriptors:", descriptorCount,
         "  duplicateDescriptors:", duplicateDescriptorCount
     )
+    
+    if successfullParses == 0 {
+        print("the furthest token mismatch was with '\(furthestMismatch.0.image)' \(furthestMismatch.0)")
+        print("the expected tokens were \(furthestMismatch.1) at position \(input.linePosition(of: furthestMismatch.0.image.startIndex))")
+    }
 }
 
 func _testSelect() -> Bool {    // does NOT handle Schrödinger tokens
@@ -146,7 +156,7 @@ var subsequentMatch = 0
 var ultimateFail = 0
 
 func testSelect() -> Bool {
-    return true
+//    return true
     if currentSlot.first.contains(token.kind) ||
         currentSlot.first.contains("") && currentSlot.follow.contains(token.kind) {
         immediateMatch += 1

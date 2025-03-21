@@ -292,7 +292,7 @@ tupleTypeElementList = tupleTypeElement | tupleTypeElement "," tupleTypeElementL
 tupleTypeElement = elementName typeAnnotation | type .
 elementName = identifier .
 
-functionType = attributes? functionTypeArgumentClause "async"? throwsClause? ">" type .
+functionType = attributes? functionTypeArgumentClause "async"? throwsClause? "->" type .
 
 functionTypeArgumentClause = "(" ")" .
 functionTypeArgumentClause = "(" functionTypeArgumentList "..."? ")" .
@@ -724,7 +724,7 @@ functionName = identifier | Operator .
 
 functionSignature = parameterClause "async"? throwsClause? functionResult? .
 functionSignature = parameterClause "async"? "rethrows" functionResult? .
-functionResult = ">" attributes? type .
+functionResult = "->" attributes? type .
 functionBody = codeBlock .
 
 parameterClause = "(" ")" | "(" parameterList ")" .
@@ -826,12 +826,12 @@ subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? codeBlo
 subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterBlock .
 subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterKeywordBlock .
 subscriptHead = attributes? declarationModifiers? "subscript" genericParameterClause? parameterClause .
-subscriptResult = ">" attributes? type .
+subscriptResult = "->" attributes? type .
 
 macroDeclaration = macroHead identifier genericParameterClause? macroSignature macroDefinition? genericWhereClause .
 macroHead = attributes? declarationModifiers? "macro" .
 macroSignature = parameterClause macroFunctionSignatureResult? .
-macroFunctionSignatureResult = ">" type .
+macroFunctionSignatureResult = "->" type .
 macroDefinition = "=" expression .
 
 operatorDeclaration = prefixOperatorDeclaration | postfixOperatorDeclaration | infixOperatorDeclaration .
@@ -956,6 +956,6 @@ genericArgumentList = genericArgument | genericArgument "," genericArgumentList 
 genericArgument = type .
 
 ^^^
-class c: p {                          // FAIL with Swift.apus
-    func f () -> Int {}
+class c: p {
+    func f() -> Bool {}
 }

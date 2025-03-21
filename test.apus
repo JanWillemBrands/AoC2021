@@ -145,7 +145,7 @@ whitespace : /\s+/.
 //S = @a@ @aa@ "x" @b@ @bb@ ( @c@ @cc@ "y" @d@ @dd@ "z" @e@ @ee@ ) @f@ @ff@ * @g@ @gg@ "w" @h@ @hh@ .  // PASS xyzyzyzw
 //S = "x" * * .
 
-//S = "b" | S S .
+S = "b" | S S .
 
 //S = "b" | { "b" S | S "b" } .
 
@@ -164,7 +164,7 @@ whitespace : /\s+/.
 
 //S = ("a") ("b") ("c").                // PASS first & follow test for nullable sequence
 //S = ["a"] ["b"] ["c"].                // FAIL first & follow test for nullable sequence
-S = {"a"} {"b"} {"c"}.                // FAIL first & follow test for nullable sequence
+//S = {"a"} {"b"} {"c"}.                // FAIL first & follow test for nullable sequence
 //S = <"a"> <"b"> <"c">.                // PASS first & follow test for nullable sequence
 
 //S = A B C. A = "a" | "". B = "b" | "". C = "c" | "".
@@ -180,4 +180,4 @@ S = {"a"} {"b"} {"c"}.                // FAIL first & follow test for nullable s
 //tr = /testRegex/.                     // FAIL tr shows up as "tr" in syntax diagrams
 
 ^^^
-abc
+bbbbb
