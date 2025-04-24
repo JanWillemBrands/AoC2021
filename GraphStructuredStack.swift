@@ -5,16 +5,17 @@
 //  Created by Johannes Brands on 26/12/2024.
 //
 
+import Foundation
+
 final class StackNode: Hashable, CustomStringConvertible, Comparable {
     let slot: GrammarNode
     let index: Int
-    // Afroozeh: set can be array
     //    var edges: [Edge] = []
     //    var edges: Set<Edge> = []
-    var edges: Set<StackNode> = []
-//    var edges: [StackNode] = []             // using an Array instead of a Set is about 10% faster
+//    var edges: Set<StackNode> = []
+    var edges: [StackNode] = []             // using an Array instead of a Set of edges is ~10% faster
     var pops: Set<Int> = []
-    var unique: Set<SlotIndex> = []         // distributing 'unique' sets in the StackNodes is ~20% faster than one global 'unique' set
+    var unique: Set<SlotIndex> = []         // distributing 'unique' sets (U) in the StackNodes is ~20% faster than one global 'unique' set
     
     init(slot: GrammarNode, index: Int) {
         self.slot = slot
@@ -28,9 +29,12 @@ final class StackNode: Hashable, CustomStringConvertible, Comparable {
         hasher.combine(index)
     }
     var description: String {
-        if slot.kind == .EOS { return "●○" }
-        //        return slot.description + "," + index.description
-        return slot.description + index.description
+//        if slot.kind == .EOS { return "00" }
+        return slot.description + "." + index.description
+//        return slot.description + index.description
+    }
+    var ebnfDot: String {
+        return slot.ebnfDot() + "," + index.description
     }
     static func < (lhs: StackNode, rhs: StackNode) -> Bool {
         lhs.description < rhs.description
@@ -84,64 +88,46 @@ struct SlotIndex: Hashable, CustomStringConvertible {
 
 // create a GSS node if it doesn't already exist
 // add an edge from that node to the current stack top
-// add descriptors for previous pop actions from v
+// add descriptors for previous pop actions from that node
 func call(slot: GrammarNode) {
+    trace = false
     #if DEBUG
     trace("call", slot)
     #endif
-    let node = StackNode(slot: slot.seq!, index: currentIndex)
-    var actualNode = gss.insert(node).memberAfterInsert
+    let sn = StackNode(slot: slot.seq!, index: currentIndex)
+    let topStack = gss.insert(sn).memberAfterInsert
     //    let edge = Edge(towards: currentStack)
     #if DEBUG
-    trace("create edge from \(actualNode) to \(currentStack)")
+    trace("create edge from \(topStack) to \(currentStack)")
     #endif
 
-    // TODO: change edges from array to set
-//    assert(!actualNode.edges.contains(currentStack), "Afroozeh was wrong, edge \(currentStack.slot.seq!.str) was already in node \(actualNode.slot.seq!.str) \(actualNode.edges)")
-    //        assert(!actualNode.edges.contains(edge), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
-    //    assert(!actualNode.edges.contains(where: { $0.towards === currentStack }), "Afroozeh was wrong, edge \(edge) was already in node \(actualNode) \(actualNode.edges)")
-    //    actualNode.edges.append(edge)
-    //    print("inserting \(edge) into \(actualNode) (\(actualNode.edges))")
-    //    actualNode.edges.insert(edge)
-
-    actualNode.edges.insert(currentStack)
-//    actualNode.edges.append(currentStack)
+    assert(!topStack.edges.contains(currentStack), "Afroozeh was wrong, edge \(currentStack) was already in node \(topStack) \(topStack.edges)")
+//    if topStack.edges.contains(currentStack) {
+//        print("duplicate edge to \(currentStack.ebnfDot) from \(topStack.ebnfDot)")
+//    }
+//    topStack.edges.insert(currentStack)
+    topStack.edges.append(currentStack)
     
-    trace = false
-    for pop in actualNode.pops {
-    #if DEBUG
-        trace("contingent Descriptor")
-    #endif
+    for pop in topStack.pops {
+        #if DEBUG
+        trace("contingent pop")
+        #endif
         addDescriptor(slot: slot.seq!, stack: currentStack, index: pop)
     }
-    trace = false
     
-    // TODO: iterate over all ALT nodes in parseMessage
-    var current = slot
-    while let next = current.alt, let seq = next.seq {
-        addDescriptor(slot: seq, stack: actualNode, index: currentIndex)
-        current = next
-    }
+    // only add a descriptor for the first alternative of the nonterminal, the other alternatives will follow in parseMessage()
+    addDescriptor(slot: slot.alt!, stack: topStack, index: currentIndex)
 }
 
 func enter() {
-    trace("enter", currentSlot)
-    let node = StackNode(slot: currentSlot.seq!, index: currentIndex)
-    let actualNode = gss.insert(node).memberAfterInsert
-    trace("create edge from \(actualNode) to \(currentStack)")
-    actualNode.edges.insert(currentStack)
-//    actualNode.edges.append(currentStack)
-    for pop in actualNode.pops {
-        trace("contingent Descriptor")
+    let sn = StackNode(slot: currentSlot.seq!, index: currentIndex)
+    let newStack = gss.insert(sn).memberAfterInsert
+    newStack.edges.append(currentStack)
+//    newStack.edges.insert(currentStack)
+    for pop in newStack.pops {
         addDescriptor(slot: currentSlot.seq!, stack: currentStack, index: pop)
     }
-    // TODO: iterate over all ALT nodes in parseMessage
-    while let next = currentSlot.alt, let seq = next.seq {
-        if testSelect() {
-            addDescriptor(slot: seq, stack: actualNode, index: currentIndex)
-        }
-        currentSlot = next
-    }
+    addDescriptor(slot: currentSlot.alt!, stack: newStack, index: currentIndex)
 }
 
 // TODO: the first edge can be popped without addDescriptor
@@ -172,60 +158,36 @@ func ret() {
     #endif
 }
 
-// TODO: the first edge can be popped without addDescriptor
+// TODO: the first edge can be popped without addDescriptor???
+// TODO: only add decriptors when the token is part of the follow???
 func leave() {
-    #if DEBUG
-    trace("leave", currentStack)
-    if currentIndex == tokens.count - 1 && currentStack == gssRoot {
-        successfullParses += 1
-        trace("HURRAH token = \(token)", terminator: "\n")
-    } else {
-        currentStack.pops.insert(currentIndex)
-        for edge in currentStack.edges {
-            trace("pop \(edge)")
-            //            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
-            addDescriptor(slot: currentStack.slot, stack: edge, index: currentIndex)
-        }
-    }
-    #else
     if currentIndex == tokens.count - 1 && currentStack == gssRoot {
         successfullParses += 1
     } else {
         currentStack.pops.insert(currentIndex)
         for edge in currentStack.edges {
-            //            addDescriptor(slot: currentStack.slot, stack: edge.towards, index: currentIndex)
             addDescriptor(slot: currentStack.slot, stack: edge, index: currentIndex)
         }
     }
-    #endif
 }
 
 func addDescriptor(slot: GrammarNode, stack: StackNode, index: Int) {
-    if stack.unique.insert(SlotIndex(slot: slot, index: index)).inserted {
-        remainder.append(Descriptor(slot: slot, stack: stack, index: index))
+    let si = SlotIndex(slot: slot, index: index)
+    let d = Descriptor(slot: slot, stack: stack, index: index)
+//    print("addDescriptor: \(d)")
+    if stack.unique.insert(si).inserted {
+        remainder.append(d)
         descriptorCount += 1
-        #if DEBUG
-        trace("add Descriptor(slot \(slot), stack \(stack), index \(index))")
-        #endif
     } else {
-        #if DEBUG
-        trace("duplicate Descriptor(slot \(slot), stack \(stack), index \(index))")
-        #endif
         duplicateDescriptorCount += 1
     }
 }
 
 func getDescriptor() -> Bool {
-    if remainder.isEmpty {
-        return false
-    } else {
-        let d = remainder.removeLast()
-        currentSlot = d.slot
-        currentStack = d.stack
-        currentIndex = d.index
-        #if DEBUG
-        trace("get Descriptor(slot \(currentSlot), stack \(currentStack), index \(currentIndex))")
-        #endif
-        return true
-    }
+    if remainder.isEmpty { return false }
+    let d = remainder.removeLast()
+    currentSlot = d.slot
+    currentStack = d.stack
+    currentIndex = d.index
+    return true
 }

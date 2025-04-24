@@ -20,4 +20,3 @@ func trace(_ items: Any..., terminator term: String = "") {
     }
 #endif
 }
-

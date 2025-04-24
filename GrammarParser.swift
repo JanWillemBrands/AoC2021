@@ -85,7 +85,7 @@ class GrammarParser {
             
         guard let root = nonTerminals[startSymbol] else { return nil }
         
-        for (name, node) in nonTerminals {
+        for (name, node) in nonTerminals.sorted(by: { $0.key > $1.key }) {      // a fixed ordering with 'S' appearing first in small test grammars
             trace("Processing END nodes for:", name)
             node.resolveEndNodeLinks(parent: node, alternate: node.alt)
         }
@@ -259,7 +259,7 @@ class GrammarParser {
             terminals[name] = (String(token.image), regex, false, skip)
             trace("regex name:", name, "image:", token.image)
         } catch {
-            print("parse error: \(token.image) is not a valid literal Regex \(error)")
+            print("grammar parse error: \(token.image) is not a valid literal Regex \(error)")
             exit(9)
         }
 
@@ -337,7 +337,7 @@ class GrammarParser {
     func expect(_ expectedTokens: Set<String>) {
         trace("expect \"\(token.kind)\" to be in", expectedTokens)
         if !expectedTokens.contains(token.kind) {
-            print("error: found \"\(token.kind)\" but expected one of \(expectedTokens)")
+            print("parse error: found \"\(token.kind)\" but expected one of \(expectedTokens)")
             print(token.image, token.image.endIndex > input.endIndex )
             let lineRange = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
             print(input[lineRange], terminator: "")

@@ -956,6 +956,4 @@ genericArgumentList = genericArgument | genericArgument "," genericArgumentList 
 genericArgument = type .
 
 ^^^
-class c: p {
-    func f() -> Bool {}
-}
+f()

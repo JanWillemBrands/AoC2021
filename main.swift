@@ -13,8 +13,9 @@ import RegexBuilder
 trace = false
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-//    .appendingPathComponent("test")
-    .appendingPathComponent("Swift")
+    .appendingPathComponent("test")
+//    .appendingPathComponent("Swift")
+//    .appendingPathComponent("AfroozehHunt")
 //    .appendingPathComponent("apusNoActionKLN")
 //    .appendingPathComponent("TortureSyntax")
 //    .appendingPathComponent("apus")
@@ -26,14 +27,14 @@ var grammarParser: GrammarParser
 do {
     grammarParser = try GrammarParser(inputFile: grammarFileURL, patterns: apusTerminals)
 } catch {
-    print("error: could not read from \(grammarFileURL.absoluteString)")
+    print("file error: could not read from \(grammarFileURL.absoluteString)")
     exit(0)
 }
 
 var startSymbol = ""    // if "" then startSymbol will set set by parseGrammar to the first nonTerminal in the grammar file
 let grammarRoot: GrammarNode
 guard let root = grammarParser.parseGrammar(explicitStartSymbol: startSymbol) else {
-    print("Error: Start symbol '\(startSymbol)' not found")
+    print("parse error: Start symbol '\(startSymbol)' not found")
     exit(1)
 }
 grammarRoot = root
@@ -107,8 +108,6 @@ for m in messages {
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
     print("cpuTime, descriptorCount, gss.count")
     print(cpuTime, descriptorCount, gss.count)
-    print(immediateMatch, subsequentMatch, ultimateFail)
-
 }
 
 if nonTerminals.count < 1000 && gss.count < 1000 {    // to avoid huge diagrams and parsers
@@ -121,7 +120,7 @@ if nonTerminals.count < 1000 && gss.count < 1000 {    // to avoid huge diagrams 
     do {
         try parserGenerator.generateParser()
     } catch {
-        print("error: could not write to \(generatedParserFile.absoluteString)")
+        print("file error: could not write to \(generatedParserFile.absoluteString)")
         exit(5)
     }
     
@@ -134,7 +133,7 @@ if nonTerminals.count < 1000 && gss.count < 1000 {    // to avoid huge diagrams 
     do {
         try diagramsGenerator.generateDiagrams()
     } catch {
-        print("error: could not write to \(generatedDiagramFile.absoluteString)")
+        print("file error: could not write to \(generatedDiagramFile.absoluteString)")
         exit(6)
     }
 }

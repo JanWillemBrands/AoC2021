@@ -64,7 +64,7 @@ class DiagramsGenerator {
         for node in gss.sorted() {
             for edge in node.edges {
                 let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
-                content.append("\n    \(node) [label = <\(node)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+                content.append("\n    \(node) [label = <\(node.slot.ebnfDot()).\(node.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
                 content.append("\n    \(node) -> \(edge)")
             }
         }
@@ -89,9 +89,9 @@ class DiagramsGenerator {
             content.append("\n  }")
         }
         
-//        for (from, to) in endSeqLinks {
-//            content.append("\n  \(from.cell):w -> \(to.cell):s [style = solid, color = red, constraint = false]")
-//        }
+        for (from, to) in endSeqLinks {
+            content.append("\n  \(from.cell):s -> \(to.cell):s [style = solid, color = red, constraint = false]")
+        }
 //        for (from, to) in endAltLinks {
 //            content.append("\n  \(from.cell):e -> \(to.cell) [style = dotted, color = green, constraint = false]")
 //        }

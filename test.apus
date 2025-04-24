@@ -145,7 +145,7 @@ whitespace : /\s+/.
 //S = @a@ @aa@ "x" @b@ @bb@ ( @c@ @cc@ "y" @d@ @dd@ "z" @e@ @ee@ ) @f@ @ff@ * @g@ @gg@ "w" @h@ @hh@ .  // PASS xyzyzyzw
 //S = "x" * * .
 
-S = "b" | S S .
+//S = "b" | S S .                       // PASS half of the ART torture test
 
 //S = "b" | { "b" S | S "b" } .
 
@@ -160,24 +160,35 @@ S = "b" | S S .
 
 //S = { T ["a"] } . T = "t".            // PASS first & follow test for nullable tails
 
-//S = T "t". T = "a" | "b" | "c".         // PASS
+S = T "t". T = "a" | "b" | "c".         // PASS
+
+//S = X "a" | X "b". X = "x".     // PASS fifo nonterminal instance has different follow
+//S = "a" "b".                    // PASS fifo
+//S = [ "a" "b" ].                // PASS fifo
+//S = { "a" "b" }.                // PASS fifo
+//S = < "a" "b" >.                // PASS fifo
+//S = [ "a" ].                    // PASS fifo
+//S = { "a" }.                    // PASS fifo
+//S = < "a" >.                    // PASS fifo
+//S = { "a" ["b"] }.              // PASS fifo
 
 //S = ("a") ("b") ("c").                // PASS first & follow test for nullable sequence
-//S = ["a"] ["b"] ["c"].                // FAIL first & follow test for nullable sequence
-//S = {"a"} {"b"} {"c"}.                // FAIL first & follow test for nullable sequence
+//S = ["a"] ["b"] ["c"].                // PASS first & follow test for nullable sequence
+//S = {"a"} {"b"} {"c"}.                // PASS first & follow test for nullable sequence
 //S = <"a"> <"b"> <"c">.                // PASS first & follow test for nullable sequence
 
 //S = A B C. A = "a" | "". B = "b" | "". C = "c" | "".
 
 //S = "" "" "x" .
 
-//S = T "a" T "b". T = [ "t" ].           // PASS follow of lhs nonterminal gathers follow of lhs instances
-
-//class c: p {                          // FAIL with Swift.apus, but no Afroozeh assertion
-//    func f () -> Int {}
-//}
+//S = T "a" T "b". T = [ "t" ].         // PASS follow of lhs nonterminal gathers follow of lhs instances
 
 //tr = /testRegex/.                     // FAIL tr shows up as "tr" in syntax diagrams
 
+//S = A. A = "a" | "b" | "c".
+
+//S = "a" | S "b" | S ["b"] C . C = "c" . // PASS Afroozeh hunt
+
+//S = { "a" | "b" }.              // FAIL with testRepeat
 ^^^
-bbbbb
+at

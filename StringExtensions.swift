@@ -24,7 +24,7 @@ extension Character {
         0x1D774, // 𝝴 - MATHEMATICAL SANS-SERIF BOLD CAPITAL EPSILON
         0x1D78A, // 𝞊 - MATHEMATICAL SANS-SERIF BOLD SMALL EPSILON
         0x1D7AE, // 𝞮 - MATHEMATICAL SANS-SERIF BOLD ITALIC CAPITAL EPSILON
-        0x1D7C4  // 𝟄 - MATHEMATICAL SANS-SERIF BOLD ITALIC SMALL EPSILON
+        0x1D7C4, // 𝟄 - MATHEMATICAL SANS-SERIF BOLD ITALIC SMALL EPSILON
     ]
 
     var isEpsilon: Bool {
@@ -56,11 +56,11 @@ extension String {
         var modified = ""
         for char in self {
             switch char {
-            case "&": modified.append("&amp;")
-            case "<": modified.append("&lt;")
-            case ">": modified.append("&gt;")
-            case "\n": modified.append("<br/>")
-            default: modified.append(char)
+            case "&":   modified.append("&amp;")
+            case "<":   modified.append("&lt;")
+            case ">":   modified.append("&gt;")
+            case "\n":  modified.append("<br/>")
+            default:    modified.append(char)
             }
         }
         return modified.escapesRemoved

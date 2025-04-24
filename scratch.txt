@@ -1,0 +1,47 @@
+Success with Unicode (UTF-8)
+all message tokens:
+'a' a
+'a' a
+'c' c
+'$' $
+slot:  1 S=·aSb first ["a"] follow ["a"] token: a a
+slot:  6 S=·aSc first ["a"] follow ["a"] token: a a
+slot: 11 S=·a first ["a"] follow ["b", "c", "$"] token: a a
+slot: 12 S=·a first ["a"] follow ["b", "c", "$"] token: a a
+slot: 13 S=a· first [""] follow ["c", "b", "$"] token: a a
+slot:  7 S=·aSc first ["a"] follow ["a"] token: a a
+slot:  8 S=a·Sc first ["a"] follow ["c"] token: a a
+slot:  1 S=·aSb first ["a"] follow ["a"] token: a a
+slot:  6 S=·aSc first ["a"] follow ["a"] token: a a
+slot: 11 S=·a first ["a"] follow ["b", "c", "$"] token: a a
+slot: 12 S=·a first ["a"] follow ["b", "c", "$"] token: a a
+slot: 13 S=a· first [""] follow ["c", "b", "$"] token: c c
+slot:  9 S=aS·c first ["c"] follow ["b", "c", "$"] token: c c
+slot: 10 S=aSc· first [""] follow ["c", "b", "$"] token: $ $
+slot:  7 S=·aSc first ["a"] follow ["a"] token: a a
+slot:  8 S=a·Sc first ["a"] follow ["c"] token: c c
+slot:  1 S=·aSb first ["a"] follow ["a"] token: c c
+slot:  6 S=·aSc first ["a"] follow ["a"] token: c c
+slot: 11 S=·a first ["a"] follow ["b", "c", "$"] token: c c
+slot:  2 S=·aSb first ["a"] follow ["a"] token: a a
+slot:  3 S=a·Sb first ["a"] follow ["b"] token: c c
+slot:  1 S=·aSb first ["a"] follow ["a"] token: c c
+slot:  6 S=·aSc first ["a"] follow ["a"] token: c c
+slot: 11 S=·a first ["a"] follow ["b", "c", "$"] token: c c
+slot:  2 S=·aSb first ["a"] follow ["a"] token: a a
+slot:  3 S=a·Sb first ["a"] follow ["b"] token: a a
+slot:  1 S=·aSb first ["a"] follow ["a"] token: a a
+slot:  6 S=·aSc first ["a"] follow ["a"] token: a a
+slot: 11 S=·a first ["a"] follow ["b", "c", "$"] token: a a
+slot: 12 S=·a first ["a"] follow ["b", "c", "$"] token: a a
+slot: 13 S=a· first [""] follow ["c", "b", "$"] token: c c
+slot:  4 S=aS·b first ["b"] follow ["$", "c", "b"] token: c c
+slot:  7 S=·aSc first ["a"] follow ["a"] token: a a
+slot:  8 S=a·Sc first ["a"] follow ["c"] token: c c
+slot:  2 S=·aSb first ["a"] follow ["a"] token: a a
+slot:  3 S=a·Sb first ["a"] follow ["b"] token: c c
+
+matched: 1   failed: 1   gss size: 5   descriptors: 13   duplicateDescriptors: 2
+cpuTime, descriptorCount, gss.count
+0.00078 13 5
+Program ended with exit code: 0

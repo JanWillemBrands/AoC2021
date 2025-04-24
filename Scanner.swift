@@ -161,13 +161,11 @@ func scanTokens() {
             }
         }
         if let headMatch {
-            if !skip || headMatch.dual != nil {
+            if !skip || headMatch.dual != nil {     // add non-skip or Schrödinger tokens
                 tokens.append(headMatch)
-                print("'\(headMatch.image)' \(headMatch)")
             }
             matchStart = matchEnd
         } else {
-            print(input[matchStart...])
             scanError(position: matchStart)
         }
     }

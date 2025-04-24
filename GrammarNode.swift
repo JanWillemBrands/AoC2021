@@ -8,11 +8,11 @@
 //enum GKind { case EOS, T, EPS, N, ALT, END }
 //enum GKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 //enum ApusKind { case EOS, TRM, EPS, NTR, ALT, END, ONE, ZOO, OOM, ZOM }
-//enum SwiftKind { case endOfString, terminal, epsilon, nonterminal, alternate, end, one, zeroOrOne, oneOrMore, zeroOrMore}
+//enum SwiftKind { case endOfString, terminal, epsilon, nonTerminal, alternate, end, one, zeroOrOne, oneOrMore, zeroOrMore}
 /*
  EOS    end of string ("$")
  T      terminal (singleton, case sensitive)
- TI     terminal (singleton, case insensitive
+ TI     terminal (singleton, case insensitive)
  C      terminal character
  B      terminal builtin (whitespace, comment, etc)
  EPS    empty string ("#" or "")
@@ -33,12 +33,11 @@ import Foundation
 
 enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
-
 final class GrammarNode {
 //    static var nodesWithLet: Set<String> = []
 
     static var count = 0
-    let number: Int
+    var number = 0
     
     let kind: GrammarNodeKind
     let str: String
@@ -57,8 +56,6 @@ final class GrammarNode {
         self.str = str
         self.alt = alt
         self.seq = seq
-        self.number = GrammarNode.count
-        GrammarNode.count += 1
     }
     
     var actions: [String] = [] // stores semantic actions
@@ -122,11 +119,11 @@ extension GrammarNode: CustomStringConvertible {
 //        cell.description
 //    }
     
-    var _description: String { String(number) }
+    var description: String { number.description }
     
     // generate labels like A, B, C, ... AA, AB, AC, ...
-    var description: String {
-        if kind == .EOS { return "●○" }
+    var _description: String {
+        if kind == .EOS { return "00" }
         let latin = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
         func toLatin(_ n: Int) -> String {
             let letter = String(latin[n % 26])
@@ -159,6 +156,8 @@ extension GrammarNode: CustomStringConvertible {
 
 extension GrammarNode {
     func resolveEndNodeLinks(parent: GrammarNode?, alternate: GrammarNode?) {
+        number = GrammarNode.count
+        GrammarNode.count += 1
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
             seq?.resolveEndNodeLinks(parent: parent, alternate: alternate)
@@ -182,8 +181,6 @@ extension GrammarNode {
 }
 
 extension GrammarNode {
-    // TODO: doublecheck the role of "" in first/follow/ambiguity
-    
     // TODO: ambiguity set of KLN and POS is the intersection of follow(KLN) with the union of the pairwise intersections of all its first(ALT)'s ('duplicates')
     func detectAmbiguity() {
         if kind == .N, seq == nil {
@@ -247,43 +244,6 @@ extension GrammarNode {
         }
     }
     
-}
-
-extension GrammarNode {
-    func ebnf() -> String {
-        var s = ""
-        switch kind {
-        case .EOS, .T, .TI, .C, .B, .EPS:
-            s += "\"" + str + "\" "
-            if let seq { s += seq.ebnf() }
-        case .N:
-            if let seq { // rhs
-                s += str + " " + seq.ebnf()
-            } else { // lhs
-                if let alt {
-                    s += str + " = " + alt.ebnf() + "."
-                }
-            }
-        case .ALT:
-            if let seq { s += seq.ebnf() }
-            if let alt { s +=  "| " + alt.ebnf() }
-        case .END:
-            break
-        case .DO:
-            if let alt { s += "( " + alt.ebnf() + ") " }
-            if let seq { s += seq.ebnf() }
-        case .OPT:
-            if let alt { s += "[ " + alt.ebnf() + "] " }
-            if let seq { s += seq.ebnf() }
-        case .POS:
-            if let alt { s += "< " + alt.ebnf() + "> " }
-            if let seq { s += seq.ebnf() }
-        case .KLN:
-            if let alt { s += "{ " + alt.ebnf() + "} " }
-            if let seq { s += seq.ebnf() }
-        }
-        return s
-    }
 }
 
 extension GrammarNode {
@@ -411,3 +371,143 @@ extension GrammarNode {
         }
     }
 }
+
+extension GrammarNode {
+    // when called on a lhs nonterminal GrammarNode this generates its full EBNF grammar
+    func ebnf() -> String {
+        var s = ""
+        switch kind {
+        case .EOS, .T, .TI, .C, .B, .EPS:
+            s += "\"" + str + "\" "
+            if let seq { s += seq.ebnf() }
+        case .N:
+            if let seq { // rhs
+                s += str + " " + seq.ebnf()
+            } else { // lhs
+                if let alt {
+                    s += str + " = " + alt.ebnf() + "."
+                }
+            }
+        case .ALT:
+            if let seq { s += seq.ebnf() }
+            if let alt { s +=  "| " + alt.ebnf() }
+        case .END:
+            break
+        case .DO:
+            if let alt { s += "( " + alt.ebnf() + ") " }
+            if let seq { s += seq.ebnf() }
+        case .OPT:
+            if let alt { s += "[ " + alt.ebnf() + "] " }
+            if let seq { s += seq.ebnf() }
+        case .POS:
+            if let alt { s += "< " + alt.ebnf() + "> " }
+            if let seq { s += seq.ebnf() }
+        case .KLN:
+            if let alt { s += "{ " + alt.ebnf() + "} " }
+            if let seq { s += seq.ebnf() }
+        }
+        return s
+    }
+}
+
+
+extension GrammarNode {
+    static var containingNonterminal: GrammarNode?          // will be set to the containing N (lhs) node
+    static var toplevelAlternate: GrammarNode?              // will be set to the toplevel ALT node
+    static var dot: GrammarNode?                            // will be set to the dotted GrammarNode slot
+    static var s = ""
+    
+    enum Exit: Error { case endOfToplevel }
+    
+    func emit() throws {
+        if self == GrammarNode.dot { GrammarNode.s += "·" }
+        switch kind {
+        case .EOS, .T, .TI, .C, .B, .EPS:
+            GrammarNode.s += str
+            if let seq { try seq.emit() }
+        case .N:
+            if let seq { // rhs
+                GrammarNode.s += str
+                try seq.emit()
+            } else { // lhs
+                if let alt {
+                    GrammarNode.s += str
+//                    + "="
+//                    try alt.emit()
+//                    GrammarNode.s += "."
+                }
+            }
+        case .ALT:
+            if let seq { try seq.emit() }
+            if let alt {
+                GrammarNode.s +=  "|"
+                try alt.emit()
+            }
+        case .END:
+            if seq?.kind == .N {
+                // this is the end of the top level alternate
+                GrammarNode.containingNonterminal = seq
+                GrammarNode.toplevelAlternate = alt
+                throw Exit.endOfToplevel
+            }
+        case .DO:
+            if let alt {
+                GrammarNode.s += "("
+                try alt.emit()
+                GrammarNode.s += ")"
+            }
+            if let seq { try seq.emit() }
+        case .OPT:
+            if let alt {
+                GrammarNode.s += "["
+                try alt.emit()
+                GrammarNode.s += "]"
+            }
+            if let seq { try seq.emit() }
+        case .POS:
+            if let alt {
+                GrammarNode.s += "<"
+                try alt.emit()
+                GrammarNode.s += ">"
+            }
+            if let seq { try seq.emit() }
+        case .KLN:
+            if let alt {
+                GrammarNode.s += "{"
+                try alt.emit()
+                GrammarNode.s += "}"
+            }
+            if let seq { try seq.emit() }
+        }
+    }
+    
+    func toplevels() -> (GrammarNode?, GrammarNode?) {
+        // returns the the highest level alternate and the containing nonterminal
+        var node = self
+        while node.seq != nil {
+            if node.kind == .END && node.seq?.kind == .N {
+                return (node.alt, node.seq)
+            }
+            else {
+                node = node.seq!
+            }
+        }
+        return (nil, nil)
+    }
+
+    // generates the dotted ebnf for the toplevel containing alternate of the containing nonterminal
+    func ebnfDot() -> String {
+        (GrammarNode.toplevelAlternate, GrammarNode.containingNonterminal) = toplevels()
+        // construct the ebnf for the toplevel alternate containing the dot
+        GrammarNode.s = ""
+        GrammarNode.dot = self
+        if let tla = GrammarNode.toplevelAlternate, let cnt = GrammarNode.containingNonterminal {
+            try? tla.emit()
+            let ebnfPlusDot = GrammarNode.s
+            return cnt.str + "=" + ebnfPlusDot
+        } else {
+            return GrammarNode.s
+        }
+    }
+}
+

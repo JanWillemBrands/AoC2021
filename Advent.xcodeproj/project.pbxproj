@@ -34,6 +34,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4E11B2A42DA274B200555BB8 /* scratch.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = scratch.txt; sourceTree = "<group>"; };
+		4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = AfroozehHunt.apus; sourceTree = "<group>"; };
 		4E333D622629D5E400640821 /* apus.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
 		4E333D632629D5E400640821 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		4E333D642629D5E400640821 /* output.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = output.swift; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 				4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */,
 				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
 				4E951C132D8874BD008B1012 /* Swift.apus */,
+				4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
 				4E89AAF32D7667C3006A0BBA /* tortureART.apus */,
 				4E333D692629D5E500640821 /* TortureSyntax.apus */,
@@ -98,6 +101,7 @@
 				4E333D632629D5E400640821 /* main.swift */,
 				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
 				4E4213852D19CA1200CE6493 /* MessageParser.swift */,
+				4E11B2A42DA274B200555BB8 /* scratch.txt */,
 				4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */,
 				4E333D642629D5E400640821 /* output.swift */,
 				4E42138D2D1C572D00CE6493 /* OutputTools.swift */,
