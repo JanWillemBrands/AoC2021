@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4E11B2A62DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */; };
+		4E11B2A82DC0C25D00555BB8 /* CallReturnForest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2A72DC0C25D00555BB8 /* CallReturnForest.swift */; };
+		4E11B2AA2DC10F0600555BB8 /* Descriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2A92DC10F0600555BB8 /* Descriptor.swift */; };
+		4E11B2AC2DC121A300555BB8 /* ClusteredNonterminalParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2AB2DC121A300555BB8 /* ClusteredNonterminalParser.swift */; };
+		4E11B2AF2DC38D8E00555BB8 /* OrderedCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 4E11B2AE2DC38D8E00555BB8 /* OrderedCollections */; };
 		4E333D712629D60000640821 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D632629D5E400640821 /* main.swift */; };
 		4E333D752629D60A00640821 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D672629D5E400640821 /* StringExtensions.swift */; };
 		4E33E9222CAEDCDD004BD82C /* GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */; };
@@ -35,6 +40,10 @@
 
 /* Begin PBXFileReference section */
 		4E11B2A42DA274B200555BB8 /* scratch.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = scratch.txt; sourceTree = "<group>"; };
+		4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinarySubtreeRepresentation.swift; sourceTree = "<group>"; };
+		4E11B2A72DC0C25D00555BB8 /* CallReturnForest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallReturnForest.swift; sourceTree = "<group>"; };
+		4E11B2A92DC10F0600555BB8 /* Descriptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Descriptor.swift; sourceTree = "<group>"; };
+		4E11B2AB2DC121A300555BB8 /* ClusteredNonterminalParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusteredNonterminalParser.swift; sourceTree = "<group>"; };
 		4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = AfroozehHunt.apus; sourceTree = "<group>"; };
 		4E333D622629D5E400640821 /* apus.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
 		4E333D632629D5E400640821 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
@@ -71,6 +80,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4E11B2AF2DC38D8E00555BB8 /* OrderedCollections in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -80,6 +90,10 @@
 		CB6B730C257EA9F400B929C6 = {
 			isa = PBXGroup;
 			children = (
+				4E11B2A92DC10F0600555BB8 /* Descriptor.swift */,
+				4E11B2AB2DC121A300555BB8 /* ClusteredNonterminalParser.swift */,
+				4E11B2A72DC0C25D00555BB8 /* CallReturnForest.swift */,
+				4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */,
 				4E333D622629D5E400640821 /* apus.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
 				4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */,
@@ -138,6 +152,7 @@
 			);
 			name = Advent;
 			packageProductDependencies = (
+				4E11B2AE2DC38D8E00555BB8 /* OrderedCollections */,
 			);
 			productName = Advent;
 			productReference = CB6B7315257EA9F400B929C6 /* Advent */;
@@ -168,6 +183,7 @@
 			);
 			mainGroup = CB6B730C257EA9F400B929C6;
 			packageReferences = (
+				4E11B2AD2DC38D8E00555BB8 /* XCRemoteSwiftPackageReference "swift-collections" */,
 			);
 			productRefGroup = CB6B7316257EA9F400B929C6 /* Products */;
 			projectDirPath = "";
@@ -185,6 +201,9 @@
 			files = (
 				4E34DF7D2C0354E400B2881E /* GrammarNode.swift in Sources */,
 				4E42138C2D1B61AD00CE6493 /* NoGlobals.swift in Sources */,
+				4E11B2AA2DC10F0600555BB8 /* Descriptor.swift in Sources */,
+				4E11B2A62DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift in Sources */,
+				4E11B2AC2DC121A300555BB8 /* ClusteredNonterminalParser.swift in Sources */,
 				4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */,
 				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
 				4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */,
@@ -194,6 +213,7 @@
 				4E333D712629D60000640821 /* main.swift in Sources */,
 				4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */,
 				4E4213922D1DC35400CE6493 /* GraphStructuredStack.swift in Sources */,
+				4E11B2A82DC0C25D00555BB8 /* CallReturnForest.swift in Sources */,
 				4E42138A2D19E31200CE6493 /* GrammarParser.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -374,6 +394,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4E11B2AD2DC38D8E00555BB8 /* XCRemoteSwiftPackageReference "swift-collections" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-collections.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4E11B2AE2DC38D8E00555BB8 /* OrderedCollections */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4E11B2AD2DC38D8E00555BB8 /* XCRemoteSwiftPackageReference "swift-collections" */;
+			productName = OrderedCollections;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CB6B730D257EA9F400B929C6 /* Project object */;
 }

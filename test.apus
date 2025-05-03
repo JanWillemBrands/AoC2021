@@ -160,7 +160,7 @@ whitespace : /\s+/.
 
 //S = { T ["a"] } . T = "t".            // PASS first & follow test for nullable tails
 
-S = T "t". T = "a" | "b" | "c".         // PASS
+//S = T "t". T = "a" | "b" | "c".         // PASS
 
 //S = X "a" | X "b". X = "x".     // PASS fifo nonterminal instance has different follow
 //S = "a" "b".                    // PASS fifo
@@ -190,5 +190,10 @@ S = T "t". T = "a" | "b" | "c".         // PASS
 //S = "a" | S "b" | S ["b"] C . C = "c" . // PASS Afroozeh hunt
 
 //S = { "a" | "b" }.              // FAIL with testRepeat
+//S = [ [ "a" ] ].                  // PASS
+//S = "a" A B | "a" A "b".  A = "a". B = "b". // FAIL not sharing "a" A prefix
+//S = "a" "a" "b".    // PASS
+//S = "a" B. B = "b".
+S = "a".
 ^^^
-at
+a

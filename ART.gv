@@ -7,52 +7,18 @@ digraph G {
   rankdir = "TB"
   subgraph GSS {
     cluster = true
-    label = <↵at↵> fontcolor = green
+    label = <↵a↵> fontcolor = red
     labeljust = l
     node [shape = box, style = rounded, height = 0]
-    13.0 [label = <S=T·t.0<br/><font color="gray" point-size="8.0"> 1</font>>]
-    13.0 -> 0.0
-  }
-  subgraph clusterT {
-    node [shape = box]
-    label = <T = "a" | "b" | "c" .>
-    labeljust = l
-    TR0C0 [label = <0<br/>N T<br/>fi ["a", "b", "c"]<br/>fo ["t"]>]
-    TR0C1 [label = <1<br/>ALT <br/>fi ["a"]<br/>fo ["t"]>]
-    TR1C1 [label = <2<br/>T "a"<br/>fi ["a"]<br/>fo ["t"]>]
-    TR2C1 [label = <3<br/>END <br/>fi [""]<br/>fo ["t"]>]
-    TR1C1 -> TR2C1 [weight=100000000]
-    TR0C1 -> TR1C1 [weight=100000000]
-    TR0C2 [label = <4<br/>ALT <br/>fi ["b"]<br/>fo ["t"]>]
-    TR1C2 [label = <5<br/>T "b"<br/>fi ["b"]<br/>fo ["t"]>]
-    TR2C2 [label = <6<br/>END <br/>fi [""]<br/>fo ["t"]>]
-    TR1C2 -> TR2C2 [weight=100000000]
-    TR0C2 -> TR1C2 [weight=100000000]
-    TR0C3 [label = <7<br/>ALT <br/>fi ["c"]<br/>fo ["t"]>]
-    TR1C3 [label = <8<br/>T "c"<br/>fi ["c"]<br/>fo ["t"]>]
-    TR2C3 [label = <9<br/>END <br/>fi [""]<br/>fo ["t"]>]
-    TR1C3 -> TR2C3 [weight=100000000]
-    TR0C3 -> TR1C3 [weight=100000000]
-    rank = same {TR0C2 -> TR0C3}
-    rank = same {TR0C1 -> TR0C2}
-    rank = same {TR0C0 -> TR0C1}
-    node [style = invis]
-    edge [style = invis]
-    TR0C0 -> TR1C0 [weight=100000000]
-    rank = same {TR1C0 -> TR1C1}
-    TR1C0 -> TR2C0 [weight=100000000]
-    rank = same {TR2C0 -> TR2C1}
   }
   subgraph clusterS {
     node [shape = box]
-    label = <S = T "t" .>
+    label = <S = "a" .>
     labeljust = l
-    SR0C0 [label = <10<br/>N S<br/>fi ["a", "b", "c"]<br/>fo ["$"]>]
-    SR0C1 [label = <11<br/>ALT <br/>fi ["a", "b", "c"]<br/>fo ["t"]>]
-    SR1C1 [label = <12<br/>N T<br/>fi ["a", "b", "c"]<br/>fo ["t"]>]
-    SR2C1 [label = <13<br/>T "t"<br/>fi ["t"]<br/>fo ["$"]>]
-    SR3C1 [label = <14<br/>END <br/>fi [""]<br/>fo ["$"]>]
-    SR2C1 -> SR3C1 [weight=100000000]
+    SR0C0 [label = <0<br/>N S<br/>fi ["a"]<br/>fo ["$"]>]
+    SR0C1 [label = <1<br/>ALT <br/>fi ["a"]<br/>fo ["$"]>]
+    SR1C1 [label = <2<br/>T "a"<br/>fi ["a"]<br/>fo ["$"]>]
+    SR2C1 [label = <3<br/>END <br/>fi [""]<br/>fo ["$"]>]
     SR1C1 -> SR2C1 [weight=100000000]
     SR0C1 -> SR1C1 [weight=100000000]
     rank = same {SR0C0 -> SR0C1}
@@ -62,11 +28,5 @@ digraph G {
     rank = same {SR1C0 -> SR1C1}
     SR1C0 -> SR2C0 [weight=100000000]
     rank = same {SR2C0 -> SR2C1}
-    SR2C0 -> SR3C0 [weight=100000000]
-    rank = same {SR3C0 -> SR3C1}
   }
-  TR2C1:s -> TR0C0:s [style = solid, color = red, constraint = false]
-  TR2C2:s -> TR0C0:s [style = solid, color = red, constraint = false]
-  TR2C3:s -> TR0C0:s [style = solid, color = red, constraint = false]
-  SR3C1:s -> SR0C0:s [style = solid, color = red, constraint = false]
 }

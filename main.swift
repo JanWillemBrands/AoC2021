@@ -49,7 +49,7 @@ for t in tokens {
 var currentSlot = grammarRoot
 
 // the top of one of the stacks in the Graph Structured Stack
-var currentStack = gssRoot
+//var currentCluster = gssRoot
 
 var failedParses = 0
 var successfullParses = 0
@@ -97,20 +97,24 @@ for m in messages {
     resetMessageParser()
 
     currentSlot = grammarRoot
-    currentStack = gssRoot
+//    currentCluster = gssRoot
 
-    addDescriptor(slot: grammarRoot.alt!, stack: currentStack, index: currentIndex)
+    addDescriptor(slot: grammarRoot.alt!, cluster: currentCluster, index: currentIndex)
     
     // use the AST to parse the message
     let start = clock()
     parseMessage()
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
-    print("cpuTime, descriptorCount, gss.count")
-    print(cpuTime, descriptorCount, gss.count)
+    print("cpuTime, descriptorCount, crf.count")
+    print(cpuTime, descriptorCount, crf.count)
+    
+    for y in yields {
+        print(y)
+    }
 }
 
-if nonTerminals.count < 1000 && gss.count < 1000 {    // to avoid huge diagrams and parsers
+if nonTerminals.count < 1000 && crf.count < 1000 {    // to avoid huge diagrams and parsers
     trace = false
     let generatedParserFile = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()

@@ -318,7 +318,7 @@ extension GrammarNode {
             } else {
                 print("grammar parse error: '\(str)' was not defined as a grammar rule")
                 if let terminal = terminals[str] {
-                    print("but it was defined as terminal \(terminal.source) instead, please move the terminal definition before its first use.")
+                    print("but it was defined as terminal \(terminal.source) instead, if this was intented please define the terminal before using it in the grammar.")
                 }
                 exit(4)
             }
@@ -497,16 +497,21 @@ extension GrammarNode {
 
     // generates the dotted ebnf for the toplevel containing alternate of the containing nonterminal
     func ebnfDot() -> String {
-        (GrammarNode.toplevelAlternate, GrammarNode.containingNonterminal) = toplevels()
-        // construct the ebnf for the toplevel alternate containing the dot
-        GrammarNode.s = ""
-        GrammarNode.dot = self
-        if let tla = GrammarNode.toplevelAlternate, let cnt = GrammarNode.containingNonterminal {
-            try? tla.emit()
-            let ebnfPlusDot = GrammarNode.s
-            return cnt.str + "=" + ebnfPlusDot
+        if kind == .N && seq == nil {
+            // a lhs nonterminal
+            return str
         } else {
-            return GrammarNode.s
+            // construct the ebnf for the toplevel alternate production containing the dot
+            (GrammarNode.toplevelAlternate, GrammarNode.containingNonterminal) = toplevels()
+            GrammarNode.s = ""
+            GrammarNode.dot = self
+            if let tla = GrammarNode.toplevelAlternate, let cnt = GrammarNode.containingNonterminal {
+                try? tla.emit()
+                let ebnfPlusDot = GrammarNode.s
+                return cnt.str + "=" + ebnfPlusDot
+            } else {
+                return GrammarNode.s
+            }
         }
     }
 }

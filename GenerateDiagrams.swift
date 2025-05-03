@@ -61,13 +61,20 @@ class DiagramsGenerator {
         content.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphvizHTML)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
         content.append("\n    labeljust = l")
         content.append("\n    node [shape = box, style = rounded, height = 0]")
-        for node in gss.sorted() {
-            for edge in node.edges {
+        for node in crf.sorted() {
+            for edge in node.returns {
                 let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
-                content.append("\n    \(node) [label = <\(node.slot.ebnfDot()).\(node.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+                content.append("\n    \(node) [label = <\(node.slot.ebnfDot()),\(node.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
                 content.append("\n    \(node) -> \(edge)")
             }
         }
+//        for node in gss.sorted() {
+//            for edge in node.edges {
+//                let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
+//                content.append("\n    \(node) [label = <\(node.slot.ebnfDot()),\(node.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+//                content.append("\n    \(node) -> \(edge)")
+//            }
+//        }
         content.append("\n  }")
 
         // generate syntax graph for each non-terminal
@@ -89,9 +96,9 @@ class DiagramsGenerator {
             content.append("\n  }")
         }
         
-        for (from, to) in endSeqLinks {
-            content.append("\n  \(from.cell):s -> \(to.cell):s [style = solid, color = red, constraint = false]")
-        }
+//        for (from, to) in endSeqLinks {
+//            content.append("\n  \(from.cell):s -> \(to.cell):s [style = solid, color = red, constraint = false]")
+//        }
 //        for (from, to) in endAltLinks {
 //            content.append("\n  \(from.cell):e -> \(to.cell) [style = dotted, color = green, constraint = false]")
 //        }
