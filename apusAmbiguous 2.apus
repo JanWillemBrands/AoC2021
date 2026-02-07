@@ -1,0 +1,46 @@
+whitespace   : /\s+/ .
+linecomment  : /\/\/.*/ .
+blockcomment : /\/\*(?s).*?\*\// .
+
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
+literal     = /\"(?:[^\"\\]|\\.)+\"/ .
+regex       = /\/(?:[^\/\\]|\\.)+\// .
+action      = /@(?:[^@\\]|\\.)+@/ .
+message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
+
+grammar     = < production > { message } .
+              
+production  = identifier ( ":" | "=" ) selection "." .
+selection   = sequence { "|" sequence } .
+sequence    = < term [ "?" | "*" | "+" ] > .
+term        = terminal
+            | "[" selection "]"
+            | "{" selection "}"
+            | "<" selection ">"
+            | "(" selection ")" .
+terminal    = identifier | literal | regex | action | epsilon .
+epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+
+^^^
+whitespace   : /\s+/ .
+linecomment  : /\/\/.*/ .
+blockcomment : /\/\*(?s).*?\*\// .
+
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
+literal     = /\"(?:[^\"\\]|\\.)+\"/ .
+regex       = /\/(?:[^\/\\]|\\.)+\// .
+action      = /@(?:[^@\\]|\\.)+@/ .
+message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
+
+grammar     = < production > { message } .
+              
+production  = identifier ( ":" | "=" ) selection "." .
+selection   = sequence { "|" sequence } .
+sequence    = < term [ "?" | "*" | "+" ] > .
+term        = terminal
+            | "[" selection "]"
+            | "{" selection "}"
+            | "<" selection ">"
+            | "(" selection ")" .
+terminal    = identifier | literal | regex | action | epsilon .
+epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .

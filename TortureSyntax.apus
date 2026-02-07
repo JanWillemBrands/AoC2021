@@ -1,5 +1,12 @@
-whitespace  : /\s+/ .
-singleLine  : /\/\/.*/ .
+whitespace   : /\s+/ .
+linecomment  : /\/\/.*/ .
+blockcomment : /\/\*(?s).*?\*\// .
+
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
+literal     = /\"(?:[^\"\\]|\\.)+\"/ .
+regex       = /\/(?:[^\/\\]|\\.)+\// .
+action      = /@(?:[^@\\]|\\.)+@/ .
+message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
                                // empty
 .                              // no rule

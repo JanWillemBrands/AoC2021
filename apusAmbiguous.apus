@@ -1,19 +1,18 @@
-whitespace  : '\s+' ;
-singleLine  : '//.*' ;
-multiLine   : '(?s)(/\*).*?(\*/)' ;
+whitespace   : /\s+/ .
+linecomment  : /\/\/.*/ .
+blockcomment : /\/\*(?s).*?\*\// .
 
-identifier  = '[\p{L}\p{N}\p{Pc}]+' ;
-regex       = '\'(\\\'|[^\']+?)*\'' ;
-action      = '@(\\@|[^@]+?)*@' ;
-keyword     = '\"(\\"|[^\"]+?)*\"' ;
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
+literal     = /\"(?:[^\"\\]|\\.)+\"/ .
+regex       = /\/(?:[^\/\\]|\\.)+\// .
+action      = /@(?:[^@\\]|\\.)+@/ .
+message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
-testInput   = '\^^^(\\\^^^|[^\^^^])+' .
-
-S           = { production } { testInput } .
+grammar     = < production > { message } .
               
 production  = rule | silentRule .
 rule        = identifier "=" ( regex | selection ) ( "." | ";" ) .
-silentRule  = identifier ":" ( regex | keyword ) ( "." | ";" ) .
+silentRule  = identifier ":" ( regex | literal ) ( "." | ";" ) .
 selection   = sequence { "|" sequence } .
 sequence    = term { term } .
 term        = terminal | option | zeroOrMore | oneOrMore | grouping .
@@ -21,26 +20,25 @@ option      = "(" selection ")?" | "[" selection "]" .
 zeroOrMore  = "(" selection ")*" | "{" selection "}" .
 oneOrMore   = "(" selection ")+" | "<" selection ">" .
 grouping    = "(" selection ")" .
-terminal    = identifier | keyword | action | epsilon .
+terminal    = identifier | literal | action | epsilon .
 epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
 
 ^^^
-whitespace  : '\s+' ;
-singleLine  : '//.*' ;
-multiLine   : '(?s)(/\*).*?(\*/)' ;
+whitespace   : /\s+/ .
+linecomment  : /\/\/.*/ .
+blockcomment : /\/\*(?s).*?\*\// .
 
-identifier  = '[\p{L}\p{N}\p{Pc}]+' ;
-regex       = '\'(\\\'|[^\']+?)*\'' ;
-action      = '@(\\@|[^@]+?)*@' ;
-keyword     = '\"(\\"|[^\"]+?)*\"' ;
+identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
+literal     = /\"(?:[^\"\\]|\\.)+\"/ .
+regex       = /\/(?:[^\/\\]|\\.)+\// .
+action      = /@(?:[^@\\]|\\.)+@/ .
+message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
-testInput   = '\^^^(\\\^^^|[^\^^^])+' .
-
-S           = { production } { testInput } .
+grammar     = < production > { message } .
               
 production  = rule | silentRule .
 rule        = identifier "=" ( regex | selection ) ( "." | ";" ) .
-silentRule  = identifier ":" ( regex | keyword ) ( "." | ";" ) .
+silentRule  = identifier ":" ( regex | literal ) ( "." | ";" ) .
 selection   = sequence { "|" sequence } .
 sequence    = term { term } .
 term        = terminal | option | zeroOrMore | oneOrMore | grouping .
@@ -48,5 +46,5 @@ option      = "(" selection ")?" | "[" selection "]" .
 zeroOrMore  = "(" selection ")*" | "{" selection "}" .
 oneOrMore   = "(" selection ")+" | "<" selection ">" .
 grouping    = "(" selection ")" .
-terminal    = identifier | keyword | action | epsilon .
+terminal    = identifier | literal | action | epsilon .
 epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .

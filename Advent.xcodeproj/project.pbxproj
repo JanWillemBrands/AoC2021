@@ -22,6 +22,13 @@
 		4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138D2D1C572D00CE6493 /* OutputTools.swift */; };
 		4E4213902D1DC15000CE6493 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138F2D1DC15000CE6493 /* GenerateParser.swift */; };
 		4E4213922D1DC35400CE6493 /* GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */; };
+		4E77099B2F37756100972246 /* ParserGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E77099A2F37756100972246 /* ParserGeneratorTests.swift */; };
+		4E77099D2F3776CC00972246 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E77099C2F3776CC00972246 /* Package.swift */; };
+		4E77099F2F3776E800972246 /* TestsParserGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E77099E2F3776E800972246 /* TestsParserGeneratorTests.swift */; };
+		4E7709A12F37772800972246 /* TestsTortureSyntaxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7709A02F37772800972246 /* TestsTortureSyntaxTests.swift */; };
+		4E7709A52F37777400972246 /* TestsRunTortureTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7709A42F37777400972246 /* TestsRunTortureTest.swift */; };
+		4E7709A72F37794F00972246 /* TestsTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7709A62F37794F00972246 /* TestsTestHelpers.swift */; };
+		4E7709AA2F37797E00972246 /* TestsVerifyTestSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7709A92F37797E00972246 /* TestsVerifyTestSetup.swift */; };
 		4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E94E9942C2913F600746EB7 /* SymbolTable.swift */; };
 		4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */; };
 /* End PBXBuildFile section */
@@ -61,6 +68,22 @@
 		4E42138F2D1DC15000CE6493 /* GenerateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateParser.swift; sourceTree = "<group>"; };
 		4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphStructuredStack.swift; sourceTree = "<group>"; };
 		4E450E682BE8007F0077E275 /* playground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = playground.swift; sourceTree = "<group>"; };
+		4E7709982F37728700972246 /* apusWithAction 2.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = "apusWithAction 2.apus"; sourceTree = "<group>"; };
+		4E7709992F37728F00972246 /* apusAmbiguous 2.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = "apusAmbiguous 2.apus"; sourceTree = "<group>"; };
+		4E77099A2F37756100972246 /* ParserGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParserGeneratorTests.swift; sourceTree = "<group>"; };
+		4E77099C2F3776CC00972246 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		4E77099E2F3776E800972246 /* TestsParserGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestsParserGeneratorTests.swift; sourceTree = "<group>"; };
+		4E7709A02F37772800972246 /* TestsTortureSyntaxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestsTortureSyntaxTests.swift; sourceTree = "<group>"; };
+		4E7709A22F37774700972246 /* TestsTortureTestExpectations.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TestsTortureTestExpectations.md; sourceTree = "<group>"; };
+		4E7709A32F37776500972246 /* TestsREADME.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TestsREADME.md; sourceTree = "<group>"; };
+		4E7709A42F37777400972246 /* TestsRunTortureTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestsRunTortureTest.swift; sourceTree = "<group>"; };
+		4E7709A62F37794F00972246 /* TestsTestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestsTestHelpers.swift; sourceTree = "<group>"; };
+		4E7709A82F37797000972246 /* TestsSETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TestsSETUP.md; sourceTree = "<group>"; };
+		4E7709A92F37797E00972246 /* TestsVerifyTestSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestsVerifyTestSetup.swift; sourceTree = "<group>"; };
+		4E7709AB2F3779AA00972246 /* TestsSUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TestsSUMMARY.md; sourceTree = "<group>"; };
+		4E7709AC2F3779CA00972246 /* TestsQUICKREF.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TestsQUICKREF.md; sourceTree = "<group>"; };
+		4E7709AD2F3779F300972246 /* TestsARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TestsARCHITECTURE.md; sourceTree = "<group>"; };
+		4E7709AE2F377A1400972246 /* TestsINDEX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TestsINDEX.md; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
 		4E89AAED2D6DF2EE006A0BBA /* ART.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
 		4E89AAEE2D6DF2EE006A0BBA /* postRunActions.log */ = {isa = PBXFileReference; lastKnownFileType = text; path = postRunActions.log; sourceTree = "<group>"; };
@@ -124,6 +147,22 @@
 				4E11B2A42DA274B200555BB8 /* scratch.txt */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 				4ECF5BE62F3748DB008E692B /* claude.md */,
+				4E7709982F37728700972246 /* apusWithAction 2.apus */,
+				4E7709992F37728F00972246 /* apusAmbiguous 2.apus */,
+				4E77099A2F37756100972246 /* ParserGeneratorTests.swift */,
+				4E77099C2F3776CC00972246 /* Package.swift */,
+				4E77099E2F3776E800972246 /* TestsParserGeneratorTests.swift */,
+				4E7709A02F37772800972246 /* TestsTortureSyntaxTests.swift */,
+				4E7709A22F37774700972246 /* TestsTortureTestExpectations.md */,
+				4E7709A32F37776500972246 /* TestsREADME.md */,
+				4E7709A42F37777400972246 /* TestsRunTortureTest.swift */,
+				4E7709A62F37794F00972246 /* TestsTestHelpers.swift */,
+				4E7709A82F37797000972246 /* TestsSETUP.md */,
+				4E7709A92F37797E00972246 /* TestsVerifyTestSetup.swift */,
+				4E7709AB2F3779AA00972246 /* TestsSUMMARY.md */,
+				4E7709AC2F3779CA00972246 /* TestsQUICKREF.md */,
+				4E7709AD2F3779F300972246 /* TestsARCHITECTURE.md */,
+				4E7709AE2F377A1400972246 /* TestsINDEX.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -166,7 +205,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1520;
-				LastUpgradeCheck = 1520;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					CB6B7314257EA9F400B929C6 = {
 						CreatedOnToolsVersion = 12.2;
@@ -200,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4E34DF7D2C0354E400B2881E /* GrammarNode.swift in Sources */,
+				4E77099F2F3776E800972246 /* TestsParserGeneratorTests.swift in Sources */,
 				4E42138C2D1B61AD00CE6493 /* NoGlobals.swift in Sources */,
 				4E11B2AA2DC10F0600555BB8 /* Descriptor.swift in Sources */,
 				4E11B2A62DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift in Sources */,
@@ -207,12 +247,18 @@
 				4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */,
 				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
 				4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */,
+				4E7709A72F37794F00972246 /* TestsTestHelpers.swift in Sources */,
 				4E33E9222CAEDCDD004BD82C /* GenerateDiagrams.swift in Sources */,
+				4E7709A12F37772800972246 /* TestsTortureSyntaxTests.swift in Sources */,
 				4E4213862D19CA1200CE6493 /* MessageParser.swift in Sources */,
+				4E7709AA2F37797E00972246 /* TestsVerifyTestSetup.swift in Sources */,
+				4E7709A52F37777400972246 /* TestsRunTortureTest.swift in Sources */,
 				4E4213902D1DC15000CE6493 /* GenerateParser.swift in Sources */,
 				4E333D712629D60000640821 /* main.swift in Sources */,
+				4E77099D2F3776CC00972246 /* Package.swift in Sources */,
 				4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */,
 				4E4213922D1DC35400CE6493 /* GraphStructuredStack.swift in Sources */,
+				4E77099B2F37756100972246 /* ParserGeneratorTests.swift in Sources */,
 				4E11B2A82DC0C25D00555BB8 /* CallReturnForest.swift in Sources */,
 				4E42138A2D19E31200CE6493 /* GrammarParser.swift in Sources */,
 			);
@@ -258,6 +304,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 3A743G3S42;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -280,6 +327,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -322,6 +370,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 3A743G3S42;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -337,6 +386,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
@@ -348,7 +398,6 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 3A743G3S42;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -363,7 +412,6 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 3A743G3S42;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
