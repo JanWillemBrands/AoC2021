@@ -69,10 +69,10 @@ network simplex:  2 nodes 1 edges maxiter=10 balance=1
 network simplex: 2 nodes 1 edges 0 iter 0.00 sec
 network simplex:  2 nodes 1 edges maxiter=10 balance=1
 network simplex: 2 nodes 1 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=12 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  6 nodes 5 edges maxiter=24 balance=1
 network simplex: 6 nodes 5 edges 0 iter 0.00 sec
+network simplex:  3 nodes 2 edges maxiter=12 balance=1
+network simplex: 3 nodes 2 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=46 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=46 balance=0

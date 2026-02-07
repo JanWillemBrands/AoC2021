@@ -18,24 +18,6 @@ digraph G {
     7.3 [label = <B,3<br/><font color="gray" point-size="8.0"> 4</font>>]
     7.3 -> 5.1
   }
-  subgraph clusterB {
-    node [shape = box]
-    label = <B = "b" .>
-    labeljust = l
-    BR0C0 [label = <7<br/>N B<br/>fi ["b"]<br/>fo ["$", "a"]<br/>[]>]
-    BR0C1 [label = <8<br/>ALT <br/>fi ["b"]<br/>fo ["$", "a"]<br/>[]>]
-    BR1C1 [label = <9<br/>T "b"<br/>fi ["b"]<br/>fo ["$", "a"]<br/>[1:1:2, 3:3:4]>]
-    BR2C1 [label = <10<br/>END <br/>fi [""]<br/>fo ["$", "a"]<br/>[]>]
-    BR1C1 -> BR2C1 [weight=100000000]
-    BR0C1 -> BR1C1 [weight=100000000]
-    rank = same {BR0C0 -> BR0C1}
-    node [style = invis]
-    edge [style = invis]
-    BR0C0 -> BR1C0 [weight=100000000]
-    rank = same {BR1C0 -> BR1C1}
-    BR1C0 -> BR2C0 [weight=100000000]
-    rank = same {BR2C0 -> BR2C1}
-  }
   subgraph clusterS {
     node [shape = box]
     label = <S = "a" B "a" B .>
@@ -65,5 +47,23 @@ digraph G {
     rank = same {SR4C0 -> SR4C1}
     SR4C0 -> SR5C0 [weight=100000000]
     rank = same {SR5C0 -> SR5C1}
+  }
+  subgraph clusterB {
+    node [shape = box]
+    label = <B = "b" .>
+    labeljust = l
+    BR0C0 [label = <7<br/>N B<br/>fi ["b"]<br/>fo ["$", "a"]<br/>[]>]
+    BR0C1 [label = <8<br/>ALT <br/>fi ["b"]<br/>fo ["$", "a"]<br/>[]>]
+    BR1C1 [label = <9<br/>T "b"<br/>fi ["b"]<br/>fo ["$", "a"]<br/>[1:1:2, 3:3:4]>]
+    BR2C1 [label = <10<br/>END <br/>fi [""]<br/>fo ["$", "a"]<br/>[]>]
+    BR1C1 -> BR2C1 [weight=100000000]
+    BR0C1 -> BR1C1 [weight=100000000]
+    rank = same {BR0C0 -> BR0C1}
+    node [style = invis]
+    edge [style = invis]
+    BR0C0 -> BR1C0 [weight=100000000]
+    rank = same {BR1C0 -> BR1C1}
+    BR1C0 -> BR2C0 [weight=100000000]
+    rank = same {BR2C0 -> BR2C1}
   }
 }

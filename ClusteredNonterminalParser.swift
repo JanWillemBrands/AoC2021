@@ -198,13 +198,17 @@ func parseMessage() {
     
     if successfullParses == 0 {
         print("the furthest token mismatch was with '\(furthestMismatch.0.image)' \(furthestMismatch.0)")
-        print("the expected tokens were \(furthestMismatch.1) at message position \(input.linePosition(of: furthestMismatch.0.image.startIndex))")
+        let expectedTokens: Set<String> = furthestMismatch.1
+        let tokenStartIndex = furthestMismatch.0.image.startIndex
+        let position = furthestMismatch.0.image.base.linePosition(of: tokenStartIndex)
+        print("the expected tokens were \(expectedTokens) at message position \(position)")
     }
 }
 
 func testRepeat() -> Bool {
     let si = Position(slot: currentSlot, index: currentIndex)
-    return !currentCluster.unique.insert(si).inserted
+    let wasInserted = currentCluster.unique.insert(si).inserted
+    return !wasInserted
 }
 
 func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {

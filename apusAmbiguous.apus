@@ -20,7 +20,7 @@ option      = "(" selection ")?" | "[" selection "]" .
 zeroOrMore  = "(" selection ")*" | "{" selection "}" .
 oneOrMore   = "(" selection ")+" | "<" selection ">" .
 grouping    = "(" selection ")" .
-terminal    = identifier | literal | action | epsilon .
+terminal    = identifier | literal | regex | action | epsilon .
 epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
 
 ^^^
@@ -46,5 +46,5 @@ option      = "(" selection ")?" | "[" selection "]" .
 zeroOrMore  = "(" selection ")*" | "{" selection "}" .
 oneOrMore   = "(" selection ")+" | "<" selection ">" .
 grouping    = "(" selection ")" .
-terminal    = identifier | literal | action | epsilon .
+terminal    = identifier | literal | regex | action | epsilon .
 epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
