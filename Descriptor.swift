@@ -43,8 +43,9 @@ struct Descriptor: Hashable {
 func addDescriptor(slot: GrammarNode, cluster: Position, index: Int) {
     let pos = Position(slot: slot, index: index)
     if cluster.unique.insert(pos).inserted {
-        let state = Descriptor(slot: slot, cluster: cluster, index: index)
-        remainder.append(state)
+        let d = Descriptor(slot: slot, cluster: cluster, index: index)
+        print("addDescriptor: \(d)")
+        remainder.append(d)
         descriptorCount += 1
     } else {
         duplicateDescriptorCount += 1
@@ -52,10 +53,14 @@ func addDescriptor(slot: GrammarNode, cluster: Position, index: Int) {
 }
 
 func getDescriptor() -> Bool {
-    if remainder.isEmpty { return false }
-    let state = remainder.removeLast()
-    currentSlot = state.slot
-    currentCluster = state.cluster
-    currentIndex = state.index
-    return true
+    if remainder.isEmpty {
+        return false
+    } else {
+        let d = remainder.removeLast()
+        print("getDescriptor: \(d)")
+        currentSlot = d.slot
+        currentCluster = d.cluster
+        currentIndex = d.index
+        return true
+    }
 }

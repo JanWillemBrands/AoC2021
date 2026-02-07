@@ -61,10 +61,12 @@ class DiagramsGenerator {
         content.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphvizHTML)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
         content.append("\n    labeljust = l")
         content.append("\n    node [shape = box, style = rounded, height = 0]")
+        
+        // generate the call return forest
         for node in crf.sorted() {
+            let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
+            content.append("\n    \(node) [label = <\(node.slot.ebnfDot()),\(node.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
             for edge in node.returns {
-                let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
-                content.append("\n    \(node) [label = <\(node.slot.ebnfDot()),\(node.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
                 content.append("\n    \(node) -> \(edge)")
             }
         }
@@ -121,7 +123,7 @@ class DiagramsGenerator {
         node.cell = Cell(name: name, r: row, c: col)
         grid[node.cell] = true
         
-        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)>]")
+        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)<br/>\(node.yield.sorted().description.graphvizHTML)>]")
 //        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)<br/>am \(node.ambiguous.sorted().description.graphvizHTML)<br/>\(node.actions.joined(separator: "<br/>"))>]")
 //        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)>]")
 

@@ -21,7 +21,8 @@ option      = "(" selection ")?" | "[" selection "]" .
 zeroOrMore  = "(" selection ")*" | "{" selection "}" .
 oneOrMore   = "(" selection ")+" | "<" selection ">" .
 grouping    = "(" selection ")" .
-terminal    = identifier | keyword | action .
+terminal    = identifier | keyword | action | epsilon .
+epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
 
 ^^^
 whitespace  : '\s+' ;
@@ -47,4 +48,5 @@ option      = "(" selection ")?" | "[" selection "]" .
 zeroOrMore  = "(" selection ")*" | "{" selection "}" .
 oneOrMore   = "(" selection ")+" | "<" selection ">" .
 grouping    = "(" selection ")" .
-terminal    = identifier | keyword | action .
+terminal    = identifier | keyword | action | epsilon .
+epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .

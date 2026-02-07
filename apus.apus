@@ -3,67 +3,23 @@ linecomment  : /\/\/.*/ .
 blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .
-regex       = /\/(?:[^\/\\]|\\.)*\// .
-action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
+literal     = /\"(?:[^\"\\]|\\.)+\"/ .
+regex       = /\/(?:[^\/\\]|\\.)+\// .
+action      = /@(?:[^@\\]|\\.)+@/ .
+message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
-S           = { production } { input } .
+grammar     = < production > { message } .
               
-input       = message               @let message = token.image@
-                                    @   .dropFirst()@
-                                    @   .dropLast()@
-                                    @messages.append(String(message))@
-            .
-production  =                       @var node: Node@
-                                    @var muted = false@
-                                    @var terminalAlias: String?@
-                identifier          @let nonTerminalName = token.image@
-                ( ":"               @muted = true@
-                                    @terminalAlias = nonTerminalName@
-                    ( regex         @node = regular()@
-                    | literal       @node = literal()@
-                    )
-                | "="               @muted = false@
-                    ( regex         @terminalAlias = nonTerminalName@
-                                    @node = regular()@
-                    | selection     @node = selection()@
-                    )
-                )
-                                    @terminalAlias = nil@
-                ( "." | ";" )
-            .
-selection   =                       @var node: Node@
-            sequence                @node = sequence()@
-            { "|" sequence          @node = Node(.ALT(left: node, right: sequence()))@
-            } .
-sequence    =                       @var node: Node@
-            @node = @ term          @node = term()@
-            { term                  @node = Node(.SEQ(head: node, tail: term()))@
-            } .
-term        =                       @var node: Node@
-            (   terminal            @node = terminal()@
-            | "[" selection         @node = Node(.OPT(body: node))@
-                "]"
-            | "{" selection         @node = Node(.REP(body: node))@
-                "}"
-            | "<" selection         @node = Node(.SEQ(head: node,
-                                                      tail: Node(.REP(body: node))))@
-                ">"
-            | "(" selection         @node = selection()@
-                ( ")"
-                | ")?"              @node = Node(.OPT(body: node))@
-                | ")*"              @node = Node(.REP(body: node))@
-                | ")+"              @node = Node(.SEQ(head: node,
-                                                            tail: Node(.REP(body: node))))@
-                )
-             ) .
-terminal    = identifier            @node = Node(.NTM(name: token.image))@
-            | literal               @node = _literal()@
-            | regex                 @node = _regex()@
-            | action                @node = Node(.TRM(type: "action"))@
-                                    @actionList[node] = token.stripped@
-            .
+production  = identifier ( ":" | "=" ) selection "." .
+selection   = sequence { "|" sequence } .
+sequence    = < term [ "?" | "*" | "+" ] > .
+term        = terminal
+            | "[" selection "]"
+            | "{" selection "}"
+            | "<" selection ">"
+            | "(" selection ")" .
+terminal    = identifier | literal | regex | action | epsilon .
+epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
 
 ^^^
 whitespace   : /\s+/ .
@@ -72,62 +28,19 @@ blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
 literal     = /\"(?:[^\"\\]|\\.)*\"/ .
-regex       = /\/(?:[^\/\\]|\\.)*\// .
-action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /^^^(?:\/(?:[^\/\\]|\\.)*\/|[^^^^\/]*)*/ .
+regex       = /\/(?:[^\/\\]|\\.)+\// .
+action      = /@(?:[^@\\]|\\.)+@/ .
+message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
-S           = { production } { input } .
+grammar     = < production > { message } .
               
-input       = message               @let message = token.image@
-                                    @   .dropFirst()@
-                                    @   .dropLast()@
-                                    @messages.append(String(message))@
-            .
-production  =                       @var node: Node@
-                                    @var muted = false@
-                                    @var terminalAlias: String?@
-                identifier          @let nonTerminalName = token.image@
-                ( ":"               @muted = true@
-                                    @terminalAlias = nonTerminalName@
-                    ( regex         @node = regular()@
-                    | literal       @node = literal()@
-                    )
-                | "="               @muted = false@
-                    ( regex         @terminalAlias = nonTerminalName@
-                                    @node = regular()@
-                    | selection     @node = selection()@
-                    )
-                )
-                                    @terminalAlias = nil@
-                ( "." | ";" )
-            .
-selection   =                       @var node: Node@
-            sequence                @node = sequence()@
-            { "|" sequence          @node = Node(.ALT(left: node, right: sequence()))@
-            } .
-sequence    =                       @var node: Node@
-            @node = @ term          @node = term()@
-            { term                  @node = Node(.SEQ(head: node, tail: term()))@
-            } .
-term        =                       @var node: Node@
-            (   terminal            @node = terminal()@
-            | "[" selection         @node = Node(.OPT(body: node))@
-                "]"
-            | "{" selection         @node = Node(.REP(body: node))@
-                "}"
-            | "<" selection         @node = Node(.SEQ(head: node,
-                                                      tail: Node(.REP(body: node))))@
-                ">"
-            | "(" selection         @node = selection()@
-                ( ")"
-                | ")?"              @node = Node(.OPT(body: node))@
-                | ")*"              @node = Node(.REP(body: node))@
-                | ")+"              @node = Node(.SEQ(head: node,
-                                                            tail: Node(.REP(body: node))))@
-                )
-             ) .
-terminal    = identifier            @node = Node(.NTM(name: token.image))@
-            | literal               @node = _literal()@
-            | action                @node = Node(.TRM(type: "action"))@
-                                    @actionList[node] = token.stripped@
-            .
+production  = identifier ( ":" | "=" ) selection "." .
+selection   = sequence { "|" sequence } .
+sequence    = < term [ "?" | "*" | "+" ] > .
+term        = terminal
+            | "[" selection "]"
+            | "{" selection "}"
+            | "<" selection ">"
+            | "(" selection ")" .
+terminal    = identifier | literal | regex | action | epsilon .
+epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .

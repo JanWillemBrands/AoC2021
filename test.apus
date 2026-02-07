@@ -186,14 +186,17 @@ whitespace : /\s+/.
 //tr = /testRegex/.                     // FAIL tr shows up as "tr" in syntax diagrams
 
 //S = A. A = "a" | "b" | "c".
+//S = A. A = "a" .        // FAIL
 
 //S = "a" | S "b" | S ["b"] C . C = "c" . // PASS Afroozeh hunt
 
 //S = { "a" | "b" }.              // FAIL with testRepeat
 //S = [ [ "a" ] ].                  // PASS
 //S = "a" A B | "a" A "b".  A = "a". B = "b". // FAIL not sharing "a" A prefix
-//S = "a" "a" "b".    // PASS
-//S = "a" B. B = "b".
-S = "a".
+//S = "a" "b".    // PASS
+
+// S = A A c. A = B. B = "".   // forces contingent pops "Structuring the..."
+
+S = "a" B "a" B. B = "b".
 ^^^
-a
+abab

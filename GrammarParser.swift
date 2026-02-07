@@ -123,11 +123,11 @@ class GrammarParser {
 
     func parseApusGrammar() {
         trace("parseApusGrammar", token)
-        expect(["identifier", "message"])
+        expect(["identifier"])
         while token.kind == "identifier" {
             production()
         }
-        expect(["message"])
+        expect(["message", "$"])
         while token.kind == "message" {
             message()
         }
@@ -269,7 +269,7 @@ class GrammarParser {
     func literal() -> GrammarNode {
         trace("literal", token, token.stripped)
 
-        if token.stripped == "" || token.stripped.count == 1 && token.stripped.first!.isEpsilon {
+        if token.stripped == "" || token.stripped == "#" || token.stripped.first?.isEpsilon == true {
             return GrammarNode(kind: .EPS, str: "")
         }
         
@@ -308,7 +308,6 @@ class GrammarParser {
         case "literal":
             node = literal()
         case "regex":
-            // TODO: add support for anonymous regexes
             node = regex()
         case "(":
             next()

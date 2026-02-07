@@ -6,6 +6,20 @@
 //
 
 import Foundation
+import OrderedCollections
+
+// TODO: use an OrderedSet instead?
+var symbolTable: OrderedSet<String> = []
+func symbolString(at index: Int) -> String {
+    symbolTable[index]
+}
+func symbolIndex(of string: String) -> Int {
+    if let index = symbolTable.firstIndex(of: string) {
+        return index
+    }
+    symbolTable.append(string)
+    return symbolTable.count - 1
+}
 
 var nameValues: [String] = []
 var nameIndices: [String:Int] = [:]

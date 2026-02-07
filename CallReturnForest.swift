@@ -9,18 +9,17 @@
 // https://pure.royalholloway.ac.uk/ws/portalfiles/portal/33174042/Accepted_Manuscript.pdf
 
 import Foundation
-//import OrderedCollections
 
 var crf: Set<Position> = []
-var crfRoot = Position(slot: grammarRoot, index: 0)
+//var crfRoot = Position(slot: grammarRoot, index: 0)
 
 final class Position: Hashable, Comparable, CustomStringConvertible {
     let slot: GrammarNode
     let index: Int
 
-    // lazy avoids initialization overhead for positions that don't need them, using optionals instead would complicate code
+    // lazy avoids initialization overhead for positions that don't need them, instead of using optionals that would complicate code
     lazy var unique: Set<Position> = []         // distributing the 'unique' set (U) of Descriptors is ~20% faster
-    lazy var returns: Set<Position> = []        // an Array instead of a Set is ~10% faster (Afroozeh), but CNP needs it
+    lazy var returns: Set<Position> = []        // TODO: an Array instead of a Set is ~10% faster (Afroozeh), but CNP needs it
     lazy var pops: Set<Int> = []
     
     init(slot: GrammarNode, index: Int) {
@@ -50,59 +49,64 @@ final class Position: Hashable, Comparable, CustomStringConvertible {
     }
 }
 
-func ntAdd(_ pos: Position, _ index: Int) {
-    assert(pos.slot.kind == .N, "Called \(#function) on a position \(pos) which is not a nonterminal")
-    var alt = pos.slot.alt
-    repeat {
-        if let alt {
-            if testSelect(slot: alt) {
-                addDescriptor(slot: alt.seq!, cluster: pos, index: index)
-            }
+func addDescriptorsForAlternates(bracket: GrammarNode, cluster: Position, index: Int) {
+    assert([.N, .DO, .ALT, .KLN, .POS].contains(bracket.kind), "Called \(#function) on a GrammarNode \(bracket) which is not a bracket")
+    var current = bracket.alt
+    while let alt = current {
+        if testSelect(slot: alt, bracket: bracket) {
+            addDescriptor(slot: alt.seq!, cluster: cluster, index: index)
         }
-    } while alt != nil
+        current = alt.alt
+    }
 }
 
-// add descriptors for previous pop actions from that node
 func enter() {
+    // currentSlot points to the RHS nonterminal node
+    // currentSlot.alt points to the LHS nonterminal node
+    // currentslot.alt.alt points to its first alternative
+    
+    let L = currentSlot
+    let i = currentCluster.index
+    let j = currentIndex
     // create a return node (u) if it doesn't already exist
-    var returnNode = Position(slot: currentSlot.seq!, index: currentIndex)
-    returnNode = crf.insert(returnNode).memberAfterInsert
+    var leavePos = Position(slot: currentSlot, index: currentCluster.index)
+    leavePos = crf.insert(leavePos).memberAfterInsert
     
     // create a cluster node (v) if it doesn't already exits
-    var clusterNode = Position(slot: currentSlot, index: currentCluster.index)
+    var clusterPos = Position(slot: currentSlot.alt!, index: currentIndex)
     var inserted: Bool
-    (inserted, clusterNode) = crf.insert(clusterNode)
+    (inserted, clusterPos) = crf.insert(clusterPos)
 
     if inserted {
-        clusterNode.returns.insert(returnNode)
-        // only add a descriptor for the first alternative of the nonterminal, the other alternatives will follow in parseMessage()
-        // addState(slot: currentSlot.alt!, index: currentIndex, cluster: clusterNode)
-        // TODO: ntAdd(clusterNode, currentIndex)
-
-        // simply go to the first .alt node
-        currentSlot = currentSlot.alt!
-        currentCluster = clusterNode
-        
+        clusterPos.returns.insert(leavePos)
+        addDescriptorsForAlternates(bracket: currentSlot.alt!, cluster: clusterPos, index: currentIndex)
     } else {
-        assert(!clusterNode.returns.contains(returnNode), "Afroozeh was wrong, edge \(returnNode) was already in node \(clusterNode) \(clusterNode.returns)")
+//        assert(!clusterNode.returns.contains(returnNode), "Afroozeh was wrong, edge \(returnNode) was already in node \(clusterNode) \(clusterNode.returns)")
 
-        if clusterNode.returns.insert(returnNode).inserted {
+        if clusterPos.returns.insert(leavePos).inserted {
+            // add descriptors for previous pop actions from that node
             for pop in currentCluster.pops {
-                addDescriptor(slot: currentSlot.seq!, cluster: clusterNode, index: pop)
-                addYield(node: currentSlot.seq!, i: currentIndex, k: currentCluster.index, j: pop)
+                addDescriptor(slot: currentSlot.seq!, cluster: clusterPos, index: pop)
+//                addYield(slot: currentSlot.seq!, i: currentCluster.index, k: currentIndex, j: pop)  // TODO: point leavePos to currentSlot (not currentSlot.seq)
+                addYield(slot: currentSlot, i: currentCluster.index, k: currentIndex, j: pop)
             }
         }
     }
-    
+    print("enter cluster \(clusterPos) inserted, returns \(clusterPos.returns)")
 }
 
 // TODO: the first edge can be popped without addDescriptor???
-// TODO: only add decriptors when the token is part of the follow???
 func leave() {
+    let X = currentCluster.slot
+    let k = currentCluster.index
+    let j = currentIndex
+    print("leave cluster \(currentCluster) inserted, returns: \(currentCluster.returns)")
     if currentCluster.pops.insert(currentIndex).inserted {
         for rtn in currentCluster.returns {
-            addDescriptor(slot: rtn.slot, cluster: currentCluster, index: currentIndex)
-            addYield(node: rtn.slot, i: rtn.index, k: currentCluster.index, j: currentIndex)
+            let L = rtn.slot.seq!
+            let i = rtn.index
+            addDescriptor(slot: rtn.slot.seq!, cluster: currentCluster, index: currentIndex)
+            addYield(slot: rtn.slot, i: rtn.index, k: currentCluster.index, j: currentIndex)
         }
     }
 }

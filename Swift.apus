@@ -162,12 +162,12 @@ octalLiteral = /-?0o[0-7][0-7_]*/ .
 //octalLiteralCharacter = octalDigit | "_" .
 //octalLiteralCharacters = octalLiteralCharacter octalLiteralCharacters? .
 
-decimalNumber = /-?[0-9][0-9_]*/ .                                      // this is the catchall for decimalLiteral and decimalDigits
+decimalNumber = /-?[0-9][0-9_]*/ .                                      // this is a catchall for decimalLiteral and decimalDigits
 decimalLiteral = decimalNumber .
 //decimalLiteral = decimalDigit decimalLiteralCharacters? .
 //decimalDigit = Digit 0 through 9
 
-decimalDigits = decimalNumber .                                         // parser to verify it matches /[0-9]+/ !!!
+decimalDigits = decimalNumber .                                         // parser to verify it matches /[0-9]+/
 //decimalDigits = decimalDigit decimalDigits? .
 //decimalLiteralCharacter = decimalDigit | "_" .
 //decimalLiteralCharacters = decimalLiteralCharacter decimalLiteralCharacters? .
@@ -956,4 +956,11 @@ genericArgumentList = genericArgument | genericArgument "," genericArgumentList 
 genericArgument = type .
 
 ^^^
-f()
+// invisible identifiers
+struct ­ {
+    var ­­: String
+}
+
+let ­­: ­ = ­(­­: "Invisble characters should not be acceptable identifiers.")
+
+print(­­)

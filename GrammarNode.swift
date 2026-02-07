@@ -34,23 +34,24 @@ import Foundation
 enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
 final class GrammarNode {
-//    static var nodesWithLet: Set<String> = []
-
+    //    static var nodesWithLet: Set<String> = []
+    
     static var count = 0
     var number = 0
     
     let kind: GrammarNodeKind
     let str: String
-    var alt: GrammarNode? {
-        didSet {
-            assert(alt?.kind == .ALT, "alt should always point to a .ALT node")
-        }
-    }
-    var seq: GrammarNode? {
-        didSet {
-            assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
-        }
-    }
+    var alt, seq: GrammarNode?
+    //    {
+    //        didSet {
+    //            assert(alt?.kind == .ALT, "alt should always point to a .ALT node")
+    //        }
+    //    }
+    //    var seq: GrammarNode? {
+    //        didSet {
+    //            assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
+    //        }
+    //    }
     init(kind: GrammarNodeKind, str: String, alt: GrammarNode? = nil, seq: GrammarNode? = nil) {
         self.kind = kind
         self.str = str
@@ -65,16 +66,9 @@ final class GrammarNode {
     var ambiguous:  Set<String> = []
     static var sizeofSets = 0
     
-    var bsr: Set<Triple> = []
+    var yield: Set<BinarySpan> = []
     
     var cell = Cell(name: "", r: 0, c: 0)
-}
-
-struct Triple: Hashable, CustomStringConvertible {
-    let i: Int  // left
-    let k: Int  // pivot
-    let j: Int  // right
-    var description: String { "\(i):\(k):\(j)" }
 }
 
 extension GrammarNode {
@@ -89,7 +83,7 @@ extension GrammarNode {
                 expectedTokens.formUnion(follow)
             }
 #if DEBUG
-            trace("expect \"\(token.kind)\" to be in", expectedTokens)
+            trace("expected \"\(token.kind)\" to be in", expectedTokens)
 #endif
             return false
         }
@@ -115,9 +109,9 @@ extension GrammarNode: Hashable {
 }
 
 extension GrammarNode: CustomStringConvertible {
-//    var description: String {
-//        cell.description
-//    }
+    //    var description: String {
+    //        cell.description
+    //    }
     
     var description: String { number.description }
     
@@ -218,29 +212,33 @@ extension GrammarNode {
         trace("first    ", first.sorted())
         trace("follow   ", follow.sorted())
         trace("ambiguous", ambiguous.sorted())
-//        if ambiguous.count > 0 {
-//            print("ambiguous", ambiguous.sorted())
-//        }
+        //        if ambiguous.count > 0 {
+        //            print("ambiguous", ambiguous.sorted())
+        //        }
         traceIndent -= 4
         
     }
     
     private func handleAlternatesAmbiguity() {
         var occurances: [String:Int] = [:]
-        var currentAlt = self.alt
-        while let altNode = currentAlt {
-            currentAlt?.detectAmbiguity()
+        // count occurances in firsts
+        var current = self.alt
+        while let altNode = current {
+            current?.detectAmbiguity()
             for element in altNode.first {
                 occurances[element, default: 0] += 1
             }
-            currentAlt = altNode.alt
+            current = altNode.alt
         }
+        // count occurances in follow
+        if first.contains("") {
+            for element in follow {
+                occurances[element, default: 0] += 1
+            }
+        }
+        // keep only duplicated occurances
         for (element, count) in occurances where count > 1 {
             ambiguous.insert(element)
-        }
-        if first.contains("") {
-            let overlapFirstFollow = first.intersection(follow)
-            ambiguous = ambiguous.union(overlapFirstFollow)
         }
     }
     
@@ -251,7 +249,7 @@ extension GrammarNode {
         switch kind {
         case .EPS:
             seq!.populateFirstFollowSets()
-//            first = [""]
+            //            first = [""]
             first = seq!.first
             updateFollow()
         case .EOS, .T, .TI, .C, .B:
@@ -273,12 +271,12 @@ extension GrammarNode {
         case .KLN:
             first.insert("")
             handleBracket()
-//             TODO: not sure following is right, even though it is in ART...
-//             it complicates ambiguous because it's longer overlap(first, follow)
-//             file://Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
-//             For closure nodes, fold first into follow
-//             if (root.elm.kind == GrammarKind.POS || root.elm.kind == GrammarKind.KLN) changed |= root.instanceFollow.addAll(removeEpsilon(root.instanceFirst));
-//            follow.formUnion(first.subtracting([""]))
+            //             TODO: not sure following is right, even though it is in ART...
+            //             it complicates ambiguous because it's longer overlap(first, follow)
+            //             file://Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
+            //             For closure nodes, fold first into follow
+            //             if (root.elm.kind == GrammarKind.POS || root.elm.kind == GrammarKind.KLN) changed |= root.instanceFollow.addAll(removeEpsilon(root.instanceFirst));
+            //            follow.formUnion(first.subtracting([""]))
         case .POS:
             handleBracket()
         case .END:
@@ -286,17 +284,17 @@ extension GrammarNode {
             first = [""]
             // the follow of .END is the follow of the starting bracket or nonterminal node
             follow = seq!.follow
-            // if the starting node was a closure (POS, KLN) then the first of the starting node folds into the follow
+            // if the bracket was a closure (POS, KLN) then the first of the bracket folds into the follow
             if seq!.kind == .KLN || seq!.kind == .POS {
                 follow.formUnion(seq!.first.subtracting([""]))
             }
-       }
+        }
         GrammarNode.sizeofSets += first.count + follow.count
-//        if first.contains("let") && kind == .N {
-//            print(str)
-//            print(GrammarNode.nodesWithLet)
-//            GrammarNode.nodesWithLet.insert(str)
-//        }
+        //        if first.contains("let") && kind == .N {
+        //            print(str)
+        //            print(GrammarNode.nodesWithLet)
+        //            GrammarNode.nodesWithLet.insert(str)
+        //        }
     }
     
     private func handleNonTerminal() {
@@ -305,8 +303,13 @@ extension GrammarNode {
             seq.populateFirstFollowSets()
             updateFollow()
             if let production = nonTerminals[str] {
-                // assign the alt of the rhs to the alt of the lhs
-                alt = production.alt
+                
+                //                // assign the alt of the rhs to the alt of the lhs
+                //                alt = production.alt
+                
+                // point the alt of the RHS nonterminal node to the LHS nonterminal node
+                alt = production
+                
                 // rhs first of the rhs nonterminal is equal to the first of lhs production rule
                 first = production.first
                 if first.contains("") {
@@ -324,14 +327,14 @@ extension GrammarNode {
             }
         } else {
             // a LHS nonterminal defines a production rule and is NOT part of a sequence
-            assignUnionOfAltFirst()
+            populateFirstFromAlts()
             // the follow set of a lhs nonterminal production rule is [“$”] if startsymbol, and [] otherwise.
             // this is already set before calling populateFirstFollowSets.
         }
     }
     
     private func handleBracket() {
-        assignUnionOfAltFirst()
+        populateFirstFromAlts()
         seq!.populateFirstFollowSets()
         if first.contains("") {
             first.remove("")
@@ -340,7 +343,7 @@ extension GrammarNode {
         updateFollow()
     }
     
-    private func assignUnionOfAltFirst() {
+    private func populateFirstFromAlts() {
         // set the first set of a lhs nonterminal production rule, or a bracketed expression, to the union of first sets of all its .alt's
         var current = alt
         while let altNode = current {
@@ -361,11 +364,12 @@ extension GrammarNode {
 
 extension GrammarNode {
     func clearNodes() {
-        bsr = []
+        yield = []
         // recursively clear child nodes but avoid loops
         if kind != .END {
             seq?.clearNodes()
         }
+        // TODO: check if this treatment of .N is correct
         if kind != .END && kind != .N {
             alt?.clearNodes()
         }
@@ -414,33 +418,42 @@ extension GrammarNode {
 extension GrammarNode {
     static var containingNonterminal: GrammarNode?          // will be set to the containing N (lhs) node
     static var toplevelAlternate: GrammarNode?              // will be set to the toplevel ALT node
-    static var dot: GrammarNode?                            // will be set to the dotted GrammarNode slot
-    static var s = ""
+    static var dottedSlot: GrammarNode?                     // will be set to the dotted GrammarNode slot
+    static var dottedEBNF = ""                            // will be set to the dotted EBNF production
     
     enum Exit: Error { case endOfToplevel }
     
     func emit() throws {
-        if self == GrammarNode.dot { GrammarNode.s += "·" }
+        //        if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += "·" }
+        //        if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += "<font color=\"grey\">" + "·" + "</font>"}
+        //        let combiningDotAbove = "\u{0307}"
+        //        let combiningDotBelow = "\u{0323}"
+        //        let combiningMacron = "\u{0304}"
+        //        let combiningRingAbove = "\u{030A}"
+        let combiningLowLine = "\u{0332}"
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
-            GrammarNode.s += str
+            GrammarNode.dottedEBNF += str
             if let seq { try seq.emit() }
         case .N:
             if let seq { // rhs
-                GrammarNode.s += str
+                //                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += "<font color=\"red\">"}
+                GrammarNode.dottedEBNF += str
+                //                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += "</font>"}
+                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += combiningLowLine }
                 try seq.emit()
             } else { // lhs
-                if let alt {
-                    GrammarNode.s += str
-//                    + "="
-//                    try alt.emit()
-//                    GrammarNode.s += "."
-                }
+                //                if let alt {
+                GrammarNode.dottedEBNF += str
+                //                    + "="
+                //                    try alt.emit()
+                //                    GrammarNode.s += "."
+                //                }
             }
         case .ALT:
             if let seq { try seq.emit() }
             if let alt {
-                GrammarNode.s +=  "|"
+                GrammarNode.dottedEBNF +=  "|"
                 try alt.emit()
             }
         case .END:
@@ -452,30 +465,30 @@ extension GrammarNode {
             }
         case .DO:
             if let alt {
-                GrammarNode.s += "("
+                GrammarNode.dottedEBNF += "("
                 try alt.emit()
-                GrammarNode.s += ")"
+                GrammarNode.dottedEBNF += ")"
             }
             if let seq { try seq.emit() }
         case .OPT:
             if let alt {
-                GrammarNode.s += "["
+                GrammarNode.dottedEBNF += "["
                 try alt.emit()
-                GrammarNode.s += "]"
+                GrammarNode.dottedEBNF += "]"
             }
             if let seq { try seq.emit() }
         case .POS:
             if let alt {
-                GrammarNode.s += "<"
+                GrammarNode.dottedEBNF += "<"
                 try alt.emit()
-                GrammarNode.s += ">"
+                GrammarNode.dottedEBNF += ">"
             }
             if let seq { try seq.emit() }
         case .KLN:
             if let alt {
-                GrammarNode.s += "{"
+                GrammarNode.dottedEBNF += "{"
                 try alt.emit()
-                GrammarNode.s += "}"
+                GrammarNode.dottedEBNF += "}"
             }
             if let seq { try seq.emit() }
         }
@@ -494,7 +507,7 @@ extension GrammarNode {
         }
         return (nil, nil)
     }
-
+    
     // generates the dotted ebnf for the toplevel containing alternate of the containing nonterminal
     func ebnfDot() -> String {
         if kind == .N && seq == nil {
@@ -502,15 +515,14 @@ extension GrammarNode {
             return str
         } else {
             // construct the ebnf for the toplevel alternate production containing the dot
+            GrammarNode.dottedEBNF = ""
+            GrammarNode.dottedSlot = self
             (GrammarNode.toplevelAlternate, GrammarNode.containingNonterminal) = toplevels()
-            GrammarNode.s = ""
-            GrammarNode.dot = self
             if let tla = GrammarNode.toplevelAlternate, let cnt = GrammarNode.containingNonterminal {
                 try? tla.emit()
-                let ebnfPlusDot = GrammarNode.s
-                return cnt.str + "=" + ebnfPlusDot
+                return cnt.str + "=" + GrammarNode.dottedEBNF
             } else {
-                return GrammarNode.s
+                return GrammarNode.dottedEBNF
             }
         }
     }

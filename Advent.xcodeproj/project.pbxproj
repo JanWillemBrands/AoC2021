@@ -45,14 +45,14 @@
 		4E11B2A92DC10F0600555BB8 /* Descriptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Descriptor.swift; sourceTree = "<group>"; };
 		4E11B2AB2DC121A300555BB8 /* ClusteredNonterminalParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusteredNonterminalParser.swift; sourceTree = "<group>"; };
 		4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = AfroozehHunt.apus; sourceTree = "<group>"; };
-		4E333D622629D5E400640821 /* apus.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
+		4E333D622629D5E400640821 /* apusWithAction.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusWithAction.apus; sourceTree = "<group>"; };
 		4E333D632629D5E400640821 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		4E333D642629D5E400640821 /* output.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = output.swift; sourceTree = "<group>"; };
 		4E333D672629D5E400640821 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
 		4E333D692629D5E500640821 /* TortureSyntax.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = TortureSyntax.apus; sourceTree = "<group>"; };
 		4E333D6A2629D5E500640821 /* test.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = test.apus; sourceTree = "<group>"; };
 		4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateDiagrams.swift; sourceTree = "<group>"; };
-		4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusNoActionKLN.apus; sourceTree = "<group>"; };
+		4E34DF7E2C08042C00B2881E /* apus.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
 		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
 		4E4213852D19CA1200CE6493 /* MessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageParser.swift; sourceTree = "<group>"; };
 		4E4213892D19E31200CE6493 /* GrammarParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarParser.swift; sourceTree = "<group>"; };
@@ -67,10 +67,10 @@
 		4E89AAF32D7667C3006A0BBA /* tortureART.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = tortureART.apus; sourceTree = "<group>"; };
 		4E94E9942C2913F600746EB7 /* SymbolTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolTable.swift; sourceTree = "<group>"; };
 		4E951C132D8874BD008B1012 /* Swift.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = Swift.apus; sourceTree = "<group>"; };
-		4EA293992BAACF9A0014546F /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
 		4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
 		4EBBDFF52B935BB90049A17F /* diagram.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = diagram.svg; sourceTree = "<group>"; };
 		4EC5CE942BBC111E0045F751 /* apusUnicode.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusUnicode.apus; sourceTree = "<group>"; };
+		4ECF5BE62F3748DB008E692B /* claude.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = claude.md; sourceTree = "<group>"; };
 		4EE422A22BFB319500D99368 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
 		CB6B7315257EA9F400B929C6 /* Advent */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Advent; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -90,16 +90,12 @@
 		CB6B730C257EA9F400B929C6 = {
 			isa = PBXGroup;
 			children = (
-				4E11B2A92DC10F0600555BB8 /* Descriptor.swift */,
-				4E11B2AB2DC121A300555BB8 /* ClusteredNonterminalParser.swift */,
-				4E11B2A72DC0C25D00555BB8 /* CallReturnForest.swift */,
-				4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */,
-				4E333D622629D5E400640821 /* apus.apus */,
+				4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */,
+				4E333D622629D5E400640821 /* apusWithAction.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
-				4E34DF7E2C08042C00B2881E /* apusNoActionKLN.apus */,
+				4E34DF7E2C08042C00B2881E /* apus.apus */,
 				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
 				4E951C132D8874BD008B1012 /* Swift.apus */,
-				4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
 				4E89AAF32D7667C3006A0BBA /* tortureART.apus */,
 				4E333D692629D5E500640821 /* TortureSyntax.apus */,
@@ -107,15 +103,17 @@
 				4E89AAEE2D6DF2EE006A0BBA /* postRunActions.log */,
 				4E34DF802C08A71000B2881E /* ART.svg */,
 				4EBBDFF52B935BB90049A17F /* diagram.svg */,
+				4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */,
+				4E11B2A72DC0C25D00555BB8 /* CallReturnForest.swift */,
+				4E11B2AB2DC121A300555BB8 /* ClusteredNonterminalParser.swift */,
+				4E11B2A92DC10F0600555BB8 /* Descriptor.swift */,
 				4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */,
 				4E42138F2D1DC15000CE6493 /* GenerateParser.swift */,
 				4EE422A22BFB319500D99368 /* GrammarNode.swift */,
 				4E4213892D19E31200CE6493 /* GrammarParser.swift */,
 				4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */,
 				4E333D632629D5E400640821 /* main.swift */,
-				4EA293992BAACF9A0014546F /* ManualOutput.swift */,
 				4E4213852D19CA1200CE6493 /* MessageParser.swift */,
-				4E11B2A42DA274B200555BB8 /* scratch.txt */,
 				4E42138B2D1B61AD00CE6493 /* NoGlobals.swift */,
 				4E333D642629D5E400640821 /* output.swift */,
 				4E42138D2D1C572D00CE6493 /* OutputTools.swift */,
@@ -123,7 +121,9 @@
 				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
 				4E333D672629D5E400640821 /* StringExtensions.swift */,
 				4E94E9942C2913F600746EB7 /* SymbolTable.swift */,
+				4E11B2A42DA274B200555BB8 /* scratch.txt */,
 				CB6B7316257EA9F400B929C6 /* Products */,
+				4ECF5BE62F3748DB008E692B /* claude.md */,
 			);
 			sourceTree = "<group>";
 		};

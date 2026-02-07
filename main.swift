@@ -48,9 +48,6 @@ for t in tokens {
 // the GrammarNode being processed
 var currentSlot = grammarRoot
 
-// the top of one of the stacks in the Graph Structured Stack
-//var currentCluster = gssRoot
-
 var failedParses = 0
 var successfullParses = 0
 var descriptorCount = 0
@@ -97,9 +94,10 @@ for m in messages {
     resetMessageParser()
 
     currentSlot = grammarRoot
-//    currentCluster = gssRoot
+    currentCluster = crfRoot
 
-    addDescriptor(slot: grammarRoot.alt!, cluster: currentCluster, index: currentIndex)
+    addDescriptorsForAlternates(bracket: grammarRoot, cluster: crfRoot, index: 0)
+//    addDescriptor(slot: grammarRoot.alt!, cluster: currentCluster, index: currentIndex)
     
     // use the AST to parse the message
     let start = clock()

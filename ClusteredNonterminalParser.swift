@@ -10,11 +10,12 @@ import Foundation
 var remainder: [Descriptor] = []
 
 var currentCluster = Position(slot: grammarRoot, index: 0)    // the current CRF cluster node
+var crfRoot = currentCluster
 
 // clear all previous parsing results
 func resetMessageParser() {
     remainder = []
-    currentCluster = Position(slot: grammarRoot, index: 0)
+    currentCluster = crfRoot
     crf.insert(currentCluster)
     crfRoot = currentCluster
     
@@ -29,7 +30,7 @@ func resetMessageParser() {
     duplicateDescriptorCount = 0
 }
 
-var furthestMismatch: (Token, Set<String>) = (tokens[0], [])        // there is always at least the '$' a.k.a. EOS token
+var furthestMismatch: (Token, Set<String>) = (tokens[0], [])        // tokens contains at least the '$' a.k.a. EOS token
 
 func parseMessage() {
     nextDescriptor: while getDescriptor() {
@@ -48,11 +49,11 @@ func parseMessage() {
             
             switch currentSlot.kind {
             case .EPS:
-                addYield(node: currentSlot, i: currentIndex, k: currentIndex, j: currentIndex)
+                addYield(slot: currentSlot, i: currentCluster.index, k: currentIndex, j: currentIndex)
                 currentSlot = currentSlot.seq!
             case .T, .TI, .C, .B:
                 if tokenMatch() {
-                    addYield(node: currentSlot, i: currentIndex, k: currentIndex, j: currentIndex + 1)
+                    addYield(slot: currentSlot, i: currentCluster.index, k: currentIndex, j: currentIndex + 1)
                     currentIndex += 1
                     #if DEBUG
                     trace = true
@@ -74,7 +75,8 @@ func parseMessage() {
                 enter()
                 continue nextDescriptor
             case .ALT:
-                if testSelect() {
+                fatalError(#function + ": ALT should not happen here")
+                if testSelect(slot: currentSlot, bracket: currentSlot) {
                     addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
                 }
                 if let alt = currentSlot.alt {
@@ -87,7 +89,7 @@ func parseMessage() {
                 currentSlot = currentSlot.alt!
             case .OPT:
                 if currentSlot.first.contains("") {
-                    if testSelect(slot: currentSlot.seq!) {
+                    if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
                         // bsrAdd()
                         // schedule the next slot
                         addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
@@ -96,12 +98,12 @@ func parseMessage() {
                     // move to the first branch
                     currentSlot = currentSlot.alt!
                 } else {
-                    if testSelect(slot: currentSlot.seq!) {
+                    if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
                         // bsrAdd()
                         // schedule the next slot
                         addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
                     }
-                    if !testSelect() {
+                    if !testSelect(slot: currentSlot, bracket: currentSlot) {
                         continue nextDescriptor
                     } else {
                         // move to the first branch
@@ -111,26 +113,26 @@ func parseMessage() {
             case .KLN:
                 if currentSlot.first.contains("") {
                     // TODO: something with bsrAdd() to record slots
-                    if testSelect(slot: currentSlot.seq!) {
+                    if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
                         // schedule the next slot
                         addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
                     }
                     if testRepeat() {
                         continue nextDescriptor
                     }
-                    if !testSelect() {
+                    if !testSelect(slot: currentSlot, bracket: currentSlot) {
                         continue nextDescriptor
                     }
-                    if testSelect() {
+                    if testSelect(slot: currentSlot, bracket: currentSlot) {
                         // move to the first branch
                         currentSlot = currentSlot.alt!
                     }
                 } else {
-                    if testSelect(slot: currentSlot.seq!) {
+                    if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
                         // schedule the next slot
                         addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
                     }
-                    if !testSelect() {
+                    if !testSelect(slot: currentSlot, bracket: currentSlot) {
                         continue nextDescriptor
                     } else {
                         // move to the first branch
@@ -140,6 +142,7 @@ func parseMessage() {
             case .END:
                 // the seq link of an END node always points back to a starting bracket node (N, DO, OPT, POS, KLN)
                 let bracket = currentSlot.seq!
+                
                 switch bracket.kind {
                 case .N:
                     if let seq = bracket.seq {
@@ -147,22 +150,26 @@ func parseMessage() {
                         currentSlot = seq
                     } else {
                         // the bracket is a LHS nonterminal
-                        leave()
+                        if bracket.follow.contains(token.kind) {
+                            leave()
+                        }
                         continue nextDescriptor
                     }
                 case .DO:
-                    if testRepeat() { continue nextDescriptor }
-                    currentSlot = bracket.seq!
+                    if testRepeat() {
+                        continue nextDescriptor
+                    } else {
+                        currentSlot = bracket.seq!
+                    }
                 case .OPT:
                     if testRepeat() {
                         continue nextDescriptor
                     } else {
-                        // move to the slot after the bracket
                         currentSlot = bracket.seq!
                     }
                 case .KLN, .POS:
                     // schedule the branch again
-                    if testSelect() {
+                    if testSelect(slot: currentSlot, bracket: bracket) {
                         addDescriptor(slot: bracket.alt!, cluster: currentCluster, index: currentIndex)
                     }
                     // move to the slot after the bracket
@@ -180,9 +187,7 @@ func parseMessage() {
         }
     }
     
-    print(grammarRoot.ebnfDot())
-//    successfullParses = yields.filter { y in y.node == grammarRoot && y.i == 0 && y.j == input.count-1 }.count
-    print(yields)
+    successfullParses = grammarRoot.yield.filter { y in y.i == 0 && y.j == tokens.count-1 }.count
     print(
         "\nmatched:", successfullParses,
         "  failed:", failedParses,
@@ -202,19 +207,18 @@ func testRepeat() -> Bool {
     return !currentCluster.unique.insert(si).inserted
 }
 
-func testSelect(slot: GrammarNode = currentSlot) -> Bool {    // handles Schrödinger tokens
+func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
     var current = token
-    repeat {
-        // slot.follow is equal to the production.follow IFF slot.first contains eps
-        if slot.first.contains(current.kind) || slot.first.contains("") && slot.follow.contains(current.kind) { return true }
+    repeat { // to handle Schrödinger tokens
+        if slot.first.contains(current.kind) || slot.first.contains("") && bracket.follow.contains(current.kind) { return true }
         guard let next = current.dual else { return false }
         current = next
     } while true
 }
 
-func tokenMatch() -> Bool {    // handles Schrödinger tokens
+func tokenMatch() -> Bool {
     var current = token
-    repeat {
+    repeat {  // to handle Schrödinger tokens
         if currentSlot.str == current.kind { return true }
         guard let next = current.dual else { return false }
         current = next
