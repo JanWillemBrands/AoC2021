@@ -8,6 +8,8 @@ regex       = /\/(?:[^\/\\]|\\.)+\// .
 action      = /@(?:[^@\\]|\\.)+@/ .
 message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
+//                               // empty
+//.                              // no rule
 S00 = .                        // empty sequence
 S01 = |.                       // empty selection
 S02 = ().                      // empty group
@@ -15,7 +17,7 @@ S03 = [].                      // empty option
 S04 = {}.                      // empty iteration
 S05 = <>.                      // empty iteration non zero
 S06 = "a" "".                  // explicit end of input
-S07 = N07.                     // indirection not defined
+//S07 = N07.                     // indirection not defined
 
 
 S10 = "".                       // epsilon

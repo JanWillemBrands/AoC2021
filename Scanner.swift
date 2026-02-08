@@ -22,11 +22,11 @@ var tokens: [Token] = []
 // the index of the current active token
 var currentIndex = 0
 
-var token: Token {
+public var token: Token {
     tokens[currentIndex]
 }
 
-func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) throws {
+public func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) throws {
     input = inputString
     tokenPatterns = patterns
     tokens = []
@@ -34,7 +34,7 @@ func initScanner(fromString inputString: String, patterns: [String:TokenPattern]
     currentIndex = 0
 }
 
-typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
+public typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
 var tokenPatterns = apusTerminals
 
 let apusTerminals: [String:TokenPattern] = [
@@ -48,7 +48,7 @@ let apusTerminals: [String:TokenPattern] = [
     "message":      (#"\^\^\^(?:(?s).*?)(?=\^\^\^|$)"#,
                                                 /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,    false, false),
     ".":            (".",                       Regex { "." },                      true,  false),
-    ";":            (";",                       Regex { ";" },                      true,  false),
+    ";":             (";",                       Regex { ";" },                      true,  false),
     ":":            (":",                       Regex { ":" },                      true,  false),
     "=":            ("=",                       Regex { "=" },                      true,  false),
     "|":            ("|",                       Regex { "|" },                      true,  false),
@@ -70,15 +70,15 @@ let apusTerminals: [String:TokenPattern] = [
 ]
 
     
-final class Token: CustomStringConvertible {
-    var image: Substring
-    var kind: String
-    var dual: Token?                            // multiple regex matches of equal length create a 'Schrödinger' token linked list
-    init(image: Substring, kind: String) {
+public final class Token: CustomStringConvertible {
+    public var image: Substring
+    public var kind: String
+    public var dual: Token?                            // multiple regex matches of equal length create a 'Schrödinger' token linked list
+    public init(image: Substring, kind: String) {
         self.image = image
         self.kind = kind
     }
-    var stripped: String {
+    public var stripped: String {
         switch kind {
         case "literal":
             return String(image.dropFirst().dropLast())
@@ -93,7 +93,7 @@ final class Token: CustomStringConvertible {
             return String(image)
         }
     }
-    var description: String {
+    public var description: String {
         if let dual {
             return kind + " " + dual.description
         }
@@ -177,7 +177,7 @@ func scanTokens() throws {
     tokens.append(Token(image: "$", kind: "$"))
 }
 
-func next() {
+public func next() {
     currentIndex += 1
     #if DEBUG
     trace("next", token.image, token.kind)

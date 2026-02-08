@@ -31,17 +31,17 @@
 
 import Foundation
 
-enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
+public enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
-final class GrammarNode {
+public final class GrammarNode {
     //    static var nodesWithLet: Set<String> = []
     
     static var count = 0
     var number = 0
     
-    let kind: GrammarNodeKind
-    let str: String
-    var alt, seq: GrammarNode?
+    public let kind: GrammarNodeKind
+    public let str: String
+    public var alt, seq: GrammarNode?
     //    {
     //        didSet {
     //            assert(alt?.kind == .ALT, "alt should always point to a .ALT node")
@@ -52,7 +52,7 @@ final class GrammarNode {
     //            assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
     //        }
     //    }
-    init(kind: GrammarNodeKind, str: String, alt: GrammarNode? = nil, seq: GrammarNode? = nil) {
+    public init(kind: GrammarNodeKind, str: String, alt: GrammarNode? = nil, seq: GrammarNode? = nil) {
         self.kind = kind
         self.str = str
         self.alt = alt
@@ -100,10 +100,10 @@ extension GrammarNode {
 //}
 
 extension GrammarNode: Hashable {
-    static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
+    public static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
         lhs.number == rhs.number
     }
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(number)
     }
 }
@@ -113,7 +113,7 @@ extension GrammarNode: CustomStringConvertible {
     //        cell.description
     //    }
     
-    var description: String { number.description }
+    public var description: String { number.description }
     
     // generate labels like A, B, C, ... AA, AB, AC, ...
     var _description: String {
@@ -245,32 +245,32 @@ extension GrammarNode {
 }
 
 extension GrammarNode {
-    func populateFirstFollowSets() {
+    func populateFirstFollowSets() throws {
         switch kind {
         case .EPS:
-            seq!.populateFirstFollowSets()
+            try seq!.populateFirstFollowSets()
             //            first = [""]
             first = seq!.first
             updateFollow()
         case .EOS, .T, .TI, .C, .B:
-            seq!.populateFirstFollowSets()
+            try seq!.populateFirstFollowSets()
             first = [str]
             updateFollow()
         case .N:
-            handleNonTerminal()
+            try handleNonTerminal()
         case .ALT:
-            seq!.populateFirstFollowSets()
+            try seq!.populateFirstFollowSets()
             // copy first & follow from the first (real) node in the sequence
             first = seq!.first
             follow = seq!.follow
         case .DO:
-            handleBracket()
+            try handleBracket()
         case .OPT:
             first.insert("")
-            handleBracket()
+            try handleBracket()
         case .KLN:
             first.insert("")
-            handleBracket()
+            try handleBracket()
             //             TODO: not sure following is right, even though it is in ART...
             //             it complicates ambiguous because it's longer overlap(first, follow)
             //             file://Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
@@ -278,7 +278,7 @@ extension GrammarNode {
             //             if (root.elm.kind == GrammarKind.POS || root.elm.kind == GrammarKind.KLN) changed |= root.instanceFollow.addAll(removeEpsilon(root.instanceFirst));
             //            follow.formUnion(first.subtracting([""]))
         case .POS:
-            handleBracket()
+            try handleBracket()
         case .END:
             // .END first is epsilon so that the follow of the previous node copies the follow of the .END
             first = [""]
@@ -297,10 +297,10 @@ extension GrammarNode {
         //        }
     }
     
-    private func handleNonTerminal() {
+    private func handleNonTerminal() throws {
         if let seq {
             // a RHS nonterminal instance is part of a sequence
-            seq.populateFirstFollowSets()
+            try seq.populateFirstFollowSets()
             updateFollow()
             if let production = nonTerminals[str] {
                 
@@ -320,22 +320,23 @@ extension GrammarNode {
                 production.follow.formUnion(follow)
             } else {
                 print("grammar parse error: '\(str)' was not defined as a grammar rule")
-                if let terminal = terminals[str] {
-                    print("but it was defined as terminal \(terminal.source) instead, if this was intented please define the terminal before using it in the grammar.")
+                let definedAsTerminal = terminals[str] != nil
+                if definedAsTerminal {
+                    print("but it was defined as terminal \(terminals[str]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
-                exit(4)
+                throw GrammarParserError.undefinedNonTerminal(name: str, definedAsTerminal: definedAsTerminal)
             }
         } else {
             // a LHS nonterminal defines a production rule and is NOT part of a sequence
-            populateFirstFromAlts()
+            try populateFirstFromAlts()
             // the follow set of a lhs nonterminal production rule is [“$”] if startsymbol, and [] otherwise.
             // this is already set before calling populateFirstFollowSets.
         }
     }
     
-    private func handleBracket() {
-        populateFirstFromAlts()
-        seq!.populateFirstFollowSets()
+    private func handleBracket() throws {
+        try populateFirstFromAlts()
+        try seq!.populateFirstFollowSets()
         if first.contains("") {
             first.remove("")
             first.formUnion(seq!.first)
@@ -343,11 +344,11 @@ extension GrammarNode {
         updateFollow()
     }
     
-    private func populateFirstFromAlts() {
+    private func populateFirstFromAlts() throws {
         // set the first set of a lhs nonterminal production rule, or a bracketed expression, to the union of first sets of all its .alt's
         var current = alt
         while let altNode = current {
-            altNode.populateFirstFollowSets()
+            try altNode.populateFirstFollowSets()
             first.formUnion(altNode.first)
             current = altNode.alt
         }

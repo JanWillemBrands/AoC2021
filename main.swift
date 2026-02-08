@@ -31,7 +31,7 @@ do {
     exit(0)
 }
 
-var startSymbol = ""    // if "" then startSymbol will set set by parseGrammar to the first nonTerminal in the grammar file
+startSymbol = ""    // if "" then startSymbol will be set by parseGrammar to the first nonTerminal in the grammar file
 let grammarRoot: GrammarNode
 do {
     guard let root = try grammarParser.parseGrammar(explicitStartSymbol: startSymbol) else {

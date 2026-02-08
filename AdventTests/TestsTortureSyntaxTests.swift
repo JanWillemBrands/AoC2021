@@ -65,6 +65,7 @@ final class TortureSyntaxTests: XCTestCase {
         TortureTestCase(rule: "S04", message: "", shouldSucceed: true, category: .empty, notes: "empty iteration"),
         TortureTestCase(rule: "S05", message: "", shouldSucceed: true, category: .empty, notes: "empty iteration non-zero"),
         TortureTestCase(rule: "S06", message: "a", shouldSucceed: true, category: .empty, notes: "explicit end of input"),
+        TortureTestCase(rule: "S07", message: "a", shouldSucceed: false, category: .empty, notes: "indirection not defined"),
     ]
     
     /// S10-S24: Basic construct tests
@@ -191,11 +192,6 @@ final class TortureSyntaxTests: XCTestCase {
         // Scanner state
         tokens = []
         currentIndex = 0
-        
-        // Symbol tables
-        symbolTable = []
-        nameValues = []
-        nameIndices = [:]
         
         // Debug flags
         trace = false

@@ -29,11 +29,6 @@ struct ParserGeneratorTests {
         tokens = []
         currentIndex = 0
         
-        // Symbol tables
-        symbolTable = []
-        nameValues = []
-        nameIndices = [:]
-        
         // Debug flags
         trace = false
         traceIndent = 0
@@ -182,9 +177,6 @@ struct ParserGeneratorTests {
         crf = []
         tokens = []
         currentIndex = 0
-        symbolTable = []
-        nameValues = []
-        nameIndices = [:]
         trace = false
         
         // Test with the base apus grammar

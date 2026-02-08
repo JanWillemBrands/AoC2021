@@ -8,29 +8,32 @@
 import Foundation
 import RegexBuilder
 
-enum GrammarParserError: Error {
+public enum GrammarParserError: Error {
     case terminalNonterminalConflict(symbols: Set<String>)
     case invalidRegex(image: String, error: Error)
     case unexpectedToken(expected: [String], found: String)
     case scanningFailed(error: Error)
+    case undefinedNonTerminal(name: String, definedAsTerminal: Bool)
 }
 
 // input is the string that's being scanned and parsed
-var input: String = ""
+public var input: String = ""
 
-var terminals: [String:TokenPattern] = [:]
-var nonTerminals: [String:GrammarNode] = [:]
-var messages: [String] = []
+public var startSymbol: String = ""
 
-class GrammarParser {
+public var terminals: [String:TokenPattern] = [:]
+public var nonTerminals: [String:GrammarNode] = [:]
+public var messages: [String] = []
+
+public class GrammarParser {
     
-    init(inputFile inputFileURL: URL, patterns: [String:TokenPattern]) throws {
+    public init(inputFile inputFileURL: URL, patterns: [String:TokenPattern]) throws {
         // Define a list of commonly supported encodings
         let encodings: [String.Encoding] = [
             .utf8,                // UTF-8
             .macOSRoman,          // Mac Roman (classic Mac OS encoding) PUT HIGH ON THE LIST BECAUSE OF PILCROW QUIRK
             .isoLatin1,           // ISO-8859-1 (Western European)
-            .isoLatin2,           // ISO-8859-2 (Central/Eastern European)
+            .isoLatin2,            // ISO-8859-2 (Central/Eastern European)
             .ascii,               // ASCII
             .utf16,               // UTF-16 (with BOM)
             .utf16BigEndian,      // UTF-16 Big Endian
@@ -63,7 +66,7 @@ class GrammarParser {
         messages = []
     }
     
-    func parseGrammar(explicitStartSymbol: String = "") throws -> GrammarNode? {
+    public func parseGrammar(explicitStartSymbol: String = "") throws -> GrammarNode? {
         do {
             try initScanner(fromString: input, patterns: apusTerminals)
         } catch {
@@ -116,7 +119,7 @@ class GrammarParser {
             for (_, node) in nonTerminals {
                 trace("nonterminalcount", nonTerminals.count)
                 GrammarNode.sizeofSets = 0
-                node.populateFirstFollowSets()
+                try node.populateFirstFollowSets()
                 newSize += GrammarNode.sizeofSets
             }
             trace("first & follow", newSize)

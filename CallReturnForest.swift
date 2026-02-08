@@ -10,33 +10,33 @@
 
 import Foundation
 
-var crf: Set<Position> = []
+public var crf: Set<Position> = []
 //var crfRoot = Position(slot: grammarRoot, index: 0)
 
-final class Position: Hashable, Comparable, CustomStringConvertible {
-    let slot: GrammarNode
-    let index: Int
+public final class Position: Hashable, Comparable, CustomStringConvertible {
+    public let slot: GrammarNode
+    public let index: Int
 
     // lazy avoids initialization overhead for positions that don't need them, instead of using optionals that would complicate code
     lazy var unique: Set<Position> = []         // distributing the 'unique' set (U) of Descriptors is ~20% faster
     lazy var returns: Set<Position> = []        // TODO: an Array instead of a Set is ~10% faster (Afroozeh), but CNP needs it
     lazy var pops: Set<Int> = []
     
-    init(slot: GrammarNode, index: Int) {
+    public init(slot: GrammarNode, index: Int) {
         self.slot = slot
         self.index = index
     }
     
-    static func == (lhs: Position, rhs: Position) -> Bool {
+    public static func == (lhs: Position, rhs: Position) -> Bool {
         lhs.slot == rhs.slot && lhs.index == rhs.index
     }
     
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(slot)
         hasher.combine(index)
     }
     
-    var description: String {
+    public var description: String {
         slot.description + "." + index.description
     }
     
@@ -44,7 +44,7 @@ final class Position: Hashable, Comparable, CustomStringConvertible {
         slot.ebnfDot() + "," + index.description
     }
     
-    static func < (lhs: Position, rhs: Position) -> Bool {
+    public static func < (lhs: Position, rhs: Position) -> Bool {
         lhs.description < rhs.description
     }
 }

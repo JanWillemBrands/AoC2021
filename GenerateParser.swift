@@ -7,11 +7,11 @@
 
 import Foundation
 
-class ParserGenerator {
+public class ParserGenerator {
     
     let parserFile: URL
     
-    init(outputFile: URL) {
+    public init(outputFile: URL) {
         self.parserFile = outputFile
     }
     
@@ -28,7 +28,7 @@ class ParserGenerator {
         
         """#
     
-    func generateParser() throws {
+    public func generateParser() throws {
         
         // TODO: check escapes etc.
         emit(dent: .NR, "let tokenPatterns: [String:TokenPattern] = [")
