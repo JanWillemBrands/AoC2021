@@ -6,6 +6,14 @@
 //
 
 import Foundation
+import RegexBuilder
+
+enum GrammarParserError: Error {
+    case terminalNonterminalConflict(symbols: Set<String>)
+    case invalidRegex(image: String, error: Error)
+    case unexpectedToken(expected: [String], found: String)
+    case scanningFailed(error: Error)
+}
 
 // input is the string that's being scanned and parsed
 var input: String = ""
@@ -48,20 +56,24 @@ class GrammarParser {
             }
         }
         
-        initScanner(fromString: input, patterns: patterns)
+        try initScanner(fromString: input, patterns: patterns)
 
         terminals = [:]
         nonTerminals = [:]
         messages = []
     }
     
-    func parseGrammar(explicitStartSymbol: String = "") -> GrammarNode? {
-        initScanner(fromString: input, patterns: apusTerminals)
+    func parseGrammar(explicitStartSymbol: String = "") throws -> GrammarNode? {
+        do {
+            try initScanner(fromString: input, patterns: apusTerminals)
+        } catch {
+            throw GrammarParserError.scanningFailed(error: error)
+        }
 
         if explicitStartSymbol != "" {
             startSymbol = explicitStartSymbol
         }
-        parseApusGrammar()
+        try parseApusGrammar()
         
 //        print("TERMINALS")
 //        for t in terminals.keys.sorted() { print(t) }
@@ -80,7 +92,7 @@ class GrammarParser {
         let conflictSet = Set(terminals.keys).intersection(Set(nonTerminals.keys))
         if !conflictSet.isEmpty {
             print("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
-            exit(12)
+            throw GrammarParserError.terminalNonterminalConflict(symbols: conflictSet)
         }
             
         guard let root = nonTerminals[startSymbol] else { return nil }
@@ -121,21 +133,22 @@ class GrammarParser {
     private var skip = false
     private var terminalAlias: String?
 
-    func parseApusGrammar() {
+    func parseApusGrammar() throws {
         trace("parseApusGrammar", token)
-        expect(["identifier"])
+        
         while token.kind == "identifier" {
-            production()
+            try production()
         }
-        expect(["message", "$"])
+        
+        try expect(["message", "$"])
         while token.kind == "message" {
             message()
         }
         // TODO: finalize EOS representation
-        expect(["$"])
+        try expect(["$"])
     }
 
-    func production() {
+    func production() throws {
         trace("production", token)
         let nonTerminalName = String(token.image)
         next()
@@ -144,7 +157,7 @@ class GrammarParser {
             next()
             if token.kind == "regex" {
                 terminalAlias = nonTerminalName
-                node = regex()
+                node = try regex()
                 terminalAlias = nil
                 next()
             } else {
@@ -152,7 +165,7 @@ class GrammarParser {
                 if startSymbol == "" {
                     startSymbol = nonTerminalName
                 }
-                node = alternates()
+                node = try alternates()
                 if let existing = nonTerminals[nonTerminalName] {
                     // add this production to the end of the existing ALT list
                     var endOfList = existing
@@ -165,14 +178,14 @@ class GrammarParser {
                 }
             }
         } else {
-            expect([":"])
+            try expect([":"])
             next()
             skip = true
             terminalAlias = nonTerminalName
             if token.kind == "regex" {
-                node = regex()
+                node = try regex()
             } else {
-                expect(["literal"])
+                try expect(["literal"])
                 node = literal()
             }
             skip = false
@@ -181,7 +194,7 @@ class GrammarParser {
         }
         // TODO: do we really want regex and literal terminals also listed as nonTerminals?
         // TODO:  this causes the terminals to end up in the nonterminals
-        expect(["."])
+        try expect(["."])
         next()
     }
 
@@ -191,19 +204,19 @@ class GrammarParser {
         next()
     }
 
-    func alternates() -> GrammarNode {
+    func alternates() throws -> GrammarNode {
         trace("alternates", token)
-        let startOfAlternates = sequence()
+        let startOfAlternates = try sequence()
         var tmp = startOfAlternates
         while token.kind == "|" {
             next()
-            tmp.alt = sequence()
+            tmp.alt = try sequence()
             tmp = tmp.alt!
         }
         return startOfAlternates
     }
 
-    func sequence() -> GrammarNode {
+    func sequence() throws -> GrammarNode {
         // TODO: is this correct?   sequence = < term [ "?" | "*" | "+" ] > .
         trace("sequence", token)
         let startOfSequence = GrammarNode(kind: .ALT, str: "")
@@ -214,7 +227,7 @@ class GrammarParser {
                 termNode.actions.append(token.stripped)
                 next()
             } else if ["literal", "identifier", "regex", "(", "[", "{", "<"].contains(token.kind) {
-                termNode.seq = term()
+                termNode.seq = try term()
                 while ["action"].contains(token.kind) {
                     termNode.seq?.actions.append(token.stripped)
                     next()
@@ -244,7 +257,7 @@ class GrammarParser {
         return startOfSequence
     }
 
-    func regex() -> GrammarNode {
+    func regex() throws -> GrammarNode {
         trace("regex", token)
         let name = terminalAlias ?? input.linePosition(of: token.image.startIndex)
 
@@ -260,7 +273,7 @@ class GrammarParser {
             trace("regex name:", name, "image:", token.image)
         } catch {
             print("grammar parse error: \(token.image) is not a valid literal Regex \(error)")
-            exit(9)
+            throw GrammarParserError.invalidRegex(image: String(token.image), error: error)
         }
 
         return GrammarNode(kind: .T, str: name)
@@ -287,9 +300,9 @@ class GrammarParser {
         return GrammarNode(kind: .T, str: name)
     }
 
-    func term() -> GrammarNode {
+    func term() throws -> GrammarNode {
         trace("term", token)
-        var node: GrammarNode
+        let node: GrammarNode
         switch token.kind {
         case "identifier":
             // the identifier can be a terminal or nonTerminal but not both
@@ -308,32 +321,33 @@ class GrammarParser {
         case "literal":
             node = literal()
         case "regex":
-            node = regex()
+            node = try regex()
         case "(":
             next()
-            node = GrammarNode(kind: .DO, str: "", alt: alternates())
-            expect([")"])
+            node = GrammarNode(kind: .DO, str: "", alt: try alternates())
+            try expect([")"])
         case "[":
             next()
-            node = GrammarNode(kind: .OPT, str: "", alt: alternates())
-            expect(["]"])
+            node = GrammarNode(kind: .OPT, str: "", alt: try alternates())
+            try expect(["]"])
         case "{":
             next()
-            node = GrammarNode(kind: .KLN, str: "", alt: alternates())
-            expect(["}"])
+            node = GrammarNode(kind: .KLN, str: "", alt: try alternates())
+            try expect(["}"])
         case "<":
             next()
-            node = GrammarNode(kind: .POS, str: "", alt: alternates())
-            expect([">"])
+            node = GrammarNode(kind: .POS, str: "", alt: try alternates())
+            try expect([">"])
         default:
-            expect(["identifier", "literal", "regex", "action", "(", "[", "{", "<"])
-            exit(7)
+            // This will throw, so we never reach the code below
+            try expect(["identifier", "literal", "regex", "action", "(", "[", "{", "<"])
+            fatalError("expect() should have thrown - this line should never be reached")
         }
         next()
         return node
     }
     
-    func expect(_ expectedTokens: Set<String>) {
+    func expect(_ expectedTokens: Set<String>) throws {
         trace("expect \"\(token.kind)\" to be in", expectedTokens)
         if !expectedTokens.contains(token.kind) {
             print("parse error: found \"\(token.kind)\" but expected one of \(expectedTokens)")
@@ -348,7 +362,7 @@ class GrammarParser {
                 print("^", terminator: "")
             }
             print()
-            exit(10)
+            throw GrammarParserError.unexpectedToken(expected: Array(expectedTokens), found: String(token.kind))
         }
     }
 
