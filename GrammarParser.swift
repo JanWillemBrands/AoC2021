@@ -25,7 +25,6 @@ var messages: [String] = []
 class GrammarParser {
     
     init(inputFile inputFileURL: URL, patterns: [String:TokenPattern]) throws {
-        
         // Define a list of commonly supported encodings
         let encodings: [String.Encoding] = [
             .utf8,                // UTF-8
@@ -46,6 +45,7 @@ class GrammarParser {
             .windowsCP1254,       // Windows Turkish
             // Add more encodings as needed via raw values below
         ]
+        
         for encoding in encodings {
             do {
                 input = try String(contentsOf: inputFileURL, encoding: encoding)
@@ -57,7 +57,7 @@ class GrammarParser {
         }
         
         try initScanner(fromString: input, patterns: patterns)
-
+        
         terminals = [:]
         nonTerminals = [:]
         messages = []

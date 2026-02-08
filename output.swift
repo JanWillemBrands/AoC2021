@@ -9,8 +9,8 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 //: start of generated code
 let tokenPatterns: [String:TokenPattern] = [
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"a":	("a",	Regex { "a" },	true,	false),
 	"b":	("b",	Regex { "b" },	true,	false),
+	"a":	("a",	Regex { "a" },	true,	false),
 ]
 func S() {
 	if token.type = .ALT {

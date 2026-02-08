@@ -174,13 +174,32 @@ final class TortureSyntaxTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        // Clear global state before each test
+        // Clear ALL global state before each test
+        
+        // Core parsing state
+        input = ""
+        startSymbol = ""
+        
+        // Grammar structures
         terminals = [:]
         nonTerminals = [:]
         messages = []
+        
+        // Call-return forest
         crf = []
+        
+        // Scanner state
         tokens = []
+        currentIndex = 0
+        
+        // Symbol tables
         symbolTable = []
+        nameValues = []
+        nameIndices = [:]
+        
+        // Debug flags
+        trace = false
+        traceIndent = 0
     }
     
     // MARK: - Test Methods
@@ -233,8 +252,15 @@ final class TortureSyntaxTests: XCTestCase {
         
         // Parse the torture syntax grammar once
         let grammarParser = try GrammarParser(inputFile: grammarFileURL, patterns: apusTerminals)
-        guard let grammarRoot = grammarParser.parseGrammar(explicitStartSymbol: "") else {
-            XCTFail("Failed to parse TortureSyntax grammar")
+        let grammarRoot: GrammarNode
+        do {
+            guard let root = try grammarParser.parseGrammar(explicitStartSymbol: "") else {
+                XCTFail("Failed to parse TortureSyntax grammar: Start symbol not found")
+                return
+            }
+            grammarRoot = root
+        } catch {
+            XCTFail("Failed to parse TortureSyntax grammar: \(error)")
             return
         }
         
@@ -254,7 +280,12 @@ final class TortureSyntaxTests: XCTestCase {
             tokens = []
             
             // Scan the message
-            initScanner(fromString: test.message, patterns: terminals)
+            do {
+                try initScanner(fromString: test.message, patterns: terminals)
+            } catch {
+                XCTFail("Failed to scan message for \(test.rule): \(error)")
+                continue
+            }
             
             // TODO: Actually run the parser with this specific rule as start symbol
             // For now, we'll just record that we attempted the test
@@ -284,8 +315,13 @@ final class TortureSyntaxTests: XCTestCase {
     /// Attempt to parse a message with a specific rule
     /// Returns true if parsing succeeded (reached end of input), false otherwise
     private func attemptParse(rule: GrammarNode, message: String) -> Bool {
-        let result = parseWithRule(rule, message: message, terminals: terminals)
-        return result.success
+        do {
+            let result = try parseWithRule(rule, message: message, terminals: terminals)
+            return result.success
+        } catch {
+            // If scanning fails, treat as parse failure
+            return false
+        }
     }
 }
 

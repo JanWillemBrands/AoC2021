@@ -33,11 +33,16 @@ do {
 
 var startSymbol = ""    // if "" then startSymbol will set set by parseGrammar to the first nonTerminal in the grammar file
 let grammarRoot: GrammarNode
-guard let root = grammarParser.parseGrammar(explicitStartSymbol: startSymbol) else {
-    print("parse error: Start symbol '\(startSymbol)' not found")
+do {
+    guard let root = try grammarParser.parseGrammar(explicitStartSymbol: startSymbol) else {
+        print("parse error: Start symbol '\(startSymbol)' not found")
+        exit(1)
+    }
+    grammarRoot = root
+} catch {
+    print("parse error: Failed to parse grammar: \(error)")
     exit(1)
 }
-grammarRoot = root
 
 trace = false
 trace("all grammar tokens:")
@@ -82,7 +87,12 @@ let e = #/
 //while let m = messages.first {
 for m in messages {
     trace = false
-    initScanner(fromString: m, patterns: terminals)
+    do {
+        try initScanner(fromString: m, patterns: terminals)
+    } catch {
+        print("scan error: Failed to scan message: \(error)")
+        continue
+    }
 
     trace = true
     print("all message tokens:")

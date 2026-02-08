@@ -12,7 +12,10 @@
 import Foundation
 import RegexBuilder
 
-enum ScannerFailure: Error { case charactersDoNotMatchAnySymbol, couldNotReadFile }
+enum ScannerFailure: Error { 
+    case charactersDoNotMatchAnySymbol(position: String.Index, input: String)
+    case couldNotReadFile 
+}
 
 var tokens: [Token] = []
 
@@ -23,11 +26,11 @@ var token: Token {
     tokens[currentIndex]
 }
 
-func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) {
+func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) throws {
     input = inputString
     tokenPatterns = patterns
     tokens = []
-    scanTokens()
+    try scanTokens()
     currentIndex = 0
 }
 
@@ -98,7 +101,7 @@ final class Token: CustomStringConvertible {
     }
 }
 
-func _scanTokens() {
+func _scanTokens() throws {
     var matchStart = input.startIndex
     while matchStart != input.endIndex {
         var skip = true
@@ -120,7 +123,7 @@ func _scanTokens() {
             }
             matchStart = matchEnd
         } else {
-            scanError(position: matchStart)
+            try scanError(position: matchStart)
         }
     }
     // append EndOfString token
@@ -128,7 +131,7 @@ func _scanTokens() {
     tokens.append(Token(image: "$", kind: "$"))
 }
 
-func scanTokens() {
+func scanTokens() throws {
     var matchStart = input.startIndex
     while matchStart != input.endIndex {
         var skip = true
@@ -166,7 +169,7 @@ func scanTokens() {
             }
             matchStart = matchEnd
         } else {
-            scanError(position: matchStart)
+            try scanError(position: matchStart)
         }
     }
     // append EndOfString token
@@ -183,7 +186,7 @@ func next() {
 
 // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern
 
-func scanError(position: String.Index) {
+func scanError(position: String.Index) throws -> Never {
     print("scan error: input characters do not match any symbol in the grammar")
     let lineRange = input.lineRange(for: position ..< input.index(after: position))
     print(input[lineRange], terminator: "")
@@ -192,7 +195,7 @@ func scanError(position: String.Index) {
         print(" ", terminator: "")
     }
     print("^~~~~~~~")
-    exit(11)
+    throw ScannerFailure.charactersDoNotMatchAnySymbol(position: position, input: input)
 }
 
 

@@ -17,7 +17,7 @@ extension XCTestCase {
         _ rule: GrammarNode,
         message: String,
         terminals: [String: TokenPattern]
-    ) -> (success: Bool, parseCount: Int, yields: Set<Yield>) {
+    ) throws -> (success: Bool, parseCount: Int, yields: Set<Yield>) {
         // Clear global state
         crf = []
         tokens = []
@@ -25,7 +25,7 @@ extension XCTestCase {
         remainder = []
         
         // Scan the message
-        initScanner(fromString: message, patterns: terminals)
+        try initScanner(fromString: message, patterns: terminals)
         
         // Reset parser
         resetMessageParser()
@@ -65,17 +65,17 @@ extension XCTestCase {
 }
 
 /// Add descriptors for all alternates of a bracket (non-terminal)
-func addDescriptorsForAlternates(bracket: GrammarNode, cluster: Position, index: Int) {
-    guard bracket.kind == .N, let altNode = bracket.alt else {
-        // Not a non-terminal or no alternates, just add the node itself
-        addDescriptor(slot: bracket, cluster: cluster, index: index)
-        return
-    }
-    
-    // Add descriptor for each alternate
-    var alt: GrammarNode? = altNode
-    while let currentAlt = alt {
-        addDescriptor(slot: currentAlt, cluster: cluster, index: index)
-        alt = currentAlt.alt
-    }
-}
+//func addDescriptorsForAlternates(bracket: GrammarNode, cluster: Position, index: Int) {
+//    guard bracket.kind == .N, let altNode = bracket.alt else {
+//        // Not a non-terminal or no alternates, just add the node itself
+//        addDescriptor(slot: bracket, cluster: cluster, index: index)
+//        return
+//    }
+//    
+//    // Add descriptor for each alternate
+//    var alt: GrammarNode? = altNode
+//    while let currentAlt = alt {
+//        addDescriptor(slot: currentAlt, cluster: cluster, index: index)
+//        alt = currentAlt.alt
+//    }
+//}
