@@ -3,7 +3,7 @@ linecomment  : /\/\/.*/ .
 blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
-literal     = /\"(?:[^\"\\]|\\.)+\"/ .
+literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)+\// .
 action      = /@(?:[^@\\]|\\.)+@/ .
 message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
@@ -60,7 +60,7 @@ terminal    = identifier            @node = Node(.NTM(name: token.image))@
                                     @actionList[node] = token.stripped@
             | epsilon               @node = Node(.EPS)@
             .
-epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .    // Schrödinger: "" is an epsilon as well as a literal
 
 ^^^
 whitespace   : /\s+/ .
@@ -68,7 +68,7 @@ linecomment  : /\/\/.*/ .
 blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
-literal     = /\"(?:[^\"\\]|\\.)+\"/ .
+literal     = /\"(?:[^\"\\]|\\.)*\"/ .
 regex       = /\/(?:[^\/\\]|\\.)+\// .
 action      = /@(?:[^@\\]|\\.)+@/ .
 message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
@@ -125,4 +125,4 @@ terminal    = identifier            @node = Node(.NTM(name: token.image))@
                                     @actionList[node] = token.stripped@
             | epsilon               @node = Node(.EPS)@
             .
-epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .    // Schrödinger: "" is an epsilon as well as a literal

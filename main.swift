@@ -13,12 +13,12 @@ import RegexBuilder
 trace = false
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-    .appendingPathComponent("test")
+//    .appendingPathComponent("test")
 //    .appendingPathComponent("Swift")
 //    .appendingPathComponent("AfroozehHunt")
 //    .appendingPathComponent("apusWithAction")
 //    .appendingPathComponent("TortureSyntax")
-//    .appendingPathComponent("apus")
+    .appendingPathComponent("apus")
 //    .appendingPathComponent("tortureART")
 //    .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
@@ -101,7 +101,7 @@ for m in messages {
     }
 
     trace = false
-    resetMessageParser()
+    resetMessageParser(root: grammarRoot)
 
     currentSlot = grammarRoot
     currentCluster = crfRoot

@@ -31,12 +31,16 @@
 
 import Foundation
 
+public enum GrammarNodeError: Error {
+    case undefinedNonTerminal(name: String, definedAsTerminal: Bool)
+}
+
 public enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
 public final class GrammarNode {
     //    static var nodesWithLet: Set<String> = []
     
-    static var count = 0
+    public static var count = 0
     var number = 0
     
     public let kind: GrammarNodeKind
@@ -324,7 +328,7 @@ extension GrammarNode {
                 if definedAsTerminal {
                     print("but it was defined as terminal \(terminals[str]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
-                throw GrammarParserError.undefinedNonTerminal(name: str, definedAsTerminal: definedAsTerminal)
+                throw GrammarNodeError.undefinedNonTerminal(name: str, definedAsTerminal: definedAsTerminal)
             }
         } else {
             // a LHS nonterminal defines a production rule and is NOT part of a sequence

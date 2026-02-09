@@ -189,6 +189,9 @@ final class TortureSyntaxTests: XCTestCase {
         // Call-return forest
         crf = []
         
+        // Reset parser state (must happen AFTER GrammarNode.count reset)
+        // Note: currentCluster and crfRoot will be set properly when parseWithRule is called
+        
         // Scanner state
         tokens = []
         currentIndex = 0
@@ -196,6 +199,9 @@ final class TortureSyntaxTests: XCTestCase {
         // Debug flags
         trace = false
         traceIndent = 0
+        
+        // Reset static counters
+        GrammarNode.count = 0
     }
     
     // MARK: - Test Methods

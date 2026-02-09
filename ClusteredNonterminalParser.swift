@@ -9,20 +9,22 @@ import Foundation
 
 var remainder: [Descriptor] = []
 
-var currentCluster = Position(slot: grammarRoot, index: 0)    // the current CRF cluster node
-var crfRoot = currentCluster
+var currentParseRoot: GrammarNode!  // The root node for the current parse
+var currentCluster: Position!       // Will be set when parser initializes
+var crfRoot: Position!              // Will be set when parser initializes
 
 // clear all previous parsing results
-func resetMessageParser() {
+func resetMessageParser(root: GrammarNode) {
     remainder = []
+    currentParseRoot = root
+    crfRoot = Position(slot: root, index: 0)
     currentCluster = crfRoot
     crf.insert(currentCluster)
-    crfRoot = currentCluster
     
 //    gssRoot = StackNode(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
 //    gss = [gssRoot]
 
-    grammarRoot.clearNodes()
+    root.clearNodes()
     
     failedParses = 0
     successfullParses = 0
@@ -75,6 +77,11 @@ func parseMessage() {
                 enter()
                 continue nextDescriptor
             case .ALT:
+                print("ERROR: Unexpected .ALT node in currentSlot")
+                print("  currentSlot.number: \(currentSlot.number)")
+                print("  currentSlot.str: '\(currentSlot.str)'")
+                print("  currentSlot.seq: \(String(describing: currentSlot.seq))")
+                print("  currentSlot.alt: \(String(describing: currentSlot.alt))")
                 fatalError(#function + ": ALT should not happen here")
                 if testSelect(slot: currentSlot, bracket: currentSlot) {
                     addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
@@ -85,8 +92,8 @@ func parseMessage() {
                     continue nextDescriptor
                 }
             case .DO, .POS:
-                // move to the first branch
-                currentSlot = currentSlot.alt!
+                // move to the first element of the first branch
+                currentSlot = currentSlot.alt!.seq!
             case .OPT:
                 if currentSlot.first.contains("") {
                     if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
@@ -95,8 +102,8 @@ func parseMessage() {
                         addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
                         _ = testRepeat()
                     }
-                    // move to the first branch
-                    currentSlot = currentSlot.alt!
+                    // move to the first element of the first branch
+                    currentSlot = currentSlot.alt!.seq!
                 } else {
                     if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
                         // bsrAdd()
@@ -106,8 +113,8 @@ func parseMessage() {
                     if !testSelect(slot: currentSlot, bracket: currentSlot) {
                         continue nextDescriptor
                     } else {
-                        // move to the first branch
-                        currentSlot = currentSlot.alt!
+                        // move to the first element of the first branch
+                        currentSlot = currentSlot.alt!.seq!
                     }
                 }
             case .KLN:
@@ -124,8 +131,8 @@ func parseMessage() {
                         continue nextDescriptor
                     }
                     if testSelect(slot: currentSlot, bracket: currentSlot) {
-                        // move to the first branch
-                        currentSlot = currentSlot.alt!
+                        // move to the first element of the first branch
+                        currentSlot = currentSlot.alt!.seq!
                     }
                 } else {
                     if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
@@ -135,8 +142,8 @@ func parseMessage() {
                     if !testSelect(slot: currentSlot, bracket: currentSlot) {
                         continue nextDescriptor
                     } else {
-                        // move to the first branch
-                        currentSlot = currentSlot.alt!
+                        // move to the first element of the first branch
+                        currentSlot = currentSlot.alt!.seq!
                     }
                 }
             case .END:
@@ -187,7 +194,7 @@ func parseMessage() {
         }
     }
     
-    successfullParses = grammarRoot.yield.filter { y in y.i == 0 && y.j == tokens.count-1 }.count
+    successfullParses = currentParseRoot.yield.filter { y in y.i == 0 && y.j == tokens.count-1 }.count
     print(
         "\nmatched:", successfullParses,
         "  failed:", failedParses,

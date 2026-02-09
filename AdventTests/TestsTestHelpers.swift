@@ -27,19 +27,18 @@ extension XCTestCase {
         // Scan the message
         try initScanner(fromString: message, patterns: terminals)
         
-        // Reset parser
-        resetMessageParser()
+        // Reset parser with the rule as root (this also sets up crfRoot and currentCluster)
+        resetMessageParser(root: rule)
         
-        // Set up initial state
-        let startCluster = Position(slot: rule, index: 0)
+        // Get the cluster that was created by resetMessageParser
+        let startCluster = crfRoot!
+        
+        // Set currentSlot to the rule (matching what main.swift does with grammarRoot)
         currentSlot = rule
-        currentCluster = startCluster
-        crfRoot = startCluster
-        crf.insert(startCluster)
         
         // Add initial descriptors based on rule type
         if rule.kind == .N {
-            // For non-terminals, we need to start with their alternates
+            // For non-terminals, add descriptors for their alternates
             if let altNode = rule.alt {
                 addDescriptorsForAlternates(bracket: rule, cluster: startCluster, index: 0)
             }

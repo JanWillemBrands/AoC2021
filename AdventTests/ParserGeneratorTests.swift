@@ -32,6 +32,9 @@ struct ParserGeneratorTests {
         // Debug flags
         trace = false
         traceIndent = 0
+        
+        // Reset static counters
+        GrammarNode.count = 0
     }
     
     /// Test case configuration

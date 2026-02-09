@@ -33,7 +33,7 @@ public class GrammarParser {
             .utf8,                // UTF-8
             .macOSRoman,          // Mac Roman (classic Mac OS encoding) PUT HIGH ON THE LIST BECAUSE OF PILCROW QUIRK
             .isoLatin1,           // ISO-8859-1 (Western European)
-            .isoLatin2,            // ISO-8859-2 (Central/Eastern European)
+            .isoLatin2,           // ISO-8859-2 (Central/Eastern European)
             .ascii,               // ASCII
             .utf16,               // UTF-16 (with BOM)
             .utf16BigEndian,      // UTF-16 Big Endian
