@@ -82,7 +82,7 @@ public class GrammarParser {
 //        for t in terminals.keys.sorted() { print(t) }
 //        print("NONTERMINALS")
 //        for t in nonTerminals.keys.sorted() { print(t) }
-        trace = false
+        trace = true
         trace("terminals:")
         for (name, tokenPattern) in terminals {
             trace("\t", name, "\t", tokenPattern.source)
@@ -229,7 +229,7 @@ public class GrammarParser {
             if ["action"].contains(token.kind) {
                 termNode.actions.append(token.stripped)
                 next()
-            } else if ["literal", "identifier", "regex", "(", "[", "{", "<"].contains(token.kind) {
+            } else if ["literal", "identifier", "epsilon", "regex", "(", "[", "{", "<"].contains(token.kind) {
                 termNode.seq = try term()
                 while ["action"].contains(token.kind) {
                     termNode.seq?.actions.append(token.stripped)
@@ -253,7 +253,7 @@ public class GrammarParser {
                 }
                 termNode = termNode.seq!
             }
-        } while ["literal", "identifier", "regex", "action", "(", "[", "{", "<"].contains(token.kind)
+        } while ["literal", "identifier", "epsilon", "regex", "action", "(", "[", "{", "<"].contains(token.kind)
         
         termNode.seq = GrammarNode(kind: .END, str: "")
         // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
@@ -285,8 +285,11 @@ public class GrammarParser {
     func literal() -> GrammarNode {
         trace("literal", token, token.stripped)
 
-        if token.stripped == "" || token.stripped == "#" || token.stripped.first?.isEpsilon == true {
-            return GrammarNode(kind: .EPS, str: "")
+        if token.stripped == "" {
+            // if token.stripped == "" || token.stripped == "#" || token.stripped.first?.isEpsilon == true {
+            // epsilon is its own nonterminal, will never show up here in literal()
+            print(token, token.stripped)
+            return GrammarNode(kind: .EPS, str: token.stripped)
         }
         
         let name = terminalAlias ?? token.stripped
@@ -301,6 +304,11 @@ public class GrammarParser {
         trace("literal name:", name, "image:", token.image)
 
         return GrammarNode(kind: .T, str: name)
+    }
+    
+    func epsilon() -> GrammarNode {
+        trace("epsilon", token, token.stripped)
+        return GrammarNode(kind: .EPS, str: token.stripped)
     }
 
     func term() throws -> GrammarNode {
@@ -323,6 +331,8 @@ public class GrammarParser {
             }
         case "literal":
             node = literal()
+        case "epsilon":
+            node = epsilon()
         case "regex":
             node = try regex()
         case "(":
@@ -343,7 +353,7 @@ public class GrammarParser {
             try expect([">"])
         default:
             // This will throw, so we never reach the code below
-            try expect(["identifier", "literal", "regex", "action", "(", "[", "{", "<"])
+            try expect(["identifier", "literal", "epsilon", "regex", "action", "(", "[", "{", "<"])
             fatalError("expect() should have thrown - this line should never be reached")
         }
         next()

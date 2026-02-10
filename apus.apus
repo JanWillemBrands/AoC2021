@@ -3,7 +3,8 @@ linecomment  : /\/\/.*/ .
 blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .
+literal     = /\"(?:[^\"\\]|\\.)*\"/ .     // this catches epsilon as ""
+epsilon     = /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄#]/ .          // include # to satisfy ART
 regex       = /\/(?:[^\/\\]|\\.)+\// .
 action      = /@(?:[^@\\]|\\.)+@/ .
 message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
@@ -19,7 +20,6 @@ term        = terminal
             | "<" selection ">"
             | "(" selection ")" .
 terminal    = identifier | literal | regex | action | epsilon .
-epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .    // Schrödinger: "" is an epsilon as well as a literal
 
 ^^^
 whitespace   : /\s+/ .
@@ -27,7 +27,8 @@ linecomment  : /\/\/.*/ .
 blockcomment : /\/\*(?s).*?\*\// .
 
 identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .
+literal     = /\"(?:[^\"\\]|\\.)*\"/ .     // this catches epsilon as ""
+epsilon     = /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄#]/ .          // include # to satisfy ART
 regex       = /\/(?:[^\/\\]|\\.)+\// .
 action      = /@(?:[^@\\]|\\.)+@/ .
 message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
@@ -43,4 +44,3 @@ term        = terminal
             | "<" selection ">"
             | "(" selection ")" .
 terminal    = identifier | literal | regex | action | epsilon .
-epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .    // Schrödinger: "" is an epsilon as well as a literal

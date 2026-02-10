@@ -197,6 +197,8 @@ whitespace : /\s+/.
 
 // S = A A c. A = B. B = "".   // forces contingent pops "Structuring the..."
 
-S = "a" B "a" B. B = "b".
+//S = "a" B "a" B. B = "b".
+S = # | "a". //"#" | /""/ | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .    // Schrödinger: "" is an epsilon as well as a literal
+
 ^^^
-abab
+a

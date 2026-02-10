@@ -38,6 +38,7 @@ extension XCTestCase {
         
         // Add initial descriptors based on rule type
         if rule.kind == .N {
+            // TODO:  check this entire structure because I'm not sure this works universally
             // For non-terminals, add descriptors for their alternates
             if let altNode = rule.alt {
                 addDescriptorsForAlternates(bracket: rule, cluster: startCluster, index: 0)

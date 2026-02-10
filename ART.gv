@@ -12,7 +12,6 @@ digraph G {
     node [shape = box, style = rounded, height = 0]
     0.2 [label = <terminal,2<br/><font color="gray" point-size="8.0"> 3</font>>]
     0.2 -> 18.2
-    14.2 [label = <terminal=epsilon̲,2<br/><font color="gray" point-size="8.0"> </font>>]
     16.2 [label = <term,2<br/><font color="gray" point-size="8.0"> </font>>]
     16.2 -> 44.2
     18.2 [label = <term=terminal̲,2<br/><font color="gray" point-size="8.0"> </font>>]
@@ -27,116 +26,60 @@ digraph G {
     76.0 [label = <production=identifier(:|=)selection̲.,0<br/><font color="gray" point-size="8.0"> </font>>]
     79.0 [label = <grammar,0<br/><font color="gray" point-size="8.0"> </font>>]
     83.0 [label = <grammar=<production̲>{message},0<br/><font color="gray" point-size="8.0"> </font>>]
-    90.2 [label = <epsilon,2<br/><font color="gray" point-size="8.0"> 2</font>>]
-    90.2 -> 14.2
   }
-  subgraph clusterterm {
+  subgraph clusterproduction {
     node [shape = box]
-    label = <term = terminal | "[" selection "]" | "{" selection "}" | "&lt;" selection "&gt;" | "(" selection ")" .>
+    label = <production = "identifier" ( ":" | "=" ) selection "." .>
     labeljust = l
-    termR0C0 [label = <16<br/>N term<br/>fi ["", "(", "&lt;", "L21P25", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR0C1 [label = <17<br/>ALT <br/>fi ["", "L21P25", "action", "identifier", "literal", "regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR1C1 [label = <18<br/>N terminal<br/>fi ["", "L21P25", "action", "identifier", "literal", "regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[2:2:3]>]
-    termR2C1 [label = <19<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR1C1 -> termR2C1 [weight=100000000]
-    termR0C1 -> termR1C1 [weight=100000000]
-    termR0C2 [label = <20<br/>ALT <br/>fi ["["]<br/>fo ["(", "*", "+", "&lt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    termR1C2 [label = <21<br/>T "["<br/>fi ["["]<br/>fo ["(", "*", "+", "&lt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    termR2C2 [label = <22<br/>N selection<br/>fi ["(", "*", "+", "&lt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|"]<br/>fo ["]"]<br/>[]>]
-    termR3C2 [label = <23<br/>T "]"<br/>fi ["]"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR4C2 [label = <24<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR3C2 -> termR4C2 [weight=100000000]
-    termR2C2 -> termR3C2 [weight=100000000]
-    termR1C2 -> termR2C2 [weight=100000000]
-    termR0C2 -> termR1C2 [weight=100000000]
-    termR0C3 [label = <25<br/>ALT <br/>fi ["{"]<br/>fo ["(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR1C3 [label = <26<br/>T "{"<br/>fi ["{"]<br/>fo ["(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR2C3 [label = <27<br/>N selection<br/>fi ["(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>fo ["}"]<br/>[]>]
-    termR3C3 [label = <28<br/>T "}"<br/>fi ["}"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR4C3 [label = <29<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR3C3 -> termR4C3 [weight=100000000]
-    termR2C3 -> termR3C3 [weight=100000000]
-    termR1C3 -> termR2C3 [weight=100000000]
-    termR0C3 -> termR1C3 [weight=100000000]
-    termR0C4 [label = <30<br/>ALT <br/>fi ["&lt;"]<br/>fo ["(", "*", "+", "&lt;", "&gt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    termR1C4 [label = <31<br/>T "&lt;"<br/>fi ["&lt;"]<br/>fo ["(", "*", "+", "&lt;", "&gt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    termR2C4 [label = <32<br/>N selection<br/>fi ["(", "*", "+", "&lt;", "&gt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>fo ["&gt;"]<br/>[]>]
-    termR3C4 [label = <33<br/>T "&gt;"<br/>fi ["&gt;"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR4C4 [label = <34<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR3C4 -> termR4C4 [weight=100000000]
-    termR2C4 -> termR3C4 [weight=100000000]
-    termR1C4 -> termR2C4 [weight=100000000]
-    termR0C4 -> termR1C4 [weight=100000000]
-    termR0C5 [label = <35<br/>ALT <br/>fi ["("]<br/>fo ["(", ")", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    termR1C5 [label = <36<br/>T "("<br/>fi ["("]<br/>fo ["(", ")", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    termR2C5 [label = <37<br/>N selection<br/>fi ["(", ")", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>fo [")"]<br/>[]>]
-    termR3C5 [label = <38<br/>T ")"<br/>fi [")"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR4C5 [label = <39<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    termR3C5 -> termR4C5 [weight=100000000]
-    termR2C5 -> termR3C5 [weight=100000000]
-    termR1C5 -> termR2C5 [weight=100000000]
-    termR0C5 -> termR1C5 [weight=100000000]
-    rank = same {termR0C4 -> termR0C5}
-    rank = same {termR0C3 -> termR0C4}
-    rank = same {termR0C2 -> termR0C3}
-    rank = same {termR0C1 -> termR0C2}
-    rank = same {termR0C0 -> termR0C1}
+    productionR0C0 [label = <66<br/>N production<br/>fi ["identifier"]<br/>fo ["$", "identifier", "message"]<br/>[]>]
+    productionR0C1 [label = <67<br/>ALT <br/>fi ["identifier"]<br/>fo [":", "="]<br/>[]>]
+    productionR1C1 [label = <68<br/>T "identifier"<br/>fi ["identifier"]<br/>fo [":", "="]<br/>[0:0:1]>]
+    productionR2C1 [label = <69<br/>DO <br/>fi [":", "="]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    productionR3C1 [label = <76<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo ["."]<br/>[]>]
+    productionR4C1 [label = <77<br/>T "."<br/>fi ["."]<br/>fo ["$", "identifier", "message"]<br/>[]>]
+    productionR5C1 [label = <78<br/>END <br/>fi [""]<br/>fo ["$", "identifier", "message"]<br/>[]>]
+    productionR4C1 -> productionR5C1 [weight=100000000]
+    productionR3C1 -> productionR4C1 [weight=100000000]
+    productionR2C1 -> productionR3C1 [weight=100000000]
+    productionR2C2 [label = <70<br/>ALT <br/>fi [":"]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    productionR3C2 [label = <71<br/>T ":"<br/>fi [":"]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[0:1:2]>]
+    productionR4C2 [label = <72<br/>END <br/>fi [""]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    productionR3C2 -> productionR4C2 [weight=100000000]
+    productionR2C2 -> productionR3C2 [weight=100000000]
+    productionR2C3 [label = <73<br/>ALT <br/>fi ["="]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    productionR3C3 [label = <74<br/>T "="<br/>fi ["="]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    productionR4C3 [label = <75<br/>END <br/>fi [""]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    productionR3C3 -> productionR4C3 [weight=100000000]
+    productionR2C3 -> productionR3C3 [weight=100000000]
+    rank = same {productionR2C2 -> productionR2C3}
+    rank = same {productionR2C1 -> productionR2C2}
+    productionR1C1 -> productionR2C1 [weight=100000000]
+    productionR0C1 -> productionR1C1 [weight=100000000]
+    rank = same {productionR0C0 -> productionR0C1}
     node [style = invis]
     edge [style = invis]
-    termR0C0 -> termR1C0 [weight=100000000]
-    rank = same {termR1C0 -> termR1C1}
-    termR1C0 -> termR2C0 [weight=100000000]
-    rank = same {termR2C0 -> termR2C1}
-    termR2C0 -> termR3C0 [weight=100000000]
-    termR2C1 -> termR3C1 [weight=100000000]
-    rank = same {termR3C0 -> termR3C1}
-    rank = same {termR3C1 -> termR3C2}
-    termR3C0 -> termR4C0 [weight=100000000]
-    termR3C1 -> termR4C1 [weight=100000000]
-    rank = same {termR4C0 -> termR4C1}
-    rank = same {termR4C1 -> termR4C2}
-  }
-  subgraph clusterterminal {
-    node [shape = box]
-    label = <terminal = "identifier" | "literal" | "regex" | "action" | epsilon .>
-    labeljust = l
-    terminalR0C0 [label = <0<br/>N terminal<br/>fi ["", "L21P25", "action", "identifier", "literal", "regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR0C1 [label = <1<br/>ALT <br/>fi ["identifier"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C1 [label = <2<br/>T "identifier"<br/>fi ["identifier"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR2C1 [label = <3<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C1 -> terminalR2C1 [weight=100000000]
-    terminalR0C1 -> terminalR1C1 [weight=100000000]
-    terminalR0C2 [label = <4<br/>ALT <br/>fi ["literal"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C2 [label = <5<br/>T "literal"<br/>fi ["literal"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR2C2 [label = <6<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C2 -> terminalR2C2 [weight=100000000]
-    terminalR0C2 -> terminalR1C2 [weight=100000000]
-    terminalR0C3 [label = <7<br/>ALT <br/>fi ["regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C3 [label = <8<br/>T "regex"<br/>fi ["regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[2:2:3]>]
-    terminalR2C3 [label = <9<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C3 -> terminalR2C3 [weight=100000000]
-    terminalR0C3 -> terminalR1C3 [weight=100000000]
-    terminalR0C4 [label = <10<br/>ALT <br/>fi ["action"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C4 [label = <11<br/>T "action"<br/>fi ["action"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR2C4 [label = <12<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C4 -> terminalR2C4 [weight=100000000]
-    terminalR0C4 -> terminalR1C4 [weight=100000000]
-    terminalR0C5 [label = <13<br/>ALT <br/>fi ["", "L21P25"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C5 [label = <14<br/>N epsilon<br/>fi ["", "L21P25"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[2:2:2]>]
-    terminalR2C5 [label = <15<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    terminalR1C5 -> terminalR2C5 [weight=100000000]
-    terminalR0C5 -> terminalR1C5 [weight=100000000]
-    rank = same {terminalR0C4 -> terminalR0C5}
-    rank = same {terminalR0C3 -> terminalR0C4}
-    rank = same {terminalR0C2 -> terminalR0C3}
-    rank = same {terminalR0C1 -> terminalR0C2}
-    rank = same {terminalR0C0 -> terminalR0C1}
-    node [style = invis]
-    edge [style = invis]
-    terminalR0C0 -> terminalR1C0 [weight=100000000]
-    rank = same {terminalR1C0 -> terminalR1C1}
-    terminalR1C0 -> terminalR2C0 [weight=100000000]
-    rank = same {terminalR2C0 -> terminalR2C1}
+    rank = same {productionR0C1 -> productionR0C2}
+    rank = same {productionR0C2 -> productionR0C3}
+    productionR0C0 -> productionR1C0 [weight=100000000]
+    rank = same {productionR1C0 -> productionR1C1}
+    productionR0C2 -> productionR1C2 [weight=100000000]
+    rank = same {productionR1C1 -> productionR1C2}
+    productionR0C3 -> productionR1C3 [weight=100000000]
+    rank = same {productionR1C2 -> productionR1C3}
+    productionR1C0 -> productionR2C0 [weight=100000000]
+    rank = same {productionR2C0 -> productionR2C1}
+    productionR1C2 -> productionR2C2 [weight=100000000]
+    productionR1C3 -> productionR2C3 [weight=100000000]
+    productionR2C0 -> productionR3C0 [weight=100000000]
+    rank = same {productionR3C0 -> productionR3C1}
+    productionR3C0 -> productionR4C0 [weight=100000000]
+    rank = same {productionR4C0 -> productionR4C1}
+    productionR4C0 -> productionR5C0 [weight=100000000]
+    rank = same {productionR5C0 -> productionR5C1}
+    productionR4C2 -> productionR5C2 [weight=100000000]
+    rank = same {productionR5C1 -> productionR5C2}
+    productionR4C3 -> productionR5C3 [weight=100000000]
+    rank = same {productionR5C2 -> productionR5C3}
   }
   subgraph clustergrammar {
     node [shape = box]
@@ -181,63 +124,33 @@ digraph G {
     grammarR3C3 -> grammarR4C3 [weight=100000000]
     rank = same {grammarR4C2 -> grammarR4C3}
   }
-  subgraph clusterepsilon {
-    node [shape = box]
-    label = <epsilon = "" | "" | "L21P25" .>
-    labeljust = l
-    epsilonR0C0 [label = <90<br/>N epsilon<br/>fi ["", "L21P25"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    epsilonR0C1 [label = <91<br/>ALT <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    epsilonR1C1 [label = <92<br/>EPS <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[2:2:2]>]
-    epsilonR2C1 [label = <93<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    epsilonR1C1 -> epsilonR2C1 [weight=100000000]
-    epsilonR0C1 -> epsilonR1C1 [weight=100000000]
-    epsilonR0C2 [label = <94<br/>ALT <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    epsilonR1C2 [label = <95<br/>EPS <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[2:2:2]>]
-    epsilonR2C2 [label = <96<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    epsilonR1C2 -> epsilonR2C2 [weight=100000000]
-    epsilonR0C2 -> epsilonR1C2 [weight=100000000]
-    epsilonR0C3 [label = <97<br/>ALT <br/>fi ["L21P25"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    epsilonR1C3 [label = <98<br/>T "L21P25"<br/>fi ["L21P25"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    epsilonR2C3 [label = <99<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    epsilonR1C3 -> epsilonR2C3 [weight=100000000]
-    epsilonR0C3 -> epsilonR1C3 [weight=100000000]
-    rank = same {epsilonR0C2 -> epsilonR0C3}
-    rank = same {epsilonR0C1 -> epsilonR0C2}
-    rank = same {epsilonR0C0 -> epsilonR0C1}
-    node [style = invis]
-    edge [style = invis]
-    epsilonR0C0 -> epsilonR1C0 [weight=100000000]
-    rank = same {epsilonR1C0 -> epsilonR1C1}
-    epsilonR1C0 -> epsilonR2C0 [weight=100000000]
-    rank = same {epsilonR2C0 -> epsilonR2C1}
-  }
   subgraph clustersequence {
     node [shape = box]
     label = <sequence = &lt; term [ "?" | "*" | "+" ] &gt; .>
     labeljust = l
-    sequenceR0C0 [label = <40<br/>N sequence<br/>fi ["", "(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
-    sequenceR0C1 [label = <41<br/>ALT <br/>fi ["", "(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
-    sequenceR1C1 [label = <42<br/>POS <br/>fi ["", "(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
+    sequenceR0C0 [label = <40<br/>N sequence<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
+    sequenceR0C1 [label = <41<br/>ALT <br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
+    sequenceR1C1 [label = <42<br/>POS <br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
     sequenceR2C1 [label = <56<br/>END <br/>fi [""]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
     sequenceR1C1 -> sequenceR2C1 [weight=100000000]
-    sequenceR1C2 [label = <43<br/>ALT <br/>fi ["", "(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    sequenceR2C2 [label = <44<br/>N term<br/>fi ["", "(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    sequenceR3C2 [label = <45<br/>OPT <br/>fi ["", "*", "+", "?"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    sequenceR4C2 [label = <55<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR1C2 [label = <43<br/>ALT <br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR2C2 [label = <44<br/>N term<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR3C2 [label = <45<br/>OPT <br/>fi ["", "*", "+", "?"]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR4C2 [label = <55<br/>END <br/>fi [""]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
     sequenceR3C2 -> sequenceR4C2 [weight=100000000]
-    sequenceR3C3 [label = <46<br/>ALT <br/>fi ["?"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    sequenceR4C3 [label = <47<br/>T "?"<br/>fi ["?"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    sequenceR5C3 [label = <48<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR3C3 [label = <46<br/>ALT <br/>fi ["?"]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR4C3 [label = <47<br/>T "?"<br/>fi ["?"]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR5C3 [label = <48<br/>END <br/>fi [""]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
     sequenceR4C3 -> sequenceR5C3 [weight=100000000]
     sequenceR3C3 -> sequenceR4C3 [weight=100000000]
-    sequenceR3C4 [label = <49<br/>ALT <br/>fi ["*"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    sequenceR4C4 [label = <50<br/>T "*"<br/>fi ["*"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    sequenceR5C4 [label = <51<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR3C4 [label = <49<br/>ALT <br/>fi ["*"]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR4C4 [label = <50<br/>T "*"<br/>fi ["*"]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR5C4 [label = <51<br/>END <br/>fi [""]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
     sequenceR4C4 -> sequenceR5C4 [weight=100000000]
     sequenceR3C4 -> sequenceR4C4 [weight=100000000]
-    sequenceR3C5 [label = <52<br/>ALT <br/>fi ["+"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    sequenceR4C5 [label = <53<br/>T "+"<br/>fi ["+"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    sequenceR5C5 [label = <54<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR3C5 [label = <52<br/>ALT <br/>fi ["+"]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR4C5 [label = <53<br/>T "+"<br/>fi ["+"]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    sequenceR5C5 [label = <54<br/>END <br/>fi [""]<br/>fo ["(", ")", ".", "&lt;", "&gt;", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
     sequenceR4C5 -> sequenceR5C5 [weight=100000000]
     sequenceR3C5 -> sequenceR4C5 [weight=100000000]
     rank = same {sequenceR3C4 -> sequenceR3C5}
@@ -289,19 +202,127 @@ digraph G {
     rank = same {sequenceR5C1 -> sequenceR5C2}
     rank = same {sequenceR5C2 -> sequenceR5C3}
   }
+  subgraph clusterterm {
+    node [shape = box]
+    label = <term = terminal | "[" selection "]" | "{" selection "}" | "&lt;" selection "&gt;" | "(" selection ")" .>
+    labeljust = l
+    termR0C0 [label = <16<br/>N term<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR0C1 [label = <17<br/>ALT <br/>fi ["action", "epsilon", "identifier", "literal", "regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR1C1 [label = <18<br/>N terminal<br/>fi ["action", "epsilon", "identifier", "literal", "regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[2:2:3]>]
+    termR2C1 [label = <19<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR1C1 -> termR2C1 [weight=100000000]
+    termR0C1 -> termR1C1 [weight=100000000]
+    termR0C2 [label = <20<br/>ALT <br/>fi ["["]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    termR1C2 [label = <21<br/>T "["<br/>fi ["["]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    termR2C2 [label = <22<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo ["]"]<br/>[]>]
+    termR3C2 [label = <23<br/>T "]"<br/>fi ["]"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR4C2 [label = <24<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR3C2 -> termR4C2 [weight=100000000]
+    termR2C2 -> termR3C2 [weight=100000000]
+    termR1C2 -> termR2C2 [weight=100000000]
+    termR0C2 -> termR1C2 [weight=100000000]
+    termR0C3 [label = <25<br/>ALT <br/>fi ["{"]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    termR1C3 [label = <26<br/>T "{"<br/>fi ["{"]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    termR2C3 [label = <27<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo ["}"]<br/>[]>]
+    termR3C3 [label = <28<br/>T "}"<br/>fi ["}"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR4C3 [label = <29<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR3C3 -> termR4C3 [weight=100000000]
+    termR2C3 -> termR3C3 [weight=100000000]
+    termR1C3 -> termR2C3 [weight=100000000]
+    termR0C3 -> termR1C3 [weight=100000000]
+    termR0C4 [label = <30<br/>ALT <br/>fi ["&lt;"]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    termR1C4 [label = <31<br/>T "&lt;"<br/>fi ["&lt;"]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    termR2C4 [label = <32<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo ["&gt;"]<br/>[]>]
+    termR3C4 [label = <33<br/>T "&gt;"<br/>fi ["&gt;"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR4C4 [label = <34<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR3C4 -> termR4C4 [weight=100000000]
+    termR2C4 -> termR3C4 [weight=100000000]
+    termR1C4 -> termR2C4 [weight=100000000]
+    termR0C4 -> termR1C4 [weight=100000000]
+    termR0C5 [label = <35<br/>ALT <br/>fi ["("]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    termR1C5 [label = <36<br/>T "("<br/>fi ["("]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    termR2C5 [label = <37<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo [")"]<br/>[]>]
+    termR3C5 [label = <38<br/>T ")"<br/>fi [")"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR4C5 [label = <39<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    termR3C5 -> termR4C5 [weight=100000000]
+    termR2C5 -> termR3C5 [weight=100000000]
+    termR1C5 -> termR2C5 [weight=100000000]
+    termR0C5 -> termR1C5 [weight=100000000]
+    rank = same {termR0C4 -> termR0C5}
+    rank = same {termR0C3 -> termR0C4}
+    rank = same {termR0C2 -> termR0C3}
+    rank = same {termR0C1 -> termR0C2}
+    rank = same {termR0C0 -> termR0C1}
+    node [style = invis]
+    edge [style = invis]
+    termR0C0 -> termR1C0 [weight=100000000]
+    rank = same {termR1C0 -> termR1C1}
+    termR1C0 -> termR2C0 [weight=100000000]
+    rank = same {termR2C0 -> termR2C1}
+    termR2C0 -> termR3C0 [weight=100000000]
+    termR2C1 -> termR3C1 [weight=100000000]
+    rank = same {termR3C0 -> termR3C1}
+    rank = same {termR3C1 -> termR3C2}
+    termR3C0 -> termR4C0 [weight=100000000]
+    termR3C1 -> termR4C1 [weight=100000000]
+    rank = same {termR4C0 -> termR4C1}
+    rank = same {termR4C1 -> termR4C2}
+  }
+  subgraph clusterterminal {
+    node [shape = box]
+    label = <terminal = "identifier" | "literal" | "regex" | "action" | "epsilon" .>
+    labeljust = l
+    terminalR0C0 [label = <0<br/>N terminal<br/>fi ["action", "epsilon", "identifier", "literal", "regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR0C1 [label = <1<br/>ALT <br/>fi ["identifier"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C1 [label = <2<br/>T "identifier"<br/>fi ["identifier"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR2C1 [label = <3<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C1 -> terminalR2C1 [weight=100000000]
+    terminalR0C1 -> terminalR1C1 [weight=100000000]
+    terminalR0C2 [label = <4<br/>ALT <br/>fi ["literal"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C2 [label = <5<br/>T "literal"<br/>fi ["literal"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR2C2 [label = <6<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C2 -> terminalR2C2 [weight=100000000]
+    terminalR0C2 -> terminalR1C2 [weight=100000000]
+    terminalR0C3 [label = <7<br/>ALT <br/>fi ["regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C3 [label = <8<br/>T "regex"<br/>fi ["regex"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[2:2:3]>]
+    terminalR2C3 [label = <9<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C3 -> terminalR2C3 [weight=100000000]
+    terminalR0C3 -> terminalR1C3 [weight=100000000]
+    terminalR0C4 [label = <10<br/>ALT <br/>fi ["action"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C4 [label = <11<br/>T "action"<br/>fi ["action"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR2C4 [label = <12<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C4 -> terminalR2C4 [weight=100000000]
+    terminalR0C4 -> terminalR1C4 [weight=100000000]
+    terminalR0C5 [label = <13<br/>ALT <br/>fi ["epsilon"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C5 [label = <14<br/>T "epsilon"<br/>fi ["epsilon"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR2C5 [label = <15<br/>END <br/>fi [""]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "[", "]", "action", "epsilon", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
+    terminalR1C5 -> terminalR2C5 [weight=100000000]
+    terminalR0C5 -> terminalR1C5 [weight=100000000]
+    rank = same {terminalR0C4 -> terminalR0C5}
+    rank = same {terminalR0C3 -> terminalR0C4}
+    rank = same {terminalR0C2 -> terminalR0C3}
+    rank = same {terminalR0C1 -> terminalR0C2}
+    rank = same {terminalR0C0 -> terminalR0C1}
+    node [style = invis]
+    edge [style = invis]
+    terminalR0C0 -> terminalR1C0 [weight=100000000]
+    rank = same {terminalR1C0 -> terminalR1C1}
+    terminalR1C0 -> terminalR2C0 [weight=100000000]
+    rank = same {terminalR2C0 -> terminalR2C1}
+  }
   subgraph clusterselection {
     node [shape = box]
     label = <selection = sequence { "|" sequence } .>
     labeljust = l
-    selectionR0C0 [label = <57<br/>N selection<br/>fi ["", "(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>fo [")", ".", "&gt;", "]", "}"]<br/>[]>]
-    selectionR0C1 [label = <58<br/>ALT <br/>fi ["", "(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
-    selectionR1C1 [label = <59<br/>N sequence<br/>fi ["", "(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
+    selectionR0C0 [label = <57<br/>N selection<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "}"]<br/>[]>]
+    selectionR0C1 [label = <58<br/>ALT <br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
+    selectionR1C1 [label = <59<br/>N sequence<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
     selectionR2C1 [label = <60<br/>KLN <br/>fi ["", "|"]<br/>fo [")", ".", "&gt;", "]", "}"]<br/>[]>]
     selectionR3C1 [label = <65<br/>END <br/>fi [""]<br/>fo [")", ".", "&gt;", "]", "}"]<br/>[]>]
     selectionR2C1 -> selectionR3C1 [weight=100000000]
-    selectionR2C2 [label = <61<br/>ALT <br/>fi ["|"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    selectionR3C2 [label = <62<br/>T "|"<br/>fi ["|"]<br/>fo ["(", ")", "*", "+", ".", "&lt;", "&gt;", "?", "L21P25", "[", "]", "action", "identifier", "literal", "regex", "{", "|", "}"]<br/>[]>]
-    selectionR4C2 [label = <63<br/>N sequence<br/>fi ["", "(", "*", "+", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
+    selectionR2C2 [label = <61<br/>ALT <br/>fi ["|"]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    selectionR3C2 [label = <62<br/>T "|"<br/>fi ["|"]<br/>fo ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>[]>]
+    selectionR4C2 [label = <63<br/>N sequence<br/>fi ["(", "&lt;", "[", "action", "epsilon", "identifier", "literal", "regex", "{"]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
     selectionR5C2 [label = <64<br/>END <br/>fi [""]<br/>fo [")", ".", "&gt;", "]", "|", "}"]<br/>[]>]
     selectionR4C2 -> selectionR5C2 [weight=100000000]
     selectionR3C2 -> selectionR4C2 [weight=100000000]
@@ -330,59 +351,5 @@ digraph G {
     selectionR4C1 -> selectionR5C1 [weight=100000000]
     rank = same {selectionR5C0 -> selectionR5C1}
     rank = same {selectionR5C1 -> selectionR5C2}
-  }
-  subgraph clusterproduction {
-    node [shape = box]
-    label = <production = "identifier" ( ":" | "=" ) selection "." .>
-    labeljust = l
-    productionR0C0 [label = <66<br/>N production<br/>fi ["identifier"]<br/>fo ["$", "identifier", "message"]<br/>[]>]
-    productionR0C1 [label = <67<br/>ALT <br/>fi ["identifier"]<br/>fo [":", "="]<br/>[]>]
-    productionR1C1 [label = <68<br/>T "identifier"<br/>fi ["identifier"]<br/>fo [":", "="]<br/>[0:0:1]>]
-    productionR2C1 [label = <69<br/>DO <br/>fi [":", "="]<br/>fo ["(", "*", "+", ".", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    productionR3C1 [label = <76<br/>N selection<br/>fi ["(", "*", "+", ".", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>fo ["."]<br/>[]>]
-    productionR4C1 [label = <77<br/>T "."<br/>fi ["."]<br/>fo ["$", "identifier", "message"]<br/>[]>]
-    productionR5C1 [label = <78<br/>END <br/>fi [""]<br/>fo ["$", "identifier", "message"]<br/>[]>]
-    productionR4C1 -> productionR5C1 [weight=100000000]
-    productionR3C1 -> productionR4C1 [weight=100000000]
-    productionR2C1 -> productionR3C1 [weight=100000000]
-    productionR2C2 [label = <70<br/>ALT <br/>fi [":"]<br/>fo ["(", "*", "+", ".", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    productionR3C2 [label = <71<br/>T ":"<br/>fi [":"]<br/>fo ["(", "*", "+", ".", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[0:1:2]>]
-    productionR4C2 [label = <72<br/>END <br/>fi [""]<br/>fo ["(", "*", "+", ".", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    productionR3C2 -> productionR4C2 [weight=100000000]
-    productionR2C2 -> productionR3C2 [weight=100000000]
-    productionR2C3 [label = <73<br/>ALT <br/>fi ["="]<br/>fo ["(", "*", "+", ".", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    productionR3C3 [label = <74<br/>T "="<br/>fi ["="]<br/>fo ["(", "*", "+", ".", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    productionR4C3 [label = <75<br/>END <br/>fi [""]<br/>fo ["(", "*", "+", ".", "&lt;", "?", "L21P25", "[", "action", "identifier", "literal", "regex", "{", "|"]<br/>[]>]
-    productionR3C3 -> productionR4C3 [weight=100000000]
-    productionR2C3 -> productionR3C3 [weight=100000000]
-    rank = same {productionR2C2 -> productionR2C3}
-    rank = same {productionR2C1 -> productionR2C2}
-    productionR1C1 -> productionR2C1 [weight=100000000]
-    productionR0C1 -> productionR1C1 [weight=100000000]
-    rank = same {productionR0C0 -> productionR0C1}
-    node [style = invis]
-    edge [style = invis]
-    rank = same {productionR0C1 -> productionR0C2}
-    rank = same {productionR0C2 -> productionR0C3}
-    productionR0C0 -> productionR1C0 [weight=100000000]
-    rank = same {productionR1C0 -> productionR1C1}
-    productionR0C2 -> productionR1C2 [weight=100000000]
-    rank = same {productionR1C1 -> productionR1C2}
-    productionR0C3 -> productionR1C3 [weight=100000000]
-    rank = same {productionR1C2 -> productionR1C3}
-    productionR1C0 -> productionR2C0 [weight=100000000]
-    rank = same {productionR2C0 -> productionR2C1}
-    productionR1C2 -> productionR2C2 [weight=100000000]
-    productionR1C3 -> productionR2C3 [weight=100000000]
-    productionR2C0 -> productionR3C0 [weight=100000000]
-    rank = same {productionR3C0 -> productionR3C1}
-    productionR3C0 -> productionR4C0 [weight=100000000]
-    rank = same {productionR4C0 -> productionR4C1}
-    productionR4C0 -> productionR5C0 [weight=100000000]
-    rank = same {productionR5C0 -> productionR5C1}
-    productionR4C2 -> productionR5C2 [weight=100000000]
-    rank = same {productionR5C1 -> productionR5C2}
-    productionR4C3 -> productionR5C3 [weight=100000000]
-    rank = same {productionR5C2 -> productionR5C3}
   }
 }
