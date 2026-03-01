@@ -429,31 +429,19 @@ extension GrammarNode {
     enum Exit: Error { case endOfToplevel }
     
     func emit() throws {
-        //        if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += "·" }
-        //        if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += "<font color=\"grey\">" + "·" + "</font>"}
-        //        let combiningDotAbove = "\u{0307}"
-        //        let combiningDotBelow = "\u{0323}"
-        //        let combiningMacron = "\u{0304}"
-        //        let combiningRingAbove = "\u{030A}"
-        let combiningLowLine = "\u{0332}"
+        let middleDot = "\u{00B7}"
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
+            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             GrammarNode.dottedEBNF += str
             if let seq { try seq.emit() }
         case .N:
             if let seq { // rhs
-                //                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += "<font color=\"red\">"}
+                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += str
-                //                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += "</font>"}
-                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += combiningLowLine }
                 try seq.emit()
             } else { // lhs
-                //                if let alt {
                 GrammarNode.dottedEBNF += str
-                //                    + "="
-                //                    try alt.emit()
-                //                    GrammarNode.s += "."
-                //                }
             }
         case .ALT:
             if let seq { try seq.emit() }
@@ -462,6 +450,7 @@ extension GrammarNode {
                 try alt.emit()
             }
         case .END:
+            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             if seq?.kind == .N {
                 // this is the end of the top level alternate
                 GrammarNode.containingNonterminal = seq
@@ -470,6 +459,7 @@ extension GrammarNode {
             }
         case .DO:
             if let alt {
+                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += "("
                 try alt.emit()
                 GrammarNode.dottedEBNF += ")"
@@ -477,6 +467,7 @@ extension GrammarNode {
             if let seq { try seq.emit() }
         case .OPT:
             if let alt {
+                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += "["
                 try alt.emit()
                 GrammarNode.dottedEBNF += "]"
@@ -484,6 +475,7 @@ extension GrammarNode {
             if let seq { try seq.emit() }
         case .POS:
             if let alt {
+                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += "<"
                 try alt.emit()
                 GrammarNode.dottedEBNF += ">"
@@ -491,6 +483,7 @@ extension GrammarNode {
             if let seq { try seq.emit() }
         case .KLN:
             if let alt {
+                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += "{"
                 try alt.emit()
                 GrammarNode.dottedEBNF += "}"
