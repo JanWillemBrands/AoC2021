@@ -8,17 +8,20 @@
 import Foundation
 import RegexBuilder
 
+print("========== PROGRAM STARTED ==========")
+
 // transform the APUS ('EBNF') grammar from the input file into a grammar tree ('Abstract Syntax Tree')
 // by using grammarParser, which is a hand-built recursive descent parser
 trace = false
+print("DEBUG: About to load grammar file")
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-//    .appendingPathComponent("test")
+    .appendingPathComponent("test")
 //    .appendingPathComponent("Swift")
 //    .appendingPathComponent("AfroozehHunt")
 //    .appendingPathComponent("apusWithAction")
 //    .appendingPathComponent("TortureSyntax")
-    .appendingPathComponent("apus")
+//    .appendingPathComponent("apus")
 //    .appendingPathComponent("tortureART")
 //    .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
@@ -32,6 +35,7 @@ do {
 }
 
 startSymbol = ""    // if "" then startSymbol will be set by parseGrammar to the first nonTerminal in the grammar file
+print("DEBUG: About to parse grammar")
 let grammarRoot: GrammarNode
 do {
     guard let root = try grammarParser.parseGrammar(explicitStartSymbol: startSymbol) else {
@@ -39,6 +43,7 @@ do {
         exit(1)
     }
     grammarRoot = root
+    print("DEBUG: Grammar parsed successfully, root = \(grammarRoot)")
 } catch {
     print("parse error: Failed to parse grammar: \(error)")
     exit(1)
@@ -85,7 +90,9 @@ let e = #/
 
 
 //while let m = messages.first {
+print("DEBUG: messages.count = \(messages.count)")
 for m in messages {
+    print("DEBUG: processing message: '\(m)'")
     trace = false
     do {
         try initScanner(fromString: m, patterns: terminals)
@@ -101,13 +108,19 @@ for m in messages {
     }
 
     trace = false
+    print("DEBUG: about to call resetMessageParser")
     resetMessageParser(root: grammarRoot)
+    print("DEBUG: resetMessageParser completed")
 
-    currentSlot = grammarRoot
-    currentCluster = crfRoot
+    print("DEBUG: crfRoot.slot = \(crfRoot.slot)")
+    print("DEBUG: crfRoot.slot.alt = \(String(describing: crfRoot.slot.alt))")
+    print("DEBUG: crfRoot.slot.first = \(crfRoot.slot.first)")
+    print("DEBUG: crfRoot.slot.follow = \(crfRoot.slot.follow)")
 
+    // Add descriptors for the root's alternates
     addDescriptorsForAlternates(bracket: grammarRoot, cluster: crfRoot, index: 0)
-//    addDescriptor(slot: grammarRoot.alt!, cluster: currentCluster, index: currentIndex)
+    
+    print("DEBUG: remainder count after addDescriptorsForAlternates = \(remainder.count)")
     
     // use the AST to parse the message
     let start = clock()

@@ -63,5 +63,29 @@ Verbose 5
  [33] ZapfChancery-MediumItalic => "Times New Roman,  ITALIC"
  [34] ZapfDingbats => "Impact,  REGULAR"
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
-Error: not well-formed (invalid token) in line 1 
-... sequence=<term̲[?|*|+]> ...
+network simplex:  1 nodes 0 edges maxiter=2 balance=1
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  6 nodes 5 edges maxiter=24 balance=1
+network simplex: 6 nodes 5 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=26 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=26 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+Maxrank = 3, minrank = 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+merge2: graph G, rank 0 has only 2 < 4 nodes
+merge2: graph G, rank 1 has only 1 < 3 nodes
+merge2: graph G, rank 2 has only 1 < 3 nodes
+merge2: graph G, rank 3 has only 1 < 3 nodes
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 2 best_cross 2
+mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross G: 0 crossings, 0.00 secs.
+network simplex:  28 nodes 46 edges maxiter=26 balance=2
+network simplex: 28 nodes 46 edges 11 iter 0.00 sec
+routesplines: 9 edges, 27 boxes 0.00 sec
+Using render: svg:core
+Using device: svg:svg:core
+gvRenderJobs G: 0.00 secs.
