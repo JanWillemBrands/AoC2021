@@ -1,4 +1,4 @@
-whitespace : /\s+/.
+whitespbce : /\s+/.
 //comment    : /\/\/.*/.
 
 //S = X X X.                    // PASS
@@ -201,6 +201,6 @@ whitespace : /\s+/.
 
 
 //S = "a" B. B = "b".
-S = ["a"] "a".
+S = {"a"} "a".
 ^^^
 aa

@@ -21,6 +21,7 @@ public final class Position: Hashable, Comparable, CustomStringConvertible {
     lazy var unique: Set<Position> = []         // distributing the 'unique' set (U) of Descriptors is ~20% faster
     lazy var returns: Set<Position> = []        // TODO: an Array instead of a Set is ~10% faster (Afroozeh), but CNP needs it
     lazy var pops: Set<Int> = []
+    var caller: Position?                       // the cluster that was active when this return position was created
     
     public init(slot: GrammarNode, index: Int) {
         self.slot = slot
@@ -50,7 +51,7 @@ public final class Position: Hashable, Comparable, CustomStringConvertible {
 }
 
 func addDescriptorsForAlternates(bracket: GrammarNode, cluster: Position, index: Int) {
-    assert([.N, .DO, .ALT, .KLN, .POS].contains(bracket.kind), "Called \(#function) on a GrammarNode \(bracket) which is not a bracket")
+    assert([.N, .DO, .OPT, .ALT, .KLN, .POS].contains(bracket.kind), "Called \(#function) on a GrammarNode \(bracket) which is not a bracket")
     var current = bracket.alt
     while let alt = current {
         if testSelect(slot: alt, bracket: bracket) {
@@ -71,6 +72,7 @@ func enter() {
     // create a return node (u) if it doesn't already exist
     var leavePos = Position(slot: currentSlot, index: currentCluster.index)
     leavePos = crf.insert(leavePos).memberAfterInsert
+    leavePos.caller = currentCluster
     
     // create a cluster node (v) if it doesn't already exits
     var clusterPos = Position(slot: currentSlot.alt!, index: currentIndex)
@@ -85,14 +87,13 @@ func enter() {
 
         if clusterPos.returns.insert(leavePos).inserted {
             // add descriptors for previous pop actions from that node
-            for pop in currentCluster.pops {
-                addDescriptor(slot: currentSlot.seq!, cluster: clusterPos, index: pop)
-//                addYield(slot: currentSlot.seq!, i: currentCluster.index, k: currentIndex, j: pop)  // TODO: point leavePos to currentSlot (not currentSlot.seq)
+            for pop in clusterPos.pops {
+                addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: pop)
                 addYield(slot: currentSlot, i: currentCluster.index, k: currentIndex, j: pop)
             }
         }
     }
-    print("enter cluster \(clusterPos) inserted, returns \(clusterPos.returns)")
+    // print("enter cluster \(clusterPos) inserted, returns \(clusterPos.returns)")
 }
 
 // TODO: the first edge can be popped without addDescriptor???
@@ -100,12 +101,10 @@ func leave() {
     let X = currentCluster.slot
     let k = currentCluster.index
     let j = currentIndex
-    print("leave cluster \(currentCluster) inserted, returns: \(currentCluster.returns)")
+    // print("leave cluster \(currentCluster) inserted, returns: \(currentCluster.returns)")
     if currentCluster.pops.insert(currentIndex).inserted {
         for rtn in currentCluster.returns {
-            let L = rtn.slot.seq!
-            let i = rtn.index
-            addDescriptor(slot: rtn.slot.seq!, cluster: currentCluster, index: currentIndex)
+            addDescriptor(slot: rtn.slot.seq!, cluster: rtn.caller!, index: currentIndex)
             addYield(slot: rtn.slot, i: rtn.index, k: currentCluster.index, j: currentIndex)
         }
     }

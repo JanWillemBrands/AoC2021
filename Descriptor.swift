@@ -44,7 +44,7 @@ func addDescriptor(slot: GrammarNode, cluster: Position, index: Int) {
     let pos = Position(slot: slot, index: index)
     if cluster.unique.insert(pos).inserted {
         let d = Descriptor(slot: slot, cluster: cluster, index: index)
-        print("addDescriptor: \(d)")
+        // print("addDescriptor: \(d)")
         remainder.append(d)
         descriptorCount += 1
     } else {
@@ -57,7 +57,7 @@ func getDescriptor() -> Bool {
         return false
     } else {
         let d = remainder.removeLast()
-        print("getDescriptor: \(d)")
+        // print("getDescriptor: \(d)")
         currentSlot = d.slot
         currentCluster = d.cluster
         currentIndex = d.index

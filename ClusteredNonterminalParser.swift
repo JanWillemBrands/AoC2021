@@ -92,59 +92,39 @@ func parseMessage() {
                     continue nextDescriptor
                 }
             case .DO, .POS:
-                // move to the first element of the first branch
-                currentSlot = currentSlot.alt!.seq!
+                addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
+                continue nextDescriptor
             case .OPT:
                 if currentSlot.first.contains("") {
                     if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
-                        // bsrAdd()
-                        // schedule the next slot
+                        // schedule the skip-past-bracket path
                         addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
-                        _ = testRepeat()
                     }
-                    // move to the first element of the first branch
-                    currentSlot = currentSlot.alt!.seq!
+                    addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
+                    continue nextDescriptor
                 } else {
                     if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
-                        // bsrAdd()
-                        // schedule the next slot
+                        // schedule the skip-past-bracket path
                         addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
                     }
-                    if !testSelect(slot: currentSlot, bracket: currentSlot) {
-                        continue nextDescriptor
-                    } else {
-                        // move to the first element of the first branch
-                        currentSlot = currentSlot.alt!.seq!
-                    }
+                    addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
+                    continue nextDescriptor
                 }
             case .KLN:
                 if currentSlot.first.contains("") {
-                    // TODO: something with bsrAdd() to record slots
                     if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
-                        // schedule the next slot
+                        // schedule the skip-past-bracket path
                         addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
                     }
-                    if testRepeat() {
-                        continue nextDescriptor
-                    }
-                    if !testSelect(slot: currentSlot, bracket: currentSlot) {
-                        continue nextDescriptor
-                    }
-                    if testSelect(slot: currentSlot, bracket: currentSlot) {
-                        // move to the first element of the first branch
-                        currentSlot = currentSlot.alt!.seq!
-                    }
+                    addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
+                    continue nextDescriptor
                 } else {
                     if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
-                        // schedule the next slot
+                        // schedule the skip-past-bracket path
                         addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
                     }
-                    if !testSelect(slot: currentSlot, bracket: currentSlot) {
-                        continue nextDescriptor
-                    } else {
-                        // move to the first element of the first branch
-                        currentSlot = currentSlot.alt!.seq!
-                    }
+                    addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
+                    continue nextDescriptor
                 }
             case .END:
                 // the seq link of an END node always points back to a starting bracket node (N, DO, OPT, POS, KLN)
@@ -158,6 +138,7 @@ func parseMessage() {
                     } else {
                         // the bracket is a LHS nonterminal
                         if bracket.follow.contains(token.kind) {
+                            addYield(slot: bracket, i: currentCluster.index, k: currentCluster.index, j: currentIndex)
                             leave()
                         }
                         continue nextDescriptor
@@ -176,16 +157,10 @@ func parseMessage() {
                     }
                 case .KLN, .POS:
                     // schedule the branch again
-                    if testSelect(slot: currentSlot, bracket: bracket) {
-                        addDescriptor(slot: bracket.alt!, cluster: currentCluster, index: currentIndex)
-                    }
+                    addDescriptorsForAlternates(bracket: bracket, cluster: currentCluster, index: currentIndex)
                     // move to the slot after the bracket
-//                    if testRepeat() {
-                        currentSlot = bracket.seq!
-//                    } else {
-//                        continue nextDescriptor
-//                    }
-                default:
+                    currentSlot = bracket.seq!
+               default:
                     fatalError("unexpected bracket kind at END seq link \(bracket.kind)")
                 }
             case .EOS:
