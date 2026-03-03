@@ -112,13 +112,12 @@ for m in messages {
     resetMessageParser(root: grammarRoot)
     print("DEBUG: resetMessageParser completed")
 
-    print("DEBUG: crfRoot.slot = \(crfRoot.slot)")
-    print("DEBUG: crfRoot.slot.alt = \(String(describing: crfRoot.slot.alt))")
-    print("DEBUG: crfRoot.slot.first = \(crfRoot.slot.first)")
-    print("DEBUG: crfRoot.slot.follow = \(crfRoot.slot.follow)")
+    print("DEBUG: grammarRoot.alt = \(String(describing: grammarRoot.alt))")
+    print("DEBUG: grammarRoot.first = \(grammarRoot.first)")
+    print("DEBUG: grammarRoot.follow = \(grammarRoot.follow)")
 
     // Add descriptors for the root's alternates
-    addDescriptorsForAlternates(bracket: grammarRoot, cluster: crfRoot, index: 0)
+    addDescriptorsForAlternates(bracket: grammarRoot, k: 0, index: 0)
     
     print("DEBUG: remainder count after addDescriptorsForAlternates = \(remainder.count)")
     

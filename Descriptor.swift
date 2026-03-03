@@ -7,44 +7,19 @@
 
 import Foundation
 
-//struct Descriptor: Hashable {
-//    let slot: GrammarNode
-//    let stack: StackNode
-//    let index: Int
-//}
-//
-//func addDescriptor(slot: GrammarNode, stack: StackNode, index: Int) {
-//    let si = Position(slot: slot, index: index)
-//    let d = Descriptor(slot: slot, stack: stack, index: index)
-////    print("addDescriptor: \(d)")
-//    if stack.unique.insert(si).inserted {
-//        remainder.append(d)
-//        descriptorCount += 1
-//    } else {
-//        duplicateDescriptorCount += 1
-//    }
-//}
-//
-//func getDescriptor() -> Bool {
-//    if remainder.isEmpty { return false }
-//    let d = remainder.removeLast()
-//    currentSlot = d.slot
-//    currentCluster = d.stack
-//    currentIndex = d.index
-//    return true
-//}
-
+// Paper: descriptor = (L, k, i) — grammar slot, cluster index, input index
 struct Descriptor: Hashable {
-    let slot: GrammarNode
-    let cluster: Position
-    let index: Int
+    let slot: GrammarNode       // L: grammar slot
+    let k: Int                  // cluster index
+    let index: Int              // input index
 }
 
-func addDescriptor(slot: GrammarNode, cluster: Position, index: Int) {
-    let pos = Position(slot: slot, index: index)
-    if cluster.unique.insert(pos).inserted {
-        let d = Descriptor(slot: slot, cluster: cluster, index: index)
-        // print("addDescriptor: \(d)")
+// Global dedup set — matches paper's U and gogll's U
+var U: Set<Descriptor> = []
+
+func addDescriptor(slot: GrammarNode, k: Int, index: Int) {
+    let d = Descriptor(slot: slot, k: k, index: index)
+    if U.insert(d).inserted {
         remainder.append(d)
         descriptorCount += 1
     } else {
@@ -57,9 +32,8 @@ func getDescriptor() -> Bool {
         return false
     } else {
         let d = remainder.removeLast()
-        // print("getDescriptor: \(d)")
         currentSlot = d.slot
-        currentCluster = d.cluster
+        currentK = d.k
         currentIndex = d.index
         return true
     }

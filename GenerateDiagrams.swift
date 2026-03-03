@@ -63,12 +63,17 @@ class DiagramsGenerator {
         content.append("\n    node [shape = box, style = rounded, height = 0]")
         
         // generate the call return forest
-        for node in crf.sorted() {
-            let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
-            content.append("\n    \(node) [label = <\(node.slot.ebnfDot()),\(node.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
-            for edge in node.returns {
-                content.append("\n    \(node) -> \(edge)")
+        for (key, cluster) in crf.sorted(by: { $0.key < $1.key }) {
+            let poppedIndexes = cluster.pops.sorted().description.dropFirst().dropLast()
+            content.append("\n    \(key) [label = <\(cluster.slot.ebnfDot()),\(cluster.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+            for edge in cluster.returns {
+                let edgePos = CRFPosition(slot: edge.slot, index: edge.index)
+                content.append("\n    \(key) -> \(edgePos)")
             }
+        }
+        // render return nodes (CRF nodes that are not cluster nodes)
+        for rtn in crfReturnNodes.sorted() {
+            content.append("\n    \(rtn) [label = <\(rtn.slot.ebnfDot()),\(rtn.index)> shape = ellipse]")
         }
 //        for node in gss.sorted() {
 //            for edge in node.edges {

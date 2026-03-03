@@ -10,20 +10,17 @@ import Foundation
 var remainder: [Descriptor] = []
 
 var currentParseRoot: GrammarNode!  // The root node for the current parse
-var currentCluster: Position!       // Will be set when parser initializes
-var crfRoot: Position!              // Will be set when parser initializes
+var currentK: Int = 0               // Current cluster index (paper's cU / k)
 
 // clear all previous parsing results
 func resetMessageParser(root: GrammarNode) {
     remainder = []
+    U = []
     currentParseRoot = root
-    crfRoot = Position(slot: root, index: 0)
-    currentCluster = crfRoot
-    crf.insert(currentCluster)
+    let rootCluster = Cluster(slot: root, index: 0)
+    crf[CRFPosition(slot: root, index: 0)] = rootCluster
+    currentK = 0
     
-//    gssRoot = StackNode(slot: GrammarNode(kind: .EOS, str: "$"), index: 0)
-//    gss = [gssRoot]
-
     root.clearNodes()
     
     failedParses = 0
@@ -42,20 +39,16 @@ func parseMessage() {
             trace = true
             #if DEBUG
             trace("slot: \(String(format: "%2d", currentSlot.number)) \(currentSlot.ebnfDot()) first \(currentSlot.first) follow \(currentSlot.follow) token: \(token.kind) \(token.image)")
-//            trace("slot: \(String(format: "%2d", currentSlot.number))")
-//            trace("\(currentSlot.ebnfDot()) first \(currentSlot.first) follow \(currentSlot.follow) token: \(token.kind) \(token.image)")
             #endif
             trace = false
-            // TODO: switch to .LL1 mode if only one single path is possible
-            // TODO: let _isAmbiguous = _currentSlot.ambiguous.contains(token.kind)
             
             switch currentSlot.kind {
             case .EPS:
-                addYield(slot: currentSlot, i: currentCluster.index, k: currentIndex, j: currentIndex)
+                addYield(slot: currentSlot, i: currentK, k: currentIndex, j: currentIndex)
                 currentSlot = currentSlot.seq!
             case .T, .TI, .C, .B:
                 if tokenMatch() {
-                    addYield(slot: currentSlot, i: currentCluster.index, k: currentIndex, j: currentIndex + 1)
+                    addYield(slot: currentSlot, i: currentK, k: currentIndex, j: currentIndex + 1)
                     currentIndex += 1
                     #if DEBUG
                     trace = true
@@ -83,49 +76,17 @@ func parseMessage() {
                 print("  currentSlot.seq: \(String(describing: currentSlot.seq))")
                 print("  currentSlot.alt: \(String(describing: currentSlot.alt))")
                 fatalError(#function + ": ALT should not happen here")
-                if testSelect(slot: currentSlot, bracket: currentSlot) {
-                    addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
-                }
-                if let alt = currentSlot.alt {
-                    currentSlot = alt
-                } else {
-                    continue nextDescriptor
-                }
             case .DO, .POS:
-                addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
+                addDescriptorsForAlternates(bracket: currentSlot, k: currentK, index: currentIndex)
                 continue nextDescriptor
-            case .OPT:
-                if currentSlot.first.contains("") {
-                    if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
-                        // schedule the skip-past-bracket path
-                        addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
-                    }
-                    addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
-                    continue nextDescriptor
-                } else {
-                    if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
-                        // schedule the skip-past-bracket path
-                        addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
-                    }
-                    addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
-                    continue nextDescriptor
+            case .OPT, .KLN:
+                // OPT and KLN are always nullable (epsilon is always in first)
+                // so we always offer the skip-past-bracket path
+                if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
+                    addDescriptor(slot: currentSlot.seq!, k: currentK, index: currentIndex)
                 }
-            case .KLN:
-                if currentSlot.first.contains("") {
-                    if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
-                        // schedule the skip-past-bracket path
-                        addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
-                    }
-                    addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
-                    continue nextDescriptor
-                } else {
-                    if testSelect(slot: currentSlot.seq!, bracket: currentSlot) {
-                        // schedule the skip-past-bracket path
-                        addDescriptor(slot: currentSlot.seq!, cluster: currentCluster, index: currentIndex)
-                    }
-                    addDescriptorsForAlternates(bracket: currentSlot, cluster: currentCluster, index: currentIndex)
-                    continue nextDescriptor
-                }
+                addDescriptorsForAlternates(bracket: currentSlot, k: currentK, index: currentIndex)
+                continue nextDescriptor
             case .END:
                 // the seq link of an END node always points back to a starting bracket node (N, DO, OPT, POS, KLN)
                 let bracket = currentSlot.seq!
@@ -138,8 +99,8 @@ func parseMessage() {
                     } else {
                         // the bracket is a LHS nonterminal
                         if bracket.follow.contains(token.kind) {
-                            addYield(slot: bracket, i: currentCluster.index, k: currentCluster.index, j: currentIndex)
-                            leave()
+                            addYield(slot: bracket, i: currentK, k: currentK, j: currentIndex)
+                            leave(nonterminal: bracket)
                         }
                         continue nextDescriptor
                     }
@@ -157,7 +118,7 @@ func parseMessage() {
                     }
                 case .KLN, .POS:
                     // schedule the branch again
-                    addDescriptorsForAlternates(bracket: bracket, cluster: currentCluster, index: currentIndex)
+                    addDescriptorsForAlternates(bracket: bracket, k: currentK, index: currentIndex)
                     // move to the slot after the bracket
                     currentSlot = bracket.seq!
                default:
@@ -173,7 +134,7 @@ func parseMessage() {
     print(
         "\nmatched:", successfullParses,
         "  failed:", failedParses,
-        "  gss size:", crf.count,
+        "  crf size:", crf.count,
         "  descriptors:", descriptorCount,
         "  duplicateDescriptors:", duplicateDescriptorCount
     )
@@ -188,9 +149,8 @@ func parseMessage() {
 }
 
 func testRepeat() -> Bool {
-    let si = Position(slot: currentSlot, index: currentIndex)
-    let wasInserted = currentCluster.unique.insert(si).inserted
-    return !wasInserted
+    let d = Descriptor(slot: currentSlot, k: currentK, index: currentIndex)
+    return !U.insert(d).inserted
 }
 
 func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
@@ -210,5 +170,3 @@ func tokenMatch() -> Bool {
         current = next
     } while true
 }
-
-

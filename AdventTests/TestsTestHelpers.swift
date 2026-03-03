@@ -19,7 +19,9 @@ extension XCTestCase {
         terminals: [String: TokenPattern]
     ) throws -> (success: Bool, parseCount: Int, yields: Set<Yield>) {
         // Clear global state
-        crf = []
+        crf = [:]
+        crfReturnNodes = []
+        U = []
         tokens = []
         yields = []
         remainder = []
@@ -27,11 +29,8 @@ extension XCTestCase {
         // Scan the message
         try initScanner(fromString: message, patterns: terminals)
         
-        // Reset parser with the rule as root (this also sets up crfRoot and currentCluster)
+        // Reset parser with the rule as root
         resetMessageParser(root: rule)
-        
-        // Get the cluster that was created by resetMessageParser
-        let startCluster = crfRoot!
         
         // Set currentSlot to the rule (matching what main.swift does with grammarRoot)
         currentSlot = rule
@@ -41,11 +40,11 @@ extension XCTestCase {
             // TODO:  check this entire structure because I'm not sure this works universally
             // For non-terminals, add descriptors for their alternates
             if let altNode = rule.alt {
-                addDescriptorsForAlternates(bracket: rule, cluster: startCluster, index: 0)
+                addDescriptorsForAlternates(bracket: rule, k: 0, index: 0)
             }
         } else {
             // For other nodes, just add the single descriptor
-            addDescriptor(slot: rule, cluster: startCluster, index: 0)
+            addDescriptor(slot: rule, k: 0, index: 0)
         }
         
         // Run the parser
@@ -63,19 +62,3 @@ extension XCTestCase {
         return (success, parseCount, yields)
     }
 }
-
-/// Add descriptors for all alternates of a bracket (non-terminal)
-//func addDescriptorsForAlternates(bracket: GrammarNode, cluster: Position, index: Int) {
-//    guard bracket.kind == .N, let altNode = bracket.alt else {
-//        // Not a non-terminal or no alternates, just add the node itself
-//        addDescriptor(slot: bracket, cluster: cluster, index: index)
-//        return
-//    }
-//    
-//    // Add descriptor for each alternate
-//    var alt: GrammarNode? = altNode
-//    while let currentAlt = alt {
-//        addDescriptor(slot: currentAlt, cluster: cluster, index: index)
-//        alt = currentAlt.alt
-//    }
-//}

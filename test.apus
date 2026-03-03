@@ -201,6 +201,6 @@ whitespbce : /\s+/.
 
 
 //S = "a" B. B = "b".
-S = {"a"} "a".
+S = {"a"} {"a"}.
 ^^^
-aa
+aaaaa

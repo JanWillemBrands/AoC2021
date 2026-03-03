@@ -23,7 +23,9 @@ struct ParserGeneratorTests {
         messages = []
         
         // Call-return forest
-        crf = []
+        crf = [:]
+        crfReturnNodes = []
+        U = []
         
         // Scanner state
         tokens = []
@@ -177,7 +179,9 @@ struct ParserGeneratorTests {
         terminals = [:]
         nonTerminals = [:]
         messages = []
-        crf = []
+        crf = [:]
+        crfReturnNodes = []
+        U = []
         tokens = []
         currentIndex = 0
         trace = false

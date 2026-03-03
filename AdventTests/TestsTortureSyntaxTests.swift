@@ -187,10 +187,11 @@ final class TortureSyntaxTests: XCTestCase {
         messages = []
         
         // Call-return forest
-        crf = []
+        crf = [:]
+        crfReturnNodes = []
+        U = []
         
         // Reset parser state (must happen AFTER GrammarNode.count reset)
-        // Note: currentCluster and crfRoot will be set properly when parseWithRule is called
         
         // Scanner state
         tokens = []
@@ -278,7 +279,9 @@ final class TortureSyntaxTests: XCTestCase {
             }
             
             // Reset state for this test
-            crf = []
+            crf = [:]
+            crfReturnNodes = []
+            U = []
             tokens = []
             
             // Scan the message

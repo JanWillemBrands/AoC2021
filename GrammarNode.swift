@@ -432,13 +432,13 @@ extension GrammarNode {
         let middleDot = "\u{00B7}"
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
-            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             GrammarNode.dottedEBNF += str
+            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             if let seq { try seq.emit() }
         case .N:
             if let seq { // rhs
-                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += str
+                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 try seq.emit()
             } else { // lhs
                 GrammarNode.dottedEBNF += str
