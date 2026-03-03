@@ -14,12 +14,12 @@ let tokenPatterns: [String:TokenPattern] = [
 func S() {
 	if token.type = .ALT {
 		// KLN
-		while ["", "a"].contains(token.type) {
+		while ["a", ""].contains(token.type) {
 			if token.type = .ALT {
 				next()
 			}
 			expect(["a"])
 		}
 	}
-	expect(["", "a"])
+	expect(["a", ""])
 }

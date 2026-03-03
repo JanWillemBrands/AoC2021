@@ -45,17 +45,28 @@ public final class GrammarNode {
     
     public let kind: GrammarNodeKind
     public let str: String
-    public var alt, seq: GrammarNode?
-    //    {
-    //        didSet {
-    //            assert(alt?.kind == .ALT, "alt should always point to a .ALT node")
-    //        }
-    //    }
-    //    var seq: GrammarNode? {
-    //        didSet {
-    //            assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
-    //        }
-    //    }
+//    public var alt, seq: GrammarNode?
+    public var alt: GrammarNode?
+    {
+        didSet {
+            // alt is overloaded:
+            // - ALT/END nodes: alt points to an .ALT node
+            // - RHS nonterminals (N with seq): alt points to the LHS .N definition
+            if let alt {
+                switch kind {
+                case .N where seq != nil:
+                    assert(alt.kind == .N, "RHS nonterminal alt should point to its LHS .N definition, got \(alt.kind)")
+                default:
+                    assert(alt.kind == .ALT, "alt should always point to a .ALT node, got \(alt.kind)")
+                }
+            }
+        }
+    }
+    var seq: GrammarNode? {
+        didSet {
+            assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
+        }
+    }
     public init(kind: GrammarNodeKind, str: String, alt: GrammarNode? = nil, seq: GrammarNode? = nil) {
         self.kind = kind
         self.str = str
