@@ -8,33 +8,39 @@
 import Foundation
 
 // Paper: descriptor = (L, k, i) — grammar slot, cluster index, input index
+// Paper: R = pending descriptors, U = processed descriptors (dedup set)
 struct Descriptor: Hashable {
     let slot: GrammarNode       // L: grammar slot
     let k: Int                  // cluster index
-    let index: Int              // input index
+    let i: Int                  // input index
 }
 
-// Global dedup set — matches paper's U and gogll's U
+// Global dedup set — matches paper's U
 var U: Set<Descriptor> = []
 
-func addDescriptor(slot: GrammarNode, k: Int, index: Int) {
-    let d = Descriptor(slot: slot, k: k, index: index)
+// Paper: R — pending descriptor list
+var R: [Descriptor] = []
+
+// Paper: dscAdd(L, k, i)
+func dscAdd(L: GrammarNode, k: Int, i: Int) {
+    let d = Descriptor(slot: L, k: k, i: i)
     if U.insert(d).inserted {
-        remainder.append(d)
+        R.append(d)
         descriptorCount += 1
     } else {
         duplicateDescriptorCount += 1
     }
 }
 
-func getDescriptor() -> Bool {
-    if remainder.isEmpty {
+// Paper: get next descriptor from R
+func dscGet() -> Bool {
+    if R.isEmpty {
         return false
     } else {
-        let d = remainder.removeLast()
-        currentSlot = d.slot
-        currentK = d.k
-        currentIndex = d.index
+        let d = R.removeLast()
+        cL = d.slot
+        cU = d.k
+        cI = d.i
         return true
     }
 }
