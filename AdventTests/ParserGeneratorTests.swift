@@ -29,7 +29,7 @@ struct ParserGeneratorTests {
         
         // Scanner state
         tokens = []
-        currentIndex = 0
+        cI = 0
         
         // Debug flags
         trace = false
@@ -183,7 +183,7 @@ struct ParserGeneratorTests {
         crfReturnNodes = []
         U = []
         tokens = []
-        currentIndex = 0
+        cI = 0
         trace = false
         
         // Test with the base apus grammar

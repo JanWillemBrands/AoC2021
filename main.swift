@@ -55,9 +55,6 @@ for t in tokens {
     trace(t)
 }
 
-// the GrammarNode being processed
-var currentSlot = grammarRoot
-
 var failedParses = 0
 var successfullParses = 0
 var descriptorCount = 0
@@ -116,10 +113,10 @@ for m in messages {
     print("DEBUG: grammarRoot.first = \(grammarRoot.first)")
     print("DEBUG: grammarRoot.follow = \(grammarRoot.follow)")
 
-    // Add descriptors for the root's alternates
-    addDescriptorsForAlternates(bracket: grammarRoot, k: 0, index: 0)
+    // Paper: ntAdd — add descriptors for the root's alternates
+    ntAdd(X: grammarRoot, k: 0, i: 0)
     
-    print("DEBUG: remainder count after addDescriptorsForAlternates = \(remainder.count)")
+    print("DEBUG: R count after ntAdd = \(R.count)")
     
     // use the AST to parse the message
     let start = clock()
@@ -129,7 +126,7 @@ for m in messages {
     print("cpuTime, descriptorCount, crf.count")
     print(cpuTime, descriptorCount, crf.count)
     
-    for y in yields {
+    for y in bsrSet {
         print(y)
     }
 }

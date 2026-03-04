@@ -19,11 +19,8 @@ enum ScannerFailure: Error {
 
 var tokens: [Token] = []
 
-// the index of the current active token
-var currentIndex = 0
-
 public var token: Token {
-    tokens[currentIndex]
+    tokens[cI]
 }
 
 public func initScanner(fromString inputString: String, patterns: [String:TokenPattern]) throws {
@@ -31,7 +28,7 @@ public func initScanner(fromString inputString: String, patterns: [String:TokenP
     tokenPatterns = patterns
     tokens = []
     try scanTokens()
-    currentIndex = 0
+    cI = 0
 }
 
 public typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
@@ -179,7 +176,7 @@ func scanTokens() throws {
 }
 
 public func next() {
-    currentIndex += 1
+    cI += 1
     #if DEBUG
     trace("next", token.image, token.kind)
     #endif

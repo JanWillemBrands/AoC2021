@@ -130,3 +130,71 @@ func rtn(X: GrammarNode) {
         }
     }
 }
+// bracketCall — enter a bracket (DO, OPT, KLN, POS)
+// Similar to call() but the bracket node IS the "nonterminal" — no indirection through .alt
+func bracketCall(bracket: GrammarNode) {
+    // Create return edge: (L=bracket, i=cU) — records where to return
+    let returnEdge = ReturnEdge(slot: bracket, index: cU)
+    crfReturnNodes.insert(CRFPosition(slot: bracket, index: cU))
+
+    // Find or create cluster for (bracket, cI)
+    let clusterKey = CRFPosition(slot: bracket, index: cI)
+
+    if let existingCluster = crf[clusterKey] {
+        if existingCluster.returns.insert(returnEdge).inserted {
+            for pop in existingCluster.pops {
+                // Continue past bracket with restored outer cU
+                dscAdd(L: bracket.seq!, k: cU, i: pop)
+                bsrAdd(L: bracket, i: cU, k: cI, j: pop)
+            }
+        }
+    } else {
+        let newCluster = Cluster(slot: bracket, index: cI)
+        crf[clusterKey] = newCluster
+        newCluster.returns.insert(returnEdge)
+        // Dispatch alternates inside the bracket
+        ntAdd(X: bracket, k: cI, i: cI)
+    }
+}
+
+// bracketRtn — return from a bracket
+// Similar to rtn() but also handles KLN/POS re-entry
+func bracketRtn(bracket: GrammarNode) {
+    let clusterKey = CRFPosition(slot: bracket, index: cU)
+    guard let cluster = crf[clusterKey] else { return }
+
+    if cluster.pops.insert(cI).inserted {
+        for rtn in cluster.returns {
+            // BSR for the bracket span
+            bsrAdd(L: rtn.slot, i: rtn.index, k: cU, j: cI)
+            // Continue past the bracket
+            dscAdd(L: rtn.slot.seq!, k: rtn.index, i: cI)
+        }
+
+        // KLN/POS: re-enter the bracket for another iteration.
+        // Each iteration gets its own cluster at (bracket, cI).
+        // The new cluster inherits the SAME return edges as the current cluster,
+        // so that when the next iteration pops, it goes directly back to the
+        // original outer caller(s) — not through a chain of iterations.
+        if bracket.kind == .KLN || bracket.kind == .POS {
+            let nextKey = CRFPosition(slot: bracket, index: cI)
+            
+            if let existingCluster = crf[nextKey] {
+                for returnEdge in cluster.returns {
+                    if existingCluster.returns.insert(returnEdge).inserted {
+                        for pop in existingCluster.pops {
+                            bsrAdd(L: returnEdge.slot, i: returnEdge.index, k: cI, j: pop)
+                            dscAdd(L: returnEdge.slot.seq!, k: returnEdge.index, i: pop)
+                        }
+                    }
+                }
+            } else {
+                let newCluster = Cluster(slot: bracket, index: cI)
+                crf[nextKey] = newCluster
+                newCluster.returns = cluster.returns
+                ntAdd(X: bracket, k: cI, i: cI)
+            }
+        }
+    }
+}
+

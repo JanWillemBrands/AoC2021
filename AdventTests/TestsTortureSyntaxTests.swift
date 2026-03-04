@@ -195,7 +195,7 @@ final class TortureSyntaxTests: XCTestCase {
         
         // Scanner state
         tokens = []
-        currentIndex = 0
+        cI = 0
         
         // Debug flags
         trace = false

@@ -63,19 +63,23 @@ Verbose 5
  [33] ZapfChancery-MediumItalic => "Times New Roman,  ITALIC"
  [34] ZapfDingbats => "Impact,  REGULAR"
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
-network simplex:  1 nodes 0 edges maxiter=2 balance=1
+network simplex:  1 nodes 0 edges maxiter=26 balance=1
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  6 nodes 5 edges maxiter=26 balance=1
+network simplex: 6 nodes 5 edges 0 iter 0.00 sec
+network simplex:  6 nodes 5 edges maxiter=26 balance=1
+network simplex: 6 nodes 5 edges 0 iter 0.00 sec
 network simplex:  8 nodes 9 edges maxiter=38 balance=1
 network simplex: 8 nodes 9 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=40 balance=0
+network simplex:  1 nodes 0 edges maxiter=64 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=40 balance=0
+network simplex:  1 nodes 0 edges maxiter=64 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
 Maxrank = 4, minrank = 0
 mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-merge2: graph G, rank 0 has only 2 < 5 nodes
-merge2: graph G, rank 1 has only 1 < 3 nodes
+merge2: graph G, rank 0 has only 2 < 15 nodes
+merge2: graph G, rank 1 has only 2 < 5 nodes
 merge2: graph G, rank 2 has only 1 < 4 nodes
 merge2: graph G, rank 3 has only 1 < 4 nodes
 merge2: graph G, rank 4 has only 1 < 4 nodes
@@ -85,9 +89,9 @@ mincross: pass 2 iter 1 trying 0 cur_cross 1 best_cross 1
 mincross: pass 2 iter 2 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross G: 0 crossings, 0.00 secs.
-network simplex:  40 nodes 64 edges maxiter=40 balance=2
-network simplex: 40 nodes 64 edges 14 iter 0.00 sec
-routesplines: 14 edges, 42 boxes 0.00 sec
+network simplex:  62 nodes 100 edges maxiter=64 balance=2
+network simplex: 62 nodes 100 edges 20 iter 0.00 sec
+routesplines: 24 edges, 72 boxes 0.00 sec
 Using render: svg:core
 Using device: svg:svg:core
 gvRenderJobs G: 0.00 secs.

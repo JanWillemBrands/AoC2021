@@ -5,7 +5,9 @@
 //  Created by Johannes Brands on 29/04/2025.
 //
 
-// Paper: L = grammar slot, cI = current input index, cU = current cluster index
+// Paper: cL = current grammar slot
+// Paper: cI — current input position (the current active token)
+// Paper: cU — current cluster index (the input position where the last nonTerminal was called)
 // Paper: R = pending descriptors, U = processed descriptors
 // Paper: dscAdd/dscGet = descriptor operations, ntAdd = nonterminal alternates
 // Paper: call = enter nonterminal, rtn = return from nonterminal
@@ -13,10 +15,10 @@
 
 import Foundation
 
-var currentParseRoot: GrammarNode!  // The root node for the current parse
-var cL: GrammarNode!                // Paper: L — current grammar slot
-var cI: Int = 0                     // Paper: cI — current input position
-var cU: Int = 0                     // Paper: cU — current cluster index
+var currentParseRoot: GrammarNode!
+var cL: GrammarNode!
+var cI: Int = 0
+var cU: Int = 0
 
 // clear all previous parsing results
 func resetMessageParser(root: GrammarNode) {
@@ -83,15 +85,15 @@ func parseMessage() {
                 print("  cL.alt: \(String(describing: cL.alt))")
                 fatalError(#function + ": ALT should not happen here")
             case .DO, .POS:
-                ntAdd(X: cL, k: cU, i: cI)
+                bracketCall(bracket: cL)
                 continue nextDescriptor
             case .OPT, .KLN:
-                // OPT and KLN are always nullable (epsilon is always in first)
-                // so we always offer the skip-past-bracket path
+                // OPT/KLN: also offer skip-past-bracket path (they're nullable)
                 if testSelect(slot: cL.seq!, bracket: cL) {
                     dscAdd(L: cL.seq!, k: cU, i: cI)
+                    bsrAdd(L: cL, i: cU, k: cI, j: cI)  // empty bracket BSR
                 }
-                ntAdd(X: cL, k: cU, i: cI)
+                bracketCall(bracket: cL)
                 continue nextDescriptor
             case .END:
                 // the seq link of an END node always points back to a starting bracket node (N, DO, OPT, POS, KLN)
@@ -110,23 +112,9 @@ func parseMessage() {
                         }
                         continue nextDescriptor
                     }
-                case .DO:
-                    if testRepeat() {
-                        continue nextDescriptor
-                    } else {
-                        cL = bracket.seq!
-                    }
-                case .OPT:
-                    if testRepeat() {
-                        continue nextDescriptor
-                    } else {
-                        cL = bracket.seq!
-                    }
-                case .KLN, .POS:
-                    // schedule the branch again
-                    ntAdd(X: bracket, k: cU, i: cI)
-                    // move to the slot after the bracket
-                    cL = bracket.seq!
+                case .DO, .OPT, .KLN, .POS:
+                    bracketRtn(bracket: bracket)
+                    continue nextDescriptor
                default:
                     fatalError("unexpected bracket kind at END seq link \(bracket.kind)")
                 }
@@ -176,3 +164,4 @@ func tokenMatch() -> Bool {
         current = next
     } while true
 }
+
