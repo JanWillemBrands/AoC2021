@@ -9,17 +9,13 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 //: start of generated code
 let tokenPatterns: [String:TokenPattern] = [
 	"whitespbce":	("/\\s+/",	/\s+/,	false,	true),
+	"b":	("b",	Regex { "b" },	true,	false),
+	"c":	("c",	Regex { "c" },	true,	false),
 	"a":	("a",	Regex { "a" },	true,	false),
 ]
 func S() {
 	if token.type = .ALT {
-		// KLN
-		while ["a", ""].contains(token.type) {
-			if token.type = .ALT {
-				next()
-			}
-			expect(["a"])
-		}
+		next()
 	}
-	expect(["a", ""])
+	expect(["a"])
 }

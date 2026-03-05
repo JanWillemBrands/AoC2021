@@ -49,6 +49,7 @@ public struct ReturnEdge: Hashable, CustomStringConvertible {
 public final class Cluster: CustomStringConvertible {
     public let slot: GrammarNode   // the LHS nonterminal (X)
     public let index: Int          // input position (k)
+    
     var returns: Set<ReturnEdge> = []
     var pops: Set<Int> = []        // Paper: P — contingent returns
     

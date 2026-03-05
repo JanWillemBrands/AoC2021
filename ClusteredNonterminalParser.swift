@@ -24,6 +24,7 @@ var cU: Int = 0
 func resetMessageParser(root: GrammarNode) {
     R = []
     U = []
+    bsrSet = []
     currentParseRoot = root
     let rootCluster = Cluster(slot: root, index: 0)
     crf[CRFPosition(slot: root, index: 0)] = rootCluster

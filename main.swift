@@ -129,6 +129,25 @@ for m in messages {
     for y in bsrSet {
         print(y)
     }
+    
+    // Extract SPPF from BSR set
+    let inputExtent = tokens.count - 1  // exclude EOS
+    if let sppfRoot = extractSPPF(startSymbol: grammarRoot, extent: inputExtent) {
+        print("\nSPPF extracted: \(sppfAllNodes.count) nodes")
+        
+        let sppfDiagramFile = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("SPPF")
+            .appendingPathExtension("gv")
+        do {
+            try generateSPPFDiagram(root: sppfRoot, to: sppfDiagramFile)
+            print("SPPF diagram written to \(sppfDiagramFile.lastPathComponent)")
+        } catch {
+            print("file error: could not write SPPF diagram: \(error)")
+        }
+    } else {
+        print("\nSPPF: no parse tree to extract")
+    }
 }
 
 if nonTerminals.count < 1000 && crf.count < 1000 {    // to avoid huge diagrams and parsers

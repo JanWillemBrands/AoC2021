@@ -22,6 +22,8 @@
 		4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138D2D1C572D00CE6493 /* OutputTools.swift */; };
 		4E4213902D1DC15000CE6493 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138F2D1DC15000CE6493 /* GenerateParser.swift */; };
 		4E4213922D1DC35400CE6493 /* GraphStructuredStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */; };
+		4E5754B22F5893360067165C /* SPPF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5754B12F5893240067165C /* SPPF.swift */; };
+		4E5754B32F5893360067165C /* SPPF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5754B12F5893240067165C /* SPPF.swift */; };
 		4E7709C42F3787E100972246 /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE422A22BFB319500D99368 /* GrammarNode.swift */; };
 		4E7709C52F3787FF00972246 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */; };
 		4E7709C82F37883300972246 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D632629D5E400640821 /* main.swift */; };
@@ -76,6 +78,8 @@
 		4E42138F2D1DC15000CE6493 /* GenerateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateParser.swift; sourceTree = "<group>"; };
 		4E4213912D1DC35400CE6493 /* GraphStructuredStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphStructuredStack.swift; sourceTree = "<group>"; };
 		4E450E682BE8007F0077E275 /* playground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = playground.swift; sourceTree = "<group>"; };
+		4E5754B12F5893240067165C /* SPPF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPPF.swift; sourceTree = "<group>"; };
+		4E5754B42F5894BB0067165C /* SPPF.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = SPPF.svg; sourceTree = "<group>"; };
 		4E7709B32F37870300972246 /* AdventTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AdventTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E7709DA2F38C76800972246 /* GrammarParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarParser.swift; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
@@ -147,6 +151,7 @@
 				4E333D692629D5E500640821 /* TortureSyntax.apus */,
 				4E89AAED2D6DF2EE006A0BBA /* ART.gv */,
 				4E89AAEE2D6DF2EE006A0BBA /* postRunActions.log */,
+				4E5754B42F5894BB0067165C /* SPPF.svg */,
 				4E34DF802C08A71000B2881E /* ART.svg */,
 				4EBBDFF52B935BB90049A17F /* diagram.svg */,
 				4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */,
@@ -172,6 +177,7 @@
 				4E7709B42F37870300972246 /* AdventTests */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 				4ECF5BE62F3748DB008E692B /* claude.md */,
+				4E5754B12F5893240067165C /* SPPF.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -298,6 +304,7 @@
 				4E7709D42F37883300972246 /* BinarySubtreeRepresentation.swift in Sources */,
 				4E7709D52F37883300972246 /* GraphStructuredStack.swift in Sources */,
 				4E7709D72F37883300972246 /* GenerateParser.swift in Sources */,
+				4E5754B32F5893360067165C /* SPPF.swift in Sources */,
 				4E7709C52F3787FF00972246 /* Scanner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -312,6 +319,7 @@
 				4E11B2A62DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift in Sources */,
 				4E11B2AC2DC121A300555BB8 /* ClusteredNonterminalParser.swift in Sources */,
 				4E94E9952C29167400746EB7 /* SymbolTable.swift in Sources */,
+				4E5754B22F5893360067165C /* SPPF.swift in Sources */,
 				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
 				4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */,
 				4E33E9222CAEDCDD004BD82C /* GenerateDiagrams.swift in Sources */,

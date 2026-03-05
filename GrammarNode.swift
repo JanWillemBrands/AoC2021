@@ -393,6 +393,18 @@ extension GrammarNode {
 }
 
 extension GrammarNode {
+    /// Label for a bracket node showing only its own content, not the continuation.
+    /// e.g. `{ "a" }` instead of `{ "a" } { "a" }`.
+    func bracketLabel() -> String {
+        switch kind {
+        case .DO:  return "( \(alt?.ebnf() ?? ""))".trimmingCharacters(in: .whitespaces)
+        case .OPT: return "[ \(alt?.ebnf() ?? "")]".trimmingCharacters(in: .whitespaces)
+        case .POS: return "< \(alt?.ebnf() ?? "")>".trimmingCharacters(in: .whitespaces)
+        case .KLN: return "{ \(alt?.ebnf() ?? "")}".trimmingCharacters(in: .whitespaces)
+        default:   return str
+        }
+    }
+    
     // when called on a lhs nonterminal GrammarNode this generates its full EBNF grammar
     func ebnf() -> String {
         var s = ""
