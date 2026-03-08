@@ -22,9 +22,9 @@ var cU: Int = 0
 
 // clear all previous parsing results
 func resetMessageParser(root: GrammarNode) {
-    R = []
-    U = []
-    bsrSet = []
+    remaining = []
+    unique = []
+    yield = []
     currentParseRoot = root
     let rootCluster = Cluster(slot: root, index: 0)
     crf[CRFPosition(slot: root, index: 0)] = rootCluster
@@ -36,12 +36,13 @@ func resetMessageParser(root: GrammarNode) {
     successfullParses = 0
     descriptorCount = 0
     duplicateDescriptorCount = 0
+    furthestMismatch = (tokens[0], [])
 }
 
-var furthestMismatch: (Token, Set<String>) = (tokens[0], [])        // tokens contains at least the '$' a.k.a. EOS token
+var furthestMismatch: (Token, Set<String>)!        // reset in resetMessageParser; tokens must contain at least the '$' a.k.a. EOS token
 
 func parseMessage() {
-    nextDescriptor: while dscGet() {
+    nextDescriptor: while getDescriptor() {
         
         while true {
             
@@ -91,7 +92,7 @@ func parseMessage() {
             case .OPT, .KLN:
                 // OPT/KLN: also offer skip-past-bracket path (they're nullable)
                 if testSelect(slot: cL.seq!, bracket: cL) {
-                    dscAdd(L: cL.seq!, k: cU, i: cI)
+                    addDescriptor(L: cL.seq!, k: cU, i: cI)
                     bsrAdd(L: cL, i: cU, k: cI, j: cI)  // empty bracket BSR
                 }
                 bracketCall(bracket: cL)
@@ -143,15 +144,19 @@ func parseMessage() {
     }
 }
 
+// TODO:  why is this no longer used?
 func testRepeat() -> Bool {
-    let d = Descriptor(slot: cL, k: cU, i: cI)
-    return !U.insert(d).inserted
+    let d = Descriptor(L: cL, k: cU, i: cI)
+    return !unique.insert(d).inserted
 }
 
 func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
     var current = token
     repeat { // to handle Schrödinger tokens
-        if slot.first.contains(current.kind) || slot.first.contains("") && bracket.follow.contains(current.kind) { return true }
+        if slot.first.contains(current.kind)
+            || slot.first.contains("") && bracket.follow.contains(current.kind) {
+            return true
+        }
         guard let next = current.dual else { return false }
         current = next
     } while true

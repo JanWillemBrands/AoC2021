@@ -46,8 +46,7 @@ public final class GrammarNode {
     public let kind: GrammarNodeKind
     public let str: String
 //    public var alt, seq: GrammarNode?
-    public var alt: GrammarNode?
-    {
+    public var alt: GrammarNode? {
         didSet {
             // alt is overloaded:
             // - ALT/END nodes: alt points to an .ALT node
@@ -397,10 +396,10 @@ extension GrammarNode {
     /// e.g. `{ "a" }` instead of `{ "a" } { "a" }`.
     func bracketLabel() -> String {
         switch kind {
-        case .DO:  return "( \(alt?.ebnf() ?? ""))".trimmingCharacters(in: .whitespaces)
-        case .OPT: return "[ \(alt?.ebnf() ?? "")]".trimmingCharacters(in: .whitespaces)
-        case .POS: return "< \(alt?.ebnf() ?? "")>".trimmingCharacters(in: .whitespaces)
-        case .KLN: return "{ \(alt?.ebnf() ?? "")}".trimmingCharacters(in: .whitespaces)
+        case .DO:  return "(\(alt?.ebnf() ?? ""))".trimmingCharacters(in: .whitespaces)
+        case .OPT: return "[\(alt?.ebnf() ?? "")]".trimmingCharacters(in: .whitespaces)
+        case .POS: return "<\(alt?.ebnf() ?? "")>".trimmingCharacters(in: .whitespaces)
+        case .KLN: return "{\(alt?.ebnf() ?? "")}".trimmingCharacters(in: .whitespaces)
         default:   return str
         }
     }
@@ -447,7 +446,7 @@ extension GrammarNode {
     static var containingNonterminal: GrammarNode?          // will be set to the containing N (lhs) node
     static var toplevelAlternate: GrammarNode?              // will be set to the toplevel ALT node
     static var dottedSlot: GrammarNode?                     // will be set to the dotted GrammarNode slot
-    static var dottedEBNF = ""                            // will be set to the dotted EBNF production
+    static var dottedEBNF = ""                              // will be set to the dotted EBNF production
     
     enum Exit: Error { case endOfToplevel }
     

@@ -27,6 +27,14 @@ public var messages: [String] = []
 
 public class GrammarParser {
     
+    public init(fromString inputString: String, patterns: [String:TokenPattern]) throws {
+        input = inputString
+        try initScanner(fromString: input, patterns: patterns)
+        terminals = [:]
+        nonTerminals = [:]
+        messages = []
+    }
+    
     public init(inputFile inputFileURL: URL, patterns: [String:TokenPattern]) throws {
         // Define a list of commonly supported encodings
         let encodings: [String.Encoding] = [
@@ -289,7 +297,7 @@ public class GrammarParser {
             // if token.stripped == "" || token.stripped == "#" || token.stripped.first?.isEpsilon == true {
             // epsilon is its own nonterminal, will never show up here in literal()
             print(token, token.stripped)
-            return GrammarNode(kind: .EPS, str: token.stripped)
+            return GrammarNode(kind: .EPS, str: "ε")
         }
         
         let name = terminalAlias ?? token.stripped
@@ -308,7 +316,7 @@ public class GrammarParser {
     
     func epsilon() -> GrammarNode {
         trace("epsilon", token, token.stripped)
-        return GrammarNode(kind: .EPS, str: token.stripped)
+        return GrammarNode(kind: .EPS, str: "ε")
     }
 
     func term() throws -> GrammarNode {

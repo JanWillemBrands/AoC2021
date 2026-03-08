@@ -55,10 +55,7 @@ for t in tokens {
     trace(t)
 }
 
-var failedParses = 0
-var successfullParses = 0
-var descriptorCount = 0
-var duplicateDescriptorCount = 0
+
 
 //let a = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
 //let b = token.image.startIndex ..< token.image.endIndex
@@ -116,7 +113,7 @@ for m in messages {
     // Paper: ntAdd — add descriptors for the root's alternates
     ntAdd(X: grammarRoot, k: 0, i: 0)
     
-    print("DEBUG: R count after ntAdd = \(R.count)")
+    print("DEBUG: R count after ntAdd = \(remaining.count)")
     
     // use the AST to parse the message
     let start = clock()
@@ -126,7 +123,7 @@ for m in messages {
     print("cpuTime, descriptorCount, crf.count")
     print(cpuTime, descriptorCount, crf.count)
     
-    for y in bsrSet {
+    for y in yield {
         print(y)
     }
     

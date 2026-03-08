@@ -63,35 +63,8 @@ Verbose 5
  [33] ZapfChancery-MediumItalic => "Times New Roman,  ITALIC"
  [34] ZapfDingbats => "Impact,  REGULAR"
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
-network simplex:  1 nodes 0 edges maxiter=6 balance=1
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  2 nodes 1 edges maxiter=6 balance=1
-network simplex: 2 nodes 1 edges 0 iter 0.00 sec
-network simplex:  9 nodes 8 edges maxiter=40 balance=1
-network simplex: 9 nodes 8 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=46 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=46 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-Maxrank = 4, minrank = 0
-mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-merge2: graph G, rank 0 has only 2 < 6 nodes
-merge2: graph G, rank 1 has only 2 < 5 nodes
-merge2: graph G, rank 2 has only 1 < 4 nodes
-merge2: graph G, rank 3 has only 1 < 4 nodes
-merge2: graph G, rank 4 has only 1 < 4 nodes
-mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 5 best_cross 5
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross G: 0 crossings, 0.00 secs.
-network simplex:  46 nodes 77 edges maxiter=46 balance=2
-network simplex: 46 nodes 77 edges 19 iter 0.00 sec
-routesplines: 17 edges, 51 boxes 0.00 sec
-Using render: svg:core
-Using device: svg:svg:core
-gvRenderJobs G: 0.02 secs.
+Error: not well-formed (invalid token) in line 1 
+... S=·<x|ε> ...
 Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_FORMAT
 Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_VERSION
 dot - graphviz version 9.0.0 (20230911.1827)
@@ -157,14 +130,14 @@ Verbose 5
  [33] ZapfChancery-MediumItalic => "Times New Roman,  ITALIC"
  [34] ZapfDingbats => "Impact,  REGULAR"
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
-network simplex:  4 nodes 3 edges maxiter=8 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-Maxrank = 2, minrank = 0
+network simplex:  8 nodes 7 edges maxiter=16 balance=1
+network simplex: 8 nodes 7 edges 0 iter 0.00 sec
+Maxrank = 6, minrank = 0
 mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross SPPF: 0 crossings, 0.00 secs.
-network simplex:  7 nodes 7 edges maxiter=8 balance=2
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
-routesplines: 3 edges, 9 boxes 0.00 sec
+network simplex:  15 nodes 15 edges maxiter=16 balance=2
+network simplex: 15 nodes 15 edges 0 iter 0.00 sec
+routesplines: 7 edges, 21 boxes 0.00 sec
 Using render: svg:core
 Using device: svg:svg:core
 gvRenderJobs SPPF: 0.00 secs.

@@ -5,17 +5,14 @@
 //  Created by Johannes Brands on 27/04/2025.
 //
 
-// Paper: Υ (Upsilon) = BSR set — the set of all BSR elements
-// Paper: bsrAdd(X ::= α·β, i, k, j) — add BSR element
-
-import Foundation
+//import Foundation
 
 struct BSR: Hashable, CustomStringConvertible {
-    let node: GrammarNode
+    let slot: GrammarNode
     let i: Int  // left extent
     let k: Int  // pivot
     let j: Int  // right extent
-    var description: String { "\(node.ebnfDot()) \(i):\(k):\(j)" }
+    var description: String { "\(slot.ebnfDot()) \(i):\(k):\(j)" }
 }
 
 struct BinarySpan: Hashable, Comparable, CustomStringConvertible {
@@ -32,9 +29,9 @@ struct BinarySpan: Hashable, Comparable, CustomStringConvertible {
 }
 
 // Paper: Υ (Upsilon) — the BSR set
-var bsrSet: Set<BSR> = []
+var yield: Set<BSR> = []
 
-// Paper: bsrAdd(X ::= α·β, i, k, j)
+// Paper: bsrAdd(X ::= α·β, i, k, j) — add BSR element to the yield
 @discardableResult
 func bsrAdd(L: GrammarNode, i: Int, k: Int, j: Int) -> Bool {
     print("bsrAdd: \(L.ebnfDot()) \(i):\(k):\(j)")
@@ -42,6 +39,7 @@ func bsrAdd(L: GrammarNode, i: Int, k: Int, j: Int) -> Bool {
     L.yield.insert(triple)
     
     // TODO: remove global bsrSet
-    let bsr = BSR(node: L, i: i, k: k, j: j)
-    return bsrSet.insert(bsr).inserted
+    let bsr = BSR(slot: L, i: i, k: k, j: j)
+    // TODO: check why this was returning a bool
+    return yield.insert(bsr).inserted
 }

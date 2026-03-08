@@ -14,9 +14,8 @@
 
 import Foundation
 
-// MARK: - CRF Data Structures
 
-/// Lightweight value type for CRF dictionary keys.
+// Lightweight value type for CRF dictionary keys.
 public struct CRFPosition: Hashable, Comparable, CustomStringConvertible {
     public let slot: GrammarNode
     public let index: Int
@@ -34,7 +33,7 @@ public struct CRFPosition: Hashable, Comparable, CustomStringConvertible {
     }
 }
 
-/// A return edge in the CRF. Matches the paper's crfNode (L, i).
+// A return edge in the CRF. Matches the paper's crfNode (L, i).
 public struct ReturnEdge: Hashable, CustomStringConvertible {
     public let slot: GrammarNode       // L: the RHS nonterminal call site
     public let index: Int              // i: the caller's cluster index
@@ -44,8 +43,8 @@ public struct ReturnEdge: Hashable, CustomStringConvertible {
     }
 }
 
-/// Cluster node in the CRF. Mutable, identity-based.
-/// Represents clusterNode (X, k) from the paper.
+// Cluster node in the CRF. Mutable, identity-based.
+// Represents clusterNode (X, k) from the paper.
 public final class Cluster: CustomStringConvertible {
     public let slot: GrammarNode   // the LHS nonterminal (X)
     public let index: Int          // input position (k)
@@ -67,15 +66,13 @@ public final class Cluster: CustomStringConvertible {
     }
 }
 
-// MARK: - CRF Storage
 
-/// The Call Return Forest: maps cluster key (X, k) to Cluster object.
+// The Call Return Forest: maps cluster key (X, k) to Cluster object.
 public var crf: [CRFPosition: Cluster] = [:]
 
 /// Return nodes tracked separately for diagram generation.
 public var crfReturnNodes: Set<CRFPosition> = []
 
-// MARK: - CRF Operations
 
 // Paper: ntAdd(X, j) — add descriptors for all alternates of a bracket/nonterminal
 func ntAdd(X: GrammarNode, k: Int, i: Int) {
@@ -83,7 +80,7 @@ func ntAdd(X: GrammarNode, k: Int, i: Int) {
     var current = X.alt
     while let alt = current {
         if testSelect(slot: alt, bracket: X) {
-            dscAdd(L: alt.seq!, k: k, i: i)
+            addDescriptor(L: alt.seq!, k: k, i: i)
         }
         current = alt.alt
     }
@@ -106,7 +103,7 @@ func call() {
         if existingCluster.returns.insert(returnEdge).inserted {
             // Add descriptors for previous pop actions from that cluster
             for pop in existingCluster.pops {
-                dscAdd(L: cL.seq!, k: cU, i: pop)
+                addDescriptor(L: cL.seq!, k: cU, i: pop)
                 bsrAdd(L: cL, i: cU, k: cI, j: pop)
             }
         }
@@ -126,11 +123,12 @@ func rtn(X: GrammarNode) {
     
     if cluster.pops.insert(cI).inserted {
         for rtn in cluster.returns {
-            dscAdd(L: rtn.slot.seq!, k: rtn.index, i: cI)
+            addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
             bsrAdd(L: rtn.slot, i: rtn.index, k: cU, j: cI)
         }
     }
 }
+
 // bracketCall — enter a bracket (DO, OPT, KLN, POS)
 // Similar to call() but the bracket node IS the "nonterminal" — no indirection through .alt
 func bracketCall(bracket: GrammarNode) {
@@ -145,7 +143,7 @@ func bracketCall(bracket: GrammarNode) {
         if existingCluster.returns.insert(returnEdge).inserted {
             for pop in existingCluster.pops {
                 // Continue past bracket with restored outer cU
-                dscAdd(L: bracket.seq!, k: cU, i: pop)
+                addDescriptor(L: bracket.seq!, k: cU, i: pop)
                 bsrAdd(L: bracket, i: cU, k: cI, j: pop)
             }
         }
@@ -169,7 +167,7 @@ func bracketRtn(bracket: GrammarNode) {
             // BSR for the bracket span
             bsrAdd(L: rtn.slot, i: rtn.index, k: cU, j: cI)
             // Continue past the bracket
-            dscAdd(L: rtn.slot.seq!, k: rtn.index, i: cI)
+            addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
         }
 
         // KLN/POS: re-enter the bracket for another iteration.
@@ -185,7 +183,7 @@ func bracketRtn(bracket: GrammarNode) {
                     if existingCluster.returns.insert(returnEdge).inserted {
                         for pop in existingCluster.pops {
                             bsrAdd(L: returnEdge.slot, i: returnEdge.index, k: cI, j: pop)
-                            dscAdd(L: returnEdge.slot.seq!, k: returnEdge.index, i: pop)
+                            addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: pop)
                         }
                     }
                 }

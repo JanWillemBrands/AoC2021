@@ -8,14 +8,12 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 
 //: start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"whitespbce":	("/\\s+/",	/\s+/,	false,	true),
-	"b":	("b",	Regex { "b" },	true,	false),
-	"c":	("c",	Regex { "c" },	true,	false),
-	"a":	("a",	Regex { "a" },	true,	false),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
+	"x":	("x",	Regex { "x" },	true,	false),
 ]
 func S() {
 	if token.type = .ALT {
-		next()
+		// POS
 	}
-	expect(["a"])
+	expect(["x", ""])
 }

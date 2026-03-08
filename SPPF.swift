@@ -5,37 +5,52 @@
 //  Created by Johannes Brands on 2026.03.04.
 //
 
+
+// Paper: "Derivation representation using binary subtree sets"
+
 /*
- Paper: "Derivation representation using binary subtree sets"
- 
- extractSPPF (Υ, Γ) {
- G := empty graph
- let S be the start symbol of Γ
- let n be the extent of Υ
- if Υ has an element of the form (S ::= α, 0, k, n) {
- create a node labelled (S, 0, n) in G
- while G has an extendable leaf node {
- let w = (μ, i, j) be an extendable leaf node of G
- if (μ is a nonterminal X in Γ) {
- for each (X ::= γ, i, k, j) ∈ Υ { mkPN(X ::= γ·, i, k, j, G) } }
- else {
- suppose μ is X ::= α · δ
- if (|α| = 1) mkPN(X ::= α · δ, i, i, j, G)
- else for each (α, i, k, j) ∈ Υ { mkPN(X ::= α · δ, i, k, j, G) }}}
- return G }
- 
- mkPN(X ::= α · δ, i, k, j, G) {
- make a node y in G labelled (X ::= α · δ, k)
- if (α = ε) mkN(ε, i, i, y, G)
- if (α = βx, where |x| = 1) {
- mkN(x, k, j, y, G)
- if (|β| = 1) mkN(β, i, k, y, G)
- if (|β| > 1) mkN(X ::= β · xδ, i, k, y, G) } }
- 
- mkN(Ω, i, j, y, G) {
- if there is not a node labelled (Ω, i, j) in G make one
- add an edge from y to the node (Ω, i, j) } }
- */
+func extractSPPF (Υ, Γ) {
+    G := empty graph
+    let S be the start symbol of Γ
+    let n be the extent of Υ
+    if Υ has an element of the form (S ::= α, 0, k, n) {
+        create a node labelled (S, 0, n) in G
+        while G has an extendable leaf node {
+            let w = (μ, i, j) be an extendable leaf node of G
+            if (μ is a nonterminal X in Γ) {
+                for each (X ::= γ, i, k, j) ∈ Υ {
+                    mkPN(X ::= γ·, i, k, j, G)
+                }
+            } else {
+                suppose μ is X ::= α · δ
+                if (|α| = 1) {
+                    mkPN(X ::= α · δ, i, i, j, G)
+                } else {
+                    for each (α, i, k, j) ∈ Υ {
+                        mkPN(X ::= α · δ, i, k, j, G)
+                    }
+                }
+            }
+        }
+        return G
+    }
+    
+    func mkPN(X ::= α · δ, i, k, j, G) {
+        make a node y in G labelled (X ::= α · δ, k)
+        if (α = ε) mkN(ε, i, i, y, G)
+            if (α = βx, where |x| = 1) {
+            mkN(x, k, j, y, G)
+            if (|β| = 1) mkN(β, i, k, y, G)
+                if (|β| > 1) mkN(X ::= β · xδ, i, k, y, G)
+        }
+    }
+    
+    func mkN(Ω, i, j, y, G) {
+        if there is not a node labelled (Ω, i, j) in G make one
+            add an edge from y to the node (Ω, i, j)
+    }
+
+*/
 
 import Foundation
 
@@ -71,20 +86,22 @@ class SPPFNode: CustomStringConvertible {
         switch kind {
         case .symbol:
             if isNonterminal {
-                return "\(slot.str), \(i), \(j)"
+                return "\(slot.str),\(i),\(j)"
             } else if slot.kind == .EPS {
-                return "ε, \(i), \(j)"
+                return "ε,\(i),\(j)"
             } else if [.DO, .OPT, .KLN, .POS].contains(slot.kind) {
                 // Bracket acting as anonymous nonterminal — show only bracket content, not continuation
-                return "\(slot.bracketLabel()), \(i), \(j)"
+//                return "{} \(slot.bracketLabel()),\(i),\(j)"
+                return "{} \(slot.ebnfDot()),\(i),\(j)"
+//                return "{} \"\(slot.str)\",\(i),\(j)"
             } else {
                 // terminal
-                return "\"\(slot.str)\", \(i), \(j)"
+                return "\"\(slot.str)\",\(i),\(j)"
             }
         case .intermediate:
-            return "\(slot.ebnfDot()), \(i), \(j)"
+            return "\(slot.ebnfDot()),\(i),\(j)"
         case .packed:
-            return "\(slot.ebnfDot()), \(i)"  // i is the pivot k for packed nodes
+            return "\(slot.ebnfDot()),\(i)"  // i is the pivot k for packed nodes
         }
     }
     
@@ -197,8 +214,8 @@ func predecessorSlot(of node: GrammarNode, steps: Int) -> GrammarNode? {
 /// with the given left extent i and right extent j.
 /// Paper: (X ::= γ, i, k, j) ∈ Υ
 func bsrForNonterminal(_ X: GrammarNode, i: Int, j: Int) -> [BSR] {
-    bsrSet.filter { bsr in
-        bsr.node == X && bsr.i == i && bsr.j == j
+    yield.filter { bsr in
+        bsr.slot == X && bsr.i == i && bsr.j == j
     }
 }
 
@@ -206,8 +223,8 @@ func bsrForNonterminal(_ X: GrammarNode, i: Int, j: Int) -> [BSR] {
 /// with the given left extent i and right extent j.
 /// Paper: (α, i, k, j) ∈ Υ
 func bsrForSlot(_ slot: GrammarNode, i: Int, j: Int) -> [BSR] {
-    bsrSet.filter { bsr in
-        bsr.node == slot && bsr.i == i && bsr.j == j
+    yield.filter { bsr in
+        bsr.slot == slot && bsr.i == i && bsr.j == j
     }
 }
 
@@ -348,14 +365,14 @@ private func extendBracketNode(_ w: SPPFNode) {
     // BSR format: (bracket, outer_cU, k=iteration_start, j=iteration_end)
     // We want iterations ending at j to find the last iteration start.
     var lastIterationStarts: Set<Int> = []
-    for bsr in bsrSet where bsr.node == bracket && bsr.j == j {
+    for bsr in yield where bsr.slot == bracket && bsr.j == j {
         lastIterationStarts.insert(bsr.k)
     }
     
     // Also, for KLN/POS that re-enter, we need to trace WHICH iteration starts 
     // are reachable from position i through the iteration chain.
     let reachableStarts = lastIterationStarts.filter { k in
-        k >= i && k <= j && isReachableByBracket(bracket, from: i, to: k)
+        k >= i && k < j && isReachableByBracket(bracket, from: i, to: k)
     }
     
     for k in reachableStarts {
@@ -393,7 +410,7 @@ private func isReachableByBracket(_ bracket: GrammarNode, from: Int, to: Int) ->
         if pos == to { return true }
         
         // Follow iterations starting at pos
-        for bsr in bsrSet where bsr.node == bracket && bsr.k == pos {
+        for bsr in yield where bsr.slot == bracket && bsr.k == pos {
             if bsr.j <= to {
                 queue.append(bsr.j)
             }
@@ -676,7 +693,7 @@ private func collectBracketStartPositions(for bracket: GrammarNode, reaching tar
     
     // For single-iteration brackets (DO), find BSRs where bsr.j == target
     // The k value is where the iteration started = the bracket start.
-    for bsr in bsrSet where bsr.node == bracket && bsr.j == target {
+    for bsr in yield where bsr.slot == bracket && bsr.j == target {
         if bsr.k >= lowerBound {
             starts.insert(bsr.k)
         }
@@ -696,7 +713,7 @@ private func collectBracketStartPositions(for bracket: GrammarNode, reaching tar
             guard visited.insert(pos).inserted else { continue }
             
             // Find iterations that END at pos — their k values are earlier starts
-            for bsr in bsrSet where bsr.node == bracket && bsr.j == pos {
+            for bsr in yield where bsr.slot == bracket && bsr.j == pos {
                 if bsr.k >= lowerBound && bsr.k < pos {
                     starts.insert(bsr.k)
                     queue.append(bsr.k)
@@ -767,7 +784,7 @@ private func collectEndPositions(for symbol: GrammarNode, from start: Int) -> Se
             guard visited.insert(pos).inserted else { continue }
             
             // Find all BSRs for iterations starting at this position
-            for bsr in bsrSet where bsr.node == symbol && bsr.k == pos {
+            for bsr in yield where bsr.slot == symbol && bsr.k == pos {
                 positions.insert(bsr.j)
                 // For KLN/POS, the end of one iteration can start another
                 if symbol.kind == .KLN || symbol.kind == .POS {
@@ -777,7 +794,7 @@ private func collectEndPositions(for symbol: GrammarNode, from start: Int) -> Se
         }
     } else {
         // Non-bracket: BSRs where symbol matches starting at `start`
-        for bsr in bsrSet where bsr.node == symbol && bsr.k == start {
+        for bsr in yield where bsr.slot == symbol && bsr.k == start {
             positions.insert(bsr.j)
         }
     }
@@ -862,9 +879,9 @@ private func findOrCreateNode(kind: SPPFNodeKind, slot: GrammarNode, i: Int, j: 
 
 /// Generate a Graphviz dot file for the SPPF.
 /// Node shapes follow the paper's conventions:
-///   - Symbol nodes (nonterminals, terminals): ellipse
+///   - Symbol nodes (nonterminals, terminals): rounded reactangles
 ///   - Intermediate nodes (grammar slots): rectangle
-///   - Packed nodes: small filled circle
+///   - Packed nodes: rounded rectangles
 func generateSPPFDiagram(root: SPPFNode, to file: URL) throws {
     var dot = """
     digraph SPPF {
@@ -912,24 +929,15 @@ func generateSPPFDiagram(root: SPPFNode, to file: URL) throws {
         
         switch node.kind {
         case .symbol:
-            if node.isNonterminal || [.DO, .OPT, .KLN, .POS].contains(node.slot.kind) {
-                // Nonterminal or bracket: ellipse
-                dot += "  \(id) [shape = ellipse, label = <\(escapedLabel)>]\n"
-            } else if node.slot.kind == .EPS {
-                // Epsilon: small ellipse
-                dot += "  \(id) [shape = ellipse, label = <\(escapedLabel)>, style = dashed]\n"
+            if node.slot.kind == .EPS {
+                dot += "  \(id) [shape = box, style = \"rounded, dashed\", width=0.0, height=0.0, label = <\(escapedLabel)>]\n"
             } else {
-                // Terminal: ellipse
-                dot += "  \(id) [shape = ellipse, label = <\(escapedLabel)>]\n"
+                dot += "  \(id) [shape = box, style = rounded, width=0.0, height=0.0, label = <\(escapedLabel)>]\n"
             }
-            
         case .intermediate:
-            // Intermediate: rectangle
-            dot += "  \(id) [shape = rectangle, label = <\(escapedLabel)>]\n"
-            
+            dot += "  \(id) [shape = rectangle, width=0.0, height=0.0, label = <\(escapedLabel)>]\n"
         case .packed:
-            // Packed: small filled circle with tooltip
-            dot += "  \(id) [shape = circle, width = 0.15, height = 0.15, fixedsize = true, style = filled, fillcolor = black, label = \"\", tooltip = \"\(node.label)\"]\n"
+            dot += "  \(id) [shape = rectangle, width=0.0, height=0.0, label = \"\(escapedLabel)\"]\n"
         }
     }
     
