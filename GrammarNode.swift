@@ -259,32 +259,32 @@ extension GrammarNode {
 }
 
 extension GrammarNode {
-    func populateFirstFollowSets() throws {
+    func populateFirstFollowSets(nonTerminals: [String: GrammarNode], terminals: [String: TokenPattern]) throws {
         switch kind {
         case .EPS:
-            try seq!.populateFirstFollowSets()
+            try seq!.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
             //            first = [""]
             first = seq!.first
             updateFollow()
         case .EOS, .T, .TI, .C, .B:
-            try seq!.populateFirstFollowSets()
+            try seq!.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
             first = [str]
             updateFollow()
         case .N:
-            try handleNonTerminal()
+            try handleNonTerminal(nonTerminals: nonTerminals, terminals: terminals)
         case .ALT:
-            try seq!.populateFirstFollowSets()
+            try seq!.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
             // copy first & follow from the first (real) node in the sequence
             first = seq!.first
             follow = seq!.follow
         case .DO:
-            try handleBracket()
+            try handleBracket(nonTerminals: nonTerminals, terminals: terminals)
         case .OPT:
             first.insert("")
-            try handleBracket()
+            try handleBracket(nonTerminals: nonTerminals, terminals: terminals)
         case .KLN:
             first.insert("")
-            try handleBracket()
+            try handleBracket(nonTerminals: nonTerminals, terminals: terminals)
             //             TODO: not sure following is right, even though it is in ART...
             //             it complicates ambiguous because it's longer overlap(first, follow)
             //             file://Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
@@ -292,7 +292,7 @@ extension GrammarNode {
             //             if (root.elm.kind == GrammarKind.POS || root.elm.kind == GrammarKind.KLN) changed |= root.instanceFollow.addAll(removeEpsilon(root.instanceFirst));
             //            follow.formUnion(first.subtracting([""]))
         case .POS:
-            try handleBracket()
+            try handleBracket(nonTerminals: nonTerminals, terminals: terminals)
         case .END:
             // .END first is epsilon so that the follow of the previous node copies the follow of the .END
             first = [""]
@@ -311,10 +311,10 @@ extension GrammarNode {
         //        }
     }
     
-    private func handleNonTerminal() throws {
+    private func handleNonTerminal(nonTerminals: [String: GrammarNode], terminals: [String: TokenPattern]) throws {
         if let seq {
             // a RHS nonterminal instance is part of a sequence
-            try seq.populateFirstFollowSets()
+            try seq.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
             updateFollow()
             if let production = nonTerminals[str] {
                 
@@ -342,15 +342,15 @@ extension GrammarNode {
             }
         } else {
             // a LHS nonterminal defines a production rule and is NOT part of a sequence
-            try populateFirstFromAlts()
-            // the follow set of a lhs nonterminal production rule is [“$”] if startsymbol, and [] otherwise.
+            try populateFirstFromAlts(nonTerminals: nonTerminals, terminals: terminals)
+            // the follow set of a lhs nonterminal production rule is ["$"] if startsymbol, and [] otherwise.
             // this is already set before calling populateFirstFollowSets.
         }
     }
     
-    private func handleBracket() throws {
-        try populateFirstFromAlts()
-        try seq!.populateFirstFollowSets()
+    private func handleBracket(nonTerminals: [String: GrammarNode], terminals: [String: TokenPattern]) throws {
+        try populateFirstFromAlts(nonTerminals: nonTerminals, terminals: terminals)
+        try seq!.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
         if first.contains("") {
             first.remove("")
             first.formUnion(seq!.first)
@@ -358,11 +358,11 @@ extension GrammarNode {
         updateFollow()
     }
     
-    private func populateFirstFromAlts() throws {
+    private func populateFirstFromAlts(nonTerminals: [String: GrammarNode], terminals: [String: TokenPattern]) throws {
         // set the first set of a lhs nonterminal production rule, or a bracketed expression, to the union of first sets of all its .alt's
         var current = alt
         while let altNode = current {
-            try altNode.populateFirstFollowSets()
+            try altNode.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
             first.formUnion(altNode.first)
             current = altNode.alt
         }

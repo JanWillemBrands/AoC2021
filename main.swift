@@ -26,24 +26,17 @@ let grammarFileURL = URL(fileURLWithPath: #filePath)
 //    .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
 
-var grammarParser: GrammarParser
-do {
-    grammarParser = try GrammarParser(inputFile: grammarFileURL, patterns: apusTerminals)
-} catch {
-    print("file error: could not read from \(grammarFileURL.absoluteString)")
-    exit(0)
-}
+var apusParser = try ApusParser(fromFile: grammarFileURL)
 
-startSymbol = ""    // if "" then startSymbol will be set by parseGrammar to the first nonTerminal in the grammar file
 print("DEBUG: About to parse grammar")
-let grammarRoot: GrammarNode
+let grammar: Grammar
 do {
-    guard let root = try grammarParser.parseGrammar(explicitStartSymbol: startSymbol) else {
-        print("parse error: Start symbol '\(startSymbol)' not found")
+    guard let g = try apusParser.parseGrammar(explicitStartSymbol: "") else {
+        print("parse error: Start symbol not found")
         exit(1)
     }
-    grammarRoot = root
-    print("DEBUG: Grammar parsed successfully, root = \(grammarRoot)")
+    grammar = g
+    print("DEBUG: Grammar parsed successfully, root = \(grammar.root)")
 } catch {
     print("parse error: Failed to parse grammar: \(error)")
     exit(1)
@@ -56,44 +49,20 @@ for t in tokens {
 }
 
 
-
-//let a = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
-//let b = token.image.startIndex ..< token.image.endIndex
-//let y = 1
-//let x = y as? Int
-//let t = 0 ... 10
-/*
-@available(*, unavailable, renamed: "test")
-func test() {}
-let r = /\/[^\s](?:(?:[^\/\\\s]|\\.)*[^\s])?\//
-let e = #/
-    \/              # Match the opening forward slash
-    [^\s]           # First character must not be whitespace (ensures at least one character)
-    (?:
-      (?:           # Non-capturing group for middle content
-        [^\/\\\s]   # Any character except slash, backslash, or whitespace
-        |           # OR
-        \\.         # An escaped character (e.g., \. or \/)
-      )*            # Zero or more of the above
-      [^\s]         # Last character before closing slash must not be whitespace
-    )?              # Entire middle-and-last group is optional (allows just one character)
-    \/              # Match the closing forward slash
-/#
- */
-
-
-
 //while let m = messages.first {
-print("DEBUG: messages.count = \(messages.count)")
-for m in messages {
+print("DEBUG: messages.count = \(grammar.messages.count)")
+for m in grammar.messages {
     print("DEBUG: processing message: '\(m)'")
     trace = false
+    let messageScanner: Scanner
     do {
-        try initScanner(fromString: m, patterns: terminals)
+        messageScanner = try Scanner(fromString: m, patterns: grammar.terminals)
     } catch {
         print("scan error: Failed to scan message: \(error)")
         continue
     }
+    tokens = messageScanner.tokens
+    cI = 0
 
     trace = true
     print("all message tokens:")
@@ -103,21 +72,23 @@ for m in messages {
 
     trace = false
     print("DEBUG: about to call resetMessageParser")
-    resetMessageParser(root: grammarRoot)
+    resetMessageParser(root: grammar.root)
     print("DEBUG: resetMessageParser completed")
 
-    print("DEBUG: grammarRoot.alt = \(String(describing: grammarRoot.alt))")
-    print("DEBUG: grammarRoot.first = \(grammarRoot.first)")
-    print("DEBUG: grammarRoot.follow = \(grammarRoot.follow)")
+    print("DEBUG: grammarRoot.alt = \(String(describing: grammar.root.alt))")
+    print("DEBUG: grammarRoot.first = \(grammar.root.first)")
+    print("DEBUG: grammarRoot.follow = \(grammar.root.follow)")
 
     // Paper: ntAdd — add descriptors for the root's alternates
-    ntAdd(X: grammarRoot, k: 0, i: 0)
+    ntAdd(X: grammar.root, k: 0, i: 0)
     
     print("DEBUG: R count after ntAdd = \(remaining.count)")
     
     // use the AST to parse the message
     let start = clock()
+    
     parseMessage()
+    
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
     print("cpuTime, descriptorCount, crf.count")
@@ -129,7 +100,7 @@ for m in messages {
     
     // Extract SPPF from BSR set
     let inputExtent = tokens.count - 1  // exclude EOS
-    if let sppfRoot = extractSPPF(startSymbol: grammarRoot, extent: inputExtent) {
+    if let sppfRoot = extractSPPF(startSymbol: grammar.root, extent: inputExtent, nonTerminals: grammar.nonTerminals) {
         print("\nSPPF extracted: \(sppfAllNodes.count) nodes")
         
         let sppfDiagramFile = URL(fileURLWithPath: #filePath)
@@ -147,13 +118,13 @@ for m in messages {
     }
 }
 
-if nonTerminals.count < 1000 && crf.count < 1000 {    // to avoid huge diagrams and parsers
+if grammar.nonTerminals.count < 1000 && crf.count < 1000 {    // to avoid huge diagrams and parsers
     trace = false
     let generatedParserFile = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .appendingPathComponent("output")
         .appendingPathExtension("swift")
-    let parserGenerator = ParserGenerator(outputFile: generatedParserFile)
+    let parserGenerator = ParserGenerator(outputFile: generatedParserFile, grammar: grammar)
     do {
         try parserGenerator.generateParser()
     } catch {
@@ -166,7 +137,7 @@ if nonTerminals.count < 1000 && crf.count < 1000 {    // to avoid huge diagrams 
         .deletingLastPathComponent()
         .appendingPathComponent("ART")
         .appendingPathExtension("gv")
-    let diagramsGenerator = DiagramsGenerator(outputFile: generatedDiagramFile)
+    let diagramsGenerator = DiagramsGenerator(outputFile: generatedDiagramFile, grammar: grammar)
     do {
         try diagramsGenerator.generateDiagrams()
     } catch {

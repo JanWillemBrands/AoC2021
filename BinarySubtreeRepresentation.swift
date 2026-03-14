@@ -7,12 +7,12 @@
 
 //import Foundation
 
-struct BSR: Hashable, CustomStringConvertible {
+public struct BSR: Hashable, CustomStringConvertible {
     let slot: GrammarNode
     let i: Int  // left extent
     let k: Int  // pivot
     let j: Int  // right extent
-    var description: String { "\(slot.ebnfDot()) \(i):\(k):\(j)" }
+    public var description: String { "\(slot.ebnfDot()) \(i):\(k):\(j)" }
 }
 
 struct BinarySpan: Hashable, Comparable, CustomStringConvertible {
@@ -29,7 +29,7 @@ struct BinarySpan: Hashable, Comparable, CustomStringConvertible {
 }
 
 // Paper: Υ (Upsilon) — the BSR set
-var yield: Set<BSR> = []
+public var yield: Set<BSR> = []
 
 // Paper: bsrAdd(X ::= α·β, i, k, j) — add BSR element to the yield
 @discardableResult

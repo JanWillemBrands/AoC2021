@@ -75,7 +75,7 @@ public var crfReturnNodes: Set<CRFPosition> = []
 
 
 // Paper: ntAdd(X, j) — add descriptors for all alternates of a bracket/nonterminal
-func ntAdd(X: GrammarNode, k: Int, i: Int) {
+public func ntAdd(X: GrammarNode, k: Int, i: Int) {
     assert([.N, .DO, .OPT, .ALT, .KLN, .POS].contains(X.kind), "Called \(#function) on a GrammarNode \(X) which is not a bracket")
     var current = X.alt
     while let alt = current {

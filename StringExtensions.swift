@@ -74,17 +74,6 @@ extension String {
     }
 }
 
-extension String.Index {
-    // the position in the input as a string "0", "1", "2"...
-    public var inputPosition: String {
-        String(input.distance(from: input.startIndex, to: self))
-    }
-}
-
-extension Range<String.Index> {
-    var shortDescription: String { lowerBound.inputPosition + ":" + upperBound.inputPosition }
-}
-
 extension String {
     public func linePosition(of index: String.Index) -> String {
         var line = 0

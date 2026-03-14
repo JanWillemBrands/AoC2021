@@ -1,5 +1,5 @@
 //
-//  GrammarParser.swift
+//  ApusParser.swift
 //  Advent
 //
 //  Created by Johannes Brands on 23/12/2024.
@@ -8,7 +8,7 @@
 import Foundation
 import RegexBuilder
 
-public enum GrammarParserError: Error {
+public enum ApusParserError: Error {
     case terminalNonterminalConflict(symbols: Set<String>)
     case invalidRegex(image: String, error: Error)
     case unexpectedToken(expected: [String], found: String)
@@ -16,26 +16,26 @@ public enum GrammarParserError: Error {
     case undefinedNonTerminal(name: String, definedAsTerminal: Bool)
 }
 
-// input is the string that's being scanned and parsed
-public var input: String = ""
-
-public var startSymbol: String = ""
-
-public var terminals: [String:TokenPattern] = [:]
-public var nonTerminals: [String:GrammarNode] = [:]
-public var messages: [String] = []
-
-public class GrammarParser {
+public class ApusParser {
     
-    public init(fromString inputString: String, patterns: [String:TokenPattern]) throws {
-        input = inputString
-        try initScanner(fromString: input, patterns: patterns)
-        terminals = [:]
-        nonTerminals = [:]
-        messages = []
+    let grammar = Grammar()
+    private var scanner: Scanner
+    private var tokens: [Token] { scanner.tokens }
+    private var cI: Int = 0
+    private var token: Token { tokens[cI] }
+    
+    private func next() {
+        cI += 1
+        #if DEBUG
+        trace("next", token.image, token.kind)
+        #endif
     }
     
-    public init(inputFile inputFileURL: URL, patterns: [String:TokenPattern]) throws {
+    public init(fromString inputString: String) throws {
+        scanner = try Scanner(fromString: inputString, patterns: apusTerminals)
+    }
+    
+    public init(fromFile inputFileURL: URL) throws {
         // Define a list of commonly supported encodings
         let encodings: [String.Encoding] = [
             .utf8,                // UTF-8
@@ -57,66 +57,56 @@ public class GrammarParser {
             // Add more encodings as needed via raw values below
         ]
         
+        var input = ""
         for encoding in encodings {
             do {
                 input = try String(contentsOf: inputFileURL, encoding: encoding)
-                print("Success with \(encoding)")
+                print("Successfully read input file with \(encoding)")
                 break
             } catch {
-                print("Failed with \(encoding): \(error)")
+                print("Failed reading input file with \(encoding): \(error)")
             }
         }
         
-        try initScanner(fromString: input, patterns: patterns)
-        
-        terminals = [:]
-        nonTerminals = [:]
-        messages = []
+        scanner = try Scanner(fromString: input, patterns: apusTerminals)
     }
     
-    public func parseGrammar(explicitStartSymbol: String = "") throws -> GrammarNode? {
-        do {
-            try initScanner(fromString: input, patterns: apusTerminals)
-        } catch {
-            throw GrammarParserError.scanningFailed(error: error)
-        }
+    public func parseGrammar(explicitStartSymbol: String = "") throws -> Grammar? {
+        cI = 0
 
-        if explicitStartSymbol != "" {
-            startSymbol = explicitStartSymbol
-        }
+//        if explicitStartSymbol != "" {
+            grammar.startSymbol = explicitStartSymbol
+//        }
         try parseApusGrammar()
         
-//        print("TERMINALS")
-//        for t in terminals.keys.sorted() { print(t) }
-//        print("NONTERMINALS")
-//        for t in nonTerminals.keys.sorted() { print(t) }
         trace = true
         trace("terminals:")
-        for (name, tokenPattern) in terminals {
+        for (name, tokenPattern) in grammar.terminals {
             trace("\t", name, "\t", tokenPattern.source)
         }
         trace("nonTerminals:")
-        for (name, node) in nonTerminals {
+        for (name, node) in grammar.nonTerminals {
             trace("\t", name, "\t", node.kind)
         }
 
-        let conflictSet = Set(terminals.keys).intersection(Set(nonTerminals.keys))
+        let conflictSet = Set(grammar.terminals.keys).intersection(Set(grammar.nonTerminals.keys))
         if !conflictSet.isEmpty {
             print("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
-            throw GrammarParserError.terminalNonterminalConflict(symbols: conflictSet)
+            throw ApusParserError.terminalNonterminalConflict(symbols: conflictSet)
         }
             
-        guard let root = nonTerminals[startSymbol] else { return nil }
+        guard let root = grammar.nonTerminals[grammar.startSymbol] else { return nil }
+        grammar.root = root
         
-        for (name, node) in nonTerminals.sorted(by: { $0.key > $1.key }) {      // a fixed ordering with 'S' appearing first in small test grammars
+        for (name, node) in grammar.nonTerminals.sorted(by: { $0.key > $1.key }) {      // a fixed ordering with 'S' appearing first in small test grammars
             trace("Processing END nodes for:", name)
             node.resolveEndNodeLinks(parent: node, alternate: node.alt)
         }
         
         // TODO: finalize representation for EOS
-        root.follow.insert("$")
+        grammar.root.follow.insert("$")
         trace = false
-        trace("start symbol '\(startSymbol)' first:", root.first, "follow:", root.follow)
+        trace("start symbol '\(grammar.startSymbol)' first:", grammar.root.first, "follow:", grammar.root.follow)
         
         trace = false
         var oldSize = 0
@@ -124,21 +114,21 @@ public class GrammarParser {
         repeat {
             oldSize = newSize
             newSize = 0
-            for (_, node) in nonTerminals {
-                trace("nonterminalcount", nonTerminals.count)
+            for (_, node) in grammar.nonTerminals {
+                trace("nonterminalcount", grammar.nonTerminals.count)
                 GrammarNode.sizeofSets = 0
-                try node.populateFirstFollowSets()
+                try grammar.populateFirstFollowSets(for: node)
                 newSize += GrammarNode.sizeofSets
             }
             trace("first & follow", newSize)
         } while newSize != oldSize
         
-        for (name, node) in nonTerminals {
+        for (name, node) in grammar.nonTerminals {
             trace("Detecting ambiguity for:", name)
             node.detectAmbiguity()
         }
         
-        return root
+        return grammar
     }
     
     private var skip = false
@@ -173,11 +163,11 @@ public class GrammarParser {
                 next()
             } else {
                 // set the startSymbol to the first nonTerminal in the grammar file
-                if startSymbol == "" {
-                    startSymbol = nonTerminalName
+                if grammar.startSymbol == "" {
+                    grammar.startSymbol = nonTerminalName
                 }
                 node = try alternates()
-                if let existing = nonTerminals[nonTerminalName] {
+                if let existing = grammar.nonTerminals[nonTerminalName] {
                     // add this production to the end of the existing ALT list
                     var endOfList = existing
                     while let next = endOfList.alt {
@@ -185,7 +175,7 @@ public class GrammarParser {
                     }
                     endOfList.alt = node
                 } else {
-                    nonTerminals[nonTerminalName] = GrammarNode(kind: .N, str: nonTerminalName, alt: node)
+                    grammar.nonTerminals[nonTerminalName] = GrammarNode(kind: .N, str: nonTerminalName, alt: node)
                 }
             }
         } else {
@@ -211,7 +201,7 @@ public class GrammarParser {
 
     func message() {
         trace("message", token)
-        messages.append(token.stripped)
+        grammar.messages.append(token.stripped)
         next()
     }
 
@@ -270,9 +260,9 @@ public class GrammarParser {
 
     func regex() throws -> GrammarNode {
         trace("regex", token)
-        let name = terminalAlias ?? input.linePosition(of: token.image.startIndex)
+        let name = terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex)
 
-        if let definition = terminals[name] {
+        if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
                 print("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
             }
@@ -280,11 +270,11 @@ public class GrammarParser {
         do {
             // the token is a regex definition, try to initialize a Regex with it
             let regex = try Regex<Substring>(String(token.stripped))
-            terminals[name] = (String(token.image), regex, false, skip)
+            grammar.terminals[name] = (String(token.image), regex, false, skip)
             trace("regex name:", name, "image:", token.image)
         } catch {
             print("grammar parse error: \(token.image) is not a valid literal Regex \(error)")
-            throw GrammarParserError.invalidRegex(image: String(token.image), error: error)
+            throw ApusParserError.invalidRegex(image: String(token.image), error: error)
         }
 
         return GrammarNode(kind: .T, str: name)
@@ -301,14 +291,14 @@ public class GrammarParser {
         }
         
         let name = terminalAlias ?? token.stripped
-        if let definition = terminals[name] {
+        if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
                 print("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
             }
         }
         // the token is a string literal, use a regex builder to create a Regex
         let regex = Regex { token.stripped }
-        terminals[name] = (String(token.image), regex, true, skip)
+        grammar.terminals[name] = (String(token.image), regex, true, skip)
         trace("literal name:", name, "image:", token.image)
 
         return GrammarNode(kind: .T, str: name)
@@ -325,8 +315,8 @@ public class GrammarParser {
         switch token.kind {
         case "identifier":
             // the identifier can be a terminal or nonTerminal but not both
-            if terminals[String(token.image)] != nil {
-                if nonTerminals[String(token.image)] != nil {
+            if grammar.terminals[String(token.image)] != nil {
+                if grammar.nonTerminals[String(token.image)] != nil {
                     print("grammar parse error: \(token.image) is both a terminal and a nonTerminal")
                 }
                 // this string was defined previously as a terminal
@@ -372,18 +362,18 @@ public class GrammarParser {
         trace("expect \"\(token.kind)\" to be in", expectedTokens)
         if !expectedTokens.contains(token.kind) {
             print("parse error: found \"\(token.kind)\" but expected one of \(expectedTokens)")
-            print(token.image, token.image.endIndex > input.endIndex )
-            let lineRange = input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
-            print(input[lineRange], terminator: "")
+            print(token.image, token.image.endIndex > scanner.input.endIndex )
+            let lineRange = scanner.input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
+            print(scanner.input[lineRange], terminator: "")
             let before = lineRange.lowerBound ..< token.image.startIndex
-            for _ in 0 ..< input[before].count {
+            for _ in 0 ..< scanner.input[before].count {
                 print("~", terminator: "")
             }
             for _ in 0 ..< token.image.count {
                 print("^", terminator: "")
             }
             print()
-            throw GrammarParserError.unexpectedToken(expected: Array(expectedTokens), found: String(token.kind))
+            throw ApusParserError.unexpectedToken(expected: Array(expectedTokens), found: String(token.kind))
         }
     }
 

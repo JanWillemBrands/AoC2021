@@ -6,22 +6,22 @@
 //
 
 // Paper: descriptor = (L, k, i) — grammar slot, cluster index, input index
-struct Descriptor: Hashable {
+public struct Descriptor: Hashable {
     let L: GrammarNode          // grammar slot
     let k: Int                  // cluster index
     let i: Int                  // input index
 }
 
-var failedParses = 0
-var successfullParses = 0
-var descriptorCount = 0
-var duplicateDescriptorCount = 0
+public var failedParses = 0
+public var successfullParses = 0
+public var descriptorCount = 0
+public var duplicateDescriptorCount = 0
 
 // Paper: U - global dedup / unique descriptor set
-var unique: Set<Descriptor> = []
+public var unique: Set<Descriptor> = []
 
 // Paper: R — pending / remaining descriptor list
-var remaining: [Descriptor] = []
+public var remaining: [Descriptor] = []
 
 // Paper: dscAdd(L, k, i)
 func addDescriptor(L: GrammarNode, k: Int, i: Int) {

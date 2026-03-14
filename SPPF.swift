@@ -149,7 +149,7 @@ struct SPPFNodeKey: Hashable {
 var slotIndex: [GrammarNode: Int] = [:]
 
 /// Walk all grammar rules and bracket alternates to build the slotIndex dictionary.
-func buildSlotIndex() {
+func buildSlotIndex(nonTerminals: [String: GrammarNode]) {
     slotIndex = [:]
     for (_, nonterminal) in nonTerminals {
         indexAlternates(nonterminal.alt)
@@ -236,14 +236,20 @@ var sppfNodes: [SPPFNodeKey: SPPFNode] = [:]
 /// All SPPF nodes in creation order (for iteration).
 var sppfAllNodes: [SPPFNode] = []
 
+/// Non-terminals dictionary set at the start of extractSPPF() for use by nested functions.
+private var _sppfNonTerminals: [String: GrammarNode] = [:]
+
 /// Extract an SPPF from the BSR set, following the paper's algorithm.
 /// - Parameters:
 ///   - startSymbol: the grammar's start nonterminal (LHS node, kind .N, seq == nil)
 ///   - extent: the input length (number of tokens excluding EOS)
 /// - Returns: the root SPPFNode, or nil if no parse exists
-func extractSPPF(startSymbol: GrammarNode, extent: Int) -> SPPFNode? {
+func extractSPPF(startSymbol: GrammarNode, extent: Int, nonTerminals: [String: GrammarNode]) -> SPPFNode? {
     // Build slot index for |α| computation
-    buildSlotIndex()
+    buildSlotIndex(nonTerminals: nonTerminals)
+    
+    // Store nonTerminals for use by nested functions
+    _sppfNonTerminals = nonTerminals
     
     // Clear previous SPPF
     sppfNodes = [:]
@@ -508,7 +514,7 @@ private var syntheticEpsilonNode: GrammarNode?
 private func findOrCreateEpsilonSymbolNode(at pos: Int) -> SPPFNode {
     // Try to find an existing EPS grammar node in the grammar
     if syntheticEpsilonNode == nil {
-        outer: for (_, nt) in nonTerminals {
+        outer: for (_, nt) in _sppfNonTerminals {
             var alt = nt.alt
             while let a = alt {
                 var node = a.seq

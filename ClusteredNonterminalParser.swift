@@ -15,13 +15,14 @@
 
 import Foundation
 
-var currentParseRoot: GrammarNode!
+public var currentParseRoot: GrammarNode!
 var cL: GrammarNode!
-var cI: Int = 0
-var cU: Int = 0
+public var cI: Int = 0
+public var cU: Int = 0
+public var tokens: [Token] = []
 
 // clear all previous parsing results
-func resetMessageParser(root: GrammarNode) {
+public func resetMessageParser(root: GrammarNode) {
     remaining = []
     unique = []
     yield = []
@@ -41,14 +42,14 @@ func resetMessageParser(root: GrammarNode) {
 
 var furthestMismatch: (Token, Set<String>)!        // reset in resetMessageParser; tokens must contain at least the '$' a.k.a. EOS token
 
-func parseMessage() {
+public func parseMessage() {
     nextDescriptor: while getDescriptor() {
         
         while true {
             
             trace = true
             #if DEBUG
-            trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(token.kind) \(token.image)")
+            trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI].kind) \(tokens[cI].image)")
             #endif
             trace = false
             
@@ -62,14 +63,14 @@ func parseMessage() {
                     cI += 1
                     #if DEBUG
                     trace = true
-                    trace("next", token.image, token.kind)
+                    trace("next", tokens[cI].image, tokens[cI].kind)
                     trace = false
                     #endif
                     cL = cL.seq!
                 } else {
                     failedParses += 1
-                    if token.image.startIndex > furthestMismatch.0.image.endIndex {
-                        furthestMismatch = (token, [cL.str])
+                    if tokens[cI].image.startIndex > furthestMismatch.0.image.endIndex {
+                        furthestMismatch = (tokens[cI], [cL.str])
                     }
                     #if DEBUG
                     trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
@@ -108,7 +109,7 @@ func parseMessage() {
                         cL = seq
                     } else {
                         // the bracket is a LHS nonterminal
-                        if bracket.follow.contains(token.kind) {
+                        if bracket.follow.contains(tokens[cI].kind) {
                             bsrAdd(L: bracket, i: cU, k: cU, j: cI)
                             rtn(X: bracket)
                         }
@@ -151,7 +152,7 @@ func testRepeat() -> Bool {
 }
 
 func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
-    var current = token
+    var current = tokens[cI]
     repeat { // to handle Schrödinger tokens
         if slot.first.contains(current.kind)
             || slot.first.contains("") && bracket.follow.contains(current.kind) {
@@ -163,7 +164,7 @@ func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
 }
 
 func tokenMatch() -> Bool {
-    var current = token
+    var current = tokens[cI]
     repeat {  // to handle Schrödinger tokens
         if cL.str == current.kind { return true }
         guard let next = current.dual else { return false }

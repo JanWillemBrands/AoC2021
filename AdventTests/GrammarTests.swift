@@ -34,11 +34,6 @@ struct TestCase: CustomTestStringConvertible {
 
 /// Reset all global parser state between tests.
 private func resetAllState() {
-    input = ""
-    startSymbol = ""
-    terminals = [:]
-    nonTerminals = [:]
-    messages = []
     crf = [:]
     crfReturnNodes = []
     unique = []
@@ -57,24 +52,26 @@ private func resetAllState() {
 }
 
 /// Parse a grammar string, run a message through it, return whether it matched.
-private func parseMatches(grammar: String, message: String) throws -> Bool {
+private func parseMatches(grammar grammarString: String, message: String) throws -> Bool {
     resetAllState()
 
-    let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammar
-    let parser = try GrammarParser(fromString: grammarWithWhitespace, patterns: apusTerminals)
-    guard let root = try parser.parseGrammar(explicitStartSymbol: "") else {
+    let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammarString
+    let parser = try ApusParser(fromString: grammarWithWhitespace)
+    guard let grammar = try parser.parseGrammar(explicitStartSymbol: "") else {
         return false
     }
 
     // Scanner throws when the message contains characters not matched by any terminal.
     // This is a valid parse failure, not a test error.
+    let messageScanner: Scanner
     do {
-        try initScanner(fromString: message, patterns: terminals)
+        messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
     } catch is ScannerFailure {
         return false
     }
-    resetMessageParser(root: root)
-    ntAdd(X: root, k: 0, i: 0)
+    tokens = messageScanner.tokens
+    resetMessageParser(root: grammar.root)
+    ntAdd(X: grammar.root, k: 0, i: 0)
     parseMessage()
 
     let extent = tokens.count - 1
@@ -85,11 +82,11 @@ private func parseMatches(grammar: String, message: String) throws -> Bool {
 private func runTestCase(_ tc: TestCase) throws {
     for message in tc.pass {
         let result = try parseMatches(grammar: tc.grammar, message: message)
-        #expect(result == true, "Expected PASS for '\(message)' with grammar: \(tc.grammar)")
+        #expect(result == true, "\(tc.label): Expected PASS for '\(message)' with grammar: \(tc.grammar)")
     }
     for message in tc.fail {
         let result = try parseMatches(grammar: tc.grammar, message: message)
-        #expect(result == false, "Expected FAIL for '\(message)' with grammar: \(tc.grammar)")
+        #expect(result == false, "\(tc.label): Expected FAIL for '\(message)' with grammar: \(tc.grammar)")
     }
 }
 
@@ -975,10 +972,10 @@ struct GrammarTests {
                 .appendingPathComponent("apus")
                 .appendingPathExtension("apus")
 
-            let parser = try GrammarParser(inputFile: grammarFileURL, patterns: apusTerminals)
-            let root = try parser.parseGrammar(explicitStartSymbol: "")
-            #expect(root != nil, "APUS grammar should parse successfully")
-            #expect(nonTerminals.count > 0, "Should define nonterminals")
+            let parser = try ApusParser(fromFile: grammarFileURL)
+            let grammar = try parser.parseGrammar(explicitStartSymbol: "")
+            #expect(grammar != nil, "APUS grammar should parse successfully")
+            #expect(grammar?.nonTerminals.count ?? 0 > 0, "Should define nonterminals")
         }
     }
 }

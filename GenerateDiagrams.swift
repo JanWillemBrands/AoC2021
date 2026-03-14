@@ -18,9 +18,11 @@ struct Cell: Hashable, CustomStringConvertible {
 class DiagramsGenerator {
     
     let diagramFile: URL
+    let grammar: Grammar
     
-    init(outputFile: URL) {
+    init(outputFile: URL, grammar: Grammar) {
         self.diagramFile = outputFile
+        self.grammar = grammar
     }
 
     var content = #"""
@@ -52,7 +54,7 @@ class DiagramsGenerator {
         content.append("\n  subgraph GSS {")
         content.append("\n    cluster = true")
         
-        var shortMessage = messages[0]
+        var shortMessage = grammar.messages[0]
         if shortMessage.count > 20 {
             shortMessage = String(shortMessage.prefix(17))
             shortMessage.append("...")
@@ -85,7 +87,7 @@ class DiagramsGenerator {
         content.append("\n  }")
 
         // generate syntax graph for each non-terminal
-        for (name, node) in nonTerminals {
+        for (name, node) in grammar.nonTerminals {
             content.append("\n  subgraph cluster\(name) {")
             //        d.append("\n    cluster = true")
             content.append("\n    node [shape = box]")

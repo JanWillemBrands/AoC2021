@@ -10,9 +10,11 @@ import Foundation
 public class ParserGenerator {
     
     let parserFile: URL
+    let grammar: Grammar
     
-    public init(outputFile: URL) {
+    public init(outputFile: URL, grammar: Grammar) {
         self.parserFile = outputFile
+        self.grammar = grammar
     }
     
     var content = #"""
@@ -32,7 +34,7 @@ public class ParserGenerator {
         
         // TODO: check escapes etc.
         emit(dent: .NR, "let tokenPatterns: [String:TokenPattern] = [")
-        for (kind, pattern) in terminals.sorted(by: { !$0.value.isKeyword && $1.value.isKeyword } ) {
+        for (kind, pattern) in grammar.terminals.sorted(by: { !$0.value.isKeyword && $1.value.isKeyword } ) {
             if pattern.isKeyword {
                 emit("\"", kind, "\":\t(", pattern.source, ",\tRegex { ", pattern.source, " },\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
             } else {
@@ -41,7 +43,7 @@ public class ParserGenerator {
         }
         emit(dent: .LN, "]")
         
-        for (var name, node) in nonTerminals {
+        for (var name, node) in grammar.nonTerminals {
             if name.first!.isNumber {
                 name = "_" + name
             }
