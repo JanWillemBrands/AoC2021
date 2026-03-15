@@ -117,14 +117,14 @@ public final class Scanner {
     // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern
     
     private func scanError(position: String.Index) throws -> Never {
-        print("scan error: input characters do not match any symbol in the grammar")
+        trace("scan error: input characters do not match any symbol in the grammar")
         let lineRange = input.lineRange(for: position ..< input.index(after: position))
-        print(input[lineRange], terminator: "")
+        trace(input[lineRange], terminator: "")
         let before = lineRange.lowerBound ..< position
         for _ in 0 ..< input[before].count {
-            print(" ", terminator: "")
+            trace(" ", terminator: "")
         }
-        print("^~~~~~~~")
+        trace("^~~~~~~~")
         throw ScannerFailure.charactersDoNotMatchAnySymbol(position: position, input: input)
     }
 }

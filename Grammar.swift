@@ -65,10 +65,10 @@ extension Grammar {
                 }
                 production.follow.formUnion(node.follow)
             } else {
-                print("grammar parse error: '\(node.str)' was not defined as a grammar rule")
+                trace("grammar parse error: '\(node.str)' was not defined as a grammar rule")
                 let definedAsTerminal = terminals[node.str] != nil
                 if definedAsTerminal {
-                    print("but it was defined as terminal \(terminals[node.str]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
+                    trace("but it was defined as terminal \(terminals[node.str]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
                 throw GrammarNodeError.undefinedNonTerminal(name: node.str, definedAsTerminal: definedAsTerminal)
             }

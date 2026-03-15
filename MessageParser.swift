@@ -60,6 +60,8 @@ class MessageParser {
 
     init(grammar: Grammar) {
         self.grammar = grammar
+        buildSlotIndex(nonTerminals: grammar.nonTerminals)
+        _sppfNonTerminals = grammar.nonTerminals
     }
 
     // MARK: - Parse API
@@ -74,8 +76,8 @@ class MessageParser {
         descriptorCount = 0; duplicateDescriptorCount = 0
         crf = [:]; yield = []
         furthestMismatch = (tokens[0], [])
-        slotIndex = [:]; sppfNodes = [:]; sppfAllNodes = []
-        _sppfNonTerminals = [:]; syntheticEpsilonNode = nil
+        sppfNodes = [:]; sppfAllNodes = []
+        syntheticEpsilonNode = nil
 
         // Set up root cluster
         let rootCluster = Cluster(slot: grammar.root, index: 0)
@@ -91,9 +93,7 @@ class MessageParser {
             while true {
 
                 trace = true
-                #if DEBUG
                 trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI].kind) \(tokens[cI].image)")
-                #endif
                 trace = false
 
                 switch cL.kind {
@@ -104,31 +104,24 @@ class MessageParser {
                     if tokenMatch() {
                         addYield(L: cL, i: cU, k: cI, j: cI + 1)
                         cI += 1
-                        #if DEBUG
-                        trace = true
-                        trace("next", tokens[cI].image, tokens[cI].kind)
-                        trace = false
-                        #endif
                         cL = cL.seq!
                     } else {
                         failedParses += 1
                         if tokens[cI].image.startIndex > furthestMismatch.0.image.endIndex {
                             furthestMismatch = (tokens[cI], [cL.str])
                         }
-                        #if DEBUG
                         trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
-                        #endif
                         continue nextDescriptor
                     }
                 case .N:
                     call()
                     continue nextDescriptor
                 case .ALT:
-                    print("ERROR: Unexpected .ALT node in cL")
-                    print("  cL.number: \(cL.number)")
-                    print("  cL.str: '\(cL.str)'")
-                    print("  cL.seq: \(String(describing: cL.seq))")
-                    print("  cL.alt: \(String(describing: cL.alt))")
+                    trace("ERROR: Unexpected .ALT node in cL")
+                    trace("  cL.number: \(cL.number)")
+                    trace("  cL.str: '\(cL.str)'")
+                    trace("  cL.seq: \(String(describing: cL.seq))")
+                    trace("  cL.alt: \(String(describing: cL.alt))")
                     fatalError(#function + ": ALT should not happen here")
                 case .DO, .POS:
                     bracketCall(bracket: cL)
@@ -171,20 +164,20 @@ class MessageParser {
         }
 
         successfullParses = currentParseRoot.yield.filter { y in y.i == 0 && y.j == tokens.count-1 }.count
-        print(
+        trace(
             "\nmatched:", successfullParses,
             "  failed:", failedParses,
             "  crf size:", crf.count,
             "  descriptors:", descriptorCount,
             "  duplicateDescriptors:", duplicateDescriptorCount
         )
-
+        
         if successfullParses == 0 {
-            print("the furthest token mismatch was with '\(furthestMismatch.0.image)' \(furthestMismatch.0)")
+            trace("the furthest token mismatch was with '\(furthestMismatch.0.image)' \(furthestMismatch.0)")
             let expectedTokens: Set<String> = furthestMismatch.1
             let tokenStartIndex = furthestMismatch.0.image.startIndex
             let position = furthestMismatch.0.image.base.linePosition(of: tokenStartIndex)
-            print("the expected tokens were \(expectedTokens) at message position \(position)")
+            trace("the expected tokens were \(expectedTokens) at message position \(position)")
         }
     }
 

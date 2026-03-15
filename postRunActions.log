@@ -17,97 +17,8 @@ The plugin configuration file:
     textlayout	:  textlayout:cairo textlayout:quartz textlayout:gd
     device	:  bmp:quartz:quartz bmp:cairo:quartz canon:dot:core cgimage:quartz:quartz cmap:map:core cmapx:map:core cmapx_np:map:core dot:dot:core dot_json:json:core eps:ps:core eps:lasi:lasi eps:cairo:cairo exr:quartz:quartz exr:cairo:quartz fig:fig:core gd:cairo:gd gd:gd:gd gd2:cairo:gd gd2:gd:gd gif:cairo:gd gif:quartz:quartz gif:cairo:quartz gif:gd:gd gv:dot:core icns:quartz:quartz icns:cairo:quartz ico:quartz:quartz ico:cairo:quartz imap:map:core imap_np:map:core ismap:map:core jp2:quartz:quartz jp2:cairo:quartz jpe:quartz:quartz jpe:cairo:quartz jpe:cairo:gd jpe:gd:gd jpeg:quartz:quartz jpeg:cairo:quartz jpeg:cairo:gd jpeg:gd:gd jpg:quartz:quartz jpg:cairo:quartz jpg:cairo:gd jpg:gd:gd json:json:core json0:json:core kitty:cairo:kitty kittyz:cairo:kitty mp:mp:core pct:quartz:quartz pct:cairo:quartz pdf:cairo:cairo pdf:quartz:quartz pic:pic:core pict:quartz:quartz pict:cairo:quartz plain:dot:core plain-ext:dot:core png:cairo:cairo png:quartz:quartz png:cairo:quartz png:cairo:gd png:gd:gd pov:pov:core ps:ps:core ps:lasi:lasi ps:cairo:cairo ps2:ps:core ps2:lasi:lasi psd:quartz:quartz psd:cairo:quartz sgi:quartz:quartz sgi:cairo:quartz svg:svg:core svg:cairo:cairo svgz:svg:core tga:quartz:quartz tga:cairo:quartz tif:quartz:quartz tif:cairo:quartz tiff:quartz:quartz tiff:cairo:quartz tk:tk:core vrml:vrml:gd vt:cairo:vt vt-24bit:cairo:vt wbmp:cairo:gd wbmp:gd:gd webp:cairo:webp x11:cairo:xlib xdot:xdot:core xdot1.2:xdot:core xdot1.4:xdot:core xdot_json:json:core xlib:cairo:xlib
     loadimage	:  (lib):ps:core bmp:quartz:quartz eps:xdot:core eps:dot:core eps:map:core eps:ps:core eps:lasi:lasi gd:cairo:gd gd:lasi:gd gd:ps:gd gd:gd:gd gd2:cairo:gd gd2:lasi:gd gd2:ps:gd gd2:gd:gd gif:quartz:quartz gif:cairo:gd gif:lasi:gd gif:ps:gd gif:gd:gd gif:tk:core gif:xdot:core gif:dot:core gif:map:core gif:vrml:core gif:fig:core gif:svg:core jpe:quartz:quartz jpe:cairo:gd jpe:lasi:gd jpe:ps:gd jpe:gd:gd jpe:xdot:core jpe:dot:core jpe:map:core jpe:vrml:core jpe:fig:core jpe:svg:core jpeg:quartz:quartz jpeg:cairo:gd jpeg:lasi:gd jpeg:ps:gd jpeg:gd:gd jpeg:xdot:core jpeg:dot:core jpeg:map:core jpeg:vrml:core jpeg:fig:core jpeg:svg:core jpg:quartz:quartz jpg:cairo:gd jpg:lasi:gd jpg:ps:gd jpg:gd:gd jpg:xdot:core jpg:dot:core jpg:map:core jpg:vrml:core jpg:fig:core jpg:svg:core pdf:quartz:quartz png:quartz:quartz png:ps:cairo png:lasi:cairo png:cairo:cairo png:lasi:gd png:ps:gd png:gd:gd png:xdot:core png:dot:core png:map:core png:vrml:core png:fig:core png:svg:core png:cairo:gd ps:xdot:core ps:dot:core ps:map:core ps:ps:core ps:lasi:lasi svg:svg:core svg:xdot:core svg:dot:core svg:map:core webp:cairo:webp xbm:cairo:gd xbm:lasi:gd xbm:ps:gd xbm:gd:gd
-pack info:
-  mode   undefined
-  size   0
-  flags  0
-  margin 8
-pack info:
-  mode   node
-  size   0
-  flags  0
-Verbose 5
- [0] Times-Roman => "Times New Roman,  REGULAR"
- [1] Times-Italic => "Times New Roman,  REGULAR ITALIC"
- [2] Times-Bold => "Times New Roman,  BOLD"
- [3] Times-BoldItalic => "Times New Roman,  BOLD ITALIC"
- [4] AvantGarde-Book => "Verdana, "
- [5] AvantGarde-BookOblique => "Verdana,  ITALIC"
- [6] AvantGarde-Demi => "Verdana, "
- [7] AvantGarde-DemiOblique => "Verdana,  ITALIC"
- [8] Bookman-Light => "Times New Roman, "
- [9] Bookman-LightItalic => "Times New Roman,  ITALIC"
- [10] Bookman-Demi => "Times New Roman, "
- [11] Bookman-DemiItalic => "Times New Roman,  ITALIC"
- [12] Courier => "Courier New,  REGULAR"
- [13] Courier-Oblique => "Courier New,  REGULAR ITALIC"
- [14] Courier-Bold => "Courier New,  BOLD"
- [15] Courier-BoldOblique => "Courier New,  BOLD ITALIC"
- [16] Helvetica => "Helvetica,  REGULAR"
- [17] Helvetica-Oblique => "Helvetica,  REGULAR OBLIQUE"
- [18] Helvetica-Bold => "Helvetica,  BOLD"
- [19] Helvetica-BoldOblique => "Helvetica,  BOLD OBLIQUE"
- [20] Helvetica-Narrow => "Helvetica,  REGULAR"
- [21] Helvetica-Narrow-Oblique => "Helvetica,  REGULAR OBLIQUE"
- [22] Helvetica-Narrow-Bold => "Helvetica,  BOLD"
- [23] Helvetica-Narrow-BoldOblique => "Helvetica,  BOLD OBLIQUE"
- [24] NewCenturySchlbk-Roman => "Times New Roman,  ROMAN"
- [25] NewCenturySchlbk-Italic => "Times New Roman,  REGULAR ITALIC"
- [26] NewCenturySchlbk-Bold => "Times New Roman,  BOLD"
- [27] NewCenturySchlbk-BoldItalic => "Times New Roman,  BOLD ITALIC"
- [28] Palatino-Roman => "Palatino,  ROMAN"
- [29] Palatino-Italic => "Palatino,  REGULAR ITALIC"
- [30] Palatino-Bold => "Palatino,  BOLD"
- [31] Palatino-BoldItalic => "Palatino,  BOLD ITALIC"
- [32] Symbol => "Symbol,  REGULAR"
- [33] ZapfChancery-MediumItalic => "Times New Roman,  ITALIC"
- [34] ZapfDingbats => "Impact,  REGULAR"
-fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
-network simplex:  1 nodes 0 edges maxiter=16 balance=1
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
-network simplex:  3 nodes 2 edges maxiter=16 balance=1
-network simplex: 3 nodes 2 edges 0 iter 0.00 sec
-network simplex:  7 nodes 6 edges maxiter=24 balance=1
-network simplex: 7 nodes 6 edges 0 iter 0.00 sec
-network simplex:  8 nodes 9 edges maxiter=32 balance=1
-network simplex: 8 nodes 9 edges 0 iter 0.00 sec
-network simplex:  9 nodes 8 edges maxiter=30 balance=1
-network simplex: 9 nodes 8 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=102 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=102 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=102 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=102 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-Maxrank = 4, minrank = 0
-mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-merge2: graph G, rank 0 has only 4 < 15 nodes
-merge2: graph G, rank 1 has only 4 < 15 nodes
-merge2: graph G, rank 2 has only 3 < 11 nodes
-merge2: graph G, rank 3 has only 2 < 7 nodes
-merge2: graph G, rank 4 has only 1 < 3 nodes
-mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 5 best_cross 5
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 10 best_cross 10
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 2 best_cross 2
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross G: 0 crossings, 0.00 secs.
-network simplex:  98 nodes 184 edges maxiter=102 balance=2
-network simplex: 98 nodes 184 edges 37 iter 0.00 sec
-routesplines: 37 edges, 111 boxes 0.00 sec
-Using render: svg:core
-Using device: svg:svg:core
-gvRenderJobs G: 0.00 secs.
+Error: /Users/janwillem/Developer/Xcode/AoC2021/ART.gv: syntax error in line 1390 scanning a HTML string (missing '>'? bad nesting? longer than 16384?)
+String starting:<6<br/>N S<br/>fi ["b"]<br/>fo ["$", "b"]<br/>[0:1:2, 0:1:3, 0:1:4, 0:1:5, 0:1:6,
 Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_FORMAT
 Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_VERSION
 dot - graphviz version 9.0.0 (20230911.1827)
@@ -173,30 +84,17 @@ Verbose 5
  [33] ZapfChancery-MediumItalic => "Times New Roman,  ITALIC"
  [34] ZapfDingbats => "Impact,  REGULAR"
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
-network simplex:  19 nodes 19 edges maxiter=38 balance=1
-network simplex: 19 nodes 19 edges 0 iter 0.00 sec
-Maxrank = 6, minrank = 0
-mincross: pass 0 iter 0 trying 0 cur_cross 2 best_cross 2
-mincross: pass 0 iter 1 trying 0 cur_cross 1 best_cross 1
-mincross: pass 0 iter 2 trying 1 cur_cross 1 best_cross 1
-mincross: pass 0 iter 3 trying 2 cur_cross 1 best_cross 1
-mincross: pass 1 iter 0 trying 0 cur_cross 2 best_cross 1
-mincross: pass 1 iter 1 trying 1 cur_cross 1 best_cross 1
-mincross: pass 1 iter 2 trying 2 cur_cross 1 best_cross 1
-mincross: pass 1 iter 3 trying 3 cur_cross 1 best_cross 1
-mincross: pass 2 iter 0 trying 0 cur_cross 1 best_cross 1
-mincross: pass 2 iter 1 trying 1 cur_cross 1 best_cross 1
-mincross: pass 2 iter 2 trying 2 cur_cross 1 best_cross 1
-mincross: pass 2 iter 3 trying 3 cur_cross 1 best_cross 1
-mincross: pass 2 iter 4 trying 4 cur_cross 1 best_cross 1
-mincross: pass 2 iter 5 trying 5 cur_cross 1 best_cross 1
-mincross: pass 2 iter 6 trying 6 cur_cross 1 best_cross 1
-mincross: pass 2 iter 7 trying 7 cur_cross 1 best_cross 1
-mincross: pass 2 iter 8 trying 8 cur_cross 1 best_cross 1
-mincross SPPF: 1 crossings, 0.00 secs.
-network simplex:  38 nodes 50 edges maxiter=38 balance=2
-network simplex: 38 nodes 50 edges 7 iter 0.00 sec
-routesplines: 19 edges, 57 boxes 0.00 sec
-Using render: svg:core
-Using device: svg:svg:core
-gvRenderJobs SPPF: 0.00 secs.
+network simplex:  11019 nodes 30674 edges maxiter=22038 balance=1
+network simplex: 100 200 300 400 500 600 700 800 900 1000 
+network simplex: 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 
+network simplex: 2100 2200 2300 2400 2500 2600 2700 2800 2900 3000 
+network simplex: 3100 3200 3300 3400 3500 3600 3700 3800 3900 4000 
+network simplex: 4100 4200 4300 4400 4500 4600 4700 4800 4900 5000 
+network simplex: 5100 5200 5300 5400 5500 5600 5700 5800 5900 6000 
+network simplex: 6100 6200 6300 6400 6500 6600 6700 6800 6900 7000 
+network simplex: 7100 7200 7300 7400 7500 7600 7700 7800 7900 8000 
+network simplex: 8100 8200 8300 8400 8500 8600 8700 8800 8900 9000 
+network simplex: 9100 9200 9300 9400 
+network simplex: 11019 nodes 30674 edges 9415 iter 0.60 sec
+Maxrank = 56, minrank = 0
+mincross: pass 0 iter 0 trying 0 cur_cross 42880571 best_cross 42880571

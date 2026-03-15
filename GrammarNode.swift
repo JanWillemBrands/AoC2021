@@ -334,10 +334,10 @@ extension GrammarNode {
                 // update the follow of the lhs nonterminal as the union of the follows of all rhs nonterminals
                 production.follow.formUnion(follow)
             } else {
-                print("grammar parse error: '\(str)' was not defined as a grammar rule")
+                trace("grammar parse error: '\(str)' was not defined as a grammar rule")
                 let definedAsTerminal = terminals[str] != nil
                 if definedAsTerminal {
-                    print("but it was defined as terminal \(terminals[str]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
+                    trace("but it was defined as terminal \(terminals[str]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
                 throw GrammarNodeError.undefinedNonTerminal(name: str, definedAsTerminal: definedAsTerminal)
             }

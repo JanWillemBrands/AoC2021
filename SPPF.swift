@@ -238,12 +238,9 @@ extension MessageParser {
     ///   - startSymbol: the grammar's start nonterminal (LHS node, kind .N, seq == nil)
     ///   - extent: the input length (number of tokens excluding EOS)
     /// - Returns: the root SPPFNode, or nil if no parse exists
-    func extractSPPF(startSymbol: GrammarNode, extent: Int, nonTerminals: [String: GrammarNode]) -> SPPFNode? {
-        // Build slot index for |α| computation
-        buildSlotIndex(nonTerminals: nonTerminals)
-        
-        // Store nonTerminals for use by nested functions
-        _sppfNonTerminals = nonTerminals
+    func extractSPPF() -> SPPFNode? {
+        let startSymbol = grammar.root
+        let extent = tokens.count - 1  // exclude EOS
         
         // Clear previous SPPF
         sppfNodes = [:]
@@ -252,7 +249,7 @@ extension MessageParser {
         // Paper: if Υ has an element of the form (S ::= α, 0, k, n)
         let rootBSRs = bsrForNonterminal(startSymbol, i: 0, j: extent)
         guard !rootBSRs.isEmpty else {
-            print("SPPF: no complete parse found for \(startSymbol.str) spanning 0..\(extent)")
+            trace("SPPF: no complete parse found for \(startSymbol.str) spanning 0..\(extent)")
             return nil
         }
         
@@ -306,7 +303,7 @@ extension MessageParser {
             // Paper: μ is X ::= α · δ (an intermediate node)
             let slot = w.slot
             guard let alphaLen = slotIndex[slot] else {
-                print("SPPF: no slot index for \(slot) kind=\(slot.kind)")
+                trace("SPPF: no slot index for \(slot) kind=\(slot.kind)")
                 return
             }
             
@@ -879,7 +876,7 @@ extension MessageParser {
 ///   - Symbol nodes (nonterminals, terminals): rounded reactangles
 ///   - Intermediate nodes (grammar slots): rectangle
 ///   - Packed nodes: rounded rectangles
-func generateSPPFDiagram(root: SPPFNode, to file: URL) throws {
+func generateSPPFDiagram(outputFile file: URL, root: SPPFNode) throws {
     var dot = """
     digraph SPPF {
       fontname = Menlo
@@ -951,3 +948,4 @@ func generateSPPFDiagram(root: SPPFNode, to file: URL) throws {
     
     try dot.write(to: file, atomically: true, encoding: .utf8)
 }
+

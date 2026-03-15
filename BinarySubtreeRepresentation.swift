@@ -33,15 +33,13 @@ struct BinarySpan: Hashable, Comparable, CustomStringConvertible {
 extension MessageParser {
     
     // Paper: bsrAdd(X ::= α·β, i, k, j) — add BSR element to the yield
-    @discardableResult
-    func addYield(L: GrammarNode, i: Int, k: Int, j: Int) -> Bool {
-        print("bsrAdd: \(L.ebnfDot()) \(i):\(k):\(j)")
+    func addYield(L: GrammarNode, i: Int, k: Int, j: Int) {
+        trace("bsrAdd: \(L.ebnfDot()) \(i):\(k):\(j)")
+        // TODO: remove distributed bsrSet ?
         let triple = BinarySpan(i: i, k: k, j: j)
         L.yield.insert(triple)
         
-        // TODO: remove global bsrSet
         let bsr = BSR(slot: L, i: i, k: k, j: j)
-        // TODO: check why this was returning a bool
-        return yield.insert(bsr).inserted
+        yield.insert(bsr)
     }
 }

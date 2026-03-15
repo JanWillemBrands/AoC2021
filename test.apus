@@ -207,4 +207,4 @@ B = "b" | B "c" | "".
 //S = { "x" | "" } .      // nullable closure
 //S = < "x" | "" > .         // nullable positive closure
 ^^^
-ac
+abc

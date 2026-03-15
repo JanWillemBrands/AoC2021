@@ -88,7 +88,7 @@ struct ParserGeneratorTests {
         let parserGenerator = ParserGenerator(outputFile: parserOutputFile, grammar: grammar)
         
         do {
-            try parserGenerator.generateParser()
+            try parserGenerator.generate()
             
             if testCase.expectedToComplete {
                 // Verify the output file was created
@@ -158,7 +158,7 @@ struct ParserGeneratorTests {
             .appendingPathExtension("swift")
         
         let parserGenerator = ParserGenerator(outputFile: parserOutputFile, grammar: grammar)
-        try parserGenerator.generateParser()
+        try parserGenerator.generate()
         
         // Read the generated file
         let generatedCode = try String(contentsOf: parserOutputFile, encoding: .utf8)

@@ -15,7 +15,7 @@ struct Cell: Hashable, CustomStringConvertible {
     var description: String { "\(name)R\(r)C\(c)" }
 }
 
-class DiagramsGenerator {
+class ASTDiagramGenerator {
     
     let diagramFile: URL
     let grammar: Grammar
@@ -50,10 +50,10 @@ class DiagramsGenerator {
     var maxCol = 0
 
     // Draw a regular grid of GrammarNodes with arrows for .seq down and .alt to the right.
-    func generateDiagrams() throws {
+    func generate() throws {
         
-        // generate GSS graph
-        content.append("\n  subgraph GSS {")
+        // MARK: - generate CRT graph
+        content.append("\n  subgraph CallReturnForest {")
         content.append("\n    cluster = true")
         
         var shortMessage = grammar.messages[0]
@@ -89,6 +89,7 @@ class DiagramsGenerator {
 //        }
         content.append("\n  }")
 
+        // MARK: - generate the Abstract Syntaxt Tree of GrammarNodes
         // generate syntax graph for each non-terminal
         for (name, node) in grammar.nonTerminals {
             content.append("\n  subgraph cluster\(name) {")

@@ -18,8 +18,8 @@ let grammarFileURL = URL(fileURLWithPath: #filePath)
 //    .appendingPathComponent("AfroozehHunt")
 //    .appendingPathComponent("apusWithAction")
 //    .appendingPathComponent("TortureSyntax")
-    .appendingPathComponent("test")
-//    .appendingPathComponent("tortureART")
+//    .appendingPathComponent("test")
+    .appendingPathComponent("tortureART")
 //    .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
 
@@ -48,60 +48,45 @@ for m in grammar.messages {
     print(cpuTime, messageParser.descriptorCount, messageParser.crf.count)
     
     for y in messageParser.yield {
-        print(y)
+        trace(y)
     }
     
     
-    
+#if DEBUG
     trace = false
     
     if grammar.nonTerminals.count < 1000 && messageParser.crf.count < 1000 {    // to avoid huge diagrams and parsers
         
         // MARK: - Generate New Parser
         
-        let generatedParserFile = URL(fileURLWithPath: #filePath)
+        let parserFile = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .appendingPathComponent("output")
             .appendingPathExtension("swift")
-        let parserGenerator = ParserGenerator(outputFile: generatedParserFile, grammar: grammar)
-        do {
-            try parserGenerator.generateParser()
-        } catch {
-            print("file error: could not write to \(generatedParserFile.absoluteString)")
-            exit(5)
-        }
+        let parserGenerator = ParserGenerator(outputFile: parserFile, grammar: grammar)
+        try parserGenerator.generate()
         
         // MARK: - Generate CRF and AST diagrams
         
-        let generatedDiagramFile = URL(fileURLWithPath: #filePath)
+        let diagramFile = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .appendingPathComponent("ART")
             .appendingPathExtension("gv")
-        let diagramsGenerator = DiagramsGenerator(outputFile: generatedDiagramFile, grammar: grammar, messageParser: messageParser)
-        do {
-            try diagramsGenerator.generateDiagrams()
-        } catch {
-            print("file error: could not write to \(generatedDiagramFile.absoluteString)")
-            exit(6)
-        }
+        let diagramGenerator = ASTDiagramGenerator(outputFile: diagramFile, grammar: grammar, messageParser: messageParser)
+        try diagramGenerator.generate()
         
         // MARK: - Extract SPPF from BSR set
-        let inputExtent = messageParser.tokens.count - 1  // exclude EOS
-        if let sppfRoot = messageParser.extractSPPF(startSymbol: grammar.root, extent: inputExtent, nonTerminals: grammar.nonTerminals) {
-            print("\nSPPF extracted: \(messageParser.sppfAllNodes.count) nodes")
-            
-            let sppfDiagramFile = URL(fileURLWithPath: #filePath)
+        if let sppfRoot = messageParser.extractSPPF() {
+            let sppfFile = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent()
                 .appendingPathComponent("SPPF")
                 .appendingPathExtension("gv")
-            do {
-                try generateSPPFDiagram(root: sppfRoot, to: sppfDiagramFile)
-                print("SPPF diagram written to \(sppfDiagramFile.lastPathComponent)")
-            } catch {
-                print("file error: could not write SPPF diagram: \(error)")
-            }
+            try generateSPPFDiagram(outputFile: sppfFile, root: sppfRoot)
+            trace("SPPF diagram written to \(sppfFile.lastPathComponent)")
         } else {
-            print("\nSPPF: no parse tree to extract")
+            trace("\nSPPF: no parse tree to extract")
         }
     }
+#endif
+    
 }

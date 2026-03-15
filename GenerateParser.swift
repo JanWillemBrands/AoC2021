@@ -30,7 +30,7 @@ public class ParserGenerator {
         
         """#
     
-    public func generateParser() throws {
+    public func generate() throws {
         
         // TODO: check escapes etc.
         emit(dent: .NR, "let tokenPatterns: [String:TokenPattern] = [")
