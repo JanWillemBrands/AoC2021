@@ -12,37 +12,31 @@ public struct Descriptor: Hashable {
     let i: Int                  // input index
 }
 
-public var failedParses = 0
-public var successfullParses = 0
-public var descriptorCount = 0
-public var duplicateDescriptorCount = 0
+// MARK: - MessageParser Descriptor Operations
 
-// Paper: U - global dedup / unique descriptor set
-public var unique: Set<Descriptor> = []
-
-// Paper: R — pending / remaining descriptor list
-public var remaining: [Descriptor] = []
-
-// Paper: dscAdd(L, k, i)
-func addDescriptor(L: GrammarNode, k: Int, i: Int) {
-    let d = Descriptor(L: L, k: k, i: i)
-    if unique.insert(d).inserted {
-        remaining.append(d)
-        descriptorCount += 1
-    } else {
-        duplicateDescriptorCount += 1
+extension MessageParser {
+    
+    // Paper: dscAdd(L, k, i)
+    func addDescriptor(L: GrammarNode, k: Int, i: Int) {
+        let d = Descriptor(L: L, k: k, i: i)
+        if unique.insert(d).inserted {
+            remaining.append(d)
+            descriptorCount += 1
+        } else {
+            duplicateDescriptorCount += 1
+        }
     }
-}
-
-// Paper: get next descriptor from R
-func getDescriptor() -> Bool {
-    if remaining.isEmpty {
-        return false
-    } else {
-        let d = remaining.removeLast()
-        cL = d.L
-        cU = d.k
-        cI = d.i
-        return true
+    
+    // Paper: get next descriptor from R
+    func getDescriptor() -> Bool {
+        if remaining.isEmpty {
+            return false
+        } else {
+            let d = remaining.removeLast()
+            cL = d.L
+            cU = d.k
+            cI = d.i
+            return true
+        }
     }
 }

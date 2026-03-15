@@ -65,10 +65,9 @@ let blockcommentRegex = Regex {
 }
 // recommended ID syntax following https://unicode.org/reports/tr31/
 let identifierRegex = Regex {
-    // TODO: why are there #'s here?
     /\p{XID_Start}/
     ZeroOrMore {
-        #/\p{XID_Continue}/#
+        /\p{XID_Continue}/
     }
 }
 let literalRegex = Regex {
@@ -107,16 +106,15 @@ let actionRegex = Regex {
     }
     "@"
 }
-
 let messageRegex = Regex {
-//    "^ ^ ^"
     /\^\^\^/
-    ZeroOrMore {
+    ZeroOrMore(.reluctant) {
+        .any
+    }
+    Lookahead {
         ChoiceOf {
-            // any character that is not a '^ ^ ^' or a backward slash '\'
-            CharacterClass(.anyOf("^\\").inverted)
-            // a backward slash '\' followed by single character, to escape '^ ^ ^' or '\', but catches more than legal escapes
-            /\\./
+            /\^\^\^/
+            Anchor.endOfSubject
         }
     }
 }
@@ -159,7 +157,6 @@ enum TokenKind: Int, CustomStringConvertible {
 
 typealias TokenRegex = (kind: TokenKind, regex: Regex<Substring>)
 
-// an ordered list of regexes; when multiple matches of equal length, the first one wins
 let tokenRegexes: [TokenRegex] = [
     (.fullStop,                     Regex { "." } ),
     (.semicolon,                    Regex { ";" } ),

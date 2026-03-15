@@ -194,7 +194,7 @@ extension GrammarNode {
         if kind == .N, seq == nil {
             trace("_RULE:", str)
         }
-        
+
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
             seq?.detectAmbiguity()
@@ -220,6 +220,7 @@ extension GrammarNode {
             break
         }
         ambiguous.remove("")    // to handle both uses of "" in first (as ε, ϵ, epsilon) and in follow (as $, EOF)
+        let saved = traceIndent
         traceIndent += 2
         trace(kind, number)
         traceIndent += 2
@@ -229,10 +230,10 @@ extension GrammarNode {
         //        if ambiguous.count > 0 {
         //            print("ambiguous", ambiguous.sorted())
         //        }
-        traceIndent -= 4
-        
+        traceIndent = saved
+
     }
-    
+
     private func handleAlternatesAmbiguity() {
         var occurances: [String:Int] = [:]
         // count occurances in firsts
@@ -408,7 +409,10 @@ extension GrammarNode {
     func ebnf() -> String {
         var s = ""
         switch kind {
-        case .EOS, .T, .TI, .C, .B, .EPS:
+        case .EOS, .EPS:
+            s += str + " "
+            if let seq { s += seq.ebnf() }
+        case .T, .TI, .C, .B:
             s += "\"" + str + "\" "
             if let seq { s += seq.ebnf() }
         case .N:

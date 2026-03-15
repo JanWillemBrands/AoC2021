@@ -11,29 +11,11 @@ import Foundation
 @Suite("Parser Generator Tests", .serialized)
 struct ParserGeneratorTests {
     
-    /// Reset all global state before each test
+    /// Reset global state before each test
     static func resetGlobalState() {
-        // Call-return forest
-        crf = [:]
-        crfReturnNodes = []
-        unique = []
-        remaining = []
-        yield = []
-        
-        // Scanner state
-        tokens = []
-        cI = 0
-        cU = 0
-        
         // Debug flags
         trace = false
         traceIndent = 0
-        
-        // Parse statistics
-        failedParses = 0
-        successfullParses = 0
-        descriptorCount = 0
-        duplicateDescriptorCount = 0
         
         // Reset static counters
         GrammarNode.count = 0
@@ -84,15 +66,13 @@ struct ParserGeneratorTests {
         let grammarParser = try ApusParser(fromFile: grammarFileURL)
         
         // Parse grammar tree
-        let grammar = try grammarParser.parseGrammar(explicitStartSymbol: "") // "" means use first non-terminal
-        #expect(grammar != nil, "Start symbol not found")
-        guard let grammar else { return }
+        let grammar = try grammarParser.parse(explicitStartSymbol: "") // "" means use first non-terminal
         
         #expect(grammar.nonTerminals.count > 0, "Grammar should define at least one non-terminal")
         
         // Check if grammar is within size limits for generation
-        guard grammar.nonTerminals.count < 1000 && crf.count < 1000 else {
-            Issue.record("Grammar too large: \(grammar.nonTerminals.count) non-terminals, \(crf.count) CRF nodes")
+        guard grammar.nonTerminals.count < 1000 else {
+            Issue.record("Grammar too large: \(grammar.nonTerminals.count) non-terminals")
             return
         }
         
@@ -161,17 +141,12 @@ struct ParserGeneratorTests {
             .appendingPathComponent("apus")
             .appendingPathExtension("apus")
         
-        let grammar: Grammar?
+        let grammar: Grammar
         do {
             let grammarParser = try ApusParser(fromFile: grammarFileURL)
-            grammar = try grammarParser.parseGrammar(explicitStartSymbol: "")
+            grammar = try grammarParser.parse(explicitStartSymbol: "")
         } catch {
             Issue.record("Failed to parse base grammar: \(error)")
-            return
-        }
-        
-        guard let grammar else {
-            Issue.record("Failed to parse base grammar: Start symbol not found")
             return
         }
         

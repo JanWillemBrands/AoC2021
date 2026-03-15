@@ -19,10 +19,12 @@ class DiagramsGenerator {
     
     let diagramFile: URL
     let grammar: Grammar
+    let messageParser: MessageParser?
     
-    init(outputFile: URL, grammar: Grammar) {
+    init(outputFile: URL, grammar: Grammar, messageParser: MessageParser? = nil) {
         self.diagramFile = outputFile
         self.grammar = grammar
+        self.messageParser = messageParser
     }
 
     var content = #"""
@@ -60,23 +62,24 @@ class DiagramsGenerator {
             shortMessage.append("...")
         }
 
-        content.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphvizHTML)> \(successfullParses > 0 ? "fontcolor = green" : "fontcolor = red" )")
+        content.append("\n    label = <\(shortMessage.whitespaceMadeVisible.graphvizHTML)> \((messageParser?.successfullParses ?? 0) > 0 ? "fontcolor = green" : "fontcolor = red" )")
         content.append("\n    labeljust = l")
         content.append("\n    node [shape = box, style = rounded, height = 0]")
         
         // generate the call return forest
-        for (key, cluster) in crf.sorted(by: { $0.key < $1.key }) {
+        for (key, cluster) in (messageParser?.crf ?? [:]).sorted(by: { $0.key < $1.key }) {
             let poppedIndexes = cluster.pops.sorted().description.dropFirst().dropLast()
-            content.append("\n    \(key) [label = <\(cluster.slot.ebnfDot()),\(cluster.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+            content.append("\n    \(key) [label = <\(cluster.slot.ebnfDot().graphvizHTML),\(cluster.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
             for edge in cluster.returns {
-                let edgePos = CRFPosition(slot: edge.slot, index: edge.index)
+                let edgePos = Position(slot: edge.slot, index: edge.index)
                 content.append("\n    \(key) -> \(edgePos)")
             }
         }
         // render return nodes (CRF nodes that are not cluster nodes)
-        for rtn in crfReturnNodes.sorted() {
-            content.append("\n    \(rtn) [label = <\(rtn.slot.ebnfDot()),\(rtn.index)> shape = ellipse]")
-        }
+//        for rtn in crfReturnNodes.sorted() {
+//            content.append("\n    \(rtn) [label = <\(rtn.slot.ebnfDot().graphvizHTML),\(rtn.index)> shape = ellipse]")
+//            content.append("\n    \(rtn) [label = <\(rtn.slot.ebnfDot().graphvizHTML),\(rtn.index)> shape = triangle]")
+//        }
 //        for node in gss.sorted() {
 //            for edge in node.edges {
 //                let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()

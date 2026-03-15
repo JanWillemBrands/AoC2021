@@ -28,18 +28,20 @@ struct BinarySpan: Hashable, Comparable, CustomStringConvertible {
     }
 }
 
-// Paper: Υ (Upsilon) — the BSR set
-public var yield: Set<BSR> = []
+// MARK: - MessageParser BSR Operations
 
-// Paper: bsrAdd(X ::= α·β, i, k, j) — add BSR element to the yield
-@discardableResult
-func bsrAdd(L: GrammarNode, i: Int, k: Int, j: Int) -> Bool {
-    print("bsrAdd: \(L.ebnfDot()) \(i):\(k):\(j)")
-    let triple = BinarySpan(i: i, k: k, j: j)
-    L.yield.insert(triple)
+extension MessageParser {
     
-    // TODO: remove global bsrSet
-    let bsr = BSR(slot: L, i: i, k: k, j: j)
-    // TODO: check why this was returning a bool
-    return yield.insert(bsr).inserted
+    // Paper: bsrAdd(X ::= α·β, i, k, j) — add BSR element to the yield
+    @discardableResult
+    func addYield(L: GrammarNode, i: Int, k: Int, j: Int) -> Bool {
+        print("bsrAdd: \(L.ebnfDot()) \(i):\(k):\(j)")
+        let triple = BinarySpan(i: i, k: k, j: j)
+        L.yield.insert(triple)
+        
+        // TODO: remove global bsrSet
+        let bsr = BSR(slot: L, i: i, k: k, j: j)
+        // TODO: check why this was returning a bool
+        return yield.insert(bsr).inserted
+    }
 }

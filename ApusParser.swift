@@ -14,21 +14,22 @@ public enum ApusParserError: Error {
     case unexpectedToken(expected: [String], found: String)
     case scanningFailed(error: Error)
     case undefinedNonTerminal(name: String, definedAsTerminal: Bool)
+    case startSymbolNotFound(name: String)
 }
 
 public class ApusParser {
     
     let grammar = Grammar()
-    private var scanner: Scanner
-    private var tokens: [Token] { scanner.tokens }
-    private var cI: Int = 0
-    private var token: Token { tokens[cI] }
+    var scanner: Scanner
+    var tokens: [Token] { scanner.tokens }
+    var cI: Int = 0
+    var token: Token { tokens[cI] }
     
-    private func next() {
+    func next() {
         cI += 1
-        #if DEBUG
+#if DEBUG
         trace("next", token.image, token.kind)
-        #endif
+#endif
     }
     
     public init(fromString inputString: String) throws {
@@ -71,12 +72,10 @@ public class ApusParser {
         scanner = try Scanner(fromString: input, patterns: apusTerminals)
     }
     
-    public func parseGrammar(explicitStartSymbol: String = "") throws -> Grammar? {
+    public func parse(explicitStartSymbol: String = "") throws -> Grammar {
         cI = 0
-
-//        if explicitStartSymbol != "" {
-            grammar.startSymbol = explicitStartSymbol
-//        }
+        
+        grammar.startSymbol = explicitStartSymbol
         try parseApusGrammar()
         
         trace = true
@@ -88,14 +87,16 @@ public class ApusParser {
         for (name, node) in grammar.nonTerminals {
             trace("\t", name, "\t", node.kind)
         }
-
+        
         let conflictSet = Set(grammar.terminals.keys).intersection(Set(grammar.nonTerminals.keys))
         if !conflictSet.isEmpty {
             print("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
             throw ApusParserError.terminalNonterminalConflict(symbols: conflictSet)
         }
-            
-        guard let root = grammar.nonTerminals[grammar.startSymbol] else { return nil }
+        
+        guard let root = grammar.nonTerminals[grammar.startSymbol] else {
+            throw ApusParserError.startSymbolNotFound(name: grammar.startSymbol)
+        }
         grammar.root = root
         
         for (name, node) in grammar.nonTerminals.sorted(by: { $0.key > $1.key }) {      // a fixed ordering with 'S' appearing first in small test grammars
@@ -133,7 +134,7 @@ public class ApusParser {
     
     private var skip = false
     private var terminalAlias: String?
-
+    
     func parseApusGrammar() throws {
         trace("parseApusGrammar", token)
         
@@ -148,7 +149,7 @@ public class ApusParser {
         // TODO: finalize EOS representation
         try expect(["$"])
     }
-
+    
     func production() throws {
         trace("production", token)
         let nonTerminalName = String(token.image)
@@ -198,13 +199,13 @@ public class ApusParser {
         try expect(["."])
         next()
     }
-
+    
     func message() {
         trace("message", token)
         grammar.messages.append(token.stripped)
         next()
     }
-
+    
     func alternates() throws -> GrammarNode {
         trace("alternates", token)
         let startOfAlternates = try sequence()
@@ -216,7 +217,7 @@ public class ApusParser {
         }
         return startOfAlternates
     }
-
+    
     func sequence() throws -> GrammarNode {
         // TODO: is this correct?   sequence = < term [ "?" | "*" | "+" ] > .
         trace("sequence", token)
@@ -257,11 +258,11 @@ public class ApusParser {
         // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
         return startOfSequence
     }
-
+    
     func regex() throws -> GrammarNode {
         trace("regex", token)
         let name = terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex)
-
+        
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
                 print("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
@@ -276,13 +277,13 @@ public class ApusParser {
             print("grammar parse error: \(token.image) is not a valid literal Regex \(error)")
             throw ApusParserError.invalidRegex(image: String(token.image), error: error)
         }
-
+        
         return GrammarNode(kind: .T, str: name)
     }
-
+    
     func literal() -> GrammarNode {
         trace("literal", token, token.stripped)
-
+        
         if token.stripped == "" {
             // if token.stripped == "" || token.stripped == "#" || token.stripped.first?.isEpsilon == true {
             // epsilon is its own nonterminal, will never show up here in literal()
@@ -300,7 +301,7 @@ public class ApusParser {
         let regex = Regex { token.stripped }
         grammar.terminals[name] = (String(token.image), regex, true, skip)
         trace("literal name:", name, "image:", token.image)
-
+        
         return GrammarNode(kind: .T, str: name)
     }
     
@@ -308,7 +309,7 @@ public class ApusParser {
         trace("epsilon", token, token.stripped)
         return GrammarNode(kind: .EPS, str: "ε")
     }
-
+    
     func term() throws -> GrammarNode {
         trace("term", token)
         let node: GrammarNode
@@ -376,5 +377,5 @@ public class ApusParser {
             throw ApusParserError.unexpectedToken(expected: Array(expectedTokens), found: String(token.kind))
         }
     }
-
+    
 }

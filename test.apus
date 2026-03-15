@@ -81,9 +81,9 @@ whitespace : /\s+/.
 
 //S = ( "a" "b" | "a" "b" ) "c".        // PASS on "abc"
 
-//S = "a" A B | "a" A "b".              // PASS on "aab" Binsbergen Γ1 (2 matches, need to check for derivation equivalence)
-//A = "a" | "c" | "".
-//B = "b" | B "c" | "".
+S = "a" A B | "a" A "b".              // PASS on "aab" Binsbergen Γ1 (2 matches, need to check for derivation equivalence)
+A = "a" | "c" | "".
+B = "b" | B "c" | "".
 
 //S = A C "a" B | A B "a" "a".          // PASS on "aabbaa" Binsbergen Γ2 (1 match, need to check derivation efficiency)
 //A = "a" A | "a".
@@ -205,6 +205,6 @@ whitespace : /\s+/.
 //S = {"a"} {"a"}.
 
 //S = { "x" | "" } .      // nullable closure
-S = < "x" | "" > .         // nullable positive closure
+//S = < "x" | "" > .         // nullable positive closure
 ^^^
-xx
+ac

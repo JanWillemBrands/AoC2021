@@ -9,11 +9,35 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 //: start of generated code
 let tokenPatterns: [String:TokenPattern] = [
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"x":	("x",	Regex { "x" },	true,	false),
+	"b":	("b",	Regex { "b" },	true,	false),
+	"a":	("a",	Regex { "a" },	true,	false),
+	"c":	("c",	Regex { "c" },	true,	false),
 ]
 func S() {
 	if token.type = .ALT {
-		// POS
+		next()
+	} else if token.type = .ALT {
+		next()
 	}
-	expect(["x", ""])
+	expect(["a"])
+}
+func B() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["b"])
+}
+func A() {
+	if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	} else if token.type = .ALT {
+		next()
+	}
+	expect(["a"])
 }

@@ -32,34 +32,15 @@ struct TestCase: CustomTestStringConvertible {
     }
 }
 
-/// Reset all global parser state between tests.
-private func resetAllState() {
-    crf = [:]
-    crfReturnNodes = []
-    unique = []
-    remaining = []
-    yield = []
-    tokens = []
-    cI = 0
-    cU = 0
-    trace = false
-    traceIndent = 0
-    failedParses = 0
-    successfullParses = 0
-    descriptorCount = 0
-    duplicateDescriptorCount = 0
-    GrammarNode.count = 0
-}
-
 /// Parse a grammar string, run a message through it, return whether it matched.
 private func parseMatches(grammar grammarString: String, message: String) throws -> Bool {
-    resetAllState()
+    GrammarNode.count = 0
+    trace = false
+    traceIndent = 0
 
     let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammarString
     let parser = try ApusParser(fromString: grammarWithWhitespace)
-    guard let grammar = try parser.parseGrammar(explicitStartSymbol: "") else {
-        return false
-    }
+    let grammar = try parser.parse(explicitStartSymbol: "")
 
     // Scanner throws when the message contains characters not matched by any terminal.
     // This is a valid parse failure, not a test error.
@@ -69,13 +50,11 @@ private func parseMatches(grammar grammarString: String, message: String) throws
     } catch is ScannerFailure {
         return false
     }
-    tokens = messageScanner.tokens
-    resetMessageParser(root: grammar.root)
-    ntAdd(X: grammar.root, k: 0, i: 0)
-    parseMessage()
+    let messageParser = MessageParser(grammar: grammar)
+    messageParser.parse(tokens: messageScanner.tokens)
 
-    let extent = tokens.count - 1
-    return currentParseRoot.yield.contains { $0.i == 0 && $0.j == extent }
+    let extent = messageParser.tokens.count - 1
+    return messageParser.currentParseRoot.yield.contains { $0.i == 0 && $0.j == extent }
 }
 
 /// Run all pass/fail messages for a test case.
@@ -964,7 +943,9 @@ struct GrammarTests {
 
         @Test("APUS grammar parses itself")
         func apusSelfParse() throws {
-            resetAllState()
+            GrammarNode.count = 0
+            trace = false
+            traceIndent = 0
 
             let sourceFileURL = URL(fileURLWithPath: #filePath)
             let projectDir = sourceFileURL.deletingLastPathComponent().deletingLastPathComponent()
@@ -973,9 +954,8 @@ struct GrammarTests {
                 .appendingPathExtension("apus")
 
             let parser = try ApusParser(fromFile: grammarFileURL)
-            let grammar = try parser.parseGrammar(explicitStartSymbol: "")
-            #expect(grammar != nil, "APUS grammar should parse successfully")
-            #expect(grammar?.nonTerminals.count ?? 0 > 0, "Should define nonterminals")
+            let grammar = try parser.parse(explicitStartSymbol: "")
+            #expect(grammar.nonTerminals.count > 0, "Should define nonterminals")
         }
     }
 }

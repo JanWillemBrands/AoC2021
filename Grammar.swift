@@ -5,8 +5,8 @@
 //  Created by Johannes Brands on 2026.03.13.
 //
 
-/// Result of parsing an APUS grammar file.
-/// Holds all grammar artifacts needed by downstream consumers.
+// Result of parsing an APUS grammar file.
+// Holds all grammar artifacts needed by downstream consumers.
 public class Grammar {
     public internal(set) var startSymbol: String = ""
     public internal(set) var terminals: [String: TokenPattern] = [:]

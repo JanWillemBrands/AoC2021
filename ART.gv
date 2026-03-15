@@ -7,54 +7,121 @@ digraph G {
   rankdir = "TB"
   subgraph GSS {
     cluster = true
-    label = <↵xx↵> fontcolor = green
+    label = <↵ac↵> fontcolor = green
     labeljust = l
     node [shape = box, style = rounded, height = 0]
     0.0 [label = <S,0<br/><font color="gray" point-size="8.0"> 2</font>>]
-    2.0 [label = <S=·<x|ε>,0<br/><font color="gray" point-size="8.0"> 1</font>>]
-    2.0 -> 2.0
-    2.1 [label = <S=·<x|ε>,1<br/><font color="gray" point-size="8.0"> 2</font>>]
-    2.1 -> 2.0
-    2.2 [label = <S=·<x|ε>,2<br/><font color="gray" point-size="8.0"> 2</font>>]
-    2.2 -> 2.0
-    2.0 [label = <S=·<x|ε>,0> shape = ellipse]
+    11.1 [label = <B,1<br/><font color="gray" point-size="8.0"> 1, 2</font>>]
+    11.1 -> 4.0
+    11.1 -> 16.1
+    11.2 [label = <B,2<br/><font color="gray" point-size="8.0"> 2</font>>]
+    11.2 -> 4.0
+    22.1 [label = <A,1<br/><font color="gray" point-size="8.0"> 1, 2</font>>]
+    22.1 -> 3.0
+    22.1 -> 8.0
   }
   subgraph clusterS {
     node [shape = box]
-    label = <S = &lt; "x" | "ε" &gt; .>
+    label = <S = "a" A B | "a" A "b" .>
     labeljust = l
-    SR0C0 [label = <0<br/>N S<br/>fi ["", "x"]<br/>fo ["$"]<br/>[0:0:2]>]
-    SR0C1 [label = <1<br/>ALT <br/>fi ["", "x"]<br/>fo ["$"]<br/>[]>]
-    SR1C1 [label = <2<br/>POS <br/>fi ["", "x"]<br/>fo ["$"]<br/>[0:0:1, 0:1:2, 0:2:2]>]
-    SR2C1 [label = <9<br/>END <br/>fi [""]<br/>fo ["$"]<br/>[]>]
+    SR0C0 [label = <0<br/>N S<br/>fi ["a"]<br/>fo ["$"]<br/>[0:0:2]>]
+    SR0C1 [label = <1<br/>ALT <br/>fi ["a"]<br/>fo ["$", "a", "b", "c"]<br/>[]>]
+    SR1C1 [label = <2<br/>T "a"<br/>fi ["a"]<br/>fo ["$", "a", "b", "c"]<br/>[0:0:1]>]
+    SR2C1 [label = <3<br/>N A<br/>fi ["", "a", "b", "c"]<br/>fo ["$", "b", "c"]<br/>[0:1:1, 0:1:2]>]
+    SR3C1 [label = <4<br/>N B<br/>fi ["", "b", "c"]<br/>fo ["$"]<br/>[0:1:1, 0:1:2, 0:2:2]>]
+    SR4C1 [label = <5<br/>END <br/>fi [""]<br/>fo ["$"]<br/>[]>]
+    SR3C1 -> SR4C1 [weight=100000000]
+    SR2C1 -> SR3C1 [weight=100000000]
     SR1C1 -> SR2C1 [weight=100000000]
-    SR1C2 [label = <3<br/>ALT <br/>fi ["x"]<br/>fo ["$", "x"]<br/>[]>]
-    SR2C2 [label = <4<br/>T "x"<br/>fi ["x"]<br/>fo ["$", "x"]<br/>[0:0:1, 1:1:2]>]
-    SR3C2 [label = <5<br/>END <br/>fi [""]<br/>fo ["$", "x"]<br/>[]>]
+    SR0C1 -> SR1C1 [weight=100000000]
+    SR0C2 [label = <6<br/>ALT <br/>fi ["a"]<br/>fo ["a", "b", "c"]<br/>[]>]
+    SR1C2 [label = <7<br/>T "a"<br/>fi ["a"]<br/>fo ["a", "b", "c"]<br/>[0:0:1]>]
+    SR2C2 [label = <8<br/>N A<br/>fi ["a", "b", "c"]<br/>fo ["b"]<br/>[0:1:1, 0:1:2]>]
+    SR3C2 [label = <9<br/>T "b"<br/>fi ["b"]<br/>fo ["$"]<br/>[]>]
+    SR4C2 [label = <10<br/>END <br/>fi [""]<br/>fo ["$"]<br/>[]>]
+    SR3C2 -> SR4C2 [weight=100000000]
     SR2C2 -> SR3C2 [weight=100000000]
     SR1C2 -> SR2C2 [weight=100000000]
-    SR1C3 [label = <6<br/>ALT <br/>fi [""]<br/>fo ["$", "x"]<br/>[]>]
-    SR2C3 [label = <7<br/>EPS ε<br/>fi [""]<br/>fo ["$", "x"]<br/>[2:2:2]>]
-    SR3C3 [label = <8<br/>END <br/>fi [""]<br/>fo ["$", "x"]<br/>[]>]
-    SR2C3 -> SR3C3 [weight=100000000]
-    SR1C3 -> SR2C3 [weight=100000000]
-    rank = same {SR1C2 -> SR1C3}
-    rank = same {SR1C1 -> SR1C2}
-    SR0C1 -> SR1C1 [weight=100000000]
+    SR0C2 -> SR1C2 [weight=100000000]
+    rank = same {SR0C1 -> SR0C2}
     rank = same {SR0C0 -> SR0C1}
     node [style = invis]
     edge [style = invis]
-    rank = same {SR0C1 -> SR0C2}
-    rank = same {SR0C2 -> SR0C3}
     SR0C0 -> SR1C0 [weight=100000000]
     rank = same {SR1C0 -> SR1C1}
-    SR0C2 -> SR1C2 [weight=100000000]
-    SR0C3 -> SR1C3 [weight=100000000]
     SR1C0 -> SR2C0 [weight=100000000]
     rank = same {SR2C0 -> SR2C1}
     SR2C0 -> SR3C0 [weight=100000000]
-    SR2C1 -> SR3C1 [weight=100000000]
     rank = same {SR3C0 -> SR3C1}
-    rank = same {SR3C1 -> SR3C2}
+    SR3C0 -> SR4C0 [weight=100000000]
+    rank = same {SR4C0 -> SR4C1}
+  }
+  subgraph clusterB {
+    node [shape = box]
+    label = <B = "b" | B "c" | ε .>
+    labeljust = l
+    BR0C0 [label = <11<br/>N B<br/>fi ["", "b", "c"]<br/>fo ["$", "c"]<br/>[1:1:1, 1:1:2, 2:2:2]>]
+    BR0C1 [label = <12<br/>ALT <br/>fi ["b"]<br/>fo ["$", "c"]<br/>[]>]
+    BR1C1 [label = <13<br/>T "b"<br/>fi ["b"]<br/>fo ["$", "c"]<br/>[]>]
+    BR2C1 [label = <14<br/>END <br/>fi [""]<br/>fo ["$", "c"]<br/>[]>]
+    BR1C1 -> BR2C1 [weight=100000000]
+    BR0C1 -> BR1C1 [weight=100000000]
+    BR0C2 [label = <15<br/>ALT <br/>fi ["b", "c"]<br/>fo ["c"]<br/>[]>]
+    BR1C2 [label = <16<br/>N B<br/>fi ["b", "c"]<br/>fo ["c"]<br/>[1:1:1, 1:1:2]>]
+    BR2C2 [label = <17<br/>T "c"<br/>fi ["c"]<br/>fo ["$", "c"]<br/>[1:1:2]>]
+    BR3C2 [label = <18<br/>END <br/>fi [""]<br/>fo ["$", "c"]<br/>[]>]
+    BR2C2 -> BR3C2 [weight=100000000]
+    BR1C2 -> BR2C2 [weight=100000000]
+    BR0C2 -> BR1C2 [weight=100000000]
+    BR0C3 [label = <19<br/>ALT <br/>fi [""]<br/>fo ["$", "c"]<br/>[]>]
+    BR1C3 [label = <20<br/>EPS ε<br/>fi [""]<br/>fo ["$", "c"]<br/>[1:1:1, 2:2:2]>]
+    BR2C3 [label = <21<br/>END <br/>fi [""]<br/>fo ["$", "c"]<br/>[]>]
+    BR1C3 -> BR2C3 [weight=100000000]
+    BR0C3 -> BR1C3 [weight=100000000]
+    rank = same {BR0C2 -> BR0C3}
+    rank = same {BR0C1 -> BR0C2}
+    rank = same {BR0C0 -> BR0C1}
+    node [style = invis]
+    edge [style = invis]
+    BR0C0 -> BR1C0 [weight=100000000]
+    rank = same {BR1C0 -> BR1C1}
+    BR1C0 -> BR2C0 [weight=100000000]
+    rank = same {BR2C0 -> BR2C1}
+    BR2C0 -> BR3C0 [weight=100000000]
+    BR2C1 -> BR3C1 [weight=100000000]
+    rank = same {BR3C0 -> BR3C1}
+    rank = same {BR3C1 -> BR3C2}
+    BR2C3 -> BR3C3 [weight=100000000]
+    rank = same {BR3C2 -> BR3C3}
+  }
+  subgraph clusterA {
+    node [shape = box]
+    label = <A = "a" | "c" | ε .>
+    labeljust = l
+    AR0C0 [label = <22<br/>N A<br/>fi ["", "a", "c"]<br/>fo ["$", "b", "c"]<br/>[1:1:1, 1:1:2]>]
+    AR0C1 [label = <23<br/>ALT <br/>fi ["a"]<br/>fo ["$", "b", "c"]<br/>[]>]
+    AR1C1 [label = <24<br/>T "a"<br/>fi ["a"]<br/>fo ["$", "b", "c"]<br/>[]>]
+    AR2C1 [label = <25<br/>END <br/>fi [""]<br/>fo ["$", "b", "c"]<br/>[]>]
+    AR1C1 -> AR2C1 [weight=100000000]
+    AR0C1 -> AR1C1 [weight=100000000]
+    AR0C2 [label = <26<br/>ALT <br/>fi ["c"]<br/>fo ["$", "b", "c"]<br/>[]>]
+    AR1C2 [label = <27<br/>T "c"<br/>fi ["c"]<br/>fo ["$", "b", "c"]<br/>[1:1:2]>]
+    AR2C2 [label = <28<br/>END <br/>fi [""]<br/>fo ["$", "b", "c"]<br/>[]>]
+    AR1C2 -> AR2C2 [weight=100000000]
+    AR0C2 -> AR1C2 [weight=100000000]
+    AR0C3 [label = <29<br/>ALT <br/>fi [""]<br/>fo ["$", "b", "c"]<br/>[]>]
+    AR1C3 [label = <30<br/>EPS ε<br/>fi [""]<br/>fo ["$", "b", "c"]<br/>[1:1:1]>]
+    AR2C3 [label = <31<br/>END <br/>fi [""]<br/>fo ["$", "b", "c"]<br/>[]>]
+    AR1C3 -> AR2C3 [weight=100000000]
+    AR0C3 -> AR1C3 [weight=100000000]
+    rank = same {AR0C2 -> AR0C3}
+    rank = same {AR0C1 -> AR0C2}
+    rank = same {AR0C0 -> AR0C1}
+    node [style = invis]
+    edge [style = invis]
+    AR0C0 -> AR1C0 [weight=100000000]
+    rank = same {AR1C0 -> AR1C1}
+    AR1C0 -> AR2C0 [weight=100000000]
+    rank = same {AR2C0 -> AR2C1}
   }
 }

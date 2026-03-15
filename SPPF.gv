@@ -6,18 +6,41 @@ digraph SPPF {
   rankdir = "TB"
   ordering = out
   n0 [shape = box, style = rounded, width=0.0, height=0.0, label = <S,0,2>]
-  n1 [shape = rectangle, width=0.0, height=0.0, label = "S=·&lt;x|ε&gt;,0"]
-  n2 [shape = box, style = rounded, width=0.0, height=0.0, label = <{} S=·&lt;x|ε&gt;,0,2>]
-  n3 [shape = rectangle, width=0.0, height=0.0, label = "S=·&lt;x|ε&gt;,1"]
-  n4 [shape = box, style = rounded, width=0.0, height=0.0, label = <"x",1,2>]
-  n5 [shape = box, style = rounded, width=0.0, height=0.0, label = <{} S=·&lt;x|ε&gt;,0,1>]
-  n6 [shape = rectangle, width=0.0, height=0.0, label = "S=&lt;x·|ε&gt;,0"]
-  n7 [shape = box, style = rounded, width=0.0, height=0.0, label = <"x",0,1>]
+  n1 [shape = rectangle, width=0.0, height=0.0, label = "S=aAB·,1"]
+  n2 [shape = rectangle, width=0.0, height=0.0, label = "S=aAb·,1"]
+  n3 [shape = box, style = rounded, width=0.0, height=0.0, label = <B,1,2>]
+  n4 [shape = rectangle, width=0.0, height=0.0, label = <S=aA·B,0,1>]
+  n5 [shape = box, style = rounded, width=0.0, height=0.0, label = <"b",1,2>]
+  n6 [shape = rectangle, width=0.0, height=0.0, label = <S=aA·b,0,1>]
+  n7 [shape = rectangle, width=0.0, height=0.0, label = "B=Bc·,1"]
+  n8 [shape = rectangle, width=0.0, height=0.0, label = "S=aA·B,1"]
+  n9 [shape = rectangle, width=0.0, height=0.0, label = "S=aA·b,1"]
+  n10 [shape = box, style = rounded, width=0.0, height=0.0, label = <"c",1,2>]
+  n11 [shape = box, style = rounded, width=0.0, height=0.0, label = <B,1,1>]
+  n12 [shape = box, style = rounded, width=0.0, height=0.0, label = <A,1,1>]
+  n13 [shape = box, style = rounded, width=0.0, height=0.0, label = <"a",0,1>]
+  n14 [shape = box, style = rounded, width=0.0, height=0.0, label = <"a",0,1>]
+  n15 [shape = rectangle, width=0.0, height=0.0, label = "B=ε·,1"]
+  n16 [shape = rectangle, width=0.0, height=0.0, label = "A=ε·,1"]
+  n17 [shape = box, style = "rounded, dashed", width=0.0, height=0.0, label = <ε,1,1>]
+  n18 [shape = box, style = "rounded, dashed", width=0.0, height=0.0, label = <ε,1,1>]
   n0 -> n1
-  n1 -> n2
-  n2 -> n3
-  n3 -> n4
-  n3 -> n5
-  n5 -> n6
-  n6 -> n7
+  n0 -> n2
+  n1 -> n3
+  n1 -> n4
+  n2 -> n5
+  n2 -> n6
+  n3 -> n7
+  n4 -> n8
+  n6 -> n9
+  n7 -> n10
+  n7 -> n11
+  n8 -> n12
+  n8 -> n13
+  n9 -> n12
+  n9 -> n14
+  n11 -> n15
+  n12 -> n16
+  n15 -> n17
+  n16 -> n18
 }
