@@ -7,6 +7,9 @@
 
 import Foundation
 import RegexBuilder
+import AdventMacros
+
+trace = false
 
 // transform the APUS EBNF grammar from the input file into a grammar tree (Abstract Syntax Tree)
 // by using grammarParser, which is a hand-built recursive descent parser
@@ -14,12 +17,13 @@ import RegexBuilder
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
 //    .appendingPathComponent("apus")
-//    .appendingPathComponent("Swift")
+    .appendingPathComponent("Swift")
 //    .appendingPathComponent("AfroozehHunt")
 //    .appendingPathComponent("apusWithAction")
 //    .appendingPathComponent("TortureSyntax")
 //    .appendingPathComponent("test")
-    .appendingPathComponent("tortureART")
+//    .appendingPathComponent("tortureART")
+//    .appendingPathComponent("tortureEBNF")
 //    .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
 
@@ -44,12 +48,14 @@ for m in grammar.messages {
     
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
-    print("cpuTime, descriptorCount, crf.count")
-    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count)
+    print("cpuTime, descriptorCount, crf.count, sizeOfSets")
+    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count, GrammarNode.sizeofSets)
     
+    trace = true
     for y in messageParser.yield {
-        trace(y)
+        #Trace(y)
     }
+
     
     
 #if DEBUG
@@ -61,11 +67,15 @@ for m in grammar.messages {
         
         let parserFile = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
-            .appendingPathComponent("output")
+            .appendingPathComponent("GeneratedParser")
+            .appendingPathComponent(grammar.startSymbol + "_parser")
             .appendingPathExtension("swift")
-        let parserGenerator = ParserGenerator(outputFile: parserFile, grammar: grammar)
-        try parserGenerator.generate()
-        
+        #Trace("LL1 is", grammar.isLL1)
+        if grammar.isLL1 {
+            let parserGenerator = ParserGenerator(outputFile: parserFile, grammar: grammar)
+            try parserGenerator.generate()
+        }
+
         // MARK: - Generate CRF and AST diagrams
         
         let diagramFile = URL(fileURLWithPath: #filePath)
@@ -82,11 +92,21 @@ for m in grammar.messages {
                 .appendingPathComponent("SPPF")
                 .appendingPathExtension("gv")
             try generateSPPFDiagram(outputFile: sppfFile, root: sppfRoot)
-            trace("SPPF diagram written to \(sppfFile.lastPathComponent)")
+            #Trace("SPPF diagram written to \(sppfFile.lastPathComponent)")
+            
         } else {
-            trace("\nSPPF: no parse tree to extract")
+            #Trace("\nSPPF: no parse tree to extract")
         }
+        
+        // MARK: - Generate Derivation Tree Diagram (BSR-based, no SPPF needed)
+        let derivFile = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Derivations")
+            .appendingPathExtension("gv")
+        try generateDerivationDiagram(outputFile: derivFile, grammar: grammar, messageParser: messageParser)
+        #Trace("Derivation diagram written to \(derivFile.lastPathComponent)")
     }
 #endif
-    
+
+    print("first/follow set size \(GrammarNode.sizeofSets) terminal count \(grammar.terminals.count) nonTerminal count \(grammar.nonTerminals.count)")
 }
