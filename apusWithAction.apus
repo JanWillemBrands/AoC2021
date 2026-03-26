@@ -1,128 +1,118 @@
 whitespace   : /\s+/ .
-linecomment  : /\/\/.*/ .
+linecomment  : /\/\/.*/  .
 blockcomment : /\/\*(?s).*?\*\// .
 
-identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .
-regex       = /\/(?:[^\/\\]|\\.)+\// .
-action      = /@(?:[^@\\]|\\.)+@/ .
-message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
+identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
+literal     - /\"(?:[^\"\\]|\\.)*\"/ .     // this catches epsilon as ""
+epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+regex       - /\/(?:[^\/\\]|\\.)+\// .
+action      - /@(?:[^@\\]|\\.)+@/ .
+message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
-production  =                       @var node: Node@
-                                    @var muted = false@
-                                    @var terminalAlias: String?@
-                identifier          @let nonTerminalName = token.image@
-                ( ":"               @muted = true@
-                                    @terminalAlias = nonTerminalName@
-                    ( regex         @node = regular()@
-                    | literal       @node = literal()@
-                    )
-                | "="               @muted = false@
-                    ( regex         @terminalAlias = nonTerminalName@
-                                    @node = regular()@
-                    | selection     @node = selection()@
-                    )
+production  =                           @var node: GrammarNode@
+                                        @var skip = false@
+                                        @var terminalAlias: String?@
+                identifier              @let nonTerminalName = token.image@
+                ( ":" regex             @skip = true@
+                                        @terminalAlias = nonTerminalName@
+                                        @node = terminal(skip: true)@
+                | "-" regex             @terminalAlias = nonTerminalName@
+                                        @node = terminal(skip: false)@
+                | "=" selection         @node = selection()@
                 )
-                                    @terminalAlias = nil@
-                ( "." | ";" )
+                                        @terminalAlias = nil@
+                "."
             .
-selection   =                       @var node: Node@
-            sequence                @node = sequence()@
-            { "|" sequence          @node = Node(.ALT(left: node, right: sequence()))@
-            } .
-sequence    =                       @var node: Node@
-            @node = @ term          @node = term()@
-            { term                  @node = Node(.SEQ(head: node, tail: term()))@
-            } .
-term        =                       @var node: Node@
-            (   terminal            @node = terminal()@
-            | "[" selection         @node = Node(.OPT(body: node))@
-                "]"
-            | "{" selection         @node = Node(.REP(body: node))@
-                "}"
-            | "<" selection         @node = Node(.SEQ(head: node,
-                                                      tail: Node(.REP(body: node))))@
-                ">"
-            | "(" selection         @node = selection()@
-                ( ")"
-                | ")?"              @node = Node(.OPT(body: node))@
-                | ")*"              @node = Node(.REP(body: node))@
-                | ")+"              @node = Node(.SEQ(head: node,
-                                                            tail: Node(.REP(body: node))))@
-                )
-             ) .
-terminal    = identifier            @node = Node(.NTM(name: token.image))@
+selection   =                           @var node: GrammarNode@
+                sequence                @node = sequence()@
+                { "|" sequence          @node = GrammarNode(.ALT(left: node, right: sequence()))@
+                }
+            .
+sequence    =                           @var node: GrammarNode@
+                < term                  @node = term()@
+                    [ "?"               @node = GrammarNode(.OPT(head: node, tail: term()))@
+                    | "*"               @node = GrammarNode(.KLN(head: node, tail: term()))@
+                    | "+"               @node = GrammarNode(.POS(head: node, tail: term()))@
+                    ]
+                >
+            .
+term        =                           @var node: GrammarNode@
+                terminal                @node = terminal()@
+                | "[" selection         @node = GrammarNode(.OPT(body: node))@
+                  "]"
+                | "{" selection         @node = GrammarNode(.REP(body: node))@
+                  "}"
+                | "<" selection         @node = GrammarNode(.SEQ(head: node, tail: GrammarNode(.REP(body: node))))@
+                  ">"
+                | "(" selection         @node = selection()@
+                  ")"
+            .
+terminal    = identifier            @node = GrammarNode(.NTM(name: token.image))@
             | literal               @node = _literal()@
             | regex                 @node = _regex()@
-            | action                @node = Node(.TRM(type: "action"))@
+            | action                @node = GrammarNode(.TRM(type: "action"))@
                                     @actionList[node] = token.stripped@
-            | epsilon               @node = Node(.EPS)@
+            | epsilon               @node = GrammarNode(.EPS)@
             .
-epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .    // Schrödinger: "" is an epsilon as well as a literal
 
 ^^^
 whitespace   : /\s+/ .
-linecomment  : /\/\/.*/ .
+linecomment  : /\/\/.*/  .
 blockcomment : /\/\*(?s).*?\*\// .
 
-identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .
-regex       = /\/(?:[^\/\\]|\\.)+\// .
-action      = /@(?:[^@\\]|\\.)+@/ .
-message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
+identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
+literal     - /\"(?:[^\"\\]|\\.)*\"/ .
+epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+regex       - /\/(?:[^\/\\]|\\.)+\// .
+action      - /@(?:[^@\\]|\\.)+@/ .
+message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
-              
-production  =                       @var node: Node@
-                                    @var muted = false@
-                                    @var terminalAlias: String?@
-                identifier          @let nonTerminalName = token.image@
-                ( ":"               @muted = true@
-                                    @terminalAlias = nonTerminalName@
-                    ( regex         @node = regular()@
-                    | literal       @node = literal()@
-                    )
-                | "="               @muted = false@
-                    ( regex         @terminalAlias = nonTerminalName@
-                                    @node = regular()@
-                    | selection     @node = selection()@
-                    )
+
+production  =                           @var node: GrammarNode@
+                                        @var skip = false@
+                                        @var terminalAlias: String?@
+                identifier              @let nonTerminalName = token.image@
+                ( ":" regex             @skip = true@
+                                        @terminalAlias = nonTerminalName@
+                                        @node = terminal(skip: true)@
+                | "-" regex             @terminalAlias = nonTerminalName@
+                                        @node = terminal(skip: false)@
+                | "=" selection         @node = selection()@
                 )
-                                    @terminalAlias = nil@
-                ( "." | ";" )
+                                        @terminalAlias = nil@
+                "."
             .
-selection   =                       @var node: Node@
-            sequence                @node = sequence()@
-            { "|" sequence          @node = Node(.ALT(left: node, right: sequence()))@
-            } .
-sequence    =                       @var node: Node@
-            @node = @ term          @node = term()@
-            { term                  @node = Node(.SEQ(head: node, tail: term()))@
-            } .
-term        =                       @var node: Node@
-            (   terminal            @node = terminal()@
-            | "[" selection         @node = Node(.OPT(body: node))@
-                "]"
-            | "{" selection         @node = Node(.REP(body: node))@
-                "}"
-            | "<" selection         @node = Node(.SEQ(head: node,
-                                                      tail: Node(.REP(body: node))))@
-                ">"
-            | "(" selection         @node = selection()@
-                ( ")"
-                | ")?"              @node = Node(.OPT(body: node))@
-                | ")*"              @node = Node(.REP(body: node))@
-                | ")+"              @node = Node(.SEQ(head: node,
-                                                            tail: Node(.REP(body: node))))@
-                )
-             ) .
-terminal    = identifier            @node = Node(.NTM(name: token.image))@
+selection   =                           @var node: GrammarNode@
+                sequence                @node = sequence()@
+                { "|" sequence          @node = GrammarNode(.ALT(left: node, right: sequence()))@
+                }
+            .
+sequence    =                           @var node: GrammarNode@
+                < term                  @node = term()@
+                    [ "?"               @node = GrammarNode(.OPT(head: node, tail: term()))@
+                    | "*"               @node = GrammarNode(.KLN(head: node, tail: term()))@
+                    | "+"               @node = GrammarNode(.POS(head: node, tail: term()))@
+                    ]
+                >
+            .
+term        =                           @var node: GrammarNode@
+                terminal                @node = terminal()@
+                | "[" selection         @node = GrammarNode(.OPT(body: node))@
+                  "]"
+                | "{" selection         @node = GrammarNode(.REP(body: node))@
+                  "}"
+                | "<" selection         @node = GrammarNode(.SEQ(head: node, tail: GrammarNode(.REP(body: node))))@
+                  ">"
+                | "(" selection         @node = selection()@
+                  ")"
+            .
+terminal    = identifier            @node = GrammarNode(.NTM(name: token.image))@
             | literal               @node = _literal()@
             | regex                 @node = _regex()@
-            | action                @node = Node(.TRM(type: "action"))@
+            | action                @node = GrammarNode(.TRM(type: "action"))@
                                     @actionList[node] = token.stripped@
-            | epsilon               @node = Node(.EPS)@
+            | epsilon               @node = GrammarNode(.EPS)@
             .
-epsilon     = "" | "#" | /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .    // Schrödinger: "" is an epsilon as well as a literal
