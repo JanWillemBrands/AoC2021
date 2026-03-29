@@ -1,5 +1,5 @@
 //
-//  Grammar.swift
+//  GrammarStore.swift
 //  Advent
 //
 //  Created by Johannes Brands on 2026.03.13.
@@ -10,7 +10,7 @@ import BitCollections
 
 // Result of parsing an APUS grammar file.
 // Holds all grammar artifacts needed by downstream consumers.
-class GrammarStore {
+class Grammar {
     var startSymbol: String = ""
     var terminals: [String: TokenPattern] = [:]
     var nonTerminals: [String: GrammarNode] = [:]
@@ -133,7 +133,7 @@ class GrammarStore {
     }
 }
 
-extension GrammarStore {
+extension Grammar {
     func populateFirstFollowSets(for node: GrammarNode) throws {
         switch node.kind {
         case .EPS:
