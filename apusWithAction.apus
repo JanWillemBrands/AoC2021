@@ -1,118 +1,263 @@
-whitespace   : /\s+/ .
-linecomment  : /\/\/.*/  .
-blockcomment : /\/\*(?s).*?\*\// .
+whitespace  : /\s+/ .
+linecomment : /\/\/.*/ .
+blockcomment: /\/\*(?s).*?\*\// .
 
-identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
-literal     - /\"(?:[^\"\\]|\\.)*\"/ .     // this catches epsilon as ""
-epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
-regex       - /\/(?:[^\/\\]|\\.)+\// .
-action      - /@(?:[^@\\]|\\.)+@/ .
-message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
-
-grammar     = < production > { message } .
-              
-production  =                           @var node: GrammarNode@
-                                        @var skip = false@
-                                        @var terminalAlias: String?@
-                identifier              @let nonTerminalName = token.image@
-                ( ":" regex             @skip = true@
-                                        @terminalAlias = nonTerminalName@
-                                        @node = terminal(skip: true)@
-                | "-" regex             @terminalAlias = nonTerminalName@
-                                        @node = terminal(skip: false)@
-                | "=" selection         @node = selection()@
-                )
-                                        @terminalAlias = nil@
-                "."
-            .
-selection   =                           @var node: GrammarNode@
-                sequence                @node = sequence()@
-                { "|" sequence          @node = GrammarNode(.ALT(left: node, right: sequence()))@
-                }
-            .
-sequence    =                           @var node: GrammarNode@
-                < term                  @node = term()@
-                    [ "?"               @node = GrammarNode(.OPT(head: node, tail: term()))@
-                    | "*"               @node = GrammarNode(.KLN(head: node, tail: term()))@
-                    | "+"               @node = GrammarNode(.POS(head: node, tail: term()))@
-                    ]
-                >
-            .
-term        =                           @var node: GrammarNode@
-                terminal                @node = terminal()@
-                | "[" selection         @node = GrammarNode(.OPT(body: node))@
-                  "]"
-                | "{" selection         @node = GrammarNode(.REP(body: node))@
-                  "}"
-                | "<" selection         @node = GrammarNode(.SEQ(head: node, tail: GrammarNode(.REP(body: node))))@
-                  ">"
-                | "(" selection         @node = selection()@
-                  ")"
-            .
-terminal    = identifier            @node = GrammarNode(.NTM(name: token.image))@
-            | literal               @node = _literal()@
-            | regex                 @node = _regex()@
-            | action                @node = GrammarNode(.TRM(type: "action"))@
-                                    @actionList[node] = token.stripped@
-            | epsilon               @node = GrammarNode(.EPS)@
-            .
-
-^^^
-whitespace   : /\s+/ .
-linecomment  : /\/\/.*/  .
-blockcomment : /\/\*(?s).*?\*\// .
+action      : /@(?:[^@\\]|\\.)+@/ .
 
 identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
 literal     - /\"(?:[^\"\\]|\\.)*\"/ .
 epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
 regex       - /\/(?:[^\/\\]|\\.)+\// .
-action      - /@(?:[^@\\]|\\.)+@/ .
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
-grammar     = < production > { message } .
+@var g = Grammar()@
+@var skip = false@
+@var terminalAlias: String?@
 
-production  =                           @var node: GrammarNode@
-                                        @var skip = false@
-                                        @var terminalAlias: String?@
-                identifier              @let nonTerminalName = token.image@
-                ( ":" regex             @skip = true@
-                                        @terminalAlias = nonTerminalName@
-                                        @node = terminal(skip: true)@
-                | "-" regex             @terminalAlias = nonTerminalName@
-                                        @node = terminal(skip: false)@
-                | "=" selection         @node = selection()@
-                )
-                                        @terminalAlias = nil@
-                "."
+grammar     = < production >
+              { message @g.messages.append(token.stripped)@
+              } .
+
+production  = identifier @let nonTerminalName = String(token.image)@
+              ( ":" regex @
+                  skip = true
+                  terminalAlias = nonTerminalName
+                  let name = terminalAlias!
+                  let rx = try Regex<Substring>(String(token.stripped))
+                  g.terminals[name] = (String(token.image), rx, false, skip)
+                  g.registerTerminal(name)
+                  @
+              | "-" regex @
+                  terminalAlias = nonTerminalName
+                  let name = terminalAlias!
+                  let rx = try Regex<Substring>(String(token.stripped))
+                  g.terminals[name] = (String(token.image), rx, false, skip)
+                  g.registerTerminal(name)
+                  @
+              | "=" @let node =@ selection @
+                  if g.startSymbol == "" { g.startSymbol = nonTerminalName }
+                  if let existing = g.nonTerminals[nonTerminalName] {
+                      var endOfList = existing
+                      while let next = endOfList.alt { endOfList = next }
+                      endOfList.alt = node
+                  } else {
+                      g.nonTerminals[nonTerminalName] = GrammarNode(kind: .N, name: nonTerminalName, alt: node)
+                  }
+                  @
+              ) @terminalAlias = nil@ @skip = false@
+              "."
             .
-selection   =                           @var node: GrammarNode@
-                sequence                @node = sequence()@
-                { "|" sequence          @node = GrammarNode(.ALT(left: node, right: sequence()))@
+
+selection   @throws -> GrammarNode@
+            = @var tmp: GrammarNode!@
+              @let startOfAlternates =@ sequence
+              @tmp = startOfAlternates@
+              { "|" @let next =@ sequence @tmp.alt = next@ @tmp = tmp.alt!@
+              }
+              @return startOfAlternates@
+            .
+
+sequence    @throws -> GrammarNode@
+            = @let startOfSequence = GrammarNode(kind: .ALT, name: "")@
+              @var termNode = startOfSequence@
+              < @termNode.seq =@ factor
+                [ "?" @
+                      let miniSeq = GrammarNode(kind: .ALT, name: "")
+                      miniSeq.seq = termNode.seq
+                      miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+                      termNode.seq = GrammarNode(kind: .OPT, name: "", alt: miniSeq)
+                      termNode.seq?.alt = miniSeq
+                      @
+                | "*" @
+                      let miniSeq = GrammarNode(kind: .ALT, name: "")
+                      miniSeq.seq = termNode.seq
+                      miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+                      termNode.seq = GrammarNode(kind: .KLN, name: "", alt: miniSeq)
+                      termNode.seq?.alt = miniSeq
+                      @
+                | "+" @
+                      let miniSeq = GrammarNode(kind: .ALT, name: "")
+                      miniSeq.seq = termNode.seq
+                      miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+                      termNode.seq = GrammarNode(kind: .POS, name: "", alt: miniSeq)
+                      termNode.seq?.alt = miniSeq
+                      @
+                ] @termNode = termNode.seq!@
+              > @
+                termNode.seq = GrammarNode(kind: .END, name: "")
+                return startOfSequence
+                @
+            .
+
+factor      @throws -> GrammarNode@
+            = @let node =@ terminal @return node@
+            | "[" @let sel =@ selection @return GrammarNode(kind: .OPT, name: "", alt: sel)@
+              "]"
+            | "{" @let sel =@ selection @return GrammarNode(kind: .KLN, name: "", alt: sel)@
+              "}"
+            | "<" @let sel =@ selection @return GrammarNode(kind: .POS, name: "", alt: sel)@
+              ">"
+            | "(" @let sel =@ selection @return sel@
+              ")"
+            .
+
+terminal    @throws -> GrammarNode@
+            = identifier @
+                if g.terminals[String(token.stripped)] != nil {
+                    return GrammarNode(kind: .T, name: token.stripped)
+                } else {
+                    return GrammarNode(kind: .N, name: String(token.stripped))
                 }
+                @
+            | literal @
+                if token.stripped == "" {
+                    return GrammarNode(kind: .EPS, name: "ε")
+                } else {
+                    let name = terminalAlias ?? token.stripped
+                    let rx = Regex { token.stripped }
+                    g.terminals[name] = (String(token.image), rx, true, skip)
+                    g.registerTerminal(name)
+                    return GrammarNode(kind: .T, name: name)
+                }
+                @
+            | regex @
+                let name = terminalAlias ?? token.image.base.linePosition(of: token.image.startIndex)
+                let rx = try Regex<Substring>(String(token.stripped))
+                g.terminals[name] = (String(token.image), rx, false, skip)
+                g.registerTerminal(name)
+                return GrammarNode(kind: .T, name: name)
+                @
+            | epsilon @return GrammarNode(kind: .EPS, name: "ε")@
             .
-sequence    =                           @var node: GrammarNode@
-                < term                  @node = term()@
-                    [ "?"               @node = GrammarNode(.OPT(head: node, tail: term()))@
-                    | "*"               @node = GrammarNode(.KLN(head: node, tail: term()))@
-                    | "+"               @node = GrammarNode(.POS(head: node, tail: term()))@
-                    ]
-                >
+^^^
+whitespace  : /\s+/ .
+linecomment : /\/\/.*/ .
+blockcomment: /\/\*(?s).*?\*\// .
+
+action      : /@(?:[^@\\]|\\.)+@/ .
+
+identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
+literal     - /\"(?:[^\"\\]|\\.)*\"/ .
+epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+regex       - /\/(?:[^\/\\]|\\.)+\// .
+message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
+
+@var g = Grammar()@
+@var skip = false@
+@var terminalAlias: String?@
+
+grammar     = < production >
+              { message @g.messages.append(token.stripped)@
+              } .
+
+production  = identifier @let nonTerminalName = String(token.image)@
+              ( ":" regex @
+                  skip = true
+                  terminalAlias = nonTerminalName
+                  let name = terminalAlias!
+                  let rx = try Regex<Substring>(String(token.stripped))
+                  g.terminals[name] = (String(token.image), rx, false, skip)
+                  g.registerTerminal(name)
+                  @
+              | "-" regex @
+                  terminalAlias = nonTerminalName
+                  let name = terminalAlias!
+                  let rx = try Regex<Substring>(String(token.stripped))
+                  g.terminals[name] = (String(token.image), rx, false, skip)
+                  g.registerTerminal(name)
+                  @
+              | "=" @let node =@ selection @
+                  if g.startSymbol == "" { g.startSymbol = nonTerminalName }
+                  if let existing = g.nonTerminals[nonTerminalName] {
+                      var endOfList = existing
+                      while let next = endOfList.alt { endOfList = next }
+                      endOfList.alt = node
+                  } else {
+                      g.nonTerminals[nonTerminalName] = GrammarNode(kind: .N, name: nonTerminalName, alt: node)
+                  }
+                  @
+              ) @terminalAlias = nil@ @skip = false@
+              "."
             .
-term        =                           @var node: GrammarNode@
-                terminal                @node = terminal()@
-                | "[" selection         @node = GrammarNode(.OPT(body: node))@
-                  "]"
-                | "{" selection         @node = GrammarNode(.REP(body: node))@
-                  "}"
-                | "<" selection         @node = GrammarNode(.SEQ(head: node, tail: GrammarNode(.REP(body: node))))@
-                  ">"
-                | "(" selection         @node = selection()@
-                  ")"
+
+selection   @throws -> GrammarNode@
+            = @var tmp: GrammarNode!@
+              @let startOfAlternates =@ sequence
+              @tmp = startOfAlternates@
+              { "|" @let next =@ sequence @tmp.alt = next@ @tmp = tmp.alt!@
+              }
+              @return startOfAlternates@
             .
-terminal    = identifier            @node = GrammarNode(.NTM(name: token.image))@
-            | literal               @node = _literal()@
-            | regex                 @node = _regex()@
-            | action                @node = GrammarNode(.TRM(type: "action"))@
-                                    @actionList[node] = token.stripped@
-            | epsilon               @node = GrammarNode(.EPS)@
+
+sequence    @throws -> GrammarNode@
+            = @let startOfSequence = GrammarNode(kind: .ALT, name: "")@
+              @var termNode = startOfSequence@
+              < @termNode.seq =@ factor
+                [ "?" @
+                      let miniSeq = GrammarNode(kind: .ALT, name: "")
+                      miniSeq.seq = termNode.seq
+                      miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+                      termNode.seq = GrammarNode(kind: .OPT, name: "", alt: miniSeq)
+                      termNode.seq?.alt = miniSeq
+                      @
+                | "*" @
+                      let miniSeq = GrammarNode(kind: .ALT, name: "")
+                      miniSeq.seq = termNode.seq
+                      miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+                      termNode.seq = GrammarNode(kind: .KLN, name: "", alt: miniSeq)
+                      termNode.seq?.alt = miniSeq
+                      @
+                | "+" @
+                      let miniSeq = GrammarNode(kind: .ALT, name: "")
+                      miniSeq.seq = termNode.seq
+                      miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+                      termNode.seq = GrammarNode(kind: .POS, name: "", alt: miniSeq)
+                      termNode.seq?.alt = miniSeq
+                      @
+                ] @termNode = termNode.seq!@
+              > @
+                termNode.seq = GrammarNode(kind: .END, name: "")
+                return startOfSequence
+                @
+            .
+
+factor      @throws -> GrammarNode@
+            = @let node =@ terminal @return node@
+            | "[" @let sel =@ selection @return GrammarNode(kind: .OPT, name: "", alt: sel)@
+              "]"
+            | "{" @let sel =@ selection @return GrammarNode(kind: .KLN, name: "", alt: sel)@
+              "}"
+            | "<" @let sel =@ selection @return GrammarNode(kind: .POS, name: "", alt: sel)@
+              ">"
+            | "(" @let sel =@ selection @return sel@
+              ")"
+            .
+
+terminal    @throws -> GrammarNode@
+            = identifier @
+                if g.terminals[String(token.stripped)] != nil {
+                    return GrammarNode(kind: .T, name: token.stripped)
+                } else {
+                    return GrammarNode(kind: .N, name: String(token.stripped))
+                }
+                @
+            | literal @
+                if token.stripped == "" {
+                    return GrammarNode(kind: .EPS, name: "ε")
+                } else {
+                    let name = terminalAlias ?? token.stripped
+                    let rx = Regex { token.stripped }
+                    g.terminals[name] = (String(token.image), rx, true, skip)
+                    g.registerTerminal(name)
+                    return GrammarNode(kind: .T, name: name)
+                }
+                @
+            | regex @
+                let name = terminalAlias ?? token.image.base.linePosition(of: token.image.startIndex)
+                let rx = try Regex<Substring>(String(token.stripped))
+                g.terminals[name] = (String(token.image), rx, false, skip)
+                g.registerTerminal(name)
+                return GrammarNode(kind: .T, name: name)
+                @
+            | epsilon @return GrammarNode(kind: .EPS, name: "ε")@
             .
