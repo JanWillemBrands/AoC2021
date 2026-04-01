@@ -44,6 +44,7 @@
 		4E8D058D2F6718310081C6D2 /* AdventMacros in Frameworks */ = {isa = PBXBuildFile; productRef = 4E8D058C2F6718310081C6D2 /* AdventMacros */; };
 		4E8D05902F67204C0081C6D2 /* AdventMacros in Frameworks */ = {isa = PBXBuildFile; productRef = 4E8D058F2F67204C0081C6D2 /* AdventMacros */; };
 		4E8D05A72F701BFE0081C6D2 /* GenerateDerivationDiagram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D05A62F701B630081C6D2 /* GenerateDerivationDiagram.swift */; };
+		4EBA33552F7CFC6F007FB853 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 4EBA33542F7CFC6F007FB853 /* ArgumentParser */; };
 		4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */; };
 		4EE2FCD92F79070A00105588 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE2FCD82F79066B00105588 /* Loggers.swift */; };
 /* End PBXBuildFile section */
@@ -146,6 +147,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4EBA33552F7CFC6F007FB853 /* ArgumentParser in Frameworks */,
 				4E8D058D2F6718310081C6D2 /* AdventMacros in Frameworks */,
 				4E2C80812F729E88004365DD /* BitCollections in Frameworks */,
 			);
@@ -299,6 +301,7 @@
 			packageProductDependencies = (
 				4E8D058C2F6718310081C6D2 /* AdventMacros */,
 				4E2C80802F729E88004365DD /* BitCollections */,
+				4EBA33542F7CFC6F007FB853 /* ArgumentParser */,
 			);
 			productName = Advent;
 			productReference = CB6B7315257EA9F400B929C6 /* Advent */;
@@ -337,6 +340,7 @@
 			packageReferences = (
 				4E11B2AD2DC38D8E00555BB8 /* XCRemoteSwiftPackageReference "swift-collections" */,
 				4E8D058B2F6718310081C6D2 /* XCLocalSwiftPackageReference "AdventMacros" */,
+				4EBA33532F7CFC6F007FB853 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 			);
 			productRefGroup = CB6B7316257EA9F400B929C6 /* Products */;
 			projectDirPath = "";
@@ -707,6 +711,14 @@
 				minimumVersion = 1.4.1;
 			};
 		};
+		4EBA33532F7CFC6F007FB853 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.7.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -738,6 +750,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4E8D058B2F6718310081C6D2 /* XCLocalSwiftPackageReference "AdventMacros" */;
 			productName = AdventMacros;
+		};
+		4EBA33542F7CFC6F007FB853 /* ArgumentParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4EBA33532F7CFC6F007FB853 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
+			productName = ArgumentParser;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

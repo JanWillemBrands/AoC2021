@@ -1,8 +1,8 @@
-@
-var g = Grammar()
-var skip = false
-var terminalAlias: String?
-@
+                                                    @
+                                                    var g = Grammar()
+                                                    var skip = false
+                                                    var terminalAlias: String?
+                                                    @
 
 whitespace  : /\s+/ .
 linecomment : /\/\/.*/ .
@@ -17,11 +17,14 @@ regex       - /\/(?:[^\/\\]|\\.)+\// .
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production >
-              { @let m =@ message                   @g.messages.append(m.stripped)@
+              {                                     @let m =@
+                message                             @g.messages.append(m.stripped)@
               } .
 
-production  = @let id =@ identifier                  @let nonTerminalName = String(id.image)@
-              ( ":" @let rx_tok =@ regex             @
+production  =                                       @let id =@
+              identifier                            @let nonTerminalName = String(id.image)@
+              ( ":"                                 @let rx_tok =@
+                regex                               @
                                                     skip = true
                                                     terminalAlias = nonTerminalName
                                                     let name = terminalAlias!
@@ -29,7 +32,8 @@ production  = @let id =@ identifier                  @let nonTerminalName = Stri
                                                     g.terminals[name] = (String(rx_tok.image), rx, false, skip)
                                                     g.registerTerminal(name)
                                                     @
-              | "-" @let rx_tok =@ regex             @
+              | "-"                                 @let rx_tok =@
+                regex                               @
                                                     terminalAlias = nonTerminalName
                                                     let name = terminalAlias!
                                                     let rx = try Regex<Substring>(String(rx_tok.stripped))
@@ -107,14 +111,16 @@ factor                                              @throws -> GrammarNode@
             .
 
 terminal                                            @throws -> GrammarNode@
-            = @let id =@ identifier                 @
+            =                                       @let id =@
+              identifier                            @
                                                     if g.terminals[String(id.stripped)] != nil {
                                                         return GrammarNode(kind: .T, name: id.stripped)
                                                     } else {
                                                         return GrammarNode(kind: .N, name: String(id.stripped))
                                                     }
                                                     @
-            | @let lit =@ literal                   @
+            |                                       @let lit =@
+              literal                               @
                                                     if lit.stripped == "" {
                                                         return GrammarNode(kind: .EPS, name: "ε")
                                                     } else {
@@ -125,7 +131,8 @@ terminal                                            @throws -> GrammarNode@
                                                         return GrammarNode(kind: .T, name: name)
                                                     }
                                                     @
-            | @let rx_tok =@ regex                  @
+            |                                       @let rx_tok =@
+              regex                                 @
                                                     let name = terminalAlias ?? rx_tok.image.base.linePosition(of: rx_tok.image.startIndex)
                                                     let rx = try Regex<Substring>(String(rx_tok.stripped))
                                                     g.terminals[name] = (String(rx_tok.image), rx, false, skip)
@@ -135,11 +142,11 @@ terminal                                            @throws -> GrammarNode@
             | epsilon                               @return GrammarNode(kind: .EPS, name: "ε")@
             .
 ^^^
-@
-var g = Grammar()
-var skip = false
-var terminalAlias: String?
-@
+                                                    @
+                                                    var g = Grammar()
+                                                    var skip = false
+                                                    var terminalAlias: String?
+                                                    @
 
 whitespace  : /\s+/ .
 linecomment : /\/\/.*/ .
@@ -154,11 +161,14 @@ regex       - /\/(?:[^\/\\]|\\.)+\// .
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production >
-              { message @g.messages.append(token.stripped)@
+              {                                     @let m =@
+                message                             @g.messages.append(m.stripped)@
               } .
 
-production  = @let id =@ identifier                  @let nonTerminalName = String(id.image)@
-              ( ":" @let rx_tok =@ regex             @
+production  =                                       @let id =@
+              identifier                            @let nonTerminalName = String(id.image)@
+              ( ":"                                 @let rx_tok =@
+                regex                               @
                                                     skip = true
                                                     terminalAlias = nonTerminalName
                                                     let name = terminalAlias!
@@ -166,7 +176,8 @@ production  = @let id =@ identifier                  @let nonTerminalName = Stri
                                                     g.terminals[name] = (String(rx_tok.image), rx, false, skip)
                                                     g.registerTerminal(name)
                                                     @
-              | "-" @let rx_tok =@ regex             @
+              | "-"                                 @let rx_tok =@
+                regex                               @
                                                     terminalAlias = nonTerminalName
                                                     let name = terminalAlias!
                                                     let rx = try Regex<Substring>(String(rx_tok.stripped))
@@ -244,14 +255,16 @@ factor                                              @throws -> GrammarNode@
             .
 
 terminal                                            @throws -> GrammarNode@
-            = @let id =@ identifier                 @
+            =                                       @let id =@
+              identifier                            @
                                                     if g.terminals[String(id.stripped)] != nil {
                                                         return GrammarNode(kind: .T, name: id.stripped)
                                                     } else {
                                                         return GrammarNode(kind: .N, name: String(id.stripped))
                                                     }
                                                     @
-            | @let lit =@ literal                   @
+            |                                       @let lit =@
+              literal                               @
                                                     if lit.stripped == "" {
                                                         return GrammarNode(kind: .EPS, name: "ε")
                                                     } else {
@@ -262,7 +275,8 @@ terminal                                            @throws -> GrammarNode@
                                                         return GrammarNode(kind: .T, name: name)
                                                     }
                                                     @
-            | @let rx_tok =@ regex                  @
+            |                                       @let rx_tok =@
+              regex                                 @
                                                     let name = terminalAlias ?? rx_tok.image.base.linePosition(of: rx_tok.image.startIndex)
                                                     let rx = try Regex<Substring>(String(rx_tok.stripped))
                                                     g.terminals[name] = (String(rx_tok.image), rx, false, skip)
