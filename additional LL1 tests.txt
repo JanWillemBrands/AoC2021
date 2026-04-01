@@ -1,0 +1,207 @@
+
+```
+**LL(1)?** Yes.
+Edge: Fragile nullable tail; tiny changes break the disjoint predict sets.
+
+### 6. Right-recursive sum with primed tail (LL(1))
+```
+
+S  ::= E S
+S  ::= ε | “+” S
+E  ::= “num” | “(” S “)”
+
+```
+**LL(1)?** Yes.
+Edge: Classic left-recursion elimination example; deceptively simple but teaches tail handling.
+
+### 7. EBNF-style sum with repetition (LL(1))
+```
+
+S ::= E { “+” E }
+E ::= “num” | “(” S “)”
+
+```
+**LL(1)?** Yes.
+Edge: Looks like a regex; repetition vs. end-of-input is a common edge for LL(1) checkers.
+
+### 8. If-then with optional else (not LL(1))
+```
+
+Stat ::= “if” Exp “then” Stat MoreIf
+MoreIf ::= “else” Stat “end” | ε
+
+```
+**LL(1)?** No (`else` appears in FOLLOW(Stat)).
+Edge: Clean-looking optional that triggers FIRST/FOLLOW conflict.
+
+### 9. Direct left-recursive list (not LL(1))
+```
+
+List ::= List “,” “item” | “item”
+
+```
+**LL(1)?** No (left recursion).
+Edge: Extremely simple; every left-recursion detector should catch it instantly.
+
+### 10. Precedence via layered repetition (LL(1))
+```
+
+Expr ::= Term { (”+” | “-”) Term }
+Term ::= Factor { (”*” | “/”) Factor }
+Factor ::= “num” | “(” Expr “)”
+
+```
+**LL(1)?** Yes.
+Edge: Shared FIRST sets look dangerous but layering makes it LL(1); classic precedence test.
+
+### 11. Floating-point literal (not LL(1))
+```
+
+Float ::= Fract [ Exp ] [ (“f” | “l” | “F” | “L”) ]
+| [ “0”-“9” ]+ Exp [ (“f” | “l” | “F” | “L”) ]
+Fract ::= [ “0”-“9” ]* “.” [ “0”-“9” ]+
+| [ “0”-“9” ]+ “.”
+Exp   ::= (“e” | “E”) [ “+” | “-” ] [ “0”-“9” ]+
+
+```
+**LL(1)?** No (overlapping alternatives in Fract and optionals).
+Edge: Regex-like but full of nullable paths and common prefixes.
+
+### 12. Multiple nullables in sequence (LL(1))
+```
+
+S ::= A “a”
+A ::= B D
+B ::= “b” | ε
+D ::= “d” | ε
+
+```
+**LL(1)?** Yes (disjoint via FOLLOW).
+Edge: Looks ambiguous but FOLLOW resolves it; excellent test for nullable propagation code.
+
+### 13. Simple statements with optional expression tail (LL(1))
+```
+
+Prog ::= “{” Stmts “}” $
+Stmts ::= Stmt Stmts | ε
+Stmt  ::= “id” “=” Expr “;”
+| “if” “(” Expr “)” Stmt
+Expr  ::= “id” Etail
+Etail ::= “+” Expr | “-” Expr | ε
+
+```
+**LL(1)?** Yes.
+Edge: Nullable tail simulates operators; common in mini-languages.
+
+### 14. Function call with optional argument list (not LL(1))
+```
+
+func_call ::= “IDENT” “(” [ “IDENT” { “,” “IDENT” } ] “)”
+
+```
+**LL(1)?** No (nullable argument list creates predict conflict).
+Edge: Very common construct; tests epsilon handling in lists.
+
+### 15. Statement that can be assignment or call (not LL(1))
+```
+
+stmt ::= assign “;” | func_call “;”
+assign ::= “IDENT” “=” Expr
+func_call ::= “IDENT” “(” arglist “)”
+
+```
+**LL(1)?** No (common prefix `"IDENT"`).
+Edge: Requires left-factoring; deceptively simple statement rule.
+
+### 16. Naturally written left-recursive expression (not LL(1))
+```
+
+Expr ::= Expr Op Expr | “(” Expr “)” | “Number”
+Op   ::= “+” | “*”
+
+```
+**LL(1)?** No (left recursion + ambiguity).
+Edge: How people naturally write math; classic transformation target.
+
+### 17. Left-recursion eliminated (LL(1))
+```
+
+Expr ::= “(” Expr “)” Expr’ | “Number”
+Expr’ ::= Op Expr Expr’ | ε
+Op   ::= “+” | “*”
+
+```
+**LL(1)?** Yes.
+Edge: Shows the mechanical transformation; AST rebuilding is non-trivial.
+
+### 18. Precedence with left-associative repetition (LL(1))
+```
+
+Expr  ::= Term { “+” Term }
+Term  ::= Factor { “*” Factor }
+Factor ::= “INT” | “(” Expr “)”
+
+```
+**LL(1)?** Yes.
+Edge: Repetition enforces left-associativity; very common in real grammars.
+
+### 19. Fully ambiguous operator grammar (not LL(1))
+```
+
+Expr ::= Expr “+” Expr | Expr “*” Expr | “INT”
+
+```
+**LL(1)?** No (ambiguous + left recursion).
+Edge: Minimal ambiguous math grammar; good stress test.
+
+### 20. Left-recursive precedence (not LL(1))
+```
+
+Expr  ::= Expr “+” Term | Term
+Term  ::= Term “*” Factor | Factor
+Factor ::= “INT” | “(” Expr “)”
+
+```
+**LL(1)?** No (left recursion).
+Edge: Precedence looks correct but still left-recursive.
+
+### 21. Signed integer with optional sign (LL(1))
+```
+
+integer ::= [ “+” | “-” ] digit { digit }
+digit   ::= “0” | “1” | “2” | “3” | “4” | “5” | “6” | “7” | “8” | “9”
+
+```
+**LL(1)?** Yes.
+Edge: Optional sign + mandatory digit; tiny change (making digit optional) breaks it.
+
+### 22. Integer list vs set (not LL(1))
+```
+
+intlist ::= integer { “,” integer }
+intset  ::= “{” [ intlist ] “}”
+
+```
+**LL(1)?** No (nested optionals/repetitions after integer).
+Edge: Container ambiguity; tests empty-set handling.
+
+### 23. Minimal nullable recursive sequence (not LL(1))
+```
+
+r ::= ε | “A” r
+
+```
+**LL(1)?** No (nullable alternative overlaps recursion).
+Edge: Extremely short but causes infinite derivations or predict conflicts.
+
+### 24. Common left prefix needing factoring (not LL(1))
+```
+
+Stmt ::= “id” “=” Expr “;”
+Stmt ::= “id” “(” ArgList “)”
+
+```
+**LL(1)?** No (common prefix `"id"`).
+Edge: Classic left-factoring example; rewrite to `Stmt ::= "id" ( "=" Expr ";" | "(" ArgList ")" )`.
+
+

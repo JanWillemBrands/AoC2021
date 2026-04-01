@@ -7,6 +7,7 @@
 
 // https://graphviz.org
 
+import OSLog
 import Foundation
 
 struct Cell: Hashable, CustomStringConvertible {
@@ -52,7 +53,7 @@ class ASTDiagramGenerator {
     // Draw a regular grid of GrammarNodes with arrows for .seq down and .alt to the right.
     func generate() throws {
         
-        // MARK: - generate CRT graph
+        // MARK: - generate CRF graph
         content.append("\n  subgraph CallReturnForest {")
         content.append("\n    cluster = true")
         
@@ -67,26 +68,21 @@ class ASTDiagramGenerator {
         content.append("\n    node [shape = box, style = rounded, height = 0]")
         
         // generate the call return forest
+        // Collect all return positions so we can render them as labeled nodes
+        var returnPositions: Set<Position> = []
         for (key, cluster) in (messageParser?.crf ?? [:]).sorted(by: { $0.key < $1.key }) {
             let poppedIndexes = cluster.pops.sorted().description.dropFirst().dropLast()
             content.append("\n    \(key) [label = <\(cluster.slot.ebnfDot().graphvizHTML),\(cluster.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
             for edge in cluster.returns {
                 let edgePos = Position(slot: edge.slot, index: edge.index)
                 content.append("\n    \(key) -> \(edgePos)")
+                returnPositions.insert(edgePos)
             }
         }
-        // render return nodes (CRF nodes that are not cluster nodes)
-//        for rtn in crfReturnNodes.sorted() {
-//            content.append("\n    \(rtn) [label = <\(rtn.slot.ebnfDot().graphvizHTML),\(rtn.index)> shape = ellipse]")
-//            content.append("\n    \(rtn) [label = <\(rtn.slot.ebnfDot().graphvizHTML),\(rtn.index)> shape = triangle]")
-//        }
-//        for node in gss.sorted() {
-//            for edge in node.edges {
-//                let poppedIndexes = node.pops.sorted().description.dropFirst().dropLast()
-//                content.append("\n    \(node) [label = <\(node.slot.ebnfDot()),\(node.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
-//                content.append("\n    \(node) -> \(edge)")
-//            }
-//        }
+        // render return nodes with dotted EBNF labels
+        for rtn in returnPositions.sorted() {
+            content.append("\n    \(rtn) [label = <\(rtn.slot.ebnfDot().graphvizHTML),\(rtn.index)>]")
+        }
         content.append("\n  }")
 
         // MARK: - generate the Abstract Syntaxt Tree of GrammarNodes
@@ -126,7 +122,7 @@ class ASTDiagramGenerator {
 
     // Draw a pretty picture of a GrammarNode with alt and seq links
     func draw(name: String, node: GrammarNode, row: Int, col: Int) {
-        var str = node.str
+        var str = node.name
         if node.kind == .T {
             str = "\"" + str + "\""
         }
@@ -134,8 +130,8 @@ class ASTDiagramGenerator {
         node.cell = Cell(name: name, r: row, c: col)
         grid[node.cell] = true
         
-        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)<br/>\(node.yield.sorted().description.graphvizHTML)>]")
-//        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi \(node.first.sorted().description.graphvizHTML)<br/>fo \(node.follow.sorted().description.graphvizHTML)<br/>am \(node.ambiguous.sorted().description.graphvizHTML)<br/>\(node.actions.joined(separator: "<br/>"))>]")
+        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.yield.sorted().description.graphvizHTML)>]")
+//        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>am [\(node.ambiguous.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.actions.joined(separator: "<br/>"))>]")
 //        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)>]")
 
         if let seq = node.seq {

@@ -24,4 +24,4 @@ Provenance
 	Added an escape for every \ in literals
 	Capitalized Operator rule to avoid conflict with "operator" literal
 
-8. 
+5. 

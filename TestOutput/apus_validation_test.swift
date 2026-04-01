@@ -1,99 +1,141 @@
-//: start of template code
+
+// MARK: - start of template code
 import Foundation
 import RegexBuilder
 
-var input = ""
+var tokens: [Token] = []
+var cI = 0
+var token: Token { tokens[cI] }
 
-typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
+func expect(_ expected: String...) {
+    if !expected.contains(token.kind) {
+        let position = token.image.base.linePosition(of: token.image.startIndex)
+        fatalError("\(position): expected \(expected) but found \"\(token.kind)\"")
+    }
+}
 
-//: start of generated code
+// MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"epsilon":	("/[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄#]/",	/[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄#]/,	false,	false),
-	"identifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
 	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
 	"blockcomment":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
+	"action":	("/@(?:[^@\\\\]|\\\\.)+@/",	/@(?:[^@\\]|\\.)+@/,	false,	true),
 	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)*\\\"/",	/\"(?:[^\"\\]|\\.)*\"/,	false,	false),
-	"action":	("/@(?:[^@\\\\]|\\\\.)+@/",	/@(?:[^@\\]|\\.)+@/,	false,	false),
-	"linecomment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"regex":	("/\\/(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?:[^\/\\]|\\.)+\//,	false,	false),
+	"epsilon":	("/[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/",	/[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/,	false,	false),
+	"identifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"<":	("<",	Regex { "<" },	true,	false),
-	".":	(".",	Regex { "." },	true,	false),
-	"|":	("|",	Regex { "|" },	true,	false),
-	"+":	("+",	Regex { "+" },	true,	false),
-	"*":	("*",	Regex { "*" },	true,	false),
-	")":	(")",	Regex { ")" },	true,	false),
+	"regex":	("/\\/(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?:[^\/\\]|\\.)+\//,	false,	false),
+	"linecomment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"]":	("]",	Regex { "]" },	true,	false),
-	">":	(">",	Regex { ">" },	true,	false),
-	"[":	("[",	Regex { "[" },	true,	false),
-	"{":	("{",	Regex { "{" },	true,	false),
-	"?":	("?",	Regex { "?" },	true,	false),
-	":":	(":",	Regex { ":" },	true,	false),
-	"}":	("}",	Regex { "}" },	true,	false),
-	"(":	("(",	Regex { "(" },	true,	false),
 	"=":	("=",	Regex { "=" },	true,	false),
+	">":	(">",	Regex { ">" },	true,	false),
+	".":	(".",	Regex { "." },	true,	false),
+	"}":	("}",	Regex { "}" },	true,	false),
+	"[":	("[",	Regex { "[" },	true,	false),
+	"<":	("<",	Regex { "<" },	true,	false),
+	"-":	("-",	Regex { "-" },	true,	false),
+	"(":	("(",	Regex { "(" },	true,	false),
+	"*":	("*",	Regex { "*" },	true,	false),
+	"{":	("{",	Regex { "{" },	true,	false),
+	")":	(")",	Regex { ")" },	true,	false),
+	"|":	("|",	Regex { "|" },	true,	false),
+	"?":	("?",	Regex { "?" },	true,	false),
+	"+":	("+",	Regex { "+" },	true,	false),
+	":":	(":",	Regex { ":" },	true,	false),
 ]
-func grammar() {
-	if token.type = .ALT {
-		// POS
+func factor() throws {
+	switch token.kind {
+	case "epsilon", "identifier", "literal", "regex":
+		try terminal()
+	case "[":
+		cI += 1
+		try selection()
+		expect("]")
+		cI += 1
+	case "{":
+		cI += 1
+		try selection()
+		expect("}")
+		cI += 1
+	case "<":
+		cI += 1
+		try selection()
+		expect(">")
+		cI += 1
+	case "(":
+		cI += 1
+		try selection()
+		expect(")")
+		cI += 1
+	default:
+		expect("(", "<", "[", "epsilon", "identifier", "literal", "regex", "{")
 	}
-	expect(["identifier"])
 }
-func selection() {
-	if token.type = .ALT {
-		sequence()
-		// KLN
-		while ["", "|"].contains(token.type) {
-			if token.type = .ALT {
-				next()
-			}
-			expect(["|"])
+func grammar() throws {
+	repeat {
+		try production()
+	} while ["identifier"].contains(token.kind)
+	while ["message"].contains(token.kind) {
+		cI += 1
+	}
+}
+func production() throws {
+	expect("identifier")
+	cI += 1
+	switch token.kind {
+	case ":":
+		cI += 1
+		expect("regex")
+		cI += 1
+	case "-":
+		cI += 1
+		expect("regex")
+		cI += 1
+	case "=":
+		cI += 1
+		try selection()
+	default:
+		expect("-", ":", "=")
+	}
+	expect(".")
+	cI += 1
+}
+func selection() throws {
+	try sequence()
+	while ["|"].contains(token.kind) {
+		cI += 1
+		try sequence()
+	}
+}
+func sequence() throws {
+	repeat {
+		try factor()
+		switch token.kind {
+		case "?":
+			cI += 1
+		case "*":
+			cI += 1
+		case "+":
+			cI += 1
+		default:
+			break
 		}
-	}
-	expect(["{", "[", "<", "epsilon", "action", "literal", "regex", "(", "identifier"])
+	} while ["(", "<", "[", "epsilon", "identifier", "literal", "regex", "{"].contains(token.kind)
 }
-func production() {
-	if token.type = .ALT {
-		next()
+func terminal() throws {
+	switch token.kind {
+	case "identifier":
+		cI += 1
+	case "literal":
+		cI += 1
+	case "regex":
+		cI += 1
+	case "epsilon":
+		cI += 1
+	default:
+		expect("epsilon", "identifier", "literal", "regex")
 	}
-	expect(["identifier"])
 }
-func sequence() {
-	if token.type = .ALT {
-		// POS
-	}
-	expect(["action", "{", "identifier", "<", "literal", "regex", "(", "epsilon", "["])
-}
-func terminal() {
-	if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	} else if token.type = .ALT {
-		next()
-	}
-	expect(["identifier"])
-}
-func term() {
-	if token.type = .ALT {
-		terminal()
-		// END
-	} else if token.type = .ALT {
-		terminal()
-		// END
-	} else if token.type = .ALT {
-		terminal()
-		// END
-	} else if token.type = .ALT {
-		terminal()
-		// END
-	} else if token.type = .ALT {
-		terminal()
-		// END
-	}
-	expect(["identifier", "literal", "epsilon", "regex", "action"])
+func parse() throws {
+	try grammar()
+	expect("$")
 }

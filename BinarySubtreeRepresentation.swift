@@ -6,13 +6,15 @@
 //
 
 //import Foundation
+import OSLog
+import AdventMacros
 
-public struct BSR: Hashable, CustomStringConvertible {
+struct BSR: Hashable, CustomStringConvertible {
     let slot: GrammarNode
     let i: Int  // left extent
     let k: Int  // pivot
     let j: Int  // right extent
-    public var description: String { "\(slot.ebnfDot()) \(i):\(k):\(j)" }
+    var description: String { "\(slot.ebnfDot()) \(i):\(k):\(j)" }
 }
 
 struct BinarySpan: Hashable, Comparable, CustomStringConvertible {
@@ -34,8 +36,8 @@ extension MessageParser {
     
     // Paper: bsrAdd(X ::= α·β, i, k, j) — add BSR element to the yield
     func addYield(L: GrammarNode, i: Int, k: Int, j: Int) {
-        trace("bsrAdd: \(L.ebnfDot()) \(i):\(k):\(j)")
-        // TODO: remove distributed bsrSet ?
+        #Trace("bsrAdd: \(L.ebnfDot()) \(i):\(k):\(j)")
+//        // TODO: remove distributed bsrSet ?
         let triple = BinarySpan(i: i, k: k, j: j)
         L.yield.insert(triple)
         

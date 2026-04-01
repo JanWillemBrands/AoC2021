@@ -7,28 +7,32 @@
 
 // TODO: explicit matching rules e.g. -\- any, regex101 not preceed or follow <<!  !>>, or exclude "\" not preceded "-/-" not followed "-\-"
 
+import OSLog
 import Foundation
-import RegexBuilder
 import AdventMacros
 
-public enum ScannerFailure: Error { 
+enum ScannerFailure: Error {
     case charactersDoNotMatchAnySymbol(position: String.Index, input: String)
-    case couldNotReadFile 
+    case couldNotReadFile
 }
 
-public typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
-    
-public final class Token: CustomStringConvertible {
-    public var image: Substring
-    public var kind: String
-    public var dual: Token?                            // multiple regex matches of equal length create a 'Schrödinger' token linked list
+typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
 
-    public init(image: Substring, kind: String) {
+final class Token: CustomStringConvertible {
+    var image: Substring
+    var kind: String
+    /// Integer ID from `Grammar.symbolToID`, assigned by `MessageParser.parse(tokens:)`
+    /// before the GLL algorithm runs. Enables O(1) integer comparison in `tokenMatch()`
+    /// and O(1) BitSet membership tests in `testSelect()`.
+    var kindID: Int!
+    var dual: Token?                            // multiple regex matches of equal length create a 'Schrödinger' token linked list
+    
+    init(image: Substring, kind: String) {
         self.image = image
         self.kind = kind
     }
-
-    public var stripped: String {
+    
+    var stripped: String {
         switch kind {
         case "literal":
             return String(image.dropFirst().dropLast())
@@ -43,19 +47,19 @@ public final class Token: CustomStringConvertible {
             return String(image)
         }
     }
-
-    public var description: String {
+    
+    var description: String {
+        let idStr = kindID.map(String.init) ?? "?"
         if let dual {
-            return kind + " " + dual.description
+            return "'" + kind + "':" + idStr + " ~ " + dual.description
         }
-        return kind
+        return "'" + kind + "':" + idStr
     }
 }
 
 /// A literal keyword pattern matched via hasPrefix (no regex engine needed).
 private struct LiteralPattern {
-    let kind: String
-    let literal: String
+    let kind: String      // also the exact literal string to match
     let isSkip: Bool
 }
 
@@ -70,23 +74,29 @@ private struct RegexPattern {
 /// Scanner takes an input string and token patterns, and produces a token array.
 /// One instance per scan — no shared mutable state.
 /// Literal keywords are matched via hasPrefix; only true regex patterns use the regex engine.
-public final class Scanner {
+final class Scanner {
     
-    public let input: String
+    let input: String
+    var tokens: [Token] = []                // the visible tokens referenced in the grammar production rules
+    var skippedTokens: [[Token]] = [[]]     // the skipped tokens e.g. whitespace and comment.
+    // These are stored as lists in an array indexed by the token immediately following them.
+    
     private let literalPatterns: [LiteralPattern]
     private let regexPatterns: [RegexPattern]
     
-    public init(fromString inputString: String, patterns: [String: TokenPattern]) throws {
+    init(fromString inputString: String, patterns: [String: TokenPattern]) throws {
         self.input = inputString
         
-        // Partition: isKeyword patterns use fast hasPrefix, the rest use regex engine.
+        // Partition: literal keywords use fast hasPrefix, the rest use regex engine.
+        // A keyword is a true literal if the image string matches exactly the kind string.
         var literals: [LiteralPattern] = []
         var regexes: [RegexPattern] = []
         for (kind, pattern) in patterns {
-            if pattern.isKeyword {
-                literals.append(LiteralPattern(kind: kind, literal: kind, isSkip: pattern.isSkip))
+            if pattern.isKeyword && kind == pattern.source {
+                //                if pattern.isKeyword, let m = kind.prefixMatch(of: pattern.regex), m.0 == kind[...] {
+                literals.append(LiteralPattern(kind: kind, isSkip: pattern.isSkip))
             } else {
-                regexes.append(RegexPattern(kind: kind, regex: pattern.regex, isKeyword: false, isSkip: pattern.isSkip))
+                regexes.append(RegexPattern(kind: kind, regex: pattern.regex, isKeyword: pattern.isKeyword, isSkip: pattern.isSkip))
             }
         }
         self.literalPatterns = literals
@@ -94,32 +104,41 @@ public final class Scanner {
         
         try scanAllTokens()
     }
-
-    public private(set) var tokens: [Token] = []
-
+    
     private func scanAllTokens() throws {
         var matchStart = input.startIndex
         while matchStart != input.endIndex {
-            var skip = true
+            var headMatchIsSkip = true
             var matchEnd = matchStart
-            var headMatch: Token?                // stores the most common match
-            var tailMatch: Token?                // tracks any subsequent matches for Schrödinger tokens
+            var headMatch: Token?                // the highest priority match is at the head of the linked list of Schrödinger tokens
+            var tailMatch: Token?                // the lowest priority match is at the end of the linked list
             let remaining = input[matchStart...]
             
             // Phase 1: literal keywords via hasPrefix (fast string comparison)
             for lp in literalPatterns {
-                if remaining.hasPrefix(lp.literal) {
-                    let literalEnd = input.index(matchStart, offsetBy: lp.literal.count)
+                if remaining.hasPrefix(lp.kind) {
+                    let literalEnd = input.index(matchStart, offsetBy: lp.kind.count)
                     if literalEnd > matchEnd {
+                        // the match is longer than any so far
                         matchEnd = literalEnd
                         headMatch = Token(image: input[matchStart..<literalEnd], kind: lp.kind)
                         tailMatch = headMatch
-                        skip = lp.isSkip
+                        headMatchIsSkip = lp.isSkip
                     } else if literalEnd == matchEnd {
-                        // Schrödinger token: keyword goes to front
-                        let oldHead = headMatch
-                        headMatch = Token(image: input[matchStart..<literalEnd], kind: lp.kind)
-                        headMatch?.dual = oldHead
+                        // the match is the same length as a previous match
+                        if lp.isSkip {
+                            // Schrödinger token goes to the back
+                            tailMatch?.dual = Token(image: input[matchStart..<literalEnd], kind: lp.kind)
+                            tailMatch = tailMatch?.dual
+                        } else {
+                            // Schrödinger token goes to the front
+                            let old = headMatch
+                            headMatch = Token(image: input[matchStart..<literalEnd], kind: lp.kind)
+                            headMatch?.dual = old
+                            headMatchIsSkip = lp.isSkip
+                        }
+//                        Logger.scan.debug("Schrödinger strikes again! \(headMatch!)")
+//                        #Trace("Schrödinger strikes again! \(headMatch!)")
                     }
                 }
             }
@@ -128,27 +147,36 @@ public final class Scanner {
             for rp in regexPatterns {
                 if let match = remaining.prefixMatch(of: rp.regex) {
                     if match.0.endIndex > matchEnd {
+                        // the match is longer than any so far
                         matchEnd = match.0.endIndex
                         headMatch = Token(image: match.0, kind: rp.kind)
                         tailMatch = headMatch
-                        skip = rp.isSkip
+                        headMatchIsSkip = rp.isSkip
                     } else if match.0.endIndex == matchEnd {
-                        if rp.isKeyword {
-                            let oldHead = headMatch
+                        // the match is the same length as a previous match
+                        if rp.isKeyword && !rp.isSkip {
+                            // visible keyword Schrödinger token goes to the front
+                            let old = headMatch
                             headMatch = Token(image: match.0, kind: rp.kind)
-                            headMatch?.dual = oldHead
+                            headMatch?.dual = old
+                            headMatchIsSkip = rp.isSkip
                         } else {
+                            // skip or non-keyword Schrödinger token goes to the back
                             tailMatch?.dual = Token(image: match.0, kind: rp.kind)
                             tailMatch = tailMatch?.dual
                         }
-                        #Trace("Schrödinger strikes again! \(headMatch!)")
+//                        Logger.scan.debug("Schrödinger strikes again! \(headMatch!)")
+//                        #Trace("Schrödinger strikes again! \(headMatch!)")
                     }
                 }
             }
             
             if let headMatch {
-                if !skip || headMatch.dual != nil {     // add non-skip or Schrödinger tokens
+                if headMatchIsSkip {
+                    skippedTokens[tokens.count].append(headMatch)
+                } else {
                     tokens.append(headMatch)
+                    skippedTokens.append([])
                 }
                 matchStart = matchEnd
             } else {
@@ -156,9 +184,11 @@ public final class Scanner {
             }
         }
         // append EndOfString token
-        // TODO: re-implement tokenKind as an Int, with 0 as EndOfString
         tokens.append(Token(image: "$", kind: "$"))
+//        Logger.scan.debug("tokens: \(self.tokens)")
+//        Logger.scan.debug("skipped tokens: \(self.skippedTokens)")
     }
+    
     
     // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern
     

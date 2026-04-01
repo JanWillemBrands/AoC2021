@@ -1,4 +1,5 @@
 whitespace : /\s+/.
+
 //comment    : /\/\/.*/.
 
 //S = X X X.                    // PASS
@@ -81,9 +82,9 @@ whitespace : /\s+/.
 
 //S = ( "a" "b" | "a" "b" ) "c".        // PASS on "abc"
 
-S = "a" A B | "a" A "b".              // PASS on "aab" Binsbergen Γ1 (2 matches, need to check for derivation equivalence)
-A = "a" | "c" | "".
-B = "b" | B "c" | "".
+//S = "a" A B | "a" A "b".              // PASS on "aab" Binsbergen Γ1 (2 matches, need to check for derivation equivalence)
+//A = "a" | "c" | "".
+//B = "b" | B "c" | "".
 
 //S = A C "a" B | A B "a" "a".          // PASS on "aabbaa" Binsbergen Γ2 (1 match, need to check derivation efficiency)
 //A = "a" A | "a".
@@ -198,13 +199,13 @@ B = "b" | B "c" | "".
 // S = A A c. A = B. B = "".   // forces contingent pops "Structuring the..."
 
 //S = "a" | "" .      // PASS on empty string
-//S = "a" | # .       // PASS on empty string
+//S = "a" | # .       // FAIL on empty string
 //S = "a" | ε .       // PASS on empty string
 
 //S = "a" B. B = "b".
-//S = {"a"} {"a"}.
+S = {"a"} {"a"}.
 
 //S = { "x" | "" } .      // nullable closure
-//S = < "x" | "" > .         // nullable positive closure
+//S = ["a"] "b".         // nullable positive closure
 ^^^
-abc
+aa

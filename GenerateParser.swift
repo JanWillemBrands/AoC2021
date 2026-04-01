@@ -5,32 +5,44 @@
 //  Created by Johannes Brands on 26/12/2024.
 //
 
+import OSLog
 import Foundation
 
-public class ParserGenerator {
+class ParserGenerator {
     
     let parserFile: URL
     let grammar: Grammar
     
-    public init(outputFile: URL, grammar: Grammar) {
+    init(outputFile: URL, grammar: Grammar) {
         self.parserFile = outputFile
         self.grammar = grammar
     }
     
     var content = #"""
-        //: start of template code
+        
+        // MARK: - start of template code
         import Foundation
         import RegexBuilder
         
-        var input = ""
+        var tokens: [Token] = []
+        var cI = 0
+        var token: Token { tokens[cI] }
         
-        typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
+        func expect(_ expected: String...) {
+            if !expected.contains(token.kind) {
+                let position = token.image.base.linePosition(of: token.image.startIndex)
+                fatalError("\(position): expected \(expected) but found \"\(token.kind)\"")
+            }
+        }
         
-        //: start of generated code
+        // MARK: - start of generated code
         
         """#
     
-    public func generate() throws {
+    func generate() throws {
+        
+        // Emit preamble actions (global code before everything)
+        emit(actions: grammar.preamble)
         
         // TODO: check escapes etc.
         emit(dent: .NR, "let tokenPatterns: [String:TokenPattern] = [")
@@ -43,76 +55,201 @@ public class ParserGenerator {
         }
         emit(dent: .LN, "]")
         
-        for (var name, node) in grammar.nonTerminals {
-            if name.first!.isNumber {
-                name = "_" + name
+        for (name, node) in grammar.nonTerminals.sorted(by: { $0.key < $1.key }) {
+            if let sig = node.signature {
+                emit(dent: .NR, "func ", name, "() ", sig, " {")
+            } else {
+                emit(dent: .NR, "func ", name, "() throws {")
             }
-            emit(dent: .NR, "func ", name, "() {")
-            generate(node)
+            // Actions between "=" and body land on the first ALT node
+            // and are emitted naturally by emitAlternatives.
+            emitAlternatives(firstAlt: node.alt!)
             emit(dent: .LN, "}")
         }
+        
+        emit(dent: .NR, "func parse() throws {")
+        emit("try \(grammar.startSymbol)()")
+        emit("expect(\"$\")")
+        emit(dent: .LN, "}")
+        
+        // Emit epilogue actions (global code after everything)
+        emit(actions: grammar.epilogue)
 
         try content.write(to: parserFile, atomically: true, encoding: .utf8)
     }
     
-    func generate(_ node: GrammarNode) {
-        
-        func commaList(_ set: Set<String>) -> String {
-            let escapedSet = set.map { $0.escapesAdded }
-            return "\"" + escapedSet.joined(separator: "\", \"") + "\""
+    // Emits dispatch over an ALT chain.
+    // Single alternate: emits directly.
+    // Two or more: emits switch/case.
+    private func emitAlternatives(firstAlt: GrammarNode, dispatched: Set<String>? = nil, defaultBreak: Bool = false) {
+        // Collect all ALT nodes
+        var alts: [GrammarNode] = []
+        var current: GrammarNode? = firstAlt
+        while let alt = current {
+            alts.append(alt)
+            current = alt.alt
         }
         
-        switch node.kind {
-        case .EOS:
-            break
-        case .T:
-            emit("next()")
-        case .TI:
-            break
-        case .C:
-            break
-        case .B:
-            break
-        case .EPS:
-            break
-        case .N:
-            if let seq = node.seq {
-                // rhs nonterminal call
-                emit(node.str + "()")
-                generate(seq)
-            } else if let alt = node.alt {
-                // lhs nonterminal declaration
-                generate(alt)
+        if alts.count == 1 {
+            // Single alternate: emit directly
+            let prefix = emitActionsExtractingPrefix(alts[0].actions)
+            emitSequence(alts[0].seq!, dispatched: dispatched, pendingPrefix: prefix)
+        } else {
+            // Multiple alternates: switch on token kind (grammar is LL(1))
+            emit(dent: .NR, "switch token.kind {")
+            var allTokens: Set<String> = []
+            for alt in alts {
+                let tokens = alt.first.subtracting(["ε"])
+                if tokens.isEmpty {
+                    // Epsilon-only alternate: becomes default case
+                    emit(dent: .LR, "default:")
+                } else {
+                    allTokens.formUnion(tokens)
+                    emit(dent: .LR, "case \(commaList(tokens)):")
+                }
+                let prefix = emitActionsExtractingPrefix(alt.actions)
+                emitSequence(alt.seq!, dispatched: tokens, pendingPrefix: prefix)
             }
-        case .ALT:
-            emit(dent: .NR, "if token.type = .\(node.kind) {")
-            if let seq = node.seq { generate(seq) }
-            var alt = node
-            while let nextAlt = alt.alt {
-                emit(dent: .LR, "} else if token.type = .\(nextAlt.kind) {")
-                if let seq = node.seq { generate(seq) }
-                alt = nextAlt
+            if !alts.contains(where: { $0.first.subtracting(["ε"]).isEmpty }) {
+                emit(dent: .LR, "default:")
+                if defaultBreak {
+                    emit("break")
+                } else {
+                    emit("expect(\(commaList(allTokens)))")
+                }
             }
             emit(dent: .LN, "}")
-            emit("expect([\(commaList(node.first))])")
-        case .END:
-            emit("// END")
-        case .DO:
-            emit("// DO")
-        case .OPT:
-            emit("// OPT")
-        case .POS:
-            emit("// POS")
-        case .KLN:
-            emit("// KLN")
-            emit(dent: .NR, "while [\(commaList(node.first))].contains(token.type) {")
-            generate(node.alt!)
-            emit(dent: .LN, "}")
         }
-        for action in node.actions {
-            emit(action)
+    }
+    
+    /// Walks a sequence via .seq links, emitting code for each node until END.
+    /// When `dispatched` is non-nil, the first terminal in the sequence that matches
+    /// a dispatched token emits `next()` instead of `expect()`, since the dispatch
+    /// already confirmed the token kind.
+    /// Supports prefix actions: if the last action before a symbol ends with `=`,
+    /// it is combined with the symbol's generated code on one line.
+    private func emitSequence(_ node: GrammarNode, dispatched: Set<String>? = nil, pendingPrefix: String? = nil) {
+        var current: GrammarNode? = node
+        var dispatched = dispatched
+        var pendingPrefix = pendingPrefix
+        while let n = current {
+            switch n.kind {
+            case .T, .TI, .C, .B:
+                if let tokens = dispatched, tokens.contains(n.name) {
+                    dispatched = nil
+                } else {
+                    emit("expect(\"\(n.name.escapesAdded)\")")
+                }
+                if let prefix = pendingPrefix {
+                    emit(prefix, " token")
+                    pendingPrefix = nil
+                }
+                emit("cI += 1")
+            case .EPS:
+                dispatched = nil
+                pendingPrefix = nil
+            case .N:
+                dispatched = nil
+                if let prefix = pendingPrefix {
+                    emit(prefix, " try \(n.name)()")
+                    pendingPrefix = nil
+                } else {
+                    emit("try \(n.name)()")
+                }
+            case .DO:
+                dispatched = nil
+                pendingPrefix = nil
+                emitAlternatives(firstAlt: n.alt!)
+            case .OPT:
+                dispatched = nil
+                pendingPrefix = nil
+                let tokens = innerFirst(of: n)
+                if altCount(from: n.alt!) > 1 {
+                    emitAlternatives(firstAlt: n.alt!, defaultBreak: true)
+                } else {
+                    emit(dent: .NR, "if [\(commaList(tokens))].contains(token.kind) {")
+                    emitAlternatives(firstAlt: n.alt!, dispatched: tokens)
+                    emit(dent: .LN, "}")
+                }
+            case .KLN:
+                dispatched = nil
+                pendingPrefix = nil
+                let tokens = innerFirst(of: n)
+                emit(dent: .NR, "while [\(commaList(tokens))].contains(token.kind) {")
+                emitAlternatives(firstAlt: n.alt!, dispatched: tokens)
+                emit(dent: .LN, "}")
+            case .POS:
+                dispatched = nil
+                pendingPrefix = nil
+                let tokens = innerFirst(of: n)
+                emit(dent: .NR, "repeat {")
+                emitAlternatives(firstAlt: n.alt!)
+                emit(dent: .LN, "} while [\(commaList(tokens))].contains(token.kind)")
+            case .END:
+                pendingPrefix = emitActionsExtractingPrefix(n.actions)
+               return
+            case .ALT:
+                fatalError("ALT node encountered in sequence walk")
+            case .EOS:
+                return
+            }
+            pendingPrefix = emitActionsExtractingPrefix(n.actions)
+            current = n.seq
         }
-//        emit(node.action)
+    }
+    
+    // MARK: - Prefix Action Helpers
+    
+    /// Detects whether an action string is a prefix action (ends with `=` but not `==`, `!=`, etc.)
+    private func isPrefixAction(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasSuffix("=") else { return false }
+        for op in ["==", "!=", ">=", "<=", "+=", "-=", "*=", "/="] {
+            if trimmed.hasSuffix(op) { return false }
+        }
+        return true
+    }
+    
+    /// Emits all actions, but if the last one is a prefix action, returns it as pending.
+    /// The caller is responsible for combining the pending prefix with the next symbol's code.
+    private func emitActionsExtractingPrefix(_ actions: [String]) -> String? {
+        guard !actions.isEmpty else { return nil }
+        if isPrefixAction(actions.last!) {
+            emit(actions: Array(actions.dropLast()))
+            return actions.last!
+        }
+        emit(actions: actions)
+        return nil
+    }
+    
+    // MARK: - Helpers
+    
+    private func commaList(_ set: Set<String>) -> String {
+        let escapedSet = set.sorted().map { "\"\($0.escapesAdded)\"" }
+        return escapedSet.joined(separator: ", ")
+    }
+    
+    private func altCount(from firstAlt: GrammarNode) -> Int {
+        var count = 0
+        var current: GrammarNode? = firstAlt
+        while let alt = current {
+            count += 1
+            current = alt.alt
+        }
+        return count
+    }
+    
+    /// Collects the FIRST tokens of a bracket's inner ALT chain,
+    /// excluding epsilon. This avoids using the bracket node's own .first
+    /// which has continuation tokens folded in.
+    private func innerFirst(of bracket: GrammarNode) -> Set<String> {
+        var result: Set<String> = []
+        var current = bracket.alt
+        while let alt = current {
+            result.formUnion(alt.first.subtracting(["ε"])) 
+            current = alt.alt
+        }
+        return result
     }
 
     // IndentMode specifies the increase or decrease of indentation before and after emitting the items
@@ -145,161 +282,48 @@ public class ParserGenerator {
         case .RL: indentation -= 1
         }
     }
+    
+    func emit(actions: [String]) {
+        for action in actions {
+            // 1. Split the action string into an array of lines,
+            // preserving empty lines between text.
+            var lines = action.components(separatedBy: "\n")
+            guard !lines.isEmpty else { continue }
+
+            // 2. Check if the FIRST line is only whitespace.
+            // If so, remove it from the array.
+            if let firstLine = lines.first, firstLine.allSatisfy({ $0.isWhitespace }) {
+                lines.removeFirst()
+            }
+
+            // 3. Re-verify the array isn't empty after potential first-line removal,
+            // then identify the last line to determine the stripping rule.
+            guard let lastLine = lines.last else { continue }
+            
+            // 4. Rule Discovery: If the last line is pure whitespace (upto the trailing @, which was removed from the action),
+            // its length is our limit. Otherwise, we strip ALL leading whitespace.
+            let isOnlyWhitespace = !lastLine.isEmpty && lastLine.allSatisfy { $0.isWhitespace }
+            let maxStripCount = isOnlyWhitespace ? lastLine.count : Int.max
+            
+            // 5. Select which lines to process.
+            // If the last line was just whitespace (used for the count), exclude it from output.
+            let linesToProcess = isOnlyWhitespace ? lines.dropLast() : ArraySlice(lines)
+            
+            for line in linesToProcess {
+                var currentLine = line
+                var removed = 0
+                
+                // 6. Strip leading whitespace character-by-character.
+                // This stops if we hit a non-whitespace character OR reach the maxStripCount.
+                while removed < maxStripCount, let first = currentLine.first, first.isWhitespace {
+                    currentLine.removeFirst()
+                    removed += 1
+                }
+                
+                // 7. Send the processed line to the final output.
+                emit(currentLine)
+            }
+        }
+    }
 
 }
-//
-//let _parserFileURL = URL(fileURLWithPath: #filePath)
-//    .deletingLastPathComponent()
-//    .appendingPathComponent("output")
-//    .appendingPathExtension("swift")
-//
-//var _parserContent: String = ""
-//
-//func _generateParser() {
-//    let template = #"""
-//    //: start of template code
-//    import Foundation
-//    import RegexBuilder
-//    
-//    var input = ""
-//    
-//    typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
-//    
-//    //: start of generated code
-//    """#
-//    emit(template)
-//    
-//    // TODO: check escapes etc.
-//    emit(dent: .NR, "let tokenPatterns: [String:TokenPattern] = [")
-//    for (kind, pattern) in _terminals.sorted(by: { !$0.value.isKeyword && $1.value.isKeyword } ) {
-//        if pattern.isKeyword {
-//            emit("\"", kind, "\":\t(", pattern.source, ",\tRegex { ", pattern.source, " },\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
-//        } else {
-//            emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, "\",\t", pattern.source, ",\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
-//        }
-//    }
-//    emit(dent: .LN, "]")
-//    
-//    for (var name, node) in _nonTerminals {
-//        if name.first!.isNumber {
-//            name = "_" + name
-//        }
-//        emit(dent: .NR, "func ", name, "() {")
-//        _generate(node)
-//        emit(dent: .LN, "}")
-//    }
-//    
-//    do {
-//        try _parserContent.write(to: _parserFileURL, atomically: true, encoding: .utf8)
-//    } catch {
-//        print("error: could not write to \(_parserFileURL.absoluteString)")
-//        exit(5)
-//    }
-//}
-//
-//func _generate(_ node: _GrammarNode) {
-//    func commaList(_ set: Set<String>) -> String {
-//        let escapedSet = set.map { $0.escapesAdded }
-//        return "\"" + escapedSet.joined(separator: "\", \"") + "\""
-//    }
-//    switch node.kind {
-//        
-//    case .EOS:
-//        break
-//    case .T:
-//        emit("next()")
-//    case .TI:
-//        break
-//    case .C:
-//        break
-//    case .B:
-//        break
-//    case .EPS:
-//        break
-//    case .N:
-//        emit(node.str + "()")
-//    case .ALT:
-//        emit(dent: .NR, "if token.type = \(node.kind) {")
-//        _generate(node.seq!)
-//        emit("expect([\(commaList(node.first))])")
-//        emit(dent: .LN, "}")
-//        
-//    case .END:
-//        break
-//    case .DO:
-//        break
-//    case .OPT:
-//        break
-//    case .POS:
-//        break
-//    case .KLN:
-//        break
-//    }
-//    
-    //    switch node.kind {
-    //    case .SEQ(let children):
-    //        for child in children {
-    //            generate(child)
-    //        }
-    //    case .ALT(let children):
-    //        emit(dent: .NR, "switch token.type {")
-    //        for child in children {
-    //            emit(dent: .LR, "case \(commaList(child.first)):")
-    //            generate(child)
-    //        }
-    //        emit(dent: .LR, "default:")
-    //        emit("expect([\(commaList(node.first))])")
-    //        emit(dent: .LN, "}")
-    //    case .OPT(let child):
-    //        emit(dent: .NR, "if [\(commaList(child.first))].contains(token.type) {")
-    //        generate(child)
-    //        emit(dent: .LN, "}")
-    //    case .REP(let child):
-    //        emit(dent: .NR, "while [\(commaList(child.first))].contains(token.type) {")
-    //        generate(child)
-    //        emit(dent: .LN, "}")
-    //    case .NTR(var name, _):
-    //        if name.first!.isNumber {
-    //            name = "_" + name
-    //        }
-    //        emit(name + "()")
-    //    case .TRM(let type):
-    //        if type == "action" {
-    //            if let action = actionList[node] {
-    //                emit(action)
-    //            }
-    //        }
-    //        emit("next()")
-    //    }
-//}
-
-//// IndentMode specifies the increase or decrease of indentation before and after emitting the items
-//enum IndentMode { case NN, LN, NR, LR, RL }
-//
-//var indentation = 0
-//func emit(dent: IndentMode = .NN, _ items: Any..., terminator: String = "\n") {
-//    switch dent {
-//    case .NN: break
-//    case .LN: indentation -= 1
-//    case .NR: break
-//    case .LR: indentation -= 1
-//    case .RL: indentation += 1
-//    }
-//    
-//    for _ in 0 ..< indentation {
-//        _parserContent.append("\t")
-//    }
-//    for item in items {
-//        _parserContent.append("\(item)")
-//    }
-//    _parserContent.append(terminator)
-//    
-//    switch dent {
-//    case .NN: break
-//    case .LN: break
-//    case .NR: indentation += 1
-//    case .LR: indentation += 1
-//    case .RL: indentation -= 1
-//    }
-//}
-//

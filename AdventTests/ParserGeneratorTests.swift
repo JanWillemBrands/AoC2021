@@ -8,7 +8,7 @@
 import Testing
 import Foundation
 
-@Suite("Parser Generator Tests", .serialized)
+@Suite("Parser Generator Tests")
 struct ParserGeneratorTests {
     
     /// Reset global state before each test
@@ -21,108 +21,59 @@ struct ParserGeneratorTests {
         GrammarNode.count = 0
     }
     
-    /// Test case configuration
-    struct TestCase: CustomStringConvertible {
-        let grammarFile: String
-        let expectedToComplete: Bool
-        let testDescription: String
-        
-        var description: String {
-            testDescription.isEmpty ? grammarFile : testDescription
-        }
-        
-        init(_ grammarFile: String, shouldComplete: Bool = true, description: String = "") {
-            self.grammarFile = grammarFile
-            self.expectedToComplete = shouldComplete
-            self.testDescription = description.isEmpty ? grammarFile : description
-        }
-    }
+    /// Grammar files to test
+    static let grammarFiles = ["apus", "apusUnicode"]
     
-    /// All test cases to run
-    static let testCases: [TestCase] = [
-        TestCase("apus", description: "Base APUS grammar"),
-        // TestCase("apusWithAction", description: "APUS grammar with embedded actions"),
-        // TestCase("apusAmbiguous", description: "Ambiguous APUS grammar"),
-    ]
-    
-    @Test("Parser generation completes successfully", arguments: testCases)
-    func testParserGeneration(testCase: TestCase) async throws {
+    @Test("Generates parser for all grammar files")
+    func testGenerateParser() throws {
         let sourceFileURL = URL(fileURLWithPath: #filePath)
-        // Go up two levels: from test file -> Tests directory -> project root
         let projectDir = sourceFileURL.deletingLastPathComponent().deletingLastPathComponent()
         
-        let grammarFileURL = projectDir
-            .appendingPathComponent(testCase.grammarFile)
-            .appendingPathExtension("apus")
-        
-        // Verify grammar file exists
-        #expect(FileManager.default.fileExists(atPath: grammarFileURL.path),
-                "Grammar file should exist: \(grammarFileURL.path)")
-        
-        // Clear ALL global state before test
-        Self.resetGlobalState()
-        
-        // Parse the grammar
-        let grammarParser = try ApusParser(fromFile: grammarFileURL)
-        
-        // Parse grammar tree
-        let grammar = try grammarParser.parse(explicitStartSymbol: "") // "" means use first non-terminal
-        
-        #expect(grammar.nonTerminals.count > 0, "Grammar should define at least one non-terminal")
-        
-        // Check if grammar is within size limits for generation
-        guard grammar.nonTerminals.count < 1000 else {
-            Issue.record("Grammar too large: \(grammar.nonTerminals.count) non-terminals")
-            return
-        }
-        
-        // Setup output directory
-        let outputDir = projectDir.appendingPathComponent("TestOutput")
-        try? FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
-        
-        // Generate parser
-        let parserOutputFile = outputDir
-            .appendingPathComponent("\(testCase.grammarFile)_output")
-            .appendingPathExtension("swift")
-        
-        let parserGenerator = ParserGenerator(outputFile: parserOutputFile, grammar: grammar)
-        
-        do {
+        for grammarFile in Self.grammarFiles {
+            let grammarFileURL = projectDir
+                .appendingPathComponent(grammarFile)
+                .appendingPathExtension("apus")
+            
+            #expect(FileManager.default.fileExists(atPath: grammarFileURL.path),
+                    "Grammar file should exist: \(grammarFileURL.path)")
+            
+            Self.resetGlobalState()
+            
+            let grammarParser = try ApusParser(fromFile: grammarFileURL)
+            let grammar = try grammarParser.parse(explicitStartSymbol: "")
+            
+            #expect(grammar.nonTerminals.count > 0, "Grammar should define at least one non-terminal")
+            
+            let outputDir = projectDir.appendingPathComponent("TestOutput")
+            try? FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+            
+            let parserOutputFile = outputDir
+                .appendingPathComponent("\(grammarFile)_output")
+                .appendingPathExtension("swift")
+            
+            let parserGenerator = ParserGenerator(outputFile: parserOutputFile, grammar: grammar)
             try parserGenerator.generate()
             
-            if testCase.expectedToComplete {
-                // Verify the output file was created
-                #expect(FileManager.default.fileExists(atPath: parserOutputFile.path),
-                        "Generated parser file should exist")
-                
-                // Verify the file has content
-                let fileSize = try FileManager.default.attributesOfItem(atPath: parserOutputFile.path)[.size] as? UInt64
-                #expect((fileSize ?? 0) > 0, "Generated parser should not be empty")
-                
-                // Read and validate generated code has basic structure
-                let generatedCode = try String(contentsOf: parserOutputFile, encoding: .utf8)
-                #expect(generatedCode.count > 50, "Generated parser should have substantial content")
-            }
-        } catch {
-            if testCase.expectedToComplete {
-                Issue.record("Parser generation failed: \(error)")
-            }
+            #expect(FileManager.default.fileExists(atPath: parserOutputFile.path),
+                    "Generated parser file should exist")
+            
+            let generatedCode = try String(contentsOf: parserOutputFile, encoding: .utf8)
+            #expect(generatedCode.count > 50, "Generated parser should have substantial content")
         }
     }
     
     @Test("All grammar files are accessible")
     func testGrammarFilesExist() {
         let sourceFileURL = URL(fileURLWithPath: #filePath)
-        // Go up two levels: from test file -> Tests directory -> project root
         let projectDir = sourceFileURL.deletingLastPathComponent().deletingLastPathComponent()
         
-        for testCase in Self.testCases {
+        for grammarFile in Self.grammarFiles {
             let grammarFileURL = projectDir
-                .appendingPathComponent(testCase.grammarFile)
+                .appendingPathComponent(grammarFile)
                 .appendingPathExtension("apus")
             
             #expect(FileManager.default.fileExists(atPath: grammarFileURL.path),
-                    "Grammar file should exist: \(testCase.grammarFile).apus")
+                    "Grammar file should exist: \(grammarFile).apus")
         }
     }
     

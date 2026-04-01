@@ -46,6 +46,15 @@ class DerivationBuilder {
     let grammar: Grammar
     let tokens: [Token]
     
+    /// Tracks active nonterminal expansions on the current call path to break cycles.
+    private var activeExpansions: Set<ExpansionKey> = []
+    
+    private struct ExpansionKey: Hashable {
+        let node: ObjectIdentifier
+        let from: Int
+        let to: Int
+    }
+    
     init(grammar: Grammar, tokens: [Token]) {
         self.grammar = grammar
         self.tokens = tokens
@@ -63,7 +72,11 @@ class DerivationBuilder {
     /// Build all parse trees for a nonterminal over [from, to].
     /// Each tree is a ParseTreeNode whose children come from expanding one alternate.
     private func buildNonterminalTrees(_ nt: GrammarNode, from: Int, to: Int, limit: Int) -> [ParseTreeNode] {
-        expandAlternates(nt, from: from, to: to, limit: limit).map { children in
+        let key = ExpansionKey(node: ObjectIdentifier(nt), from: from, to: to)
+        guard activeExpansions.insert(key).inserted else { return [] }
+        defer { activeExpansions.remove(key) }
+        
+        return expandAlternates(nt, from: from, to: to, limit: limit).map { children in
             let node = ParseTreeNode(name: nt.name, from: from, to: to)
             node.children = children
             return node

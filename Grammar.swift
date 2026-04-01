@@ -1,10 +1,11 @@
 //
-//  GrammarStore.swift
+//  Grammar.swift
 //  Advent
 //
 //  Created by Johannes Brands on 2026.03.13.
 //
 
+import OSLog
 import AdventMacros
 import BitCollections
 
@@ -15,6 +16,8 @@ class Grammar {
     var terminals: [String: TokenPattern] = [:]
     var nonTerminals: [String: GrammarNode] = [:]
     var messages: [String] = []
+    var preamble: [String] = []
+    var epilogue: [String] = []
     var root: GrammarNode = GrammarNode(kind: .EOS, name: "$")
     var isLL1: Bool = true
     

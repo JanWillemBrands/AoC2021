@@ -4,4 +4,12 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileSystemSynchronizedGroup
+      location = "group:New Folder"
+      name = "New Folder">
+   </FileSystemSynchronizedGroup>
+   <Group
+      location = "group:../GeneratedParser"
+      name = "GeneratedParser">
+   </Group>
 </Workspace>

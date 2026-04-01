@@ -29,24 +29,37 @@
  Extends naturally to EBNF brackets if END.alt references the enclosing bracket 'DO', 'OPT', 'POS', or 'KLN'
  */
 
+import OSLog
 import Foundation
+import AdventMacros
+import BitCollections
 
-public enum GrammarNodeError: Error {
+enum GrammarNodeError: Error {
     case undefinedNonTerminal(name: String, definedAsTerminal: Bool)
 }
 
-public enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
+enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
-public final class GrammarNode {
-    //    static var nodesWithLet: Set<String> = []
+extension GrammarNodeKind {
+    var isTerminal: Bool { self == .T || self == .TI || self == .C || self == .B }
+    var isBracket:  Bool { self == .DO || self == .OPT || self == .KLN || self == .POS }
+    var isLeaf:     Bool { isTerminal || self == .EPS }
+    var isClosure:  Bool { self == .KLN || self == .POS }
+}
+
+final class GrammarNode {
     
-    public static var count = 0
+    static var count = 0
     var number = 0
+    /// Integer ID from `Grammar.symbolToID`, set by `assignNameIDs()`.
+    /// Only meaningful for terminal-like nodes (.T, .TI, .C, .B, .EOS, .EPS);
+    /// nonterminals keep the default -1. Used by `tokenMatch()` for O(1) integer comparison.
+    var nameID: Int!
     
-    public let kind: GrammarNodeKind
-    public let str: String
-//    public var alt, seq: GrammarNode?
-    public var alt: GrammarNode? {
+    let kind: GrammarNodeKind
+    let name: String
+//    var alt, seq: GrammarNode?
+    var alt: GrammarNode? {
         didSet {
             // alt is overloaded:
             // - ALT/END nodes: alt points to an .ALT node
@@ -66,19 +79,46 @@ public final class GrammarNode {
             assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
         }
     }
-    public init(kind: GrammarNodeKind, str: String, alt: GrammarNode? = nil, seq: GrammarNode? = nil) {
+    init(kind: GrammarNodeKind, name: String, alt: GrammarNode? = nil, seq: GrammarNode? = nil) {
         self.kind = kind
-        self.str = str
+        self.name = name
         self.alt = alt
         self.seq = seq
     }
     
     var actions: [String] = [] // stores semantic actions
+    var signature: String?      // function signature text (params, throws, return) for .N nodes
+    var locals: [String] = []   // local declarations for generated function
     
+    // first is a positional prediction set: the tokens that can appear at this
+    // position in the sequence, including look-through of nullable elements.
+    // During FIRST/FOLLOW propagation (Grammar.handleBracket), ε is removed
+    // from OPT/KLN and replaced by the continuation's FIRST (concatenation rule).
+    // This means first does NOT contain ε for OPT/KLN, even though they are
+    // intrinsically nullable. Use isNullable for nullability checks instead.
     var first:      Set<String> = []
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
+    
+    /// BitSet mirrors of first/follow/ambiguous, populated by `Grammar.populateBitSets()`.
+    /// Used by `testSelect()` and the follow check on the hot path for O(1) membership tests.
+    var firstBS:      BitSet = []
+    var followBS:     BitSet = []
+    var ambiguousBS:  BitSet = []
+    
     static var sizeofSets = 0
+    static var isLL1 = true
+    
+    // Whether this node is intrinsically nullable (can derive ε).
+    // Per Definition 6 of "GLL syntax analysers for EBNF grammars":
+    // FIRST([ψ]) = FIRST(ψ) ∪ {ε} and FIRST({ψ}) = FIRST(ψ) ∪ {ε}
+    // OPT and KLN are always nullable by definition.
+    var isNullable: Bool {
+        switch kind {
+        case .OPT, .KLN: return true
+        default: return first.contains("ε")
+        }
+    }
     
     var yield: Set<BinarySpan> = []
     
@@ -89,45 +129,63 @@ extension GrammarNode {
     func isExpecting(_ token: Token) -> Bool {
         if first.contains(token.kind) {
             return true
-        } else if first.contains("") && follow.contains(token.kind) {
+        } else if first.contains("ε") && follow.contains(token.kind) {
             return true
         } else {
             var expectedTokens = first
-            if first.contains( "") {
+            if first.contains("ε") {
                 expectedTokens.formUnion(follow)
             }
-#if DEBUG
-            trace("expected \"\(token.kind)\" to be in", expectedTokens)
-#endif
+            #Trace("expected \"\(token.kind)\" to be in", expectedTokens)
             return false
         }
     }
 }
 
-//extension GrammarNode: Hashable {
-//    static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
-//        ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
-//    }
-//    func hash(into hasher: inout Hasher) {
-//        hasher.combine(ObjectIdentifier(self))
-//    }
-//}
+extension GrammarNode {
+    /// LHS nonterminal: defines a production rule (has .alt chain, no .seq)
+    var isLHS: Bool { kind == .N && seq == nil }
+    
+    /// RHS nonterminal: reference inside a sequence (has .seq, .alt → LHS definition)
+    var isRHS: Bool { kind == .N && seq != nil }
+    
+    /// Collect the symbols of an alternate's body: walk .seq chain until .END.
+    /// Call on an ALT node.
+    var bodySymbols: [GrammarNode] {
+        var symbols: [GrammarNode] = []
+        var s = seq
+        while let n = s {
+            if n.kind == .END { break }
+            symbols.append(n)
+            s = n.seq
+        }
+        return symbols
+    }
+    
+    /// Find the END node inside a bracket's first alternate body.
+    var bracketEndNode: GrammarNode? {
+        guard kind.isBracket else { return nil }
+        var node = alt?.seq
+        while let n = node {
+            if n.kind == .END { return n }
+            node = n.seq
+        }
+        return nil
+    }
+}
 
 extension GrammarNode: Hashable {
-    public static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
+    static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
         lhs.number == rhs.number
     }
-    public func hash(into hasher: inout Hasher) {
+    func hash(into hasher: inout Hasher) {
         hasher.combine(number)
     }
 }
 
 extension GrammarNode: CustomStringConvertible {
-    //    var description: String {
-    //        cell.description
-    //    }
     
-    public var description: String { number.description }
+    var description: String { number.description }
     
     // generate labels like A, B, C, ... AA, AB, AC, ...
     var _description: String {
@@ -192,7 +250,7 @@ extension GrammarNode {
     // TODO: ambiguity set of KLN and POS is the intersection of follow(KLN) with the union of the pairwise intersections of all its first(ALT)'s ('duplicates')
     func detectAmbiguity() {
         if kind == .N, seq == nil {
-            trace("_RULE:", str)
+            #Trace("_RULE:", name)
         }
 
         switch kind {
@@ -201,35 +259,40 @@ extension GrammarNode {
         case .N:
             if let seq { // rhs
                 seq.detectAmbiguity()
-                if first.contains("") {
-                    ambiguous = first.intersection(follow)
+                // For a RHS nonterminal, check the definition's FIRST (via alt)
+                // against this position's FOLLOW. The positional 'first' includes
+                // look-through tokens from the continuation, which would cause
+                // false conflicts.
+                if let production = alt, production.isNullable {
+                    let definitionFirst = production.first.subtracting(["ε"])
+                    ambiguous = definitionFirst.intersection(follow)
                 }
             } else { // lhs
                 handleAlternatesAmbiguity()
             }
         case .ALT:
             seq?.detectAmbiguity()
-            if first.contains("") {
-                ambiguous = first.intersection(follow)
-            }
         case .DO, .POS, .OPT, .KLN:
-            // TODO: there is never ambiguity with .DO
             seq?.detectAmbiguity()
             handleAlternatesAmbiguity()
         case .END:
             break
         }
-        ambiguous.remove("")    // to handle both uses of "" in first (as ε, ϵ, epsilon) and in follow (as $, EOF)
+        if !ambiguous.isEmpty {
+            GrammarNode.isLL1 = false
+        }
         let saved = traceIndent
         traceIndent += 2
-        trace(kind, number)
+        #Trace(kind, number)
         traceIndent += 2
-        trace("first    ", first.sorted())
-        trace("follow   ", follow.sorted())
-        trace("ambiguous", ambiguous.sorted())
-        //        if ambiguous.count > 0 {
-        //            print("ambiguous", ambiguous.sorted())
-        //        }
+        #Trace("first    ", first.sorted())
+        #Trace("follow   ", follow.sorted())
+        #Trace("ambiguous", ambiguous.sorted())
+//        if !ambiguous.isEmpty {
+//            if kind == .N, seq == nil {
+//                print("Ambiguity in \(name)", ambiguous.sorted())
+//            }
+//        }
         traceIndent = saved
 
     }
@@ -245,8 +308,9 @@ extension GrammarNode {
             }
             current = altNode.alt
         }
-        // count occurances in follow
-        if first.contains("") {
+        // count occurances in follow only when this node can derive ε,
+        // because a token in FOLLOW then competes with the alternates' FIRST tokens
+        if isNullable {
             for element in follow {
                 occurances[element, default: 0] += 1
             }
@@ -257,125 +321,6 @@ extension GrammarNode {
         }
     }
     
-}
-
-extension GrammarNode {
-    func populateFirstFollowSets(nonTerminals: [String: GrammarNode], terminals: [String: TokenPattern]) throws {
-        switch kind {
-        case .EPS:
-            try seq!.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
-            //            first = [""]
-            first = seq!.first
-            updateFollow()
-        case .EOS, .T, .TI, .C, .B:
-            try seq!.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
-            first = [str]
-            updateFollow()
-        case .N:
-            try handleNonTerminal(nonTerminals: nonTerminals, terminals: terminals)
-        case .ALT:
-            try seq!.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
-            // copy first & follow from the first (real) node in the sequence
-            first = seq!.first
-            follow = seq!.follow
-        case .DO:
-            try handleBracket(nonTerminals: nonTerminals, terminals: terminals)
-        case .OPT:
-            first.insert("")
-            try handleBracket(nonTerminals: nonTerminals, terminals: terminals)
-        case .KLN:
-            first.insert("")
-            try handleBracket(nonTerminals: nonTerminals, terminals: terminals)
-            //             TODO: not sure following is right, even though it is in ART...
-            //             it complicates ambiguous because it's longer overlap(first, follow)
-            //             file://Users/janwillem/ART/referenceImplementation/src/uk/ac/rhul/cs/csle/art/cfg/grammar/Grammar.java
-            //             For closure nodes, fold first into follow
-            //             if (root.elm.kind == GrammarKind.POS || root.elm.kind == GrammarKind.KLN) changed |= root.instanceFollow.addAll(removeEpsilon(root.instanceFirst));
-            //            follow.formUnion(first.subtracting([""]))
-        case .POS:
-            try handleBracket(nonTerminals: nonTerminals, terminals: terminals)
-        case .END:
-            // .END first is epsilon so that the follow of the previous node copies the follow of the .END
-            first = [""]
-            // the follow of .END is the follow of the starting bracket or nonterminal node
-            follow = seq!.follow
-            // if the bracket was a closure (POS, KLN) then the first of the bracket folds into the follow
-            if seq!.kind == .KLN || seq!.kind == .POS {
-                follow.formUnion(seq!.first.subtracting([""]))
-            }
-        }
-        GrammarNode.sizeofSets += first.count + follow.count
-        //        if first.contains("let") && kind == .N {
-        //            print(str)
-        //            print(GrammarNode.nodesWithLet)
-        //            GrammarNode.nodesWithLet.insert(str)
-        //        }
-    }
-    
-    private func handleNonTerminal(nonTerminals: [String: GrammarNode], terminals: [String: TokenPattern]) throws {
-        if let seq {
-            // a RHS nonterminal instance is part of a sequence
-            try seq.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
-            updateFollow()
-            if let production = nonTerminals[str] {
-                
-                //                // assign the alt of the rhs to the alt of the lhs
-                //                alt = production.alt
-                
-                // point the alt of the RHS nonterminal node to the LHS nonterminal node
-                alt = production
-                
-                // rhs first of the rhs nonterminal is equal to the first of lhs production rule
-                first = production.first
-                if first.contains("") {
-                    first.remove("")
-                    first.formUnion(seq.first)
-                }
-                // update the follow of the lhs nonterminal as the union of the follows of all rhs nonterminals
-                production.follow.formUnion(follow)
-            } else {
-                trace("grammar parse error: '\(str)' was not defined as a grammar rule")
-                let definedAsTerminal = terminals[str] != nil
-                if definedAsTerminal {
-                    trace("but it was defined as terminal \(terminals[str]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
-                }
-                throw GrammarNodeError.undefinedNonTerminal(name: str, definedAsTerminal: definedAsTerminal)
-            }
-        } else {
-            // a LHS nonterminal defines a production rule and is NOT part of a sequence
-            try populateFirstFromAlts(nonTerminals: nonTerminals, terminals: terminals)
-            // the follow set of a lhs nonterminal production rule is ["$"] if startsymbol, and [] otherwise.
-            // this is already set before calling populateFirstFollowSets.
-        }
-    }
-    
-    private func handleBracket(nonTerminals: [String: GrammarNode], terminals: [String: TokenPattern]) throws {
-        try populateFirstFromAlts(nonTerminals: nonTerminals, terminals: terminals)
-        try seq!.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
-        if first.contains("") {
-            first.remove("")
-            first.formUnion(seq!.first)
-        }
-        updateFollow()
-    }
-    
-    private func populateFirstFromAlts(nonTerminals: [String: GrammarNode], terminals: [String: TokenPattern]) throws {
-        // set the first set of a lhs nonterminal production rule, or a bracketed expression, to the union of first sets of all its .alt's
-        var current = alt
-        while let altNode = current {
-            try altNode.populateFirstFollowSets(nonTerminals: nonTerminals, terminals: terminals)
-            first.formUnion(altNode.first)
-            current = altNode.alt
-        }
-    }
-    
-    private func updateFollow() {
-        follow = seq!.first
-        if follow.contains("") {
-            follow.remove("")
-            follow.formUnion(seq!.follow)
-        }
-    }
 }
 
 extension GrammarNode {
@@ -397,11 +342,11 @@ extension GrammarNode {
     /// e.g. `{ "a" }` instead of `{ "a" } { "a" }`.
     func bracketLabel() -> String {
         switch kind {
-        case .DO:  return "(\(alt?.ebnf() ?? ""))".trimmingCharacters(in: .whitespaces)
-        case .OPT: return "[\(alt?.ebnf() ?? "")]".trimmingCharacters(in: .whitespaces)
-        case .POS: return "<\(alt?.ebnf() ?? "")>".trimmingCharacters(in: .whitespaces)
-        case .KLN: return "{\(alt?.ebnf() ?? "")}".trimmingCharacters(in: .whitespaces)
-        default:   return str
+        case .DO:  return "(\((alt?.ebnf() ?? "").trimmingCharacters(in: .whitespaces)))"
+        case .OPT: return "[\((alt?.ebnf() ?? "").trimmingCharacters(in: .whitespaces))]"
+        case .POS: return "<\((alt?.ebnf() ?? "").trimmingCharacters(in: .whitespaces))>"
+        case .KLN: return "{\((alt?.ebnf() ?? "").trimmingCharacters(in: .whitespaces))}"
+        default:   return name
         }
     }
     
@@ -410,17 +355,17 @@ extension GrammarNode {
         var s = ""
         switch kind {
         case .EOS, .EPS:
-            s += str + " "
+            s += name + " "
             if let seq { s += seq.ebnf() }
         case .T, .TI, .C, .B:
-            s += "\"" + str + "\" "
+            s += "\"" + name + "\" "
             if let seq { s += seq.ebnf() }
         case .N:
             if let seq { // rhs
-                s += str + " " + seq.ebnf()
+                s += name + " " + seq.ebnf()
             } else { // lhs
                 if let alt {
-                    s += str + " = " + alt.ebnf() + "."
+                    s += name + " = " + alt.ebnf() + "."
                 }
             }
         case .ALT:
@@ -451,25 +396,25 @@ extension GrammarNode {
     static var toplevelAlternate: GrammarNode?              // will be set to the toplevel ALT node
     static var dottedSlot: GrammarNode?                     // will be set to the dotted GrammarNode slot
     static var dottedEBNF = ""                              // will be set to the dotted EBNF production
-    
     enum Exit: Error { case endOfToplevel }
     
     func emit() throws {
         let middleDot = "\u{00B7}"
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
-            GrammarNode.dottedEBNF += str
+            GrammarNode.dottedEBNF += name
             if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             if let seq { try seq.emit() }
         case .N:
             if let seq { // rhs
-                GrammarNode.dottedEBNF += str
+                GrammarNode.dottedEBNF += name
                 if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 try seq.emit()
             } else { // lhs
-                GrammarNode.dottedEBNF += str
+                GrammarNode.dottedEBNF += name
             }
         case .ALT:
+            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             if let seq { try seq.emit() }
             if let alt {
                 GrammarNode.dottedEBNF +=  "|"
@@ -485,35 +430,35 @@ extension GrammarNode {
             }
         case .DO:
             if let alt {
-                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += "("
                 try alt.emit()
                 GrammarNode.dottedEBNF += ")"
             }
+            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             if let seq { try seq.emit() }
         case .OPT:
             if let alt {
-                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += "["
                 try alt.emit()
                 GrammarNode.dottedEBNF += "]"
             }
+            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             if let seq { try seq.emit() }
         case .POS:
             if let alt {
-                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += "<"
                 try alt.emit()
                 GrammarNode.dottedEBNF += ">"
             }
+            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             if let seq { try seq.emit() }
         case .KLN:
             if let alt {
-                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
                 GrammarNode.dottedEBNF += "{"
                 try alt.emit()
                 GrammarNode.dottedEBNF += "}"
             }
+            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
             if let seq { try seq.emit() }
         }
     }
@@ -533,10 +478,15 @@ extension GrammarNode {
     }
     
     // generates the dotted ebnf for the toplevel containing alternate of the containing nonterminal
+    // the dot is placed after the dottedSlot node:
+    //   terminal/nonterminal: dot after the symbol  e.g. S="a"·{"a"}
+    //   bracket (KLN etc):    dot after closing }   e.g. S="a"{"a"}·
+    //   ALT:                  dot at start of body  e.g. S="a"{·"a"}
+    //   END:                  dot at end of body    e.g. S="a"{"a"·}
     func ebnfDot() -> String {
         if kind == .N && seq == nil {
             // a lhs nonterminal
-            return str
+            return name
         } else {
             // construct the ebnf for the toplevel alternate production containing the dot
             GrammarNode.dottedEBNF = ""
@@ -544,7 +494,7 @@ extension GrammarNode {
             (GrammarNode.toplevelAlternate, GrammarNode.containingNonterminal) = toplevels()
             if let tla = GrammarNode.toplevelAlternate, let cnt = GrammarNode.containingNonterminal {
                 try? tla.emit()
-                return cnt.str + "=" + GrammarNode.dottedEBNF
+                return cnt.name + "=" + GrammarNode.dottedEBNF
             } else {
                 return GrammarNode.dottedEBNF
             }

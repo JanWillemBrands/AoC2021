@@ -27,12 +27,5 @@ let package = Package(
             name: "AdventMacros",
             dependencies: ["AdventMacrosImpl"]
         ),
-        .testTarget(
-            name: "AdventMacrosTests",
-            dependencies: [
-                "AdventMacrosImpl",
-                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
-            ]
-        ),
     ]
 )

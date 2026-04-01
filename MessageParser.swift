@@ -8,13 +8,15 @@
 // GLL message parser encapsulating all parsing state.
 // Paper: cL = current grammar slot
 // Paper: cI — current input position (the current active token)
-// Paper: cU — current cluster index (the input position where the last nonTerminal was called)
+// Paper: cU — current cluster index (identifies a CRF cluster node together with the nonterminal; its value is the input position where the nonterminal was called)
 // Paper: R = pending descriptors, U = processed descriptors
 // Paper: dscAdd/dscGet = descriptor operations, ntAdd = nonterminal alternates
 // Paper: call = enter nonterminal, rtn = return from nonterminal
 // Paper: bsrAdd = add BSR element
 
+import OSLog
 import Foundation
+import AdventMacros
 
 class MessageParser {
 
@@ -22,17 +24,17 @@ class MessageParser {
     let grammar: Grammar
 
     // MARK: - Per-parse input
-    private(set) var tokens: [Token] = []
+    var tokens: [Token] = []
 
     // MARK: - GLL algorithm state (paper variables)
-    private(set) var currentParseRoot: GrammarNode!
+    var currentParseRoot: GrammarNode!
     var cL: GrammarNode!          // current grammar slot
     var cI: Int = 0               // current input position
     var cU: Int = 0               // current cluster index
 
     // MARK: - Descriptor management (Paper: R, U)
-    var unique: Set<Descriptor> = []
     var remaining: [Descriptor] = []
+    var unique: Set<Descriptor> = []
 
     // MARK: - Parse statistics
     var failedParses = 0
@@ -46,22 +48,15 @@ class MessageParser {
     // MARK: - Binary Subtree Representation (Paper: Υ)
     var yield: Set<BSR> = []
 
-    // MARK: - Error reporting
-    var furthestMismatch: (Token, Set<String>)!
-
-    // MARK: - SPPF extraction state
-    var slotIndex: [GrammarNode: Int] = [:]
-    var sppfNodes: [SPPFNodeKey: SPPFNode] = [:]
-    var sppfAllNodes: [SPPFNode] = []
-    var _sppfNonTerminals: [String: GrammarNode] = [:]
-    var syntheticEpsilonNode: GrammarNode?
+    // MARK: - Error reporting, captures the furthest the parse has progressed before a mismatch occurred
+    var furthestMismatchIndex: Int = 0
+    var furthestMismatchSlot: GrammarNode!
+    var furthestMismatchExpected: Set<String> = []
 
     // MARK: - Initialization
 
     init(grammar: Grammar) {
         self.grammar = grammar
-        buildSlotIndex(nonTerminals: grammar.nonTerminals)
-        _sppfNonTerminals = grammar.nonTerminals
     }
 
     // MARK: - Parse API
@@ -69,15 +64,25 @@ class MessageParser {
     func parse(tokens: [Token]) {
         // Reset all per-parse state
         self.tokens = tokens
+        // Map each token's string kind to its integer kindID from the symbol table.
+        // This includes Schrödinger duals (linked via token.dual) which represent
+        // ambiguous scanner matches of equal length.
+        for token in tokens {
+            var t: Token? = token
+            while let current = t {
+                current.kindID = grammar.symbolToID[current.kind]!
+                t = current.dual
+            }
+        }
         currentParseRoot = grammar.root
         cL = nil; cI = 0; cU = 0
         unique = []; remaining = []
         failedParses = 0; successfullParses = 0
         descriptorCount = 0; duplicateDescriptorCount = 0
         crf = [:]; yield = []
-        furthestMismatch = (tokens[0], [])
-        sppfNodes = [:]; sppfAllNodes = []
-        syntheticEpsilonNode = nil
+        furthestMismatchIndex = 0
+        furthestMismatchSlot = currentParseRoot
+        furthestMismatchExpected = []
 
         // Set up root cluster
         let rootCluster = Cluster(slot: grammar.root, index: 0)
@@ -92,9 +97,9 @@ class MessageParser {
 
             while true {
 
-                trace = true
-                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI].kind) \(tokens[cI].image)")
                 trace = false
+                #Trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI].kind) \(tokens[cI].image)")
+                trace = true
 
                 switch cL.kind {
                 case .EPS:
@@ -107,21 +112,24 @@ class MessageParser {
                         cL = cL.seq!
                     } else {
                         failedParses += 1
-                        if tokens[cI].image.startIndex > furthestMismatch.0.image.endIndex {
-                            furthestMismatch = (tokens[cI], [cL.str])
+                        if cI > furthestMismatchIndex {
+                            furthestMismatchIndex = cI
+                            furthestMismatchSlot = cL
+                            furthestMismatchExpected = [cL.name]
+                        } else if cI == furthestMismatchIndex {
+                            furthestMismatchExpected.insert(cL.name)
                         }
-                        trace("NOGOOD Parse ended due to unexpected token", terminator: "\n")
                         continue nextDescriptor
                     }
                 case .N:
                     call()
                     continue nextDescriptor
                 case .ALT:
-                    trace("ERROR: Unexpected .ALT node in cL")
-                    trace("  cL.number: \(cL.number)")
-                    trace("  cL.str: '\(cL.str)'")
-                    trace("  cL.seq: \(String(describing: cL.seq))")
-                    trace("  cL.alt: \(String(describing: cL.alt))")
+                    #Trace("ERROR: Unexpected .ALT node in cL")
+                    #Trace("  cL.number: \(cL.number)")
+                    #Trace("  cL.name: '\(cL.name)'")
+                    #Trace("  cL.seq: \(String(describing: cL.seq))")
+                    #Trace("  cL.alt: \(String(describing: cL.alt))")
                     fatalError(#function + ": ALT should not happen here")
                 case .DO, .POS:
                     bracketCall(bracket: cL)
@@ -145,9 +153,18 @@ class MessageParser {
                             cL = seq
                         } else {
                             // the bracket is a LHS nonterminal
-                            if bracket.follow.contains(tokens[cI].kind) {
+                            if followCheck(bracket: bracket) {
                                 addYield(L: bracket, i: cU, k: cU, j: cI)
                                 rtn(X: bracket)
+                            } else {
+                                failedParses += 1
+                                if cI > furthestMismatchIndex {
+                                    furthestMismatchIndex = cI
+                                    furthestMismatchSlot = cL
+                                    furthestMismatchExpected = bracket.follow
+                                } else if cI == furthestMismatchIndex {
+                                    furthestMismatchExpected.formUnion(bracket.follow)
+                                }
                             }
                             continue nextDescriptor
                         }
@@ -164,20 +181,24 @@ class MessageParser {
         }
 
         successfullParses = currentParseRoot.yield.filter { y in y.i == 0 && y.j == tokens.count-1 }.count
-        trace(
+        trace = true
+        print(
             "\nmatched:", successfullParses,
             "  failed:", failedParses,
             "  crf size:", crf.count,
             "  descriptors:", descriptorCount,
             "  duplicateDescriptors:", duplicateDescriptorCount
         )
-        
         if successfullParses == 0 {
-            trace("the furthest token mismatch was with '\(furthestMismatch.0.image)' \(furthestMismatch.0)")
-            let expectedTokens: Set<String> = furthestMismatch.1
-            let tokenStartIndex = furthestMismatch.0.image.startIndex
-            let position = furthestMismatch.0.image.base.linePosition(of: tokenStartIndex)
-            trace("the expected tokens were \(expectedTokens) at message position \(position)")
+            let mismatchToken = tokens[furthestMismatchIndex]
+            let position = mismatchToken.image.base.linePosition(of: mismatchToken.image.startIndex)
+            let expected = furthestMismatchExpected.sorted().joined(separator: ", ")
+            print("""
+                no parse found at \(position)
+                found '\(mismatchToken.image)' (\(mismatchToken.kind))
+                grammar context: \(furthestMismatchSlot.ebnfDot())
+                expected: \(expected)
+                """)
         }
     }
 
@@ -185,15 +206,20 @@ class MessageParser {
 
     // TODO:  why is this no longer used?
     func testRepeat() -> Bool {
-        let d = Descriptor(L: cL, k: cU, i: cI)
+        let d = Descriptor(L: cL, k: Int32(cU), i: Int32(cI))
         return !unique.insert(d).inserted
     }
 
+    /// Test whether the current token is in the selection set for a grammar slot.
+    /// Returns true if any Schrödinger dual of `tokens[cI]` satisfies:
+    ///   token ∈ FIRST(slot)  ∨  (ε ∈ FIRST(slot) ∧ token ∈ FOLLOW(bracket))
+    /// Uses BitSet membership (O(1) bit test) instead of Set<String>.contains().
     func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
         var current = tokens[cI]
         repeat { // to handle Schrödinger tokens
-            if slot.first.contains(current.kind)
-                || slot.first.contains("") && bracket.follow.contains(current.kind) {
+            let kid: Int = current.kindID
+            if slot.firstBS.contains(kid)
+                || slot.firstBS.contains(grammar.epsilonID) && bracket.followBS.contains(kid) {
                 return true
             }
             guard let next = current.dual else { return false }
@@ -201,10 +227,23 @@ class MessageParser {
         } while true
     }
 
+    /// Test whether the current token matches the terminal at the current grammar slot.
+    /// Uses integer comparison (O(1)) instead of string equality.
     func tokenMatch() -> Bool {
         var current = tokens[cI]
         repeat {  // to handle Schrödinger tokens
-            if cL.str == current.kind { return true }
+            if cL.nameID == current.kindID { return true }
+            guard let next = current.dual else { return false }
+            current = next
+        } while true
+    }
+
+    /// Test whether the current token is in the follow set of a bracket (LHS nonterminal).
+    /// Handles Schrödinger tokens by checking all duals.
+    func followCheck(bracket: GrammarNode) -> Bool {
+        var current = tokens[cI]
+        repeat {  // to handle Schrödinger tokens
+            if bracket.followBS.contains(current.kindID) { return true }
             guard let next = current.dual else { return false }
             current = next
         } while true

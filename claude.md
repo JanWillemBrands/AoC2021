@@ -52,7 +52,7 @@ clerical overhead associated with graph constructions, making the parsers simple
 
 ## APUS Grammar Language
 - **Summary**: APUS is the custom EBNF-style grammar specification language used in this project.
-- **Location**: '/Users/janwillem/Library/Mobile Documents/com~apple~CloudDocs/Xcode/AoC2021/apusNoActionKLN.apus'
+- **Location**: '/Users/janwillem/Developer/Xcode/AoC2021/apus.apus'
 
 ### Syntax
 The syntax of APUS is described in APUS itself
@@ -73,17 +73,17 @@ C = "c" .
 
 ### Core Components
 
-#### GrammarParser
+#### ApusParser
 - Hand-built recursive descent parser
 - Transforms APUS grammar into an Abstract Syntax Tree (AST)
 - Produces `GrammarNode` structures
 
-#### Message Parser
+#### MessageParser
 - Uses the grammar AST to parse input messages
 - Implements GLL algorithm with descriptors and clusters
-- Builds the Compact Recognition Forest (CRF)
+- Builds the Clustered Return Forest (CRF)
 
-#### Parser Generator
+#### ParserGenerator
 - Generates executable Swift parser code from the grammar
 - Output: `output.swift`
 
@@ -93,20 +93,37 @@ C = "c" .
 
 ## Key Data Structures
 
-### GrammarNode
-The Abstract Syntax Tree representation of the grammar rules.
+### GrammarNode (`GrammarNode.swift`)
+The Abstract Syntax Tree representation of the grammar rules. A `final class` with identity-based equality (by `number`). Key fields:
+- `kind: GrammarNodeKind` — EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN
+- `name: String` — the grammar symbol name (terminal string, nonterminal name, or sentinel)
+- `nameID: Int!` — integer ID from the symbol table (terminals/EOS/EPS only)
+- `alt, seq: GrammarNode?` — links forming the grammar graph (alt = alternates, seq = sequence)
+- `first, follow, ambiguous: Set<String>` — prediction sets (string-based, used for diagnostics)
+- `firstBS, followBS, ambiguousBS: BitSet` — prediction sets (integer-based, used on hot path)
 
-### Descriptors
+### Token (`Scanner.swift`)
+Represents a scanned input token:
+- `image: Substring` — the matched text from input
+- `kind: String` — terminal name (classification label)
+- `kindID: Int!` — integer ID from the symbol table (assigned before parsing)
+- `dual: Token?` — linked list of Schrödinger tokens (ambiguous scanner matches of equal length)
+
+### Grammar (`Grammar.swift`)
+Result of parsing an APUS grammar file. Holds:
+- `terminals: [String: TokenPattern]` — terminal patterns for scanning
+- `nonTerminals: [String: GrammarNode]` — grammar rule definitions
+- `symbolToID: [String: Int]` — integer symbol table (ART numbering: 0=$, 1..T=terminals, T+1=ε)
+- `epsilonID: Int!` — the ID for the ε sentinel in first/follow BitSets
+
+### Descriptors (`Descriptor.swift`)
 Work items representing parse states to explore. Each descriptor contains:
 - Current grammar slot (position in a rule)
 - Current cluster (node in the parse forest)
 - Current input index
 
-### Clusters (CRF Nodes)
+### Clusters (CRF Nodes) (`CallReturnForest.swift`)
 Nodes in the Compact Recognition Forest representing parsed portions of the input.
-
-### GSS (Graph-Structured Stack)
-[Describe how the GSS is used in your implementation]
 
 ## GLL Algorithm Implementation
 
@@ -126,8 +143,27 @@ The parser can handle ambiguous grammars by exploring all possible parse paths a
 ## Implementation Notes
 
 ### Terminal Pattern Matching
-- `apusTerminals`: Patterns for lexing the grammar file
-- `terminals`: Patterns for lexing the input messages
+- `apusTerminals` (`ApusTerminals.swift`): Patterns for lexing the grammar file
+- `terminals` (`Grammar.terminals`): Patterns for lexing the input messages
+
+### Scanner Optimization
+The scanner (`Scanner.swift`) partitions token patterns into two groups at init time:
+- **Literal keywords**: matched via fast `hasPrefix` string comparison (no regex engine)
+- **Regex patterns**: matched via `prefixMatch` (regex engine)
+
+This avoids running the regex engine for simple keyword tokens.
+
+### Integer Symbol Table & BitSet Hot Path
+The parsing hot path (`testSelect`, `tokenMatch`) uses integer IDs and BitSets instead of strings:
+- Each terminal gets a sequential integer ID following ART numbering: 0=$, 1..T=terminals, T+1=ε
+- `Token.kindID` and `GrammarNode.nameID` mirror the string-based `kind`/`name` fields
+- `Set<String>` first/follow/ambiguous are mirrored by `BitSet` firstBS/followBS/ambiguousBS
+- `testSelect()` uses `BitSet.contains()` (O(1) bit test) instead of `Set<String>.contains()`
+- `tokenMatch()` uses integer comparison instead of string equality
+- Strings are retained for diagnostics, error messages, and diagram generation
+
+### Epsilon Sentinel
+The character `ε` is used as a sentinel in first sets to signal nullability. It is assigned ID T+1 in the symbol table. This is distinct from the `epsilon` terminal in the APUS meta-grammar — the sentinel is an internal marker used during grammar analysis, not a scannable token.
 
 ### Performance Metrics
 The implementation tracks:
@@ -142,48 +178,63 @@ Various test cases are available:
 - `Swift.apus`: Swift language grammar
 - `apusAmbiguous.apus`: Ambiguous grammar tests
 - `TortureSyntax.apus`: Stress tests for complex grammar constructs
-- `AfroozehHunt.apus`: [Description]
-- `apusNoActionKLN.apus`: [Description]
-- `tortureART.apus`: [Description]
+- `AfroozehHunt.apus`: Grammar examples from Afroozeh & Izmaylova's paper on disambiguation
+- `tortureART.apus`: Stress tests for the ART construction
+- `tortureEBNF.apus`: Stress tests for EBNF bracket handling
 
 ## Key Terminology
 
 - **GLL (Generalized LL)**: A parsing algorithm that extends LL parsing to handle all context-free grammars
 - **ART (Abstract Recognition Tree)**: The compact graph structure representing all possible parse trees
 - **CRF (Compact Recognition Forest)**: The shared parse forest data structure
-- **GSS (Graph-Structured Stack)**: Graph-structured representation of the parse stack
-- **SPPF (Shared Packed Parse Forest)**: Alternative term for the parse forest structure
+- **BSR (Binary Subtree Representation)**: An alternative to SPPF — represents derivations as sets of binary subtrees
+- **SPPF (Shared Packed Parse Forest)**: Alternative parse forest structure
 - **Descriptors**: Work items in the GLL algorithm representing parse states
-- **Clusters**: Nodes in the parse forest/ART
-- **Slots**: Positions in grammar rules (between symbols)
-- **Yields**: Successful parse results
+- **Clusters**: Nodes in the CRF, representing (nonterminal, input position) pairs
+- **Slots**: Positions in grammar rules (between symbols in a production)
+- **Yields**: Successful parse results (input spans matched by a grammar node)
+- **Schrödinger tokens**: Ambiguous scanner matches of equal length, linked via `Token.dual`
+- **First/Follow sets**: Prediction sets used by the GLL algorithm to decide which alternatives to explore
+- **ε (epsilon)**: Sentinel in first sets signalling that a grammar position is nullable
 
 ## Design Decisions
 
 ### Why GLL?
-[Explain the choice of GLL over other parsing algorithms]
+GLL handles all context-free grammars (including ambiguous and left-recursive) while maintaining the recursive descent structure that makes parsers easy to write and debug. It is worst-case cubic but performs well on practical grammars.
 
-### ART vs SPPF
-[Explain the relationship/differences between ART and SPPF in your implementation]
+### BSR vs SPPF
+SPPF is the original shared packed parse forest from the GLL papers. BSR is a more compact variant. This implementation supports both CRF-based recognition and SPPF-based derivation extraction.
 
 ### APUS Language Design
-[Rationale for the APUS grammar specification format]
+APUS is a self-describing EBNF-style notation (`apus.apus` defines itself). It supports regex-based terminal definitions, semantic actions, and standard EBNF brackets (grouping, option, Kleene closure, positive closure).
+
+## Completed Optimizations
+
+### Scanner: Literal/Regex Partitioning
+- Keyword literals matched via `hasPrefix` (no regex engine overhead)
+- ~46x speedup on real-world grammars
+
+### Parser Hot Path: Integer IDs & BitSets
+- `testSelect()` and `tokenMatch()` converted from string operations to integer/BitSet operations
+- ART-style numbering: 0=$, 1..T=terminals, T+1=ε
+- `testSelect` dropped from ~230ms to near-zero in profiling
+
+### Access Control Cleanup
+- Stripped all `public` annotations — single-module app uses `internal` (default) throughout
+- Retained `private` where it documents intent (scanner internals, helper methods)
 
 ## Future Work & TODOs
 
-### Performance Optimizations
-- **TODO: Refactor GrammarNode to use arena allocation with integer IDs**
-  - Current: Reference-based `final class` with pointer traversal
-  - Target: Flat array storage with integer indexing (like ART reference implementation)
-  - Expected: 3-4x speedup, 4-5x memory reduction (per ART paper benchmarks)
-  - Structure: `GrammarArena` with `SlotID` indices instead of `GrammarNode?` pointers
-  - Benefits: Better cache locality, no ARC overhead, contiguous memory layout
+### Output
+- **TODO: output a simple parse tree from the BSR set, looking like the one in https://github.com/palle-k/Covfefe/blob/master/README.md
 
-[Any other planned improvements or areas of investigation]
+### Performance Optimizations
+- **TODO: profile the performance on tortureART and decide on priority of speed and memory
 
 ## References
-- Scott, E. and Johnstone, A. "GLL Parsing"
-- [Other relevant papers and resources]
+- Scott, E. and Johnstone, A. "GLL parse-tree generation"
+- Scott, E. and Johnstone, A. "A reference GLL implementation"
+- Scott, E. "Derivation representation using binary subtree sets"
 
 ---
 

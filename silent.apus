@@ -1,0 +1,13 @@
+whitespace : /\s+/.
+comment    : /\/\/.*/.
+
+name - /[a-z]+/.
+identifier - /[a-z]+/.
+
+S = name identifier .  // Shrödinger token test
+
+^^^
+hello hello // dude!
+
+
+

@@ -36,10 +36,10 @@ multilineComment : /\/\*(?s).*?\*\// .                                  // simpl
 
 //IDENTIFIERS
 
-plainIdentifier             = /\p{XID_Start}\p{XID_Continue}*/ .       // simplified
-escapedIdentifier           = /`\p{XID_Start}\p{XID_Continue}*`/ .
-implicitParameterName       = /\$[0-9]+/ .
-propertyWrapperProjection   = /\$\p{XID_Continue}+/ .
+plainIdentifier             - /\p{XID_Start}\p{XID_Continue}*/ .       // simplified
+escapedIdentifier           - /`\p{XID_Start}\p{XID_Continue}*`/ .
+implicitParameterName       - /\$[0-9]+/ .
+propertyWrapperProjection   - /\$\p{XID_Continue}+/ .
 
 identifier = "_" | plainIdentifier | escapedIdentifier | implicitParameterName | propertyWrapperProjection .
 
@@ -82,8 +82,8 @@ identifierList = identifier | identifier "," identifierList .
 // REGULAR EXPRESSIONS
 
 //plainRegularExpressionLiteral = /\/[^\s]*(?:(?:[^\/\\\s]|\\.)*[^\s])?\// .       // eliminates start or end whitespace, helps with / division sign
-plainRegularExpressionLiteral =      /\/(?:[^\/\\\n]|\\.)+\// .
-extendedRegularExpressionLiteral = /#+\/(?:[^\/\\]|\\.)+\/#+/ .                 // captures legal Swift regex already validated by the compiler
+plainRegularExpressionLiteral -      /\/(?:[^\/\\\n]|\\.)+\// .
+extendedRegularExpressionLiteral - /#+\/(?:[^\/\\]|\\.)+\/#+/ .                 // captures legal Swift regex already validated by the compiler
 regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpressionLiteral .
 
 //regularExpressionLiteral = regularExpressionLiteralOpeningDelimiter regularExpression regularExpressionLiteralClosingDelimiter .
@@ -99,11 +99,11 @@ regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpres
 
 // this is a catchall for staticStringLiteral and interpolatedStringLiteral (which includes staticStringLiteral), the parser will need to validate
 
-singlelineStringLiteral =   /"(?:(?:[^\\"]+)|(?:\\\([^\\\)]+\))|(?:\\u\{[0-9a-fA-F]+\})|(?:\\[0\\tnr"']))*"/ .
-extendedSinglelineStringLiteral =   /#+".*?"#+/ .
+singlelineStringLiteral -   /"(?:(?:[^\\"]+)|(?:\\\([^\\\)]+\))|(?:\\u\{[0-9a-fA-F]+\})|(?:\\[0\\tnr"']))*"/ .
+extendedSinglelineStringLiteral -   /#+".*?"#+/ .
 
-multilineStringLiteral = /"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]+\}|\\#*\s*\n|[^\\])*"""/ .
-extendedMultilineStringLiteral = /#+"""(?s).*?"""#+/ .
+multilineStringLiteral - /"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]+\}|\\#*\s*\n|[^\\])*"""/ .
+extendedMultilineStringLiteral - /#+"""(?s).*?"""#+/ .
 
 stringLiteral = singlelineStringLiteral | extendedSinglelineStringLiteral | multilineStringLiteral | extendedMultilineStringLiteral .
 
@@ -150,19 +150,19 @@ interpolatedStringLiteral = stringLiteral .
 
 // LITERALS
 
-binaryLiteral = /-?0b[0-1][0-1_]*/ .
+binaryLiteral - /-?0b[0-1][0-1_]*/ .
 //binaryLiteral = "0b" binaryDigit binaryLiteralCharacters? .
 //binaryDigit = Digit 0 or 1
 //binaryLiteralCharacter = binaryDigit | "_" .
 //binaryLiteralCharacters = binaryLiteralCharacter binaryLiteralCharacters? .
 
-octalLiteral = /-?0o[0-7][0-7_]*/ .
+octalLiteral - /-?0o[0-7][0-7_]*/ .
 //octalLiteral = "0o" octalDigit octalLiteralCharacters? .
 //octalDigit = Digit 0 through 7
 //octalLiteralCharacter = octalDigit | "_" .
 //octalLiteralCharacters = octalLiteralCharacter octalLiteralCharacters? .
 
-decimalNumber = /-?[0-9][0-9_]*/ .                                      // this is a catchall for decimalLiteral and decimalDigits
+decimalNumber - /-?[0-9][0-9_]*/ .                                      // this is a catchall for decimalLiteral and decimalDigits
 decimalLiteral = decimalNumber .
 //decimalLiteral = decimalDigit decimalLiteralCharacters? .
 //decimalDigit = Digit 0 through 9
@@ -172,16 +172,16 @@ decimalDigits = decimalNumber .                                         // parse
 //decimalLiteralCharacter = decimalDigit | "_" .
 //decimalLiteralCharacters = decimalLiteralCharacter decimalLiteralCharacters? .
 
-hexadecimalLiteral = /-?0x[0-9a-fA-F][0-9a-fA-F_]*/ .
+hexadecimalLiteral - /-?0x[0-9a-fA-F][0-9a-fA-F_]*/ .
 //hexadecimalLiteral = "0x" hexadecimalDigit hexadecimalLiteralCharacters? .
 //hexadecimalDigit = Digit 0 through 9, a through f, or A through F
 //hexadecimalLiteralCharacter = hexadecimalDigit | "_" .
 //hexadecimalLiteralCharacters = hexadecimalLiteralCharacter hexadecimalLiteralCharacters? .
 
-decimalFloatingPointLiteral     = /-?[0-9][0-9_]*(?:\.[0-9][0-9_]*)(?:[eE][+-]?[0-9][0-9_]*)?/ .    // made the decimal fraction non-optional to avoid conflict with decimalDigits
+decimalFloatingPointLiteral     - /-?[0-9][0-9_]*(?:\.[0-9][0-9_]*)(?:[eE][+-]?[0-9][0-9_]*)?/ .    // made the decimal fraction non-optional to avoid conflict with decimalDigits
 //decimalFloatingPointLiteral     = /-?[0-9][0-9_]*(?:\.[0-9][0-9_]*)?(?:[eE][+-]?[0-9][0-9_]*)?/ .
 
-hexadecimalFloatingPointLiteral = /-?0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/ .
+hexadecimalFloatingPointLiteral - /-?0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/ .
 //floatingPointLiteral = decimalLiteral decimalFraction? decimalExponent? .
 //floatingPointLiteral = hexadecimalLiteral hexadecimalFraction? hexadecimalExponent .
 floatingPointLiteral = decimalFloatingPointLiteral | hexadecimalFloatingPointLiteral .
@@ -215,9 +215,9 @@ integerLiteral = hexadecimalLiteral .
 
 //simpleOperator = "/" | "=" | "-" | "+" | "!" | "*" | "%" | "<" | ">" | "&" | "|" | "^" | "~" | "?" .      // captured as literals used elsewhere ("/")
 //compoundOperator = /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                // overlaps with simpleOperator, and literals win
-plainOperator = /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                     // overlaps with literals like '/' and '='
+plainOperator - /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                     // overlaps with literals like '/' and '='
 
-dotOperator   = /\.[\.\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .           // captures legal Swift operators already validated by the compiler
+dotOperator   - /\.[\.\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .           // captures legal Swift operators already validated by the compiler
 
 //plainOperator = simpleOperator | compoundOperator .
 Operator = plainOperator | dotOperator .                                // capitalized to 'Operator' to avoid conflict with "operator" literal
@@ -440,7 +440,7 @@ tupleElement = expression | identifier ":" expression .
 wildcardExpression = "_" .
 
 //macroExpansionExpression = "#" identifier genericArgumentClause? functionCallArgumentClause? trailingClosures? .
-macroIdentifier = /#\p{XID_Start}\p{XID_Continue}*/ .
+macroIdentifier - /#\p{XID_Start}\p{XID_Continue}*/ .
 macroExpansionExpression = macroIdentifier genericArgumentClause? functionCallArgumentClause? trailingClosures? .
 
 keyPathExpression = "\\" type? "." keyPathComponents .      // escape needed
@@ -956,13 +956,4 @@ genericArgumentList = genericArgument | genericArgument "," genericArgumentList 
 genericArgument = type .
 
 ^^^
-// invisible identifiers
-//struct ­ {
-//    var ­­: String
-//}
-//
-//let ­­: ­ = ­(­­: "Invisble characters should not be acceptable identifiers.")
-//
-//print(­­)
-
-let x = 1
+let x = 1 - 1

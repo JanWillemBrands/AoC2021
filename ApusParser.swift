@@ -5,10 +5,12 @@
 //  Created by Johannes Brands on 23/12/2024.
 //
 
+import OSLog
 import Foundation
 import RegexBuilder
+import AdventMacros
 
-public enum ApusParserError: Error {
+enum ApusParserError: Error {
     case terminalNonterminalConflict(symbols: Set<String>)
     case invalidRegex(image: String, error: Error)
     case unexpectedToken(expected: [String], found: String)
@@ -17,7 +19,7 @@ public enum ApusParserError: Error {
     case startSymbolNotFound(name: String)
 }
 
-public class ApusParser {
+class ApusParser {
     
     let grammar = Grammar()
     var scanner: Scanner
@@ -25,11 +27,11 @@ public class ApusParser {
     var cI: Int = 0               // current input position
     var token: Token { tokens[cI] }
     
-    public init(fromString inputString: String) throws {
+    init(fromString inputString: String) throws {
         scanner = try Scanner(fromString: inputString, patterns: apusTerminals)
     }
     
-    public init(fromFile inputFileURL: URL) throws {
+    init(fromFile inputFileURL: URL) throws {
         // Define a list of commonly supported encodings
         let encodings: [String.Encoding] = [
             .utf8,                // UTF-8
@@ -55,35 +57,35 @@ public class ApusParser {
         for encoding in encodings {
             do {
                 input = try String(contentsOf: inputFileURL, encoding: encoding)
-                trace("Successfully read input file with \(encoding)")
+                #Trace("Successfully read input file with \(encoding)")
                 break
             } catch {
-                trace("Failed reading input file with \(encoding): \(error)")
+                #Trace("Failed reading input file with \(encoding): \(error)")
             }
         }
         
         scanner = try Scanner(fromString: input, patterns: apusTerminals)
     }
     
-    public func parse(explicitStartSymbol: String = "") throws -> Grammar {
+    func parse(explicitStartSymbol: String = "") throws -> Grammar {
         cI = 0
         
         grammar.startSymbol = explicitStartSymbol
         try parseApusGrammar()
         
-        trace = true
-        trace("terminals:")
+        trace = false
+        #Trace("terminals: \(grammar.terminals.count)")
         for (name, tokenPattern) in grammar.terminals {
-            trace("\t", name, "\t", tokenPattern.source)
+            #Trace("\t", name, "\t", tokenPattern.source)
         }
-        trace("nonTerminals:")
+        #Trace("nonTerminals:")
         for (name, node) in grammar.nonTerminals {
-            trace("\t", name, "\t", node.kind)
+            #Trace("\t", name, "\t", node.kind)
         }
         
         let conflictSet = Set(grammar.terminals.keys).intersection(Set(grammar.nonTerminals.keys))
         if !conflictSet.isEmpty {
-            trace("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
+            #Trace("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
             throw ApusParserError.terminalNonterminalConflict(symbols: conflictSet)
         }
         
@@ -93,14 +95,16 @@ public class ApusParser {
         grammar.root = root
         
         for (name, node) in grammar.nonTerminals.sorted(by: { $0.key > $1.key }) {      // a fixed ordering with 'S' appearing first in small test grammars
-            trace("Processing END nodes for:", name)
+            #Trace("Processing END nodes for:", name)
             node.resolveEndNodeLinks(parent: node, alternate: node.alt)
         }
         
         // TODO: finalize representation for EOS
         grammar.root.follow.insert("$")
+        grammar.finalizeSymbolTable()
+        grammar.assignNameIDs()
         trace = false
-        trace("start symbol '\(grammar.startSymbol)' first:", grammar.root.first, "follow:", grammar.root.follow)
+        #Trace("start symbol '\(grammar.startSymbol)' first:", grammar.root.first, "follow:", grammar.root.follow)
         
         trace = false
         var oldSize = 0
@@ -109,18 +113,23 @@ public class ApusParser {
             oldSize = newSize
             newSize = 0
             for (_, node) in grammar.nonTerminals {
-                trace("nonterminalcount", grammar.nonTerminals.count)
+                #Trace("nonterminalcount", grammar.nonTerminals.count)
                 GrammarNode.sizeofSets = 0
                 try grammar.populateFirstFollowSets(for: node)
                 newSize += GrammarNode.sizeofSets
             }
-            trace("first & follow", newSize)
+            #Trace("first & follow", newSize)
         } while newSize != oldSize
+        // store the cumulative set size
+        GrammarNode.sizeofSets = newSize
         
+        GrammarNode.isLL1 = true
         for (name, node) in grammar.nonTerminals {
-            trace("Detecting ambiguity for:", name)
+            #Trace("Detecting ambiguity for:", name)
             node.detectAmbiguity()
         }
+        grammar.isLL1 = GrammarNode.isLL1
+        grammar.populateBitSets()
         
         return grammar
     }
@@ -129,78 +138,84 @@ public class ApusParser {
     private var terminalAlias: String?
     
     func parseApusGrammar() throws {
-        trace("parseApusGrammar", token)
+        #Trace("parseApusGrammar", token)
         
-        while token.kind == "identifier" {
+        // Collect preamble actions (before first production)
+        grammar.preamble = collectActions(at: 0)
+        
+        try expect(["identifier"])
+        repeat {
             try production()
-        }
+        } while token.kind == "identifier"
+        
+        // Collect epilogue actions (after last production, before messages/$)
+        grammar.epilogue = collectActions(at: cI)
         
         try expect(["message", "$"])
         while token.kind == "message" {
             message()
         }
-        // TODO: finalize EOS representation
+        
         try expect(["$"])
     }
     
     func production() throws {
-        trace("production", token)
+        #Trace("production", token)
         let nonTerminalName = String(token.image)
         cI += 1
-        var node: GrammarNode
-        if token.kind == "=" {
+        
+        if token.kind == ":" || token.kind == "-" {
+            // terminal definition: ":" = silent, "-" = visible
+            skip = (token.kind == ":")
             cI += 1
-            if token.kind == "regex" {
-                terminalAlias = nonTerminalName
-                node = try regex()
-                terminalAlias = nil
-                cI += 1
-            } else {
-                // set the startSymbol to the first nonTerminal in the grammar file
-                if grammar.startSymbol == "" {
-                    grammar.startSymbol = nonTerminalName
-                }
-                node = try alternates()
-                if let existing = grammar.nonTerminals[nonTerminalName] {
-                    // add this production to the end of the existing ALT list
-                    var endOfList = existing
-                    while let next = endOfList.alt {
-                        endOfList = next
-                    }
-                    endOfList.alt = node
-                } else {
-                    grammar.nonTerminals[nonTerminalName] = GrammarNode(kind: .N, str: nonTerminalName, alt: node)
-                }
-            }
-        } else {
-            try expect([":"])
-            cI += 1
-            skip = true
+            try expect(["regex"])
             terminalAlias = nonTerminalName
-            if token.kind == "regex" {
-                node = try regex()
-            } else {
-                try expect(["literal"])
-                node = literal()
-            }
-            skip = false
+            _ = try regex()
+            // reset
             terminalAlias = nil
+            skip = false
+        } else {
+            // production rule
+            try expect(["="])
+            // Collect signature actions (between nonterminal name and "=")
+            let signatureActions = collectActions(at: cI)
             cI += 1
+            // Actions between "=" and body naturally land on the first ALT node
+            // via sequence()'s collectActions(at: cI) — no separate locals collection needed.
+            if grammar.startSymbol == "" {
+                grammar.startSymbol = nonTerminalName
+            }
+            let node = try selection()
+            let lhsNode: GrammarNode
+            if let existing = grammar.nonTerminals[nonTerminalName] {
+                var endOfList = existing
+                while let next = endOfList.alt {
+                    endOfList = next
+                }
+                endOfList.alt = node
+                lhsNode = existing
+            } else {
+                lhsNode = GrammarNode(kind: .N, name: nonTerminalName, alt: node)
+                grammar.nonTerminals[nonTerminalName] = lhsNode
+            }
+            // Store signature on the LHS .N node
+            if let sig = signatureActions.first {
+                lhsNode.signature = sig
+            }
         }
-        // TODO: do we really want regex and literal terminals also listed as nonTerminals?
-        // TODO:  this causes the terminals to end up in the nonterminals
+        
         try expect(["."])
         cI += 1
     }
     
     func message() {
-        trace("message", token)
+        #Trace("message", token)
         grammar.messages.append(token.stripped)
         cI += 1
     }
     
-    func alternates() throws -> GrammarNode {
-        trace("alternates", token)
+    func selection() throws -> GrammarNode {
+        #Trace("selection", token)
         let startOfAlternates = try sequence()
         var tmp = startOfAlternates
         while token.kind == "|" {
@@ -211,116 +226,130 @@ public class ApusParser {
         return startOfAlternates
     }
     
+    /// Collect action tokens from the skipped tokens at the given visible-token index.
+    /// Since action is now a silent terminal, action tokens land in scanner.skippedTokens.
+    private func collectActions(at index: Int) -> [String] {
+        guard index < scanner.skippedTokens.count else { return [] }
+        return scanner.skippedTokens[index]
+            .filter { $0.kind == "action" }
+            .map { $0.stripped }
+    }
+    
     func sequence() throws -> GrammarNode {
-        // TODO: is this correct?   sequence = < term [ "?" | "*" | "+" ] > .
-        trace("sequence", token)
-        let startOfSequence = GrammarNode(kind: .ALT, str: "")
+        // sequence = < factor [ "?" | "*" | "+" ] > .
+        // Actions are collected from skippedTokens at each position.
+        #Trace("sequence", token)
+        let startOfSequence = GrammarNode(kind: .ALT, name: "")
         var termNode = startOfSequence
         
-        repeat {
-            if ["action"].contains(token.kind) {
-                termNode.actions.append(token.stripped)
-                cI += 1
-            } else if ["literal", "identifier", "epsilon", "regex", "(", "[", "{", "<"].contains(token.kind) {
-                termNode.seq = try term()
-                while ["action"].contains(token.kind) {
-                    termNode.seq?.actions.append(token.stripped)
-                    cI += 1
-                }
-                // handle postfix EBNF operators
-                if ["?", "*", "+"].contains(token.kind) {
-                    // wrap the preceding term in its own little sequence
-                    let miniSeq = GrammarNode(kind: .ALT, str: "")
-                    miniSeq.seq = termNode.seq
-                    miniSeq.seq?.seq = GrammarNode(kind: .END, str: "")
-                    if token.kind == "?" {
-                        termNode.seq = GrammarNode(kind: .OPT, str: "", alt: miniSeq)
-                    } else if token.kind == "*" {
-                        termNode.seq = GrammarNode(kind: .KLN, str: "", alt: miniSeq)
-                    } else if token.kind == "+" {
-                        termNode.seq = GrammarNode(kind: .POS, str: "", alt: miniSeq)
-                    }
-                    termNode.seq?.alt = miniSeq
-                    cI += 1
-                }
-                termNode = termNode.seq!
-            }
-        } while ["literal", "identifier", "epsilon", "regex", "action", "(", "[", "{", "<"].contains(token.kind)
+        // leading actions (before first factor)
+        termNode.actions = collectActions(at: cI)
         
-        termNode.seq = GrammarNode(kind: .END, str: "")
+        repeat {
+            termNode.seq = try factor()
+            // handle postfix EBNF operators
+            if ["?", "*", "+"].contains(token.kind) {
+                // wrap the preceding factor in its own little sequence
+                let miniSeq = GrammarNode(kind: .ALT, name: "")
+                miniSeq.seq = termNode.seq
+                miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+                if token.kind == "?" {
+                    termNode.seq = GrammarNode(kind: .OPT, name: "", alt: miniSeq)
+                } else if token.kind == "*" {
+                    termNode.seq = GrammarNode(kind: .KLN, name: "", alt: miniSeq)
+                } else if token.kind == "+" {
+                    termNode.seq = GrammarNode(kind: .POS, name: "", alt: miniSeq)
+                }
+                termNode.seq?.alt = miniSeq
+                cI += 1
+            }
+            
+            termNode = termNode.seq!
+            // trailing actions (after factor/operator, before next factor or end)
+            termNode.actions = collectActions(at: cI)
+
+        } while ["literal", "identifier", "epsilon", "regex", "(", "[", "{", "<"].contains(token.kind)
+        
+        termNode.seq = GrammarNode(kind: .END, name: "")
         // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
         return startOfSequence
     }
     
     func regex() throws -> GrammarNode {
-        trace("regex", token)
+        #Trace("regex", token)
         let name = terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex)
         
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
-                trace("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
+                #Trace("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
             }
         }
         do {
             // the token is a regex definition, try to initialize a Regex with it
             let regex = try Regex<Substring>(String(token.stripped))
             grammar.terminals[name] = (String(token.image), regex, false, skip)
-            trace("regex name:", name, "image:", token.image)
+            grammar.registerTerminal(name)
+            #Trace("regex name:", name, "image:", token.image)
         } catch {
-            trace("grammar parse error: \(token.image) is not a valid literal Regex \(error)")
+            #Trace("grammar parse error: \(token.image) is not a valid literal Regex \(error)")
             throw ApusParserError.invalidRegex(image: String(token.image), error: error)
         }
         
-        return GrammarNode(kind: .T, str: name)
+        cI += 1
+        return GrammarNode(kind: .T, name: name)
     }
     
     func literal() -> GrammarNode {
-        trace("literal", token, token.stripped)
+        #Trace("literal", token, token.stripped)
         
         if token.stripped == "" {
-            // if token.stripped == "" || token.stripped == "#" || token.stripped.first?.isEpsilon == true {
-            // epsilon is its own nonterminal, will never show up here in literal()
-            trace(token, token.stripped)
-            return GrammarNode(kind: .EPS, str: "ε")
+            // epsilon is its own terminal, will never show up here in literal()
+            #Trace(token, token.stripped)
+            cI += 1
+            return GrammarNode(kind: .EPS, name: "ε")
         }
         
         let name = terminalAlias ?? token.stripped
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
-                trace("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
+                #Trace("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
             }
         }
         // the token is a string literal, use a regex builder to create a Regex
         let regex = Regex { token.stripped }
         grammar.terminals[name] = (String(token.image), regex, true, skip)
-        trace("literal name:", name, "image:", token.image)
+        grammar.registerTerminal(name)
+        #Trace("literal name:", name, "image:", token.image)
         
-        return GrammarNode(kind: .T, str: name)
+        cI += 1
+        return GrammarNode(kind: .T, name: name)
     }
     
     func epsilon() -> GrammarNode {
-        trace("epsilon", token, token.stripped)
-        return GrammarNode(kind: .EPS, str: "ε")
+        #Trace("epsilon", token, token.stripped)
+        cI += 1
+        return GrammarNode(kind: .EPS, name: "ε")
     }
     
-    func term() throws -> GrammarNode {
-        trace("term", token)
+    func factor() throws -> GrammarNode {
+        #Trace("factor", token)
         let node: GrammarNode
         switch token.kind {
         case "identifier":
             // the identifier can be a terminal or nonTerminal but not both
             if grammar.terminals[String(token.image)] != nil {
                 if grammar.nonTerminals[String(token.image)] != nil {
-                    trace("grammar parse error: \(token.image) is both a terminal and a nonTerminal")
+                    #Trace("grammar parse error: \(token.image) is both a terminal and a nonTerminal")
                 }
                 // this string was defined previously as a terminal
                 // TODO: currently all terminals must be defined BEFORE they are used
-                node = GrammarNode(kind: .T, str: token.stripped)
+                node = GrammarNode(kind: .T, name: token.stripped)
             } else {
                 // this string is assumed to be a nonTerminal
                 // nonTerminals may be used before they are defined, and are resolved later
-                node = GrammarNode(kind: .N, str: token.stripped)
+                node = GrammarNode(kind: .N, name: token.stripped)
             }
+            cI += 1
         case "literal":
             node = literal()
         case "epsilon":
@@ -329,44 +358,46 @@ public class ApusParser {
             node = try regex()
         case "(":
             cI += 1
-            node = GrammarNode(kind: .DO, str: "", alt: try alternates())
+            node = GrammarNode(kind: .DO, name: "", alt: try selection())
             try expect([")"])
+            cI += 1
         case "[":
             cI += 1
-            node = GrammarNode(kind: .OPT, str: "", alt: try alternates())
+            node = GrammarNode(kind: .OPT, name: "", alt: try selection())
             try expect(["]"])
+            cI += 1
         case "{":
             cI += 1
-            node = GrammarNode(kind: .KLN, str: "", alt: try alternates())
+            node = GrammarNode(kind: .KLN, name: "", alt: try selection())
             try expect(["}"])
+            cI += 1
         case "<":
             cI += 1
-            node = GrammarNode(kind: .POS, str: "", alt: try alternates())
+            node = GrammarNode(kind: .POS, name: "", alt: try selection())
             try expect([">"])
+            cI += 1
         default:
-            // This will throw, so we never reach the code below
-            try expect(["identifier", "literal", "epsilon", "regex", "action", "(", "[", "{", "<"])
+            try expect(["identifier", "literal", "epsilon", "regex", "(", "[", "{", "<"])
             fatalError("expect() should have thrown - this line should never be reached")
         }
-        cI += 1
         return node
     }
     
     func expect(_ expectedTokens: Set<String>) throws {
-        trace("expect \"\(token.kind)\" to be in", expectedTokens)
+        #Trace("expect \"\(token.kind)\" to be in", expectedTokens)
         if !expectedTokens.contains(token.kind) {
-            trace("parse error: found \"\(token.kind)\" but expected one of \(expectedTokens)")
-            trace(token.image, token.image.endIndex > scanner.input.endIndex )
+            #Trace("parse error: found \"\(token.kind)\" but expected one of \(expectedTokens)")
+            #Trace(token.image, token.image.endIndex > scanner.input.endIndex )
             let lineRange = scanner.input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
-            trace(scanner.input[lineRange], terminator: "")
+            #Trace(scanner.input[lineRange], terminator: "")
             let before = lineRange.lowerBound ..< token.image.startIndex
             for _ in 0 ..< scanner.input[before].count {
-                trace("~", terminator: "")
+                #Trace("~", terminator: "")
             }
             for _ in 0 ..< token.image.count {
-                trace("^", terminator: "")
+                #Trace("^", terminator: "")
             }
-            trace()
+            #Trace()
             throw ApusParserError.unexpectedToken(expected: Array(expectedTokens), found: String(token.kind))
         }
     }

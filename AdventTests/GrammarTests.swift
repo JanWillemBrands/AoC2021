@@ -15,6 +15,7 @@ struct TestCase: CustomTestStringConvertible {
     let grammar: String
     let pass: [String]
     let fail: [String]
+    let illegalGrammar: Bool
     let label: String
 
     var testDescription: String { label }
@@ -23,11 +24,13 @@ struct TestCase: CustomTestStringConvertible {
         grammar: String,
         pass: [String] = [],
         fail: [String] = [],
+        illegalGrammar: Bool = false,
         label: String
     ) {
         self.grammar = grammar
         self.pass = pass
         self.fail = fail
+        self.illegalGrammar = illegalGrammar
         self.label = label
     }
 }
@@ -59,6 +62,14 @@ private func parseMatches(grammar grammarString: String, message: String) throws
 
 /// Run all pass/fail messages for a test case.
 private func runTestCase(_ tc: TestCase) throws {
+    if tc.illegalGrammar {
+        let grammarWithWhitespace = "whitespace : /\\s+/.\n" + tc.grammar
+        #expect(throws: (any Error).self, "\(tc.label): Expected grammar to be illegal: \(tc.grammar)") {
+            let parser = try ApusParser(fromString: grammarWithWhitespace)
+            _ = try parser.parse(explicitStartSymbol: "")
+        }
+        return
+    }
     for message in tc.pass {
         let result = try parseMatches(grammar: tc.grammar, message: message)
         #expect(result == true, "\(tc.label): Expected PASS for '\(message)' with grammar: \(tc.grammar)")
@@ -658,6 +669,12 @@ struct GrammarTests {
                 pass: ["", "a", "b", "ab", "ba", "aab"],
                 label: "left recursion two alts"
             ),
+            TestCase(
+                grammar: #"S = A. A = "a" B | "c". B = "b" A | "d"."#,
+                pass: ["c", "ad", "abc", "abad", "ababc"],
+                fail: ["", "a", "b", "ab"],
+                label: "mutual recursion"
+            ),
         ]
 
         @Test(arguments: cases)
@@ -834,44 +851,59 @@ struct GrammarTests {
     struct EmptyConstructs {
         static let cases: [TestCase] = [
             TestCase(
+                grammar: #""#,
+                illegalGrammar: true,
+                label: "empty grammar"
+            ),
+            TestCase(
+                grammar: #"."#,
+                illegalGrammar: true,
+                label: "no rule"
+            ),
+            TestCase(
                 grammar: #"S = ."#,
-                pass: [""],
-                fail: ["x"],
+                illegalGrammar: true,
                 label: "empty sequence"
             ),
             TestCase(
                 grammar: #"S = |."#,
-                pass: [""],
+                illegalGrammar: true,
                 label: "empty selection"
             ),
             TestCase(
                 grammar: #"S = ()."#,
-                pass: [""],
+                illegalGrammar: true,
                 label: "empty group"
             ),
             TestCase(
                 grammar: #"S = []."#,
-                pass: [""],
+                illegalGrammar: true,
                 label: "empty option"
             ),
             TestCase(
                 grammar: #"S = {}."#,
-                pass: [""],
+                illegalGrammar: true,
                 label: "empty closure"
             ),
             TestCase(
                 grammar: #"S = <>."#,
-                pass: [""],
+                illegalGrammar: true,
                 label: "empty positive closure"
+            ),
+            TestCase(
+                grammar: #"S = N."#,
+                illegalGrammar: true,
+                label: "undefined production rule"
             ),
             TestCase(
                 grammar: #"S = "a" ""."#,
                 pass: ["a"],
-                label: "explicit end of input"
+                label: "epsilon before end-of-string"
             ),
             TestCase(
                 grammar: #"S = "x". S = "xx". S = "xxx"."#,
                 pass: ["x", "xx", "xxx"],
+                fail: ["", "xxxx"],
                 label: "multiple definitions"
             ),
         ]
@@ -926,6 +958,379 @@ struct GrammarTests {
         @Test(arguments: cases)
         func test(_ tc: TestCase) throws {
             try runTestCase(tc)
+        }
+    }
+
+    // MARK: - LL(1) Detection
+
+    @Suite("LL1 Detection", .serialized)
+    struct LL1Detection {
+
+        /// Parse a grammar and return the Grammar object for set inspection.
+        private static func parseGrammar(_ grammarString: String) throws -> Grammar {
+            GrammarNode.count = 0
+            GrammarNode.isLL1 = true
+            trace = false
+            traceIndent = 0
+            let full = "whitespace : /\\s+/.\n" + grammarString
+            let parser = try ApusParser(fromString: full)
+            return try parser.parse(explicitStartSymbol: "")
+        }
+
+        static let ll1Cases: [TestCase] = [
+            // Simple literals and sequences
+            TestCase(grammar: #"S = "a"."#, label: "single literal"),
+            TestCase(grammar: #"S = "a" "b"."#, label: "two-literal sequence"),
+            TestCase(grammar: #"S = ""."#, label: "epsilon only"),
+
+            // Disjoint alternation
+            TestCase(grammar: #"S = "a" | "b"."#, label: "simple alternation"),
+            TestCase(grammar: #"S = "a" | "b" | "c"."#, label: "three alternates"),
+            TestCase(grammar: #"S = "a" | ""."#, label: "nullable alternate"),
+
+            // Brackets with disjoint FIRST/FOLLOW
+            TestCase(grammar: #"S = "a" ["b"] "c"."#, label: "option disjoint"),
+            TestCase(grammar: #"S = ["b"] "c"."#, label: "option then different literal"),
+            TestCase(grammar: #"S = {"a"} "b"."#, label: "closure disjoint"),
+            TestCase(grammar: #"S = <"a"> "b"."#, label: "positive closure disjoint"),
+            TestCase(grammar: #"S = <"a">."#, label: "positive closure"),
+            TestCase(grammar: #"S = ("a" | "b") "c"."#, label: "group disjoint alternates"),
+            TestCase(grammar: #"S = ["a" | "b"] "c"."#, label: "option with alternation"),
+
+            // Nonterminals
+            TestCase(grammar: #"S = A B. A = "a". B = "b"."#, label: "two nonterminals"),
+            TestCase(grammar: #"S = A. A = "a" | "b"."#, label: "nonterminal chain"),
+
+            // #1: right-recursive expressions with repetition
+            TestCase(
+                grammar: #"S = E. E = T {"+" T}. T = "(" E ")" | "num"."#,
+                label: "right-recursive expressions"
+            ),
+            // #5: dangling else resolved with optional tail
+            TestCase(
+                grammar: ###"""
+                    statement = "if" "(" E ")" matched ["else" tail] | "other".
+                    matched = "if" "(" E ")" matched "else" matched | "other".
+                    tail = "if" "(" E ")" tail | "other".
+                    E = "e".
+                    """###,
+                label: "dangling else resolved"
+            ),
+            // #6: right-recursive sum with primed tail
+            TestCase(
+                grammar: #"S = E SP. SP = "" | "+" S. E = "num" | "(" S ")"."#,
+                label: "right-recursive sum primed"
+            ),
+            // #7: EBNF-style sum with repetition
+            TestCase(
+                grammar: #"S = E {"+" E}. E = "num" | "(" S ")"."#,
+                label: "EBNF sum repetition"
+            ),
+            // #10: precedence via layered repetition
+            TestCase(
+                grammar: ###"""
+                    Expr = Term {("+" | "-") Term}.
+                    Term = Factor {("*" | "/") Factor}.
+                    Factor = "num" | "(" Expr ")".
+                    """###,
+                label: "layered precedence"
+            ),
+
+            // #13: simple statements with optional expression tail
+            TestCase(
+                grammar: ###"""
+                    Prog = "{" Stmts "}".
+                    Stmts = Stmt Stmts | "".
+                    Stmt = "id" "=" Expr ";" | "if" "(" Expr ")" Stmt.
+                    Expr = "id" Etail.
+                    Etail = "+" Expr | "-" Expr | "".
+                    """###,
+                label: "mini-language statements"
+            ),
+            // #14: function call with optional argument list (FIRST/FOLLOW disjoint)
+            // Claimed not LL(1) but FIRST(option)={"IDENT"} is disjoint from FOLLOW(option)={")"}
+            TestCase(
+                grammar: #"S = "IDENT" "(" ["IDENT" {"," "IDENT"}] ")"."#,
+                label: "func call optional args"
+            ),
+
+            // #18: precedence with left-associative repetition
+            TestCase(
+                grammar: ###"""
+                    Expr = Term {"+" Term}.
+                    Term = Factor {"*" Factor}.
+                    Factor = "INT" | "(" Expr ")".
+                    """###,
+                label: "left-associative precedence"
+            ),
+            // #21: signed integer with optional sign
+            TestCase(
+                grammar: ###"""
+                    integer = ["+" | "-"] digit {digit}.
+                    digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+                    """###,
+                label: "signed integer"
+            ),
+
+            // Three nullable nonterminals with disjoint FIRST/FOLLOW at each position
+            TestCase(
+                grammar: #"S = A B C. A = "a" | "". B = "b" | "". C = "c" | ""."#,
+                label: "three nullable nonterminals"
+            ),
+            // Two different closures — FIRST({"a"})∩FOLLOW({"a"})=∅, FIRST({"b"})∩FOLLOW({"b"})=∅
+            TestCase(grammar: #"S = {"a"} {"b"}."#, label: "two different closures nullable overlap"),
+
+            // #12: multiple nullables in sequence, disjoint via FOLLOW
+            // FIRST(B)={"b",ε}, FOLLOW(B)={"d","a"} — disjoint; FIRST(D)={"d",ε}, FOLLOW(D)={"a"} — disjoint
+            TestCase(
+                grammar: #"S = A "a". A = B D. B = "b" | "". D = "d" | ""."#,
+                label: "multiple nullables disjoint"
+            ),
+            // #22: integer list vs set (each separately LL(1), combined disjoint FIRST)
+            // Claimed not LL(1) but FIRST(intlist)=digits, FIRST(intset)="{", disjoint
+            TestCase(
+                grammar: ###"""
+                    S = intlist | intset.
+                    intlist = integer {"," integer}.
+                    intset = "{" [intlist] "}".
+                    integer = "num".
+                    """###,
+                label: "list vs set"
+            ),
+            // #23: minimal nullable recursive sequence
+            // Claimed not LL(1) but FIRST={"A"}, nullable alt chosen on anything else; no conflict
+            TestCase(
+                grammar: #"r = "" | "A" r."#,
+                label: "nullable recursive sequence"
+            ),
+            
+            // #24: Imaginary Unary/binary operator conflict on the same token (very common real-world trap)
+            TestCase(
+                grammar: ###"""
+                    Expr   = Term {("+"|"-") Term}.
+                    Term   = Factor {("*"|"/") Factor}.
+                    Factor = "num" | "(" Expr ")" | "-" Factor.
+                    """###,
+                label: "unary/binary minus overlap"
+            ),
+            
+            // #25: Imaginary conflict: unary/binary at the SAME level + nullable propagation
+            TestCase(
+                grammar: ###"""
+                    Expr = Term {BinOp Term} | UnOp Expr.
+                    Term = "num" | "(" Expr ")".
+                    BinOp = "+" | "-".
+                    UnOp = "-" | "+".
+                    """###,
+                label: "unary/binary same-level conflict"
+            ),
+            
+            // Sandwich repetitions – same token repeated on both sides of a literal
+            // The intervening "b" cleanly separates FIRST/FOLLOW of the two closures
+            TestCase(grammar: #"S = {"a"} "b" {"a"}."#, label: "sandwich repetitions"),
+            
+            // Balanced-parentheses tail (standard right-recursive Dyck-word generator)
+            // Recursive alt starts only with "(", epsilon taken exactly on FOLLOW(S) which includes ")"
+            TestCase(
+                grammar: #"S = "(" S ")" S | ""."#,
+                label: "balanced parens with nullable tail"
+            ),
+            
+            // Mutual recursion: A and B call each other. FOLLOW must propagate through the cycle.
+            // FOLLOW(A) ⊇ FOLLOW(B) ⊇ FOLLOW(A), both resolve to {"$"}.
+            // Requires multiple fixed-point iterations in populateFirstFollowSets.
+            TestCase(
+                grammar: #"S = A. A = "a" B | "c". B = "b" A | "d"."#,
+                label: "mutual recursion LL(1)"
+            ),
+            
+        ]
+
+        static let nonLL1Cases: [TestCase] = [
+            // FIRST/FIRST conflicts
+            TestCase(grammar: #"S = "a" | "a"."#, label: "duplicate alternate"),
+            TestCase(grammar: #"S = "a" "b" | "a" "c"."#, label: "shared prefix"),
+
+            // Recursion (creates FIRST/FIRST overlap)
+            TestCase(grammar: #"S = "x" | S "x"."#, label: "left recursion"),
+            TestCase(grammar: #"S = "x" | "x" S."#, label: "right recursion"),
+
+            // Nullable nonterminal overlaps
+            TestCase(grammar: #"S = A "b" | A "c". A = ["a"]."#, label: "nullable nonterminal selection"),
+
+            // FIRST/FOLLOW conflicts (nullable bracket followed by same token)
+            TestCase(grammar: #"S = ["a"] "a"."#, label: "option then same literal"),
+            TestCase(grammar: #"S = {"a"} "a"."#, label: "closure then same literal"),
+
+            // Closure overlaps
+            TestCase(grammar: #"S = {"a"} {"a"}."#, label: "two same closures"),
+
+            // Literature grammars
+            TestCase(grammar: #"S = "b" | S S."#, label: "highly ambiguous (ART torture)"),
+            TestCase(grammar: #"S = "x" | S S | S S S."#, label: "Binsbergen G3"),
+
+            // #2: nullable nonterminal propagating to followers
+            TestCase(
+                grammar: ###"""
+                    S = A.
+                    A = B D A | "a".
+                    B = D | "b".
+                    D = "d" | "".
+                    """###,
+                label: "nullable propagation"
+            ),
+            // #3: classic dangling else
+            TestCase(
+                grammar: ###"""
+                    S = "if" "(" E ")" S
+                      | "if" "(" E ")" S "else" S
+                      | "other".
+                    E = "e".
+                    """###,
+                label: "dangling else"
+            ),
+            // #4: matched/unmatched if-else (still not LL(1))
+            TestCase(
+                grammar: ###"""
+                    statement = matched | unmatched.
+                    matched = "if" "(" E ")" matched "else" matched | "other".
+                    unmatched = "if" "(" E ")" statement
+                             | "if" "(" E ")" matched "else" unmatched.
+                    E = "e".
+                    """###,
+                label: "matched unmatched"
+            ),
+            // #8: if-then with optional else (FOLLOW conflict on "else")
+            TestCase(
+                grammar: ###"""
+                    Stat = "if" Exp "then" Stat MoreIf.
+                    MoreIf = "else" Stat "end" | "".
+                    Exp = "e".
+                    """###,
+                label: "if-then optional else"
+            ),
+            // #9: direct left-recursive list
+            TestCase(
+                grammar: #"List = List "," "item" | "item"."#,
+                label: "left-recursive list"
+            ),
+            // #15: statement that can be assignment or call (common prefix)
+            TestCase(
+                grammar: ###"""
+                    stmt = assign ";" | func_call ";".
+                    assign = "IDENT" "=" Expr.
+                    func_call = "IDENT" "(" arglist ")".
+                    Expr = "e".
+                    arglist = "a".
+                    """###,
+                label: "assignment or call"
+            ),
+            // #16: naturally written left-recursive expression
+            TestCase(
+                grammar: ###"""
+                    Expr = Expr Op Expr | "(" Expr ")" | "Number".
+                    Op = "+" | "*".
+                    """###,
+                label: "natural left-recursive expr"
+            ),
+            // #19: fully ambiguous operator grammar
+            TestCase(
+                grammar: #"Expr = Expr "+" Expr | Expr "*" Expr | "INT"."#,
+                label: "ambiguous operator"
+            ),
+            // #20: left-recursive precedence
+            TestCase(
+                grammar: ###"""
+                    Expr = Expr "+" Term | Term.
+                    Term = Term "*" Factor | Factor.
+                    Factor = "INT" | "(" Expr ")".
+                    """###,
+                label: "left-recursive precedence"
+            ),
+            // #24: common left prefix needing factoring
+            TestCase(
+                grammar: ###"""
+                    Stmt = "id" "=" Expr ";" | "id" "(" ArgList ")".
+                    Expr = "e".
+                    ArgList = "a".
+                    """###,
+                label: "common prefix needs factoring"
+            ),
+            // #11: floating-point literal — overlapping alternatives in Float and Fract
+            // Rewritten with regex terminal for digits; common prefix on digit sequences
+            TestCase(
+                grammar: ###"""
+                    digit = /[0-9]/.
+                    Float = Fract [Exp] [Suffix] | {digit} Exp [Suffix].
+                    Fract = {digit} "." <digit> | <digit> ".".
+                    Exp = "e" ["+" | "-"] <digit>.
+                    Suffix = "f" | "l".
+                    """###,
+                label: "floating-point overlapping alternatives"
+            ),
+
+            // #17: left-recursion eliminated — FIRST(ExprP) ∩ FOLLOW(ExprP) on "*","+";
+            // strong LL(1) rejects this, but recursive descent handles it naturally
+            // because per-instance FOLLOW at each call site is more restricted than
+            // the global union. Fixing this requires per-instance FOLLOW tracking.
+            TestCase(
+                grammar: ###"""
+                    Expr = "(" Expr ")" ExprP | "Number".
+                    ExprP = Op Expr ExprP | "".
+                    Op = "+" | "*".
+                    """###,
+                label: "left-recursion eliminated tail conflict"
+            ),
+            
+            // #18: Indirect (cyclic) left recursion – not direct, so simple detectors miss it
+            TestCase(
+                grammar: #"S = A "z". A = B "y" | "x". B = S "w" | "v"."#,
+                label: "indirect left recursion cycle"
+            ),
+            
+            // #19: Minimal shared-prefix + nullable propagation (smaller than #2)
+            TestCase(
+                grammar: #"S = A "b". A = "b" | ""."#,
+                label: "tiny nullable prefix conflict"
+            ),
+            
+            // #21: Symmetric recursion (palindrome-style)
+            // "a" appears in FIRST(recursive alt) *and* in FOLLOW(S) because of the closing "a"
+            TestCase(
+                grammar: #"S = "a" S "a" | "b" | ""."#,
+                label: "symmetric recursion conflict"
+            ),
+            
+            // #22: Classic unambiguous-but-not-LL(1) (textbook favourite)
+            // Language is unambiguous, but A is nullable *and* "b" ∈ FIRST(A) ∩ FOLLOW(A)
+            TestCase(
+                grammar: #"S = A "b". A = "b" | ""."#,
+                label: "unambiguous but FIRST/FOLLOW overlap"
+            ),
+            
+            // Indirect left recursion cycle — no direct left recursion, so many simple detectors miss it
+            TestCase(
+                grammar: #"S = A "z". A = B "y" | "x". B = S "w" | "v"."#,
+                label: "indirect left recursion"
+            ),
+            
+            // Optional trailing comma — FIRST of the inner list and the trailing "," are both handled inside the brackets
+            TestCase(
+                grammar: #"S = "(" [E {"," E} [","]] ")" . E = "id"."#,
+                label: "optional trailing comma"
+            ),
+        ]
+
+        @Test("LL(1) grammars detected correctly", arguments: ll1Cases)
+        func testLL1(_ tc: TestCase) throws {
+            let grammar = try Self.parseGrammar(tc.grammar)
+            #expect(grammar.isLL1 == true, "\(tc.label): expected LL(1) for grammar: \(tc.grammar)")
+        }
+
+        @Test("Non-LL(1) grammars detected correctly", arguments: nonLL1Cases)
+        func testNonLL1(_ tc: TestCase) throws {
+            let grammar = try Self.parseGrammar(tc.grammar)
+            #expect(grammar.isLL1 == false, "\(tc.label): expected non-LL(1) for grammar: \(tc.grammar)")
         }
     }
 

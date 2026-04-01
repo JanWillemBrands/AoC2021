@@ -12,16 +12,17 @@
 // Paper: P = contingent return set (pops)
 // Paper: cL = current grammar slot, cI = current input index, cU = current cluster index
 
+import OSLog
 import Foundation
 
 
 // Lightweight value type for CRF dictionary keys or
 // a return edge in the CRF. Matches the paper's crfNode (L, i).
-public struct Position: Hashable, Comparable, CustomStringConvertible {
-    public let slot: GrammarNode
-    public let index: Int
+struct Position: Hashable, Comparable, CustomStringConvertible {
+    let slot: GrammarNode
+    let index: Int
     
-    public var description: String {
+    var description: String {
         slot.description + "." + index.description
     }
     
@@ -29,26 +30,16 @@ public struct Position: Hashable, Comparable, CustomStringConvertible {
         slot.ebnfDot() + "," + index.description
     }
     
-    public static func < (lhs: Position, rhs: Position) -> Bool {
+    static func < (lhs: Position, rhs: Position) -> Bool {
         lhs.description < rhs.description
     }
 }
 
-// A return edge in the CRF. Matches the paper's crfNode (L, i).
-//public struct Position: Hashable, CustomStringConvertible {
-//    public let slot: GrammarNode       // L: the RHS nonterminal call site
-//    public let index: Int              // i: the caller's cluster index
-//    
-//    public var description: String {
-//        slot.description + "." + index.description
-//    }
-//}
-
 // Cluster node in the CRF. Mutable, identity-based.
 // Represents clusterNode (X, k) from the paper.
-public final class Cluster: CustomStringConvertible {
-    public let slot: GrammarNode   // the LHS nonterminal (X)
-    public let index: Int          // input position (k)
+final class Cluster: CustomStringConvertible {
+    let slot: GrammarNode           // the LHS nonterminal (X)
+    let index: Int                  // input position (k)
     
     var returns: Set<Position> = []
     var pops: Set<Int> = []        // Paper: P — contingent returns
@@ -58,7 +49,7 @@ public final class Cluster: CustomStringConvertible {
         self.index = index
     }
     
-    public var description: String {
+    var description: String {
         slot.description + "." + index.description
     }
     
@@ -171,7 +162,7 @@ extension MessageParser {
             // The new cluster inherits the SAME return edges as the current cluster,
             // so that when the next iteration pops, it goes directly back to the
             // original outer caller(s) — not through a chain of iterations.
-            if bracket.kind == .KLN || bracket.kind == .POS {
+            if bracket.kind.isClosure {
                 let nextKey = Position(slot: bracket, index: cI)
                 
                 if let existingCluster = crf[nextKey] {

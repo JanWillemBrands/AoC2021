@@ -5,23 +5,24 @@
 //  Created by Johannes Brands on 2026.03.11.
 //
 
+import OSLog
 import RegexBuilder
 
-public let apusTerminals: [String:TokenPattern] = [
+let apusTerminals: [String:TokenPattern] = [
     "whitespace":   (#"\s+"#,                   /\s+/,                              false, true),
     "linecomment":  (#"//.*"#,                  /\/\/.*/,                           false, true),
     "blockcomment": (#"/\*(?s).*?\*/"#,         /\/\*(?s).*?\*\//,                  false, true),
-    "identifier":   (#"[\p{L}\p{N}\p{Pc}]+"#,   /\p{XID_Start}\p{XID_Continue}*/,   false, false),
+    "identifier":   (#"\p{XID_Start}\p{XID_Continue}*"#, /\p{XID_Start}\p{XID_Continue}*/,   false, false),
     "literal":      (#""(?:[^"\\]|\\.)*""#,     /\"(?:[^\"\\]|\\.)*\"/,             false, false),
     "regex":        (#"/(?:[^\/\\]|\\.)+/"#,    /\/(?:[^\/\\]|\\.)+\//,             false, false),
-    "action":       (#"@(?:[^@\\]|\\.)*@"#,     /@(?:[^@\\]|\\.)*@/,                false, false),
+    "action":       (#"@(?:[^@\\]|\\.)*@"#,     /@(?:[^@\\]|\\.)*@/,                false, true),
     "message":      (#"\^\^\^(?:(?s).*?)(?=\^\^\^|$)"#,
                                                 /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,    false, false),
-    "epsilon":      (#"[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄#]"#,       /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄#]/,                   true,  false),
+    "epsilon":      (#"[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]"#,        /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/,                    true,  false),
     ".":            (".",                       Regex { "." },                      true,  false),
-    ";":            (";",                       Regex { ";" },                      true,  false),
     ":":            (":",                       Regex { ":" },                      true,  false),
     "=":            ("=",                       Regex { "=" },                      true,  false),
+    "-":            ("-",                       Regex { "-" },                      true,  false),
     "|":            ("|",                       Regex { "|" },                      true,  false),
     "(":            ("(",                       Regex { "(" },                      true,  false),
     ")":            (")",                       Regex { ")" },                      true,  false),
@@ -63,7 +64,7 @@ let blockcommentRegex = Regex {
     }
     "*/"
 }
-// recommended ID syntax following https://unicode.org/reports/tr31/
+// recommended identifier syntax following https://unicode.org/reports/tr31/
 let identifierRegex = Regex {
     /\p{XID_Start}/
     ZeroOrMore {
@@ -119,47 +120,41 @@ let messageRegex = Regex {
     }
 }
 
-// the programmer name of each token kind in the apus language
-let _endOfString                  = 0
-let _fullStop                     = 1
-let _semicolon                    = 2
-let _colon                        = 3
-let _equalsSign                   = 4
-let _verticalLine                 = 5
-let _leftParenthesis              = 6
-let _rightParenthesis             = 7
-let _leftSquareBracket            = 8
-let _rightSquareBracket           = 9
-let _leftCurlyBracket             = 10
-let _rightCurlyBracket            = 11
-let _lessThanSign                 = 12
-let _greaterThanSign              = 13
-let _questionMark                 = 14
-let _asterisk                     = 15
-let _plusSign                     = 16
-let _whitespace                   = 17
-let _linecomment                  = 18
-let _blockcomment                 = 19
-let _identifier                   = 20
-let _literal                      = 21
-let _regex                        = 22
-let _action                       = 23
-let _message                      = 24
-
-
-enum TokenKind: Int, CustomStringConvertible {
-    case endOfString, fullStop, semicolon, colon, equalsSign, verticalLine, leftParenthesis, rightParenthesis, leftSquareBracket, rightSquareBracket, leftCurlyBracket, rightCurlyBracket, lessThanSign, greaterThanSign, questionMark, asterisk, plusSign, whitespace, linecomment, blockcomment, identifier, literal, regex, action, message
+enum TokenType: String, CustomStringConvertible, CaseIterable {
+    case endOfString            = "$"
+    case epsilon                = "ε"
+    case fullStop               = "."
+    case colon                  = ":"
+    case equalsSign             = "="
+    case verticalLine           = "|"
+    case leftParenthesis        = "("
+    case rightParenthesis       = ")"
+    case leftSquareBracket      = "["
+    case rightSquareBracket     = "]"
+    case leftCurlyBracket       = "{"
+    case rightCurlyBracket      = "}"
+    case lessThanSign           = "<"
+    case greaterThanSign        = ">"
+    case questionMark           = "?"
+    case asterisk               = "*"
+    case plusSign               = "+"
+    case whitespace             = "whitespace"
+    case linecomment            = "linecomment"
+    case blockcomment           = "blockcomment"
+    case identifier             = "identifier"
+    case literal                = "literal"
+    case regex                  = "regex"
+    case action                 = "action"
+    case message                = "message"
     
-    var description: String {
-        ["endOfString", ".", ";", ":", "=", "|", "(", ")", "[", "]", "{", "}", "<", ">", "?", "*", "+", "whitespace", "linecomment", "blockcomment", "identifier", "literal", "regex", "action", "message"][self.rawValue]
-    }
+    var description: String {self.rawValue}
 }
 
-typealias TokenRegex = (kind: TokenKind, regex: Regex<Substring>)
+typealias TokenRegex = (kind: TokenType, regex: Regex<Substring>)
 
 let tokenRegexes: [TokenRegex] = [
+    (.epsilon,                      /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ ),
     (.fullStop,                     Regex { "." } ),
-    (.semicolon,                    Regex { ";" } ),
     (.colon,                        Regex { ":" } ),
     (.equalsSign,                   Regex { "=" } ),
     (.verticalLine,                 Regex { "|" } ),

@@ -2,18 +2,18 @@ whitespace  : /\s+/ .
 singleLine  : /\/\/.*/ .
 multiLine   : /\/\*(?s).*?\*\// .
 
-ідентифікатор  = /[\p{L}\p{N}\p{Pc}]+/ .  // identifier
-आक्षरिक     = /\"(?:[^\"\\]|\\.)*\"/ .      // literal
-正規表現       = /\/(?:[^\/\\]|\\.)*\// .   // regex
-action      = /@(?:[^@\\]|\\.)*@/ .         // פעולה
-message     = /\^^^(?:[^\^^^\\]|\\.)*/ .        // رسالة
+ідентифікатор  - /[\p{L}\p{N}\p{Pc}]+/ .  // identifier
+आक्षरिक     - /\"(?:[^\"\\]|\\.)*\"/ .      // literal
+正規表現       - /\/(?:[^\/\\]|\\.)*\// .   // regex
+action      - /@(?:[^@\\]|\\.)*@/ .         // פעולה
+message     - /\^^^(?:[^\^^^\\]|\\.)*/ .        // رسالة
 
 S     = { production } { message } .
               
 production  = ідентифікатор ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .
-sequence    = term { term } .
-term        = terminal
+sequence    = factor { factor } .
+factor        = terminal
             | "[" selection "]"
             | "{" selection "}"
             | "<" selection ">"
@@ -29,18 +29,18 @@ whitespace  : /\s+/ .
 singleLine  : /\/\/.*/ .
 multiLine   : /\/\*(?s).*?\*\// .
 
-ідентифікатор  = /[\p{L}\p{N}\p{Pc}]+/ .
-आक्षरिक     = /\"(?:[^\"\\]|\\.)*\"/ .
-正規表現       = /\/(?:[^\/\\]|\\.)*\// .
-action      = /@(?:[^@\\]|\\.)*@/ .
-message     = /\^^^(?:[^\^^^\\]|\\.)*/ .
+ідентифікатор  - /[\p{L}\p{N}\p{Pc}]+/ .
+आक्षरिक     - /\"(?:[^\"\\]|\\.)*\"/ .
+正規表現       - /\/(?:[^\/\\]|\\.)*\// .
+action      - /@(?:[^@\\]|\\.)*@/ .
+message     - /\^^^(?:[^\^^^\\]|\\.)*/ .
 
 S     = { production } { message } .
               
 production  = ідентифікатор ( ":" | "=" ) selection "." .
 selection   = sequence { "|" sequence } .
-sequence    = term { term } .
-term        = terminal
+sequence    = factor { factor } .
+factor        = terminal
             | "[" selection "]"
             | "{" selection "}"
             | "<" selection ">"

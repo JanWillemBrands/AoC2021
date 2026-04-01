@@ -5,12 +5,12 @@
 //  Created by Johannes Brands on 25/01/2021.
 //
 
+import OSLog
 import Foundation
 
 extension Character {
     // Set of Unicode scalar values for epsilon-related codepoints
     private static let epsilonScalars: [UInt32] = [
-        0x0395,  // Ε - GREEK CAPITAL LETTER EPSILON
         0x03B5,  // ε - GREEK SMALL LETTER EPSILON
         0x03F5,  // ϵ - GREEK LUNATE EPSILON SYMBOL
         0x0510,  // Ԑ - CYRILLIC CAPITAL LETTER REVERSED ZE OR EPSILON
@@ -75,7 +75,7 @@ extension String {
 }
 
 extension String {
-    public func linePosition(of index: String.Index) -> String {
+    func linePosition(of index: String.Index) -> String {
         var line = 0
         var lineStart = self.startIndex
         while let match = self[lineStart ..< index].firstIndex(of: "\n") {
@@ -88,7 +88,7 @@ extension String {
 }
 
 extension String {
-    public var validSwiftIdentifier: String {
+    var validSwiftIdentifier: String {
         var valid = ""
         for c in self {
             if c.isLetter || c.isNumber {
@@ -98,16 +98,17 @@ extension String {
                     if let alias = nameAliases[s] {
                         valid.append(alias)
                     } else if let name = s.properties.name {
-                        valid.append(name.capitalized)
+                        let cleaned = name.capitalized
+                            .replacingOccurrences(of: " ", with: "")
+                            .replacingOccurrences(of: "-", with: "")
+                        valid.append(cleaned)
                     } else {
-                        valid.append("XXX")
+                        assertionFailure("String \(self) contains Unicode scalar \\u{\(String(s.value, radix: 16, uppercase: true))} with no name or alias")
+                        valid.append("U\(String(s.value, radix: 16, uppercase: true))")
                     }
                 }
             }
         }
-        valid = valid
-            .replacingOccurrences(of: " ", with: "")
-            .replacingOccurrences(of: "-", with: "")
         if let first = valid.first {
             if first.isNumber {
                 valid = "_" + valid
@@ -115,9 +116,9 @@ extension String {
                 valid = first.lowercased() + valid.dropFirst()
             }
         } else {
-            valid = "XXX"
+            assertionFailure("Empty string cannot be converted to a Swift identifier")
+            valid = "_empty"
         }
-        assert(valid.contains("XXX") == false, "String \(self) contains an invalid character in a Swift identifier")
         return valid
     }
 }

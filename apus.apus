@@ -1,46 +1,64 @@
-whitespace   : /\s+/ .
-linecomment  : /\/\/.*/ .
-blockcomment : /\/\*(?s).*?\*\// .
+whitespace  : /\s+/ .
+linecomment : /\/\/.*/ .
+blockcomment: /\/\*(?s).*?\*\// .
 
-identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .     // this catches epsilon as ""
-epsilon     = /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄#]/ .          // include # to satisfy ART
-regex       = /\/(?:[^\/\\]|\\.)+\// .
-action      = /@(?:[^@\\]|\\.)+@/ .
-message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
+action      : /@(?:[^@\\]|\\.)+@/ .
+
+identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
+literal     - /\"(?:[^\"\\]|\\.)*\"/ .
+epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+regex       - /\/(?:[^\/\\]|\\.)+\// .
+message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
-production  = identifier ( ":" | "=" ) selection "." .
+production  = identifier
+                ( ":" regex         // silent terminal
+                | "-" regex         // regular terminal
+                | "=" selection     // production rule
+                ) "." .
+                
 selection   = sequence { "|" sequence } .
-sequence    = < term [ "?" | "*" | "+" ] > .
-term        = terminal
+
+sequence    = < factor [ "?" | "*" | "+" ] > .
+
+factor      = terminal
             | "[" selection "]"
             | "{" selection "}"
             | "<" selection ">"
             | "(" selection ")" .
-terminal    = identifier | literal | regex | action | epsilon .
+            
+terminal    = identifier | literal | regex | epsilon .
 
 ^^^
-whitespace   : /\s+/ .
-linecomment  : /\/\/.*/ .
-blockcomment : /\/\*(?s).*?\*\// .
+whitespace  : /\s+/ .
+linecomment : /\/\/.*/ .
+blockcomment: /\/\*(?s).*?\*\// .
 
-identifier  = /\p{XID_Start}\p{XID_Continue}*/ .
-literal     = /\"(?:[^\"\\]|\\.)*\"/ .     // this catches epsilon as ""
-epsilon     = /[ΕεϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄#]/ .          // include # to satisfy ART
-regex       = /\/(?:[^\/\\]|\\.)+\// .
-action      = /@(?:[^@\\]|\\.)+@/ .
-message     = /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
+action      : /@(?:[^@\\]|\\.)+@/ .
+
+identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
+literal     - /\"(?:[^\"\\]|\\.)*\"/ .
+epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+regex       - /\/(?:[^\/\\]|\\.)+\// .
+message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
-production  = identifier ( ":" | "=" ) selection "." .
+production  = identifier
+                ( ":" regex         // silent terminal
+                | "-" regex         // regular terminal
+                | "=" selection     // production rule
+                ) "." .
+                
 selection   = sequence { "|" sequence } .
-sequence    = < term [ "?" | "*" | "+" ] > .
-term        = terminal
+
+sequence    = < factor [ "?" | "*" | "+" ] > .
+
+factor      = terminal
             | "[" selection "]"
             | "{" selection "}"
             | "<" selection ">"
             | "(" selection ")" .
-terminal    = identifier | literal | regex | action | epsilon .
+            
+terminal    = identifier | literal | regex | epsilon .
