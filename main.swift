@@ -10,6 +10,26 @@ import Foundation
 //import RegexBuilder
 //import AdventMacros
 
+//import ArgumentParser
+//@main
+//struct Repeat: ParsableCommand {
+//  @Argument(help: "The phrase to repeat.")
+//  var phrase: String
+//
+//  @Option(help: "The number of times to repeat 'phrase'.")
+//  var count: Int? = nil
+//
+//  mutating func run() throws {
+//    let repeatCount = count ?? .max
+//
+//    for i in 1...repeatCount {
+//      print(phrase)
+//    }
+//  }
+//}
+
+//func run() {
+
 trace = false
 
 // transform the APUS EBNF grammar from the input file into a grammar tree (Abstract Syntax Tree)
@@ -58,19 +78,23 @@ for m in grammar.messages {
     print("cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount")
     print(cpuTime, messageParser.descriptorCount, messageParser.crf.count, GrammarNode.sizeofSets, messageParser.yield.count)
     print("descriptor size:", MemoryLayout<Descriptor>.size, "bytes")
+    //    print("all tokens:")
+    //    for t in messageScanner.tokens {
+    //        print(t)
+    //    }
     
-//    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count)
+    //    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count)
     
     // Sort elements (if BSR is Comparable) then join
-//    let sortedOutput = messageParser.yield.map { "\($0)" }.sorted().joined(separator: "\n")
-//    Logger.parse.debug("\(sortedOutput)")
-
-//    trace = false
-//    for y in messageParser.yield {
-//        #Trace(y)
-//        Logger.parse.debug("\(y)")
-//    }
-
+    //    let sortedOutput = messageParser.yield.map { "\($0)" }.sorted().joined(separator: "\n")
+    //    Logger.parse.debug("\(sortedOutput)")
+    
+    //    trace = false
+    //    for y in messageParser.yield {
+    //        #Trace(y)
+    //        Logger.parse.debug("\(y)")
+    //    }
+    
     
     
 #if DEBUG
@@ -86,13 +110,13 @@ for m in grammar.messages {
             .appendingPathComponent(grammar.startSymbol + "_parser")
             .appendingPathExtension("swift")
         Logger.ui.info("LL1 is \(grammar.isLL1)")
-//        #Trace("LL1 is", grammar.isLL1)
+        //        #Trace("LL1 is", grammar.isLL1)
         if grammar.isLL1 {
             let parserGenerator = ParserGenerator(outputFile: parserFile, grammar: grammar)
             try parserGenerator.generate()
             Logger.ui.info( "LL1 recursive descent parser written to \(parserFile.lastPathComponent)")
         }
-
+        
         // MARK: - Generate CRF and AST diagrams
         
         let diagramFile = URL(fileURLWithPath: #filePath)
@@ -102,7 +126,7 @@ for m in grammar.messages {
         let diagramGenerator = ASTDiagramGenerator(outputFile: diagramFile, grammar: grammar, messageParser: messageParser)
         try diagramGenerator.generate()
         Logger.ui.info( "AST diagram written to \(diagramFile.lastPathComponent)")
-
+        
         // MARK: - SPPF and Derivation Diagrams
         let sppfExtractor = SPPFExtractor(grammar: grammar, tokens: messageScanner.tokens)
         
@@ -113,11 +137,11 @@ for m in grammar.messages {
                 .appendingPathExtension("gv")
             try generateSPPFDiagram(outputFile: sppfFile, root: sppfRoot)
             Logger.ui.info( "SPPF diagram written to \(sppfFile.lastPathComponent)")
-//            #Trace("SPPF diagram written to \(sppfFile.lastPathComponent)")
+            //            #Trace("SPPF diagram written to \(sppfFile.lastPathComponent)")
             
         } else {
             Logger.ui.warning( "SPPF: no parse tree to extract")
-//            #Trace("\nSPPF: no parse tree to extract")
+            //            #Trace("\nSPPF: no parse tree to extract")
         }
         
         let derivFile = URL(fileURLWithPath: #filePath)
@@ -125,11 +149,12 @@ for m in grammar.messages {
             .appendingPathComponent("Derivations")
             .appendingPathExtension("gv")
         try generateDerivationDiagram(outputFile: derivFile, grammar: grammar, tokens: messageScanner.tokens)
-        Logger.ui.info( "🟢 Derivation diagram written to \(derivFile.lastPathComponent)")
-//        #Trace("Derivation diagram written to \(derivFile.lastPathComponent)")
+        Logger.ui.info( "Derivation diagram written to \(derivFile.lastPathComponent)")
+        //        #Trace("Derivation diagram written to \(derivFile.lastPathComponent)")
     }
 #endif
-
+    
     Logger.ui.debug("first/follow set size: \(GrammarNode.sizeofSets) terminals.count: \(grammar.terminals.count) nonTerminals.count: \(grammar.nonTerminals.count)")
     
 }
+//}

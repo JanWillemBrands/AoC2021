@@ -195,7 +195,7 @@ class MessageParser {
             let expected = furthestMismatchExpected.sorted().joined(separator: ", ")
             print("""
                 no parse found at \(position)
-                found '\(mismatchToken.image)' (\(mismatchToken.kind))
+                found token image: '\(mismatchToken.image)' kind: '\(mismatchToken.kind)'
                 grammar context: \(furthestMismatchSlot.ebnfDot())
                 expected: \(expected)
                 """)
