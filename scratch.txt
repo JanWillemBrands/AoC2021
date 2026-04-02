@@ -1,22 +1,4 @@
-final class Position: Hashable {
-    let slot: GrammarNode
-    let index: Int
-
-    lazy var unique: Set<Position> = []
-    lazy var returnPositions: [Position] = []
-    lazy var pops: Set<Int> = []
-
-    init(slot: GrammarNode, index: Int) {
-        self.slot = slot
-        self.index = index
-    }
-    
-    static func == (lhs: ClusterNode, rhs: ClusterNode) -> Bool {
-        lhs.slot == rhs.slot && lhs.index == rhs.index
-    }
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(slot)
-        hasher.combine(index)
-    }
-}
+//https://github.com/swiftlang/swift-book/issues/265
+unionStyleEnumCase = enumCaseName tupleType? .
+//unionStyleEnumCase → enumCaseName associatedValues? .
+//associatedValues → "(" tupleTypeElementList ")" .

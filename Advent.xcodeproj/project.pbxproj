@@ -110,6 +110,7 @@
 		4EA8373E2F5C9F23006C91FF /* ebnfGLLPostprint.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = ebnfGLLPostprint.pdf; sourceTree = "<group>"; };
 		4EA8373F2F5C9F23006C91FF /* referenceImplementationSlides.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = referenceImplementationSlides.pdf; sourceTree = "<group>"; };
 		4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
+		4EBB87102F7DED4D00037029 /* enumHunt.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = enumHunt.apus; sourceTree = "<group>"; };
 		4EC5CE942BBC111E0045F751 /* apusUnicode.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusUnicode.apus; sourceTree = "<group>"; };
 		4ECF5BE62F3748DB008E692B /* claude.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = claude.md; sourceTree = "<group>"; };
 		4EE2FCD32F76263A00105588 /* ApusParserBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParserBuilder.swift; sourceTree = "<group>"; };
@@ -184,6 +185,7 @@
 				4E333D622629D5E400640821 /* apusWithAction.apus */,
 				4EE2FCD72F77C38400105588 /* silent.apus */,
 				4E951C132D8874BD008B1012 /* Swift.apus */,
+				4EBB87102F7DED4D00037029 /* enumHunt.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
 				4E89AAF32D7667C3006A0BBA /* tortureART.apus */,
 				4E8D05A02F6EC70A0081C6D2 /* tortureEBNF.apus */,

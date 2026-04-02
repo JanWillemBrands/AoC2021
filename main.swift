@@ -41,6 +41,7 @@ let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
 //    .appendingPathComponent("apus")
     .appendingPathComponent("Swift")
+//    .appendingPathComponent("enumHunt")
 //    .appendingPathComponent("AfroozehHunt")
 //    .appendingPathComponent("apusWithAction")
 //    .appendingPathComponent("TortureSyntax")
@@ -78,10 +79,10 @@ for m in grammar.messages {
     print("cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount")
     print(cpuTime, messageParser.descriptorCount, messageParser.crf.count, GrammarNode.sizeofSets, messageParser.yield.count)
     print("descriptor size:", MemoryLayout<Descriptor>.size, "bytes")
-    //    print("all tokens:")
-    //    for t in messageScanner.tokens {
-    //        print(t)
-    //    }
+        print("all tokens:")
+        for t in messageScanner.tokens {
+            print(t)
+        }
     
     //    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count)
     

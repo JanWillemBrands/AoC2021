@@ -20,7 +20,7 @@ enum ApusParserError: Error {
 }
 
 class ApusParser {
-    
+
     let grammar = Grammar()
     var scanner: Scanner
     var tokens: [Token] { scanner.tokens }
@@ -28,7 +28,12 @@ class ApusParser {
     var token: Token { tokens[cI] }
     
     init(fromString inputString: String) throws {
-        scanner = try Scanner(fromString: inputString, patterns: apusTerminals)
+        do {
+            scanner = try Scanner(fromString: inputString, patterns: apusTerminals)
+        } catch {
+            Logger.scan.info("Failed to create scanner for input string '\(inputString.prefix(100))'")
+            exit(1)
+        }
     }
     
     init(fromFile inputFileURL: URL) throws {
@@ -63,8 +68,12 @@ class ApusParser {
                 #Trace("Failed reading input file with \(encoding): \(error)")
             }
         }
-        
-        scanner = try Scanner(fromString: input, patterns: apusTerminals)
+        do {
+            scanner = try Scanner(fromString: input, patterns: apusTerminals)
+        } catch {
+            Logger.scan.info("Failed to create scanner for input file: \(inputFileURL)")
+            exit(1)
+        }
     }
     
     func parse(explicitStartSymbol: String = "") throws -> Grammar {
@@ -401,4 +410,6 @@ class ApusParser {
             throw ApusParserError.unexpectedToken(expected: Array(expectedTokens), found: String(token.kind))
         }
     }
+    
+    let ` if ` = 1
 }
