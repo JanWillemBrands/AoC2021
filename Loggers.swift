@@ -16,5 +16,6 @@ extension Logger {
     static let ui = Logger(subsystem: subsystem, category: "ui")
     static let scan = Logger(subsystem: subsystem, category: "scan")
     static let parse = Logger(subsystem: subsystem, category: "parse")
+    static let grammar = Logger(subsystem: subsystem, category: "grammar")
     static let generate = Logger(subsystem: subsystem, category: "generate")
 }

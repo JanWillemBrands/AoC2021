@@ -1,6 +1,28 @@
-func f(@a p: t) {}
+//func f(@a p: t) {}
 
 topLevelDeclaration = statements? .
+statements = statement statements? .
+statement = declaration ";"? .
+declaration = functionDeclaration .
+functionDeclaration = functionHead functionName functionSignature functionBody? .
+
+functionHead = "func" .
+functionName = identifier .
+
+functionSignature = parameterClause  .
+functionResult = "->" attributes? type .
+functionBody = codeBlock .
+
+parameterClause = "(" ")" | "(" parameterList ")" .
+parameterList = parameter | parameter "," parameterList .
+parameter = localParameterName parameterTypeAnnotation .
+
+externalParameterName = identifier .
+localParameterName = identifier .
+parameterTypeAnnotation = ":" attributes? parameterModifier? type .
+parameterModifier = "inout" | "borrowing" | "consuming" .
+defaultArgumentClause = "=" expression .
+
 
 // WHITESPACE AND COMMENT
 
@@ -509,16 +531,14 @@ optionalChainingExpression = postfixExpression "?" .
 
 // STATEMENTS
 
-statement = expression ";"? .
-statement = declaration ";"? .
-statement = loopStatement ";"? .
-statement = branchStatement ";"? .
-statement = labeledStatement ";"? .
-statement = controlTransferStatement ";"? .
-statement = deferStatement ";"? .
-statement = doStatement ";"? .
-statement = compilerControlStatement .
-statements = statement statements? .
+//statement = expression ";"? .
+//statement = loopStatement ";"? .
+//statement = branchStatement ";"? .
+//statement = labeledStatement ";"? .
+//statement = controlTransferStatement ";"? .
+//statement = deferStatement ";"? .
+//statement = doStatement ";"? .
+//statement = compilerControlStatement .
 
 loopStatement = forInStatement .
 loopStatement = whileStatement .
@@ -664,22 +684,21 @@ platformVersion = decimalDigits "." decimalDigits "." decimalDigits .
 
 // DECLARATIONS
 
-declaration = importDeclaration .
-declaration = constantDeclaration .
-declaration = variableDeclaration .
-declaration = typealiasDeclaration .
-declaration = functionDeclaration .
-declaration = enumDeclaration .
-declaration = structDeclaration .
-declaration = classDeclaration .
-declaration = actorDeclaration .
-declaration = protocolDeclaration .
-declaration = initializerDeclaration .
-declaration = deinitializerDeclaration .
-declaration = extensionDeclaration .
-declaration = subscriptDeclaration .
-declaration = operatorDeclaration .
-declaration = precedenceGroupDeclaration . // WTF is \ doing here ???
+//declaration = importDeclaration .
+//declaration = constantDeclaration .
+//declaration = variableDeclaration .
+//declaration = typealiasDeclaration .
+//declaration = enumDeclaration .
+//declaration = structDeclaration .
+//declaration = classDeclaration .
+//declaration = actorDeclaration .
+//declaration = protocolDeclaration .
+//declaration = initializerDeclaration .
+//declaration = deinitializerDeclaration .
+//declaration = extensionDeclaration .
+//declaration = subscriptDeclaration .
+//declaration = operatorDeclaration .
+//declaration = precedenceGroupDeclaration . // WTF is \ doing here ???
 
 codeBlock = "{" statements? "}" .
 
@@ -724,28 +743,6 @@ didSetClause = attributes? "didSet" setterName? codeBlock .
 typealiasDeclaration = attributes? accessLevelModifier? "typealias" typealiasName genericParameterClause? typealiasAssignment .
 typealiasName = identifier .
 typealiasAssignment = "=" type .
-
-functionDeclaration = functionHead functionName genericParameterClause? functionSignature genericWhereClause? functionBody? .
-
-functionHead = attributes? declarationModifiers? "func" .
-functionName = identifier | Operator .
-
-functionSignature = parameterClause "async"? throwsClause? functionResult? .
-functionSignature = parameterClause "async"? "rethrows" functionResult? .
-functionResult = "->" attributes? type .
-functionBody = codeBlock .
-
-parameterClause = "(" ")" | "(" parameterList ")" .
-parameterList = parameter | parameter "," parameterList .
-parameter = externalParameterName? localParameterName parameterTypeAnnotation defaultArgumentClause? .
-parameter = externalParameterName? localParameterName parameterTypeAnnotation .
-parameter = externalParameterName? localParameterName parameterTypeAnnotation "..." .
-
-externalParameterName = identifier .
-localParameterName = identifier .
-parameterTypeAnnotation = ":" attributes? parameterModifier? type .
-parameterModifier = "inout" | "borrowing" | "consuming" .
-defaultArgumentClause = "=" expression .
 
 enumDeclaration = attributes? accessLevelModifier? unionStyleEnum .
 enumDeclaration = attributes? accessLevelModifier? rawValueStyleEnum .

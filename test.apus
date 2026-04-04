@@ -1,4 +1,5 @@
 whitespace : /\s+/.
+blockcomment: /\/\*(?s).*?\*\// .
 
 //comment    : /\/\/.*/.
 
@@ -129,7 +130,7 @@ whitespace : /\s+/.
 //S = { "a" B "c" }. B = { "b" }.       // PASS
 //S = { "x" X "x" }. X = { "x" }.       // PASS
 
-//S = "a"("a""b"|"a")("b""c"|"c").      // PASS Scott & Johnstone EBNF two derivations
+//S = "a"("a""b"|"a")("b""c"|"c").      // PASS Scott & Johnstone EBNF two derivations of aabc
 
 //something  = /[a-z]+/ .
 //S = something something.              // PASS
@@ -203,9 +204,15 @@ whitespace : /\s+/.
 //S = "a" | ε .       // PASS on empty string
 
 //S = "a" B. B = "b".
-S = {"a"} {"a"}.
+//S = {"a"} {"a"}.
 
 //S = { "x" | "" } .      // nullable closure
 //S = ["a"] "b".         // nullable positive closure
+
+S = { "x" } { "x" } { "x" } .
 ^^^
-aa
+xxx /*
+
+hjh
+
+*/

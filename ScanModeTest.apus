@@ -1,0 +1,44 @@
+//
+//  ScanModeTest.apus
+//  Advent
+//
+//  Created by Johannes Brands on 2026.04.04.
+//
+
+whitespace  : /\s+/ .
+linecomment : /\/\/.*/ .
+
+grammar = { stringLiteral } .
+
+stringLiteral = staticStringLiteral | interpolatedStringLiteral .
+
+singleLineStringLiteral         - /"(?!.*\\\()(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*"/ .                    // start with " end with " and not containing any \(
+extendedSinglelineStringLiteral - /#+".*?"#+/ .
+multilineStringLiteral          - /"""(?!.*\\\()(?:[^\\]|\\#*u\{[0-9a-fA-F]+\}|\\#*[0\\tnr"']|\\#*\s*\n|\\#*.)*"""/ . // start with """ end with """ and not containing any \(
+extendedMultilineStringLiteral  - /#+"""(?s).*?"""#+/ .
+staticStringLiteral             = singleLineStringLiteral
+                                | extendedSinglelineStringLiteral
+                                | multilineStringLiteral
+                                | extendedMultilineStringLiteral .
+
+interpolatedStringLiteralHead   - /"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .                // start with " end with \(
+                                >>> "interpolatedString"
+                                
+interpolatedStringLiteralPart   - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .               // start with ) end with \(
+                                === "interpolatedString"
+                                
+interpolatedStringLiteralTail   - /(?!.*\\\()\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?"/ .        // start with ) end with " and not containing any \(
+                                === "interpolatedString"
+                                <<<
+                                
+interpolatedStringLiteral       = interpolatedStringLiteralHead
+                                  expression { interpolatedStringLiteralPart expression }
+                                  interpolatedStringLiteralTail .
+
+expression                      = < "expr" | stringLiteral > .
+
+^^^
+
+"Failed to create scanner for input string '\(expr)'"
+
+//"aaa \(expr) bbb \(expr "\(expr)") ccc"

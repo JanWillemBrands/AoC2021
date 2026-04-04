@@ -19,13 +19,13 @@ import RegexBuilder
 // =============================================================================
 
 @resultBuilder
-public struct GLLBuilder {
+ struct GLLBuilder {
 
     // buildBlock exactly mirrors your manual sequence() function:
     //   - starts with a dummy .ALT
     //   - chains components via .seq
     //   - always ends with .END (your resolveEndNodeLinks will set the back-pointers)
-    public static func buildBlock(_ components: GrammarNode...) -> GrammarNode {
+     static func buildBlock(_ components: GrammarNode...) -> GrammarNode {
         let startOfSequence = GrammarNode(kind: .ALT, name: "")
         var termNode = startOfSequence
 
@@ -39,15 +39,15 @@ public struct GLLBuilder {
     }
 
     // Primitives
-    public static func buildExpression(_ literal: String) -> GrammarNode {
+     static func buildExpression(_ literal: String) -> GrammarNode {
         GrammarNode(kind: .T, name: literal)
     }
 
-    public static func buildExpression(_ node: GrammarNode) -> GrammarNode {
+     static func buildExpression(_ node: GrammarNode) -> GrammarNode {
         node
     }
 
-    public static func buildExpression(_ nt: NonTerminal) -> GrammarNode {
+     static func buildExpression(_ nt: NonTerminal) -> GrammarNode {
         GrammarNode(kind: .N, name: nt.name)
     }
 
@@ -55,7 +55,7 @@ public struct GLLBuilder {
     //   - first component becomes the start of the ALT chain
     //   - subsequent components are linked via .alt
     //   - each component is already a full sequence (with its own .END)
-    public static func buildArray(_ components: [GrammarNode]) -> GrammarNode {
+     static func buildArray(_ components: [GrammarNode]) -> GrammarNode {
         guard !components.isEmpty else {
             return GrammarNode(kind: .EPS, name: "ε")
         }
@@ -75,57 +75,57 @@ public struct GLLBuilder {
 // DSL helpers (exactly the style you showed)
 // =============================================================================
 
-public struct NonTerminal {
-    public let name: String
+ struct NonTerminal {
+     let name: String
     private let builder: () -> GrammarNode
 
-    public init(_ name: String, @GLLBuilder _ content: @escaping () -> GrammarNode) {
+     init(_ name: String, @GLLBuilder _ content: @escaping () -> GrammarNode) {
         self.name = name
         self.builder = content
     }
 
-    public var rhs: GrammarNode { builder() }
+     var rhs: GrammarNode { builder() }
 
-    public var node: GrammarNode {
+     var node: GrammarNode {
         GrammarNode(kind: .N, name: name, alt: rhs, seq: nil)
     }
 }
 
-public struct Group {          // ( … )  → .DO
-    public let node: GrammarNode
-    public init(@GLLBuilder _ content: () -> GrammarNode) {
+ struct Group {          // ( … )  → .DO
+     let node: GrammarNode
+     init(@GLLBuilder _ content: () -> GrammarNode) {
         let body = content()                     // body is already a full sequence (.ALT + END)
         self.node = GrammarNode(kind: .DO, name: "", alt: body, seq: nil)
     }
 }
 
-public struct OneOrMore {      // < … >  → .POS
-    public let node: GrammarNode
-    public init(@GLLBuilder _ content: () -> GrammarNode) {
+ struct OneOrMore {      // < … >  → .POS
+     let node: GrammarNode
+     init(@GLLBuilder _ content: () -> GrammarNode) {
         let body = content()
         self.node = GrammarNode(kind: .POS, name: "", alt: body, seq: nil)
     }
 }
 
-public struct ZeroOrMore {     // { … }  → .KLN
-    public let node: GrammarNode
-    public init(@GLLBuilder _ content: () -> GrammarNode) {
+ struct ZeroOrMore {     // { … }  → .KLN
+     let node: GrammarNode
+     init(@GLLBuilder _ content: () -> GrammarNode) {
         let body = content()
         self.node = GrammarNode(kind: .KLN, name: "", alt: body, seq: nil)
     }
 }
 
-public struct Optionally {     // [ … ]  → .OPT
-    public let node: GrammarNode
-    public init(@GLLBuilder _ content: () -> GrammarNode) {
+ struct Optionally {     // [ … ]  → .OPT
+     let node: GrammarNode
+     init(@GLLBuilder _ content: () -> GrammarNode) {
         let body = content()
         self.node = GrammarNode(kind: .OPT, name: "", alt: body, seq: nil)
     }
 }
 
-public struct ChoiceOf {
-    public let node: GrammarNode
-    public init(@GLLBuilder _ content: () -> GrammarNode) {
+ struct ChoiceOf {
+     let node: GrammarNode
+     init(@GLLBuilder _ content: () -> GrammarNode) {
         self.node = content()
     }
 }
@@ -133,12 +133,12 @@ public struct ChoiceOf {
 // =============================================================================
 // Terminal factory (silent = .B, visible = .T)
 // =============================================================================
-public struct Terminal {
-    public static func silent(_ regex: Regex<Substring>) -> GrammarNode {
-        GrammarNode(kind: .B, name: regex.description)
+ struct Terminal {
+     static func silent(_ regex: Regex<Substring>) -> GrammarNode {
+        GrammarNode(kind: .B, name: regex)
     }
-    public static func visible(_ regex: Regex<Substring>) -> GrammarNode {
-        GrammarNode(kind: .T, name: regex.description)
+     static func visible(_ regex: Regex<Substring>) -> GrammarNode {
+        GrammarNode(kind: .T, name: regex)
     }
 }
 
@@ -346,20 +346,22 @@ func buildGrammarWithDSL() throws -> Grammar {
 // =============================================================================
 // 4. Quick test — parse a string with your existing GLL parser
 // =============================================================================
-do {
-    let grammar = try buildGrammarWithDSL()
-
-    // Now feed the grammar into your GLL parser (exactly as before)
-    let gll = GLLParser(grammar: grammar)   // whatever your GLL class is called
-    let input = "2 + 3 * (4 - 1)"
-
-    if let bsrSet = gll.parse(input) {
-        print("✅ Parsed successfully!")
-        print("BSR records: \(bsrSet.count)")
-        // bsrSet contains the exact same BinarySpan / GrammarNode references you already use
-    } else {
-        print("❌ Parse failed")
+func dummy () {
+    do {
+        let grammar = try buildGrammarWithDSL()
+        
+        // Now feed the grammar into your GLL parser (exactly as before)
+        let gll = GLLParser(grammar: grammar)   // whatever your GLL class is called
+        let input = "2 + 3 * (4 - 1)"
+        
+        if let bsrSet = gll.parse(input) {
+            print("✅ Parsed successfully!")
+            print("BSR records: \(bsrSet.count)")
+            // bsrSet contains the exact same BinarySpan / GrammarNode references you already use
+        } else {
+            print("❌ Parse failed")
+        }
+    } catch {
+        print("Error building grammar: \(error)")
     }
-} catch {
-    print("Error building grammar: \(error)")
 }

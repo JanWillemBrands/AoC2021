@@ -7,16 +7,16 @@ action      : /@(?:[^@\\]|\\.)+@/ .
 identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
 literal     - /\"(?:[^\"\\]|\\.)*\"/ .
 epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
-regex       - /\/(?:[^\/\\]|\\.)+\// .
+regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
 production  = identifier
-                ( ":" regex         // silent terminal
-                | "-" regex         // regular terminal
-                | "=" selection     // production rule
-                ) "." .
+                ( ":" regex "." mode    // silent terminal
+                | "-" regex "." mode    // regular terminal
+                | "=" selection "."     // production rule
+                ) .
                 
 selection   = sequence { "|" sequence } .
 
@@ -29,6 +29,8 @@ factor      = terminal
             | "(" selection ")" .
             
 terminal    = identifier | literal | regex | epsilon .
+
+mode        = [ "===" literal ] [ ">>>" literal | "<<<" ] .         // restrict to in scanner mode '===', push mode '>>>', pop '<<<'
 
 ^^^
 whitespace  : /\s+/ .

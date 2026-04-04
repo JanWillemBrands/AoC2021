@@ -16,123 +16,68 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"identifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
-	"regex":	("/\\/(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?:[^\/\\]|\\.)+\//,	false,	false),
-	"action":	("/@(?:[^@\\\\]|\\\\.)+@/",	/@(?:[^@\\]|\\.)+@/,	false,	true),
-	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)*\\\"/",	/\"(?:[^\"\\]|\\.)*\"/,	false,	false),
-	"epsilon":	("/[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/",	/[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/,	false,	false),
-	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
-	"blockcomment":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
-	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"linecomment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"+":	("+",	Regex { "+" },	true,	false),
-	"}":	("}",	Regex { "}" },	true,	false),
-	"|":	("|",	Regex { "|" },	true,	false),
-	":":	(":",	Regex { ":" },	true,	false),
-	")":	(")",	Regex { ")" },	true,	false),
-	"<":	("<",	Regex { "<" },	true,	false),
-	"(":	("(",	Regex { "(" },	true,	false),
-	"{":	("{",	Regex { "{" },	true,	false),
-	"-":	("-",	Regex { "-" },	true,	false),
-	"*":	("*",	Regex { "*" },	true,	false),
-	"[":	("[",	Regex { "[" },	true,	false),
-	">":	(">",	Regex { ">" },	true,	false),
-	"?":	("?",	Regex { "?" },	true,	false),
-	"]":	("]",	Regex { "]" },	true,	false),
-	"=":	("=",	Regex { "=" },	true,	false),
-	".":	(".",	Regex { "." },	true,	false),
+	"extendedMultilineStringLiteral":	("/#+\"\"\"(?s).*?\"\"\"#+/",	/#+"""(?s).*?"""#+/,	false,	false),
+	"interpolatedStringLiteralPart":	("/\\)(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*?\\\\\\(/",	/\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/,	false,	false),
+	"interpolatedStringLiteralHead":	("/\"(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*?\\\\\\(/",	/"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/,	false,	false),
+	"interpolatedStringLiteralTail":	("/(?!.*\\\\\\()\\)(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*?\"/",	/(?!.*\\\()\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?"/,	false,	false),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
+	"extendedSinglelineStringLiteral":	("/#+\".*?\"#+/",	/#+".*?"#+/,	false,	false),
+	"singleLineStringLiteral":	("/\"(?!.*\\\\\\()(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*\"/",	/"(?!.*\\\()(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*"/,	false,	false),
+	"multilineStringLiteral":	("/\"\"\"(?!.*\\\\\\()(?:[^\\\\]|\\\\#*u\\{[0-9a-fA-F]+\\}|\\\\#*[0\\\\tnr\"\']|\\\\#*\\s*\\n|\\\\#*.)*\"\"\"/",	/"""(?!.*\\\()(?:[^\\]|\\#*u\{[0-9a-fA-F]+\}|\\#*[0\\tnr"']|\\#*\s*\n|\\#*.)*"""/,	false,	false),
+	"interpolatedString":	("interpolatedString",	Regex { "interpolatedString" },	true,	false),
+	"expr":	("expr",	Regex { "expr" },	true,	false),
 ]
-func factor() throws {
-	switch token.kind {
-	case "epsilon", "identifier", "literal", "regex":
-		try terminal()
-	case "[":
-		cI += 1
-		try selection()
-		expect("]")
-		cI += 1
-	case "{":
-		cI += 1
-		try selection()
-		expect("}")
-		cI += 1
-	case "<":
-		cI += 1
-		try selection()
-		expect(">")
-		cI += 1
-	case "(":
-		cI += 1
-		try selection()
-		expect(")")
-		cI += 1
-	default:
-		expect("(", "<", "[", "epsilon", "identifier", "literal", "regex", "{")
-	}
+func expression() throws {
+	repeat {
+		switch token.kind {
+		case "expr":
+			cI += 1
+		case "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral":
+			try stringLiteral()
+		default:
+			expect("expr", "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral")
+		}
+	} while ["expr", "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral"].contains(token.kind)
 }
 func grammar() throws {
-	repeat {
-		try production()
-	} while ["identifier"].contains(token.kind)
-	while ["message"].contains(token.kind) {
-		cI += 1
+	while ["extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral"].contains(token.kind) {
+		try stringLiteral()
 	}
 }
-func production() throws {
-	expect("identifier")
+func interpolatedStringLiteral() throws {
+	expect("interpolatedStringLiteralHead")
 	cI += 1
-	switch token.kind {
-	case ":":
+	try expression()
+	while ["interpolatedStringLiteralPart"].contains(token.kind) {
 		cI += 1
-		expect("regex")
-		cI += 1
-	case "-":
-		cI += 1
-		expect("regex")
-		cI += 1
-	case "=":
-		cI += 1
-		try selection()
-	default:
-		expect("-", ":", "=")
+		try expression()
 	}
-	expect(".")
+	expect("interpolatedStringLiteralTail")
 	cI += 1
 }
-func selection() throws {
-	try sequence()
-	while ["|"].contains(token.kind) {
-		cI += 1
-		try sequence()
-	}
-}
-func sequence() throws {
-	repeat {
-		try factor()
-		switch token.kind {
-		case "?":
-			cI += 1
-		case "*":
-			cI += 1
-		case "+":
-			cI += 1
-		default:
-			break
-		}
-	} while ["(", "<", "[", "epsilon", "identifier", "literal", "regex", "{"].contains(token.kind)
-}
-func terminal() throws {
+func staticStringLiteral() throws {
 	switch token.kind {
-	case "identifier":
+	case "singleLineStringLiteral":
 		cI += 1
-	case "literal":
+	case "extendedSinglelineStringLiteral":
 		cI += 1
-	case "regex":
+	case "multilineStringLiteral":
 		cI += 1
-	case "epsilon":
+	case "extendedMultilineStringLiteral":
 		cI += 1
 	default:
-		expect("epsilon", "identifier", "literal", "regex")
+		expect("extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "multilineStringLiteral", "singleLineStringLiteral")
+	}
+}
+func stringLiteral() throws {
+	switch token.kind {
+	case "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "multilineStringLiteral", "singleLineStringLiteral":
+		try staticStringLiteral()
+	case "interpolatedStringLiteralHead":
+		try interpolatedStringLiteral()
+	default:
+		expect("extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral")
 	}
 }
 func parse() throws {

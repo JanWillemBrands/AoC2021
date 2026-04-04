@@ -40,8 +40,10 @@ trace = false
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
 //    .appendingPathComponent("apus")
+//    .appendingPathComponent("ScanModeTest")
     .appendingPathComponent("Swift")
-//    .appendingPathComponent("enumHunt")
+//    .appendingPathComponent("CommentTest")
+//    .appendingPathComponent("attributeHunt")
 //    .appendingPathComponent("AfroozehHunt")
 //    .appendingPathComponent("apusWithAction")
 //    .appendingPathComponent("TortureSyntax")
@@ -52,37 +54,57 @@ let grammarFileURL = URL(fileURLWithPath: #filePath)
 //    .appendingPathComponent("apusAmbiguous")
     .appendingPathExtension("apus")
 
-let apusParser = try ApusParser(fromFile: grammarFileURL)
-
-let grammar = try apusParser.parse(explicitStartSymbol: "")
+let grammar: Grammar
+do {
+    let apusParser = try ApusParser(fromFile: grammarFileURL)
+    do {
+        grammar = try apusParser.parse(explicitStartSymbol: "")
+    } catch {
+        Logger.ui.error("failed to parse grammar: \(grammarFileURL), error: \(error)")
+        exit(1)
+    }
+} catch {
+    Logger.ui.error("failed to scan grammar: \(grammarFileURL), error: \(error)")
+    exit(1)
+}
 
 let messageParser = MessageParser(grammar: grammar)
 
-for m in grammar.messages {
+for message in grammar.messages {
     let messageScanner: Scanner
     do {
-        messageScanner = try Scanner(fromString: m, patterns: grammar.terminals)
+        if message.hasPrefix("#") {
+            let fileName = message.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
+            let messageFileURL = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .appendingPathComponent(fileName)
+            let fileMessage = try String(contentsOf: messageFileURL, encoding: .utf8)
+            messageScanner = try Scanner(fromString: fileMessage, patterns: grammar.terminals)
+        } else {
+            messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
+        }
     } catch {
+        Logger.ui.error("failed to scan message: \(message.prefix(100))...")
         continue
     }
     
     // use the AST to parse the message
     let start = clock()
     
-    for _ in 0..<1 {
-        messageParser.parse(tokens: messageScanner.tokens)
-    }
+        for _ in 0..<1 {
+            messageParser.parse(tokens: messageScanner.tokens)
+        }
     
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
-    Logger.ui.info("cpuTime: \(cpuTime)")
-    print("cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount")
-    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count, GrammarNode.sizeofSets, messageParser.yield.count)
-    print("descriptor size:", MemoryLayout<Descriptor>.size, "bytes")
-        print("all tokens:")
-        for t in messageScanner.tokens {
-            print(t)
-        }
+    var stats = "cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount\n"
+        stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yield.count)\n"
+        stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
+    Logger.ui.info("\(stats)")
+//    print("all tokens:")
+//    for t in messageScanner.tokens {
+//        print(t)
+//    }
     
     //    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count)
     
@@ -104,18 +126,21 @@ for m in grammar.messages {
     if grammar.nonTerminals.count < 1000 && messageParser.crf.count < 1000 {    // to avoid huge diagrams and parsers
         
         // MARK: - Generate New Parser
+        var info = ""
         
         let parserFile = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .appendingPathComponent("GeneratedParser")
             .appendingPathComponent(grammar.startSymbol + "_parser")
             .appendingPathExtension("swift")
-        Logger.ui.info("LL1 is \(grammar.isLL1)")
+        info += "LL1 is \(grammar.isLL1)\n"
+//        Logger.ui.info("LL1 is \(grammar.isLL1)")
         //        #Trace("LL1 is", grammar.isLL1)
         if grammar.isLL1 {
             let parserGenerator = ParserGenerator(outputFile: parserFile, grammar: grammar)
             try parserGenerator.generate()
-            Logger.ui.info( "LL1 recursive descent parser written to \(parserFile.lastPathComponent)")
+            info += "LL1 recursive descent parser written to \(parserFile.lastPathComponent)\n"
+//            Logger.ui.info( "LL1 recursive descent parser written to \(parserFile.lastPathComponent)")
         }
         
         // MARK: - Generate CRF and AST diagrams
@@ -126,7 +151,8 @@ for m in grammar.messages {
             .appendingPathExtension("gv")
         let diagramGenerator = ASTDiagramGenerator(outputFile: diagramFile, grammar: grammar, messageParser: messageParser)
         try diagramGenerator.generate()
-        Logger.ui.info( "AST diagram written to \(diagramFile.lastPathComponent)")
+        info += "AST diagram written to \(diagramFile.lastPathComponent)\n"
+//        Logger.ui.info( "AST diagram written to \(diagramFile.lastPathComponent)")
         
         // MARK: - SPPF and Derivation Diagrams
         let sppfExtractor = SPPFExtractor(grammar: grammar, tokens: messageScanner.tokens)
@@ -137,7 +163,8 @@ for m in grammar.messages {
                 .appendingPathComponent("SPPF")
                 .appendingPathExtension("gv")
             try generateSPPFDiagram(outputFile: sppfFile, root: sppfRoot)
-            Logger.ui.info( "SPPF diagram written to \(sppfFile.lastPathComponent)")
+            info += "SPPF diagram written to \(sppfFile.lastPathComponent)\n"
+//            Logger.ui.info( "SPPF diagram written to \(sppfFile.lastPathComponent)")
             //            #Trace("SPPF diagram written to \(sppfFile.lastPathComponent)")
             
         } else {
@@ -150,8 +177,11 @@ for m in grammar.messages {
             .appendingPathComponent("Derivations")
             .appendingPathExtension("gv")
         try generateDerivationDiagram(outputFile: derivFile, grammar: grammar, tokens: messageScanner.tokens)
-        Logger.ui.info( "Derivation diagram written to \(derivFile.lastPathComponent)")
+        info += "Derivation diagram written to \(derivFile.lastPathComponent)\n"
+//        Logger.ui.info( "Derivation diagram written to \(derivFile.lastPathComponent)")
         //        #Trace("Derivation diagram written to \(derivFile.lastPathComponent)")
+        
+        Logger.ui.info("\(info)")
     }
 #endif
     

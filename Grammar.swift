@@ -186,10 +186,14 @@ extension Grammar {
                 }
                 production.follow.formUnion(node.follow)
             } else {
-                #Trace("grammar parse error: '\(node.name)' was not defined as a grammar rule")
+                var error = "grammar parse error: '\(node.name)' was not defined as a grammar rule\n"
+//                #Trace("grammar parse error: '\(node.name)' was not defined as a grammar rule")
                 let definedAsTerminal = terminals[node.name] != nil
                 if definedAsTerminal {
-                    #Trace("but it was defined as terminal \(terminals[node.name]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
+                    error += "instead it was defined as terminal \(terminals[node.name]!.source)\n"
+                    error += "if this was intended please define the terminal before using it in the grammar"
+                    Logger.grammar.error("\(error)")
+//                    #Trace("but it was defined as terminal \(terminals[node.name]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
                 throw GrammarNodeError.undefinedNonTerminal(name: node.name, definedAsTerminal: definedAsTerminal)
             }

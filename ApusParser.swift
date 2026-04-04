@@ -13,7 +13,7 @@ import AdventMacros
 enum ApusParserError: Error {
     case terminalNonterminalConflict(symbols: Set<String>)
     case invalidRegex(image: String, error: Error)
-    case unexpectedToken(expected: [String], found: String)
+    case unexpectedToken(explanation: String)
     case scanningFailed(error: Error)
     case undefinedNonTerminal(name: String, definedAsTerminal: Bool)
     case startSymbolNotFound(name: String)
@@ -31,7 +31,7 @@ class ApusParser {
         do {
             scanner = try Scanner(fromString: inputString, patterns: apusTerminals)
         } catch {
-            Logger.scan.info("Failed to create scanner for input string '\(inputString.prefix(100))'")
+            Logger.scan.error("Failed to create scanner for input string '\(inputString.prefix(100))'")
             exit(1)
         }
     }
@@ -179,10 +179,31 @@ class ApusParser {
             cI += 1
             try expect(["regex"])
             terminalAlias = nonTerminalName
-            _ = try regex()
+            let rx = try regex()
             // reset
             terminalAlias = nil
             skip = false
+            
+            try expect(["."])
+            cI += 1
+
+            // handle scanner mode annotations
+            if token.kind == "===" {
+                cI += 1
+                try expect(["literal"])
+                let modeLiteral = literal()
+                grammar.terminals[rx.name]?.mode.modeName = modeLiteral.name
+            }
+            if token.kind == ">>>" {
+                cI += 1
+                try expect(["literal"])
+                let modeLiteral = literal()
+                grammar.terminals[rx.name]?.mode.pushName = modeLiteral.name
+            } else if token.kind == "<<<" {
+                cI += 1
+                grammar.terminals[rx.name]?.mode.isPop = true
+            }
+            
         } else {
             // production rule
             try expect(["="])
@@ -211,10 +232,9 @@ class ApusParser {
             if let sig = signatureActions.first {
                 lhsNode.signature = sig
             }
-        }
-        
-        try expect(["."])
-        cI += 1
+            try expect(["."])
+            cI += 1
+       }
     }
     
     func message() {
@@ -296,7 +316,7 @@ class ApusParser {
         do {
             // the token is a regex definition, try to initialize a Regex with it
             let regex = try Regex<Substring>(String(token.stripped))
-            grammar.terminals[name] = (String(token.image), regex, false, skip)
+            grammar.terminals[name] = (String(token.image), regex, false, skip, Mode())
             grammar.registerTerminal(name)
             #Trace("regex name:", name, "image:", token.image)
         } catch {
@@ -326,7 +346,7 @@ class ApusParser {
         }
         // the token is a string literal, use a regex builder to create a Regex
         let regex = Regex { token.stripped }
-        grammar.terminals[name] = (String(token.image), regex, true, skip)
+        grammar.terminals[name] = (String(token.image), regex, true, skip, Mode())
         grammar.registerTerminal(name)
         #Trace("literal name:", name, "image:", token.image)
         
@@ -393,23 +413,22 @@ class ApusParser {
     }
     
     func expect(_ expectedTokens: Set<String>) throws {
-        #Trace("expect \"\(token.kind)\" to be in", expectedTokens)
+        var error = "expect \"\(token.kind)\" to be in \(expectedTokens)\n"
         if !expectedTokens.contains(token.kind) {
-            #Trace("parse error: found \"\(token.kind)\" but expected one of \(expectedTokens)")
-            #Trace(token.image, token.image.endIndex > scanner.input.endIndex )
+            error += "parse error: found \"\(token.kind)\" but expected one of \(expectedTokens)\n"
+            error += "\(token.image), \(token.image.endIndex > scanner.input.endIndex)\n"
             let lineRange = scanner.input.lineRange(for: token.image.startIndex ..< token.image.endIndex)
-            #Trace(scanner.input[lineRange], terminator: "")
+            error += "\(scanner.input[lineRange])"
             let before = lineRange.lowerBound ..< token.image.startIndex
             for _ in 0 ..< scanner.input[before].count {
-                #Trace("~", terminator: "")
+                error += "~"
             }
             for _ in 0 ..< token.image.count {
-                #Trace("^", terminator: "")
+                error += "^"
             }
-            #Trace()
-            throw ApusParserError.unexpectedToken(expected: Array(expectedTokens), found: String(token.kind))
+            Logger.grammar.error("\(error)")
+            throw ApusParserError.unexpectedToken(explanation: "Failed to parse grammar from symbol \(grammar.startSymbol)")
         }
     }
     
-    let ` if ` = 1
 }

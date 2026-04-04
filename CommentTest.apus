@@ -1,3 +1,15 @@
+//
+//  CommentTest.swift
+//  Advent
+//
+//  Created by Johannes Brands on 2026.04.04.
+//
+
+whitespace  : /\s+/ .
+
+grammar = { "hello" } .
+
+/*
 ^^^#ApusParser.swift
 ^^^#ApusParserBuilder.swift
 ^^^#ApusTerminals.swift
@@ -19,4 +31,6 @@
 ^^^#Scanner.swift
 ^^^#StringExtensions.swift
 ^^^#main.swift
-
+*/
+^^^
+hello

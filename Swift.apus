@@ -45,7 +45,7 @@ propertyWrapperProjection   - /\$\p{XID_Continue}+/ .
 identifier = plainIdentifier | escapedIdentifier | implicitParameterName | propertyWrapperProjection .
 
 //identifier = identifierHead identifierCharacters? .
-//identifier = "`" identifierHead identifierCharacters? "`" .           // this matches e.g. ` if `, the regex for escapedIdentifier reflects this
+//identifier = "`" identifierHead identifierCharacters? "`" .           // WTF the compiler matches e.g. `  if  `, the regex for escapedIdentifier reflects this
 //identifier = implicitParameterName .
 //identifier = propertyWrapperProjection .
 
@@ -96,22 +96,50 @@ regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpres
 
 
 
+
 // STRINGS
 
-// this is a catchall for staticStringLiteral and interpolatedStringLiteral (which includes staticStringLiteral), the parser will need to validate
+stringLiteral = staticStringLiteral | interpolatedStringLiteral .
 
-singlelineStringLiteral -   /"(?:(?:[^\\"]+)|(?:\\\([^\\\)]+\))|(?:\\u\{[0-9a-fA-F]+\})|(?:\\[0\\tnr"']))*"/ .
-extendedSinglelineStringLiteral -   /#+".*?"#+/ .
+singleLineStringLiteral         - /"(?!.*\\\()(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*"/ .                    // start with " end with " and not containing any \(
+extendedSinglelineStringLiteral - /#+".*?"#+/ .
+multilineStringLiteral          - /"""(?!.*\\\()(?:[^\\]|\\#*u\{[0-9a-fA-F]+\}|\\#*[0\\tnr"']|\\#*\s*\n|\\#*.)*"""/ . // start with """ end with """ and not containing any \(
+extendedMultilineStringLiteral  - /#+"""(?s).*?"""#+/ .
+staticStringLiteral             = singleLineStringLiteral
+                                | extendedSinglelineStringLiteral
+                                | multilineStringLiteral
+                                | extendedMultilineStringLiteral .
 
-multilineStringLiteral - /"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]+\}|\\#*\s*\n|[^\\])*"""/ .
-extendedMultilineStringLiteral - /#+"""(?s).*?"""#+/ .
+interpolatedStringLiteralHead   - /"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .                // start with " end with \(
+                                >>> "interpolatedString"
+                                
+interpolatedStringLiteralPart   - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .               // start with ) end with \(
+                                === "interpolatedString"
+                                
+interpolatedStringLiteralTail   - /(?!.*\\\()\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?"/ .        // start with ) end with " and not containing any \(
+                                === "interpolatedString"
+                                <<<
+                                
+interpolatedStringLiteral       = interpolatedStringLiteralHead
+                                  expression { interpolatedStringLiteralPart expression }
+                                  interpolatedStringLiteralTail .
 
-stringLiteral = singlelineStringLiteral | extendedSinglelineStringLiteral | multilineStringLiteral | extendedMultilineStringLiteral .
+
+
+////////////// this is a catchall for staticStringLiteral and interpolatedStringLiteral (which includes staticStringLiteral), the parser will need to validate
+
+//singlelineStringLiteral -   /"(?:(?:[^\\"]+)|(?:\\\([^\\\)]+\))|(?:\\u\{[0-9a-fA-F]+\})|(?:\\[0\\tnr"']))*"/ .  //this version had catastrophic backtracking issues
+//singlelineStringLiteral -   /"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\\(.*?\)|\\[0\\tnr"']|\\.)*"/ .
+
+//multilineStringLiteral - /"""(?:\\#*\([^)]*\)|\\#*[0\\tnr"']|\\#*u\{[0-9a-fA-F]+\}|\\#*\s*\n|[^\\])*"""/ .   this version may have the same catastrophic backtracking issues
+//multilineStringLiteral - /"""(?:[^\\]|\\#*u\{[0-9a-fA-F]+\}|\\#*\(.*?\)|\\#*[0\\tnr"']|\\#*\s*\n|\\#*.)*"""/ .
+
+//////////////
+
 
 //stringLiteralOpeningDelimiter = extendedStringLiteralDelimiter? "\"" .
 //stringLiteralClosingDelimiter = "\"" extendedStringLiteralDelimiter? .
 
-staticStringLiteral = stringLiteral .
 //staticStringLiteral = stringLiteralOpeningDelimiter quotedText? stringLiteralClosingDelimiter .
 //staticStringLiteral = multilineStringLiteralOpeningDelimiter multilineQuotedText? multilineStringLiteralClosingDelimiter .
 
@@ -128,7 +156,6 @@ staticStringLiteral = stringLiteral .
 //multilineQuotedTextItem = Any Unicode scalar value except \
 //multilineQuotedTextItem = escapedNewline .
 
-interpolatedStringLiteral = stringLiteral .
 //interpolatedStringLiteral = stringLiteralOpeningDelimiter interpolatedText? stringLiteralClosingDelimiter .
 //interpolatedStringLiteral = multilineStringLiteralOpeningDelimiter multilineInterpolatedText? multilineStringLiteralClosingDelimiter .
 
@@ -438,7 +465,13 @@ captureSpecifier = "weak" | "unowned" | "unowned(safe)" | "unowned(unsafe)" .
 implicitMemberExpression = "." identifier .
 implicitMemberExpression = "." identifier "." postfixExpression .
 
-parenthesizedExpression = "(" expression ")" .
+leftParenthesis     - /\(/ .
+                    >>> "parenthesized"
+rightParenthesis    - /\)/ .
+                    <<< "parenthesized"
+
+parenthesizedExpression = leftParenthesis expression rightParenthesis .
+//parenthesizedExpression = "(" expression ")" .
 
 tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ")" .
 tupleElementList = tupleElement | tupleElement "," tupleElementList .
@@ -635,7 +668,7 @@ environment = "simulator" | "macCatalyst" .
 lineNumber = decimalDigits .        // replace 'greater than zero' with parser post check'
 //lineNumber = /0*[1-9][0-9]*/ .
 //lineControlStatement = "#sourceLocation" "(" "file:" filePath "," "line:" lineNumber ")" .
-lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .  // compiler allows whitespace between file/line and :
+lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .  // WFT??? compiler allows whitespace between file/line and :
 lineControlStatement = "#sourceLocation" "(" ")" .
 
 //lineNumber = A decimal integer greater than zero .
@@ -737,9 +770,11 @@ functionBody = codeBlock .
 
 parameterClause = "(" ")" | "(" parameterList ")" .
 parameterList = parameter | parameter "," parameterList .
-parameter = externalParameterName? localParameterName parameterTypeAnnotation defaultArgumentClause? .
-parameter = externalParameterName? localParameterName parameterTypeAnnotation .
-parameter = externalParameterName? localParameterName parameterTypeAnnotation "..." .
+
+// WTF???  grammar error   https://github.com/swiftlang/swift-book/issues/294
+parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation defaultArgumentClause? .
+parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation .
+parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation "..." .
 
 externalParameterName = identifier .
 localParameterName = identifier .
@@ -895,15 +930,17 @@ actorIsolationModifier = "nonisolated" .
 
 // ATTRIBUTES
 
-attribute = "@" attributeName attributeArgumentClause? .
-attributeName = identifier .
+//attribute = "@" attributeName attributeArgumentClause? .
+//attributeName = identifier .
+attributeMarker - /@[\p{XID_Start}_]\p{XID_Continue}*/ .
+attribute = attributeMarker attributeArgumentClause? .        // WTF???   Swift 6 does not allow whitespace between the @ and the attribute-name
 attributeArgumentClause = "(" balancedTokens? ")" .
 attributes = attribute attributes? .
 
 //keyword = "actor" | "associatedtype" | "class" | "deinit" | "enum" | "extension" | "fileprivate" | "func" | "import" | "init" | "inout" | "internal" | "let" | "open" | "operator" | "private" | "precedencegroup" | "protocol" | "public" | "rethrows" | "static" | "struct" | "subscript" | "typealias" | "var" | "break" | "case" | "catch" | "continue" | "default" | "defer" | "do" | "else" | "fallthrough" | "for" | "guard" | "if" | "in" | "repeat" | "return" | "switch" | "throw" | "try" | "where" | "while" | "Any" | "as" | "borrowing" | "consuming" | "copy" | "discard" | "false" | "is" | "move" | "nil" | "self" | "Self" | "super" | "throws" | "true" | "_unsafeInheritExecutor" | "_" | "each" | "associativity" | "convenience" | "didSet" | "dynamic" | "final" | "get" | "higherThan" | "indirect" | "lazy" | "left" | "lowerThan" | "mutating" | "nonmutating" | "none" | "optional" | "override" | "postfix" | "prefix" | "required" | "right" | "set" | "some" | "unowned" | "weak" | "willSet" | "#available" | "#colorLiteral" | "#column" | "#dsohandle" | "#elseif" | "#else" | "#endif" | "#error" | "#file" | "#fileID" | "#fileLiteral" | "#filePath" | "#function" | "#if" | "#imageLiteral" | "#keyPath" | "#line" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "(" | ")" | "{" | "}" | "[" | "]" | "." | "," | ":" | ";" | "=" | "@" | "#" | "&" | "?" | "!" | "<" | ">" | "|" | "^" | "~" | "%" | "*" | "+" | "-" | "/" | "isolated" | "nonisolated" | "async" | "await" | "yield" | "package" .
 
 
-keywordMinusBrackets = "actor" | "associatedtype" | "class" | "deinit" | "enum" | "extension" | "fileprivate" | "func" | "import" | "init" | "inout" | "internal" | "let" | "open" | "operator" | "private" | "precedencegroup" | "protocol" | "public" | "rethrows" | "static" | "struct" | "subscript" | "typealias" | "var" | "break" | "case" | "catch" | "continue" | "default" | "defer" | "do" | "else" | "fallthrough" | "for" | "guard" | "if" | "in" | "repeat" | "return" | "switch" | "throw" | "try" | "where" | "while" | "Any" | "as" | "borrowing" | "consuming" | "copy" | "discard" | "false" | "is" | "move" | "nil" | "self" | "Self" | "super" | "throws" | "true" | "_unsafeInheritExecutor" | "_" | "each" | "associativity" | "convenience" | "didSet" | "dynamic" | "final" | "get" | "higherThan" | "indirect" | "lazy" | "left" | "lowerThan" | "mutating" | "nonmutating" | "none" | "optional" | "override" | "postfix" | "prefix" | "required" | "right" | "set" | "some" | "unowned" | "weak" | "willSet" | "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "@" | "#" | "&" | "?" | "!" | "<" | ">" | "|" | "^" | "~" | "%" | "*" | "+" | "-" | "/" | "isolated" | "nonisolated" | "async" | "await" | "yield" | "package" .
+keywordMinusBrackets = "actor" | "associatedtype" | "class" | "deinit" | "enum" | "extension" | "fileprivate" | "func" | "import" | "init" | "inout" | "internal" | "let" | "open" | "operator" | "private" | "precedencegroup" | "protocol" | "public" | "rethrows" | "static" | "struct" | "subscript" | "typealias" | "var" | "break" | "case" | "catch" | "continue" | "default" | "defer" | "do" | "else" | "fallthrough" | "for" | "guard" | "if" | "in" | "repeat" | "return" | "switch" | "throw" | "try" | "where" | "while" | "Any" | "as" | "borrowing" | "consuming" | "copy" | "discard" | "false" | "is" | "move" | "nil" | "self" | "Self" | "super" | "throws" | "true" | "_unsafeInheritExecutor" | "_" | "each" | "associativity" | "convenience" | "didSet" | "dynamic" | "final" | "get" | "higherThan" | "indirect" | "lazy" | "left" | "lowerThan" | "mutating" | "nonmutating" | "none" | "optional" | "override" | "postfix" | "prefix" | "required" | "right" | "set" | "some" | "unowned" | "weak" | "willSet" | "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "#" | "&" | "?" | "!" | "<" | ">" | "|" | "^" | "~" | "%" | "*" | "+" | "-" | "/" | "isolated" | "nonisolated" | "async" | "await" | "yield" | "package" .   // removed @ since that is not a valid standalone keyword
 
 balancedToken = identifier | keywordMinusBrackets | literal | Operator .
 //balancedToken = Any identifier, keyword, literal, or operator .
@@ -969,6 +1006,4 @@ genericArgumentList = genericArgument | genericArgument "," genericArgumentList 
 genericArgument = type .
 
 ^^^
-enum A : E {
-    case c ( s : Int)
-}
+Logger.scan.error("Failed to create scanner for input string '\(inputString.prefix(100))'")
