@@ -6,21 +6,6 @@ digraph Derivations {
   rankdir = TB
   ordering = out
   labelloc = t
-  label = <grammar = { stringLiteral } .>
-  n0 [shape = ellipse, width=0.0, height=0.0, label = <grammar>]
-  n1 [shape = ellipse, width=0.0, height=0.0, label = <stringLiteral>]
-  n2 [shape = ellipse, width=0.0, height=0.0, label = <interpolatedStringLiteral>]
-  n3 [shape = box, width=0.0, height=0.0, label = <"Failed to create scanner for input string '\(>]
-  n2 -> n3
-  n4 [shape = ellipse, width=0.0, height=0.0, label = <expression>]
-  n5 [shape = box, width=0.0, height=0.0, label = <expr>]
-  n4 -> n5
-  n2 -> n4
-  n6 [shape = box, width=0.0, height=0.0, label = <)'">]
-  n2 -> n6
-  n1 -> n2
-  n0 -> n1
-  { rank = same; n3; n5; n6 }
-  n3 -> n5 [style = invis]
-  n5 -> n6 [style = invis]
+  label = <topLevelDeclaration = [ statements ] .>
+  n0 [shape = ellipse, width=0.0, height=0.0, label = <topLevelDeclaration>]
 }

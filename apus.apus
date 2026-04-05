@@ -13,9 +13,8 @@ message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 grammar     = < production > { message } .
               
 production  = identifier
-                ( ":" regex "." mode    // silent terminal
-                | "-" regex "." mode    // regular terminal
-                | "=" selection "."     // production rule
+                ( ( ":" | "-" ) ( regex | literal ) "." mode
+                | "=" selection "."
                 ) .
                 
 selection   = sequence { "|" sequence } .
@@ -30,7 +29,7 @@ factor      = terminal
             
 terminal    = identifier | literal | regex | epsilon .
 
-mode        = [ "===" literal ] [ ">>>" literal | "<<<" ] .         // restrict to in scanner mode '===', push mode '>>>', pop '<<<'
+mode        = [ "===" literal ] [ ">>>" literal | "<<<" ] .
 
 ^^^
 whitespace  : /\s+/ .

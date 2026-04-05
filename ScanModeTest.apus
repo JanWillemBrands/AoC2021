@@ -8,6 +8,13 @@
 whitespace  : /\s+/ .
 linecomment : /\/\/.*/ .
 
+leftParenthesis     - "(" .
+                    >>> "parenthesisMode"
+rightParenthesis    - ")" .
+                    === "parenthesisMode"
+                    <<<
+
+
 grammar = { stringLiteral } .
 
 stringLiteral = staticStringLiteral | interpolatedStringLiteral .
@@ -35,10 +42,24 @@ interpolatedStringLiteral       = interpolatedStringLiteralHead
                                   expression { interpolatedStringLiteralPart expression }
                                   interpolatedStringLiteralTail .
 
-expression                      = < "expr" | stringLiteral > .
+expression                      = < "expr" | stringLiteral >
+                                | parenthesizedExpression .
+
+//leftParenthesis     - /\(/ .
+//                    >>> "expressionMode"
+//rightParenthesis    - /\)/ .
+//                    === "expressionMode"
+//                    <<<
+
+//parenthesizedExpression = leftParenthesis expression rightParenthesis .
+parenthesizedExpression = "(" expression ")" .
+
 
 ^^^
+"literal terminalAlias: \(expr) token.stripped: \(expr)"
 
-"Failed to create scanner for input string '\(expr)'"
+//"Failed to create scanner for input string '\((expr))'"
 
 //"aaa \(expr) bbb \(expr "\(expr)") ccc"
+
+//"and now, for something completely different:"

@@ -177,9 +177,20 @@ class ApusParser {
             // terminal definition: ":" = silent, "-" = visible
             skip = (token.kind == ":")
             cI += 1
-            try expect(["regex"])
-            terminalAlias = nonTerminalName
-            let rx = try regex()
+            var terminal: GrammarNode!
+            switch token.kind {
+            case "regex":
+                // assign the name of the production to the regex
+                terminalAlias = nonTerminalName
+                terminal = try regex()
+            case "literal":
+                // do NOT assign the name of the production to the regex, instead use the literal image as the name
+//                terminalAlias = nonTerminalName
+                terminal = literal()
+            default:
+                try expect(["regex", "literal"])
+            }
+
             // reset
             terminalAlias = nil
             skip = false
@@ -192,17 +203,22 @@ class ApusParser {
                 cI += 1
                 try expect(["literal"])
                 let modeLiteral = literal()
-                grammar.terminals[rx.name]?.mode.modeName = modeLiteral.name
+                grammar.terminals[terminal.name]?.mode.modeName = modeLiteral.name
             }
             if token.kind == ">>>" {
                 cI += 1
                 try expect(["literal"])
                 let modeLiteral = literal()
-                grammar.terminals[rx.name]?.mode.pushName = modeLiteral.name
+                if let found = grammar.terminals[terminal.name] {
+                    grammar.terminals[terminal.name]?.mode.pushName = modeLiteral.name
+                } else {
+                    print("WARNING: terminal \(terminal.name) not found when parsing mode")
+                }
             } else if token.kind == "<<<" {
                 cI += 1
-                grammar.terminals[rx.name]?.mode.isPop = true
+                grammar.terminals[terminal.name]?.mode.isPop = true
             }
+//            print("terminal: \(terminal.name) mode: \(String(describing: grammar.terminals[terminal.name]?.mode))")
             
         } else {
             // production rule
@@ -310,7 +326,7 @@ class ApusParser {
         
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
-                #Trace("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
+                Logger.parse.warning("redefinition of \(name) as \(self.skip ? "skipped" : "not skipped")")
             }
         }
         do {
@@ -320,7 +336,7 @@ class ApusParser {
             grammar.registerTerminal(name)
             #Trace("regex name:", name, "image:", token.image)
         } catch {
-            #Trace("grammar parse error: \(token.image) is not a valid literal Regex \(error)")
+            Logger.parse.error("grammar parse error: \(self.token.image) is not a valid literal Regex \(error)")
             throw ApusParserError.invalidRegex(image: String(token.image), error: error)
         }
         
@@ -338,17 +354,30 @@ class ApusParser {
             return GrammarNode(kind: .EPS, name: "ε")
         }
         
-        let name = terminalAlias ?? token.stripped
+//        let name = terminalAlias ?? token.stripped
+//        print("literal terminalAlias: \(terminalAlias ?? "nil") token.stripped: \(token.stripped)")
+        let name = token.stripped
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
                 #Trace("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
             }
         }
         // the token is a string literal, use a regex builder to create a Regex
-        let regex = Regex { token.stripped }
-        grammar.terminals[name] = (String(token.image), regex, true, skip, Mode())
-        grammar.registerTerminal(name)
-        #Trace("literal name:", name, "image:", token.image)
+        // a literal may occur multiple times in a grammar, including as a terminal definition
+        // we don't want to enter the same literal over and over, especially when it might overwrite initial mode annotations
+//        print("check B: \(name) mode: \(String(describing: grammar.terminals[name]?.mode))")
+        if grammar.terminals[name] == nil {
+            // to build the correct regex we need to remove the escape sequences from the token because the literal uses Swift string notation
+            // e.g. "//" in the grammar matches a single '/' in the message, and a "\t" will match a tab character in the message
+            let regex = Regex { token.stripped.escapesRemoved }
+            grammar.terminals[name] = (String(token.image), regex, true, skip, Mode())
+            grammar.registerTerminal(name)
+//            Logger.parse.debug("added literal name: \(name) image: \(self.token.image)")
+        } else {
+//            Logger.parse.debug("already defined literal name: \(name) image: \(self.token.image)")
+        }
+//        print("check A: \(name) mode: \(String(describing: grammar.terminals[name]?.mode))")
+
         
         cI += 1
         return GrammarNode(kind: .T, name: name)

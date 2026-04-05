@@ -105,7 +105,11 @@ for message in grammar.messages {
 //    for t in messageScanner.tokens {
 //        print(t)
 //    }
-    
+//    print("tokensPatterns:")
+//    for tp in grammar.terminals {
+//        print(tp.key, tp.value.source)
+//    }
+
     //    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count)
     
     // Sort elements (if BSR is Comparable) then join

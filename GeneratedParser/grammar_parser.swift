@@ -16,29 +16,39 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"linecomment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"extendedMultilineStringLiteral":	("/#+\"\"\"(?s).*?\"\"\"#+/",	/#+"""(?s).*?"""#+/,	false,	false),
-	"interpolatedStringLiteralPart":	("/\\)(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*?\\\\\\(/",	/\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/,	false,	false),
-	"interpolatedStringLiteralHead":	("/\"(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*?\\\\\\(/",	/"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/,	false,	false),
-	"interpolatedStringLiteralTail":	("/(?!.*\\\\\\()\\)(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*?\"/",	/(?!.*\\\()\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?"/,	false,	false),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"extendedSinglelineStringLiteral":	("/#+\".*?\"#+/",	/#+".*?"#+/,	false,	false),
+	"linecomment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
+	"interpolatedStringLiteralHead":	("/\"(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*?\\\\\\(/",	/"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/,	false,	false),
+	"interpolatedStringLiteralPart":	("/\\)(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*?\\\\\\(/",	/\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/,	false,	false),
 	"singleLineStringLiteral":	("/\"(?!.*\\\\\\()(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*\"/",	/"(?!.*\\\()(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*"/,	false,	false),
 	"multilineStringLiteral":	("/\"\"\"(?!.*\\\\\\()(?:[^\\\\]|\\\\#*u\\{[0-9a-fA-F]+\\}|\\\\#*[0\\\\tnr\"\']|\\\\#*\\s*\\n|\\\\#*.)*\"\"\"/",	/"""(?!.*\\\()(?:[^\\]|\\#*u\{[0-9a-fA-F]+\}|\\#*[0\\tnr"']|\\#*\s*\n|\\#*.)*"""/,	false,	false),
-	"interpolatedString":	("interpolatedString",	Regex { "interpolatedString" },	true,	false),
+	"extendedMultilineStringLiteral":	("/#+\"\"\"(?s).*?\"\"\"#+/",	/#+"""(?s).*?"""#+/,	false,	false),
+	"interpolatedStringLiteralTail":	("/(?!.*\\\\\\()\\)(?:[^\"\\\\]|\\\\u\\{[0-9a-fA-F]+\\}|\\\\[0\\\\tnr\"\']|\\\\.)*?\"/",	/(?!.*\\\()\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?"/,	false,	false),
+	"parenthesisMode":	("parenthesisMode",	Regex { "parenthesisMode" },	true,	false),
 	"expr":	("expr",	Regex { "expr" },	true,	false),
+	"(":	("(",	Regex { "(" },	true,	false),
+	")":	(")",	Regex { ")" },	true,	false),
+	"interpolatedString":	("interpolatedString",	Regex { "interpolatedString" },	true,	false),
 ]
 func expression() throws {
-	repeat {
-		switch token.kind {
-		case "expr":
-			cI += 1
-		case "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral":
-			try stringLiteral()
-		default:
-			expect("expr", "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral")
-		}
-	} while ["expr", "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral"].contains(token.kind)
+	switch token.kind {
+	case "expr", "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral":
+		repeat {
+			switch token.kind {
+			case "expr":
+				cI += 1
+			case "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral":
+				try stringLiteral()
+			default:
+				expect("expr", "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral")
+			}
+		} while ["expr", "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral"].contains(token.kind)
+	case "(":
+		try parenthesizedExpression()
+	default:
+		expect("(", "expr", "extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral")
+	}
 }
 func grammar() throws {
 	while ["extendedMultilineStringLiteral", "extendedSinglelineStringLiteral", "interpolatedStringLiteralHead", "multilineStringLiteral", "singleLineStringLiteral"].contains(token.kind) {
@@ -54,6 +64,13 @@ func interpolatedStringLiteral() throws {
 		try expression()
 	}
 	expect("interpolatedStringLiteralTail")
+	cI += 1
+}
+func parenthesizedExpression() throws {
+	expect("(")
+	cI += 1
+	try expression()
+	expect(")")
 	cI += 1
 }
 func staticStringLiteral() throws {
