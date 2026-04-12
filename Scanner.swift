@@ -176,7 +176,7 @@ final class Scanner {
                         headPattern = rp
                     } else if match.0.endIndex == matchEnd {
                         // the match is the same length as a previous match
-                        // TODO: check that Schrödinger tokens all have the same mode annotation
+                        // TODO: warn in case Schrödinger tokens have a different mode annotation
 
                         if rp.isKeyword && !rp.isSkip {
                             // visible keyword Schrödinger token goes to the front
@@ -199,7 +199,7 @@ final class Scanner {
                 if headPattern.isSkip {
                     skippedTokens[tokens.count].append(headMatch)
                 } else {
-                    Logger.scan.debug("adding token: \(headMatch) image: '\(headMatch.image)' \(headPattern.kind) \(headPattern.mode)")
+//                    Logger.scan.debug("adding token: \(headMatch) image: '\(headMatch.image)' \(headPattern.kind) \(headPattern.mode)")
                     tokens.append(headMatch)
                     skippedTokens.append([])
                 }

@@ -131,11 +131,15 @@ class ApusParser {
         } while newSize != oldSize
         // store the cumulative set size
         GrammarNode.sizeofSets = newSize
+
+        // this is to a give GrammarNodes access to their own grammar
+        GrammarNode.grammar = grammar
         
         GrammarNode.isLL1 = true
         for (name, node) in grammar.nonTerminals {
             #Trace("Detecting ambiguity for:", name)
             node.detectAmbiguity()
+            node.detectSchrödingerConflict()
         }
         grammar.isLL1 = GrammarNode.isLL1
         grammar.populateBitSets()
@@ -272,7 +276,7 @@ class ApusParser {
     }
     
     /// Collect action tokens from the skipped tokens at the given visible-token index.
-    /// Since action is now a silent terminal, action tokens land in scanner.skippedTokens.
+    /// Since action is a silent terminal, action tokens land in scanner.skippedTokens.
     private func collectActions(at index: Int) -> [String] {
         guard index < scanner.skippedTokens.count else { return [] }
         return scanner.skippedTokens[index]
@@ -323,7 +327,9 @@ class ApusParser {
     func regex() throws -> GrammarNode {
         #Trace("regex", token)
         let name = terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex)
-        
+        // TODO: remove temporary rename to filter for regex-defined terminals
+//        let name = "$$" + (terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex))
+
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
                 Logger.parse.warning("redefinition of \(name) as \(self.skip ? "skipped" : "not skipped")")
@@ -347,9 +353,9 @@ class ApusParser {
     func literal() -> GrammarNode {
         #Trace("literal", token, token.stripped)
         
+        // epsilon has two representations in apus grammars, either the greek letter ε, or the empty string literal ""
         if token.stripped == "" {
-            // epsilon is its own terminal, will never show up here in literal()
-            #Trace(token, token.stripped)
+            #Trace("epsilon", token, token.stripped)
             cI += 1
             return GrammarNode(kind: .EPS, name: "ε")
         }
@@ -367,7 +373,7 @@ class ApusParser {
         // we don't want to enter the same literal over and over, especially when it might overwrite initial mode annotations
 //        print("check B: \(name) mode: \(String(describing: grammar.terminals[name]?.mode))")
         if grammar.terminals[name] == nil {
-            // to build the correct regex we need to remove the escape sequences from the token because the literal uses Swift string notation
+            // to build the correct regex we need to remove the escape sequences from the token because the literal uses Swift string notation.
             // e.g. "//" in the grammar matches a single '/' in the message, and a "\t" will match a tab character in the message
             let regex = Regex { token.stripped.escapesRemoved }
             grammar.terminals[name] = (String(token.image), regex, true, skip, Mode())

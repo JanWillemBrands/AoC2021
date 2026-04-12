@@ -50,6 +50,10 @@ extension GrammarNodeKind {
 final class GrammarNode {
     
     static var count = 0
+    
+    // TODO: remove this hack to give GrammarNodes access to the grammar
+    static weak var grammar: Grammar?
+    
     var number = 0
     /// Integer ID from `Grammar.symbolToID`, set by `assignNameIDs()`.
     /// Only meaningful for terminal-like nodes (.T, .TI, .C, .B, .EOS, .EPS);
@@ -86,9 +90,9 @@ final class GrammarNode {
         self.seq = seq
     }
     
-    var actions: [String] = [] // stores semantic actions
+    var actions: [String] = []  // stores semantic actions
     var signature: String?      // function signature text (params, throws, return) for .N nodes
-    var locals: [String] = []   // local declarations for generated function
+    var locals: [String] = []   // local declarations for generated function  TODO: can this be removed ???
     
     // first is a positional prediction set: the tokens that can appear at this
     // position in the sequence, including look-through of nullable elements.
@@ -244,83 +248,6 @@ extension GrammarNode {
             alt = alternate
         }
     }
-}
-
-extension GrammarNode {
-    // TODO: ambiguity set of KLN and POS is the intersection of follow(KLN) with the union of the pairwise intersections of all its first(ALT)'s ('duplicates')
-    func detectAmbiguity() {
-        if kind == .N, seq == nil {
-            #Trace("_RULE:", name)
-        }
-
-        switch kind {
-        case .EOS, .T, .TI, .C, .B, .EPS:
-            seq?.detectAmbiguity()
-        case .N:
-            if let seq { // rhs
-                seq.detectAmbiguity()
-                // For a RHS nonterminal, check the definition's FIRST (via alt)
-                // against this position's FOLLOW. The positional 'first' includes
-                // look-through tokens from the continuation, which would cause
-                // false conflicts.
-                if let production = alt, production.isNullable {
-                    let definitionFirst = production.first.subtracting(["ε"])
-                    ambiguous = definitionFirst.intersection(follow)
-                }
-            } else { // lhs
-                handleAlternatesAmbiguity()
-            }
-        case .ALT:
-            seq?.detectAmbiguity()
-        case .DO, .POS, .OPT, .KLN:
-            seq?.detectAmbiguity()
-            handleAlternatesAmbiguity()
-        case .END:
-            break
-        }
-        if !ambiguous.isEmpty {
-            GrammarNode.isLL1 = false
-        }
-        let saved = traceIndent
-        traceIndent += 2
-        #Trace(kind, number)
-        traceIndent += 2
-        #Trace("first    ", first.sorted())
-        #Trace("follow   ", follow.sorted())
-        #Trace("ambiguous", ambiguous.sorted())
-//        if !ambiguous.isEmpty {
-//            if kind == .N, seq == nil {
-//                print("Ambiguity in \(name)", ambiguous.sorted())
-//            }
-//        }
-        traceIndent = saved
-
-    }
-
-    private func handleAlternatesAmbiguity() {
-        var occurances: [String:Int] = [:]
-        // count occurances in firsts
-        var current = self.alt
-        while let altNode = current {
-            current?.detectAmbiguity()
-            for element in altNode.first {
-                occurances[element, default: 0] += 1
-            }
-            current = altNode.alt
-        }
-        // count occurances in follow only when this node can derive ε,
-        // because a token in FOLLOW then competes with the alternates' FIRST tokens
-        if isNullable {
-            for element in follow {
-                occurances[element, default: 0] += 1
-            }
-        }
-        // keep only duplicated occurances
-        for (element, count) in occurances where count > 1 {
-            ambiguous.insert(element)
-        }
-    }
-    
 }
 
 extension GrammarNode {

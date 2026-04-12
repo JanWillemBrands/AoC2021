@@ -47,6 +47,7 @@
 		4EBA33552F7CFC6F007FB853 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 4EBA33542F7CFC6F007FB853 /* ArgumentParser */; };
 		4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */; };
 		4EE2FCD92F79070A00105588 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE2FCD82F79066B00105588 /* Loggers.swift */; };
+		4EF4F3CE2F8B1E5B005F0E90 /* GrammarDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF4F3CD2F8B1E2B005F0E90 /* GrammarDiagnostics.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -120,6 +121,7 @@
 		4EE2FCD72F77C38400105588 /* silent.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = silent.apus; sourceTree = "<group>"; };
 		4EE2FCD82F79066B00105588 /* Loggers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Loggers.swift; sourceTree = "<group>"; };
 		4EE422A22BFB319500D99368 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
+		4EF4F3CD2F8B1E2B005F0E90 /* GrammarDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarDiagnostics.swift; sourceTree = "<group>"; };
 		CB6B7315257EA9F400B929C6 /* Advent */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Advent; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -189,6 +191,7 @@
 				4EE2FCD72F77C38400105588 /* silent.apus */,
 				4E951C132D8874BD008B1012 /* Swift.apus */,
 				4EBB87152F81103800037029 /* CommentTest.apus */,
+				4EF4F3CD2F8B1E2B005F0E90 /* GrammarDiagnostics.swift */,
 				4EBB87142F80FC6C00037029 /* ScanModeTest.apus */,
 				4EBB87132F7F4EC100037029 /* Swift EBNF.apus */,
 				4EBB87102F7DED4D00037029 /* attributeHunt.apus */,
@@ -422,6 +425,7 @@
 				4EE2FCD92F79070A00105588 /* Loggers.swift in Sources */,
 				4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */,
 				4E11B2A82DC0C25D00555BB8 /* CallReturnForest.swift in Sources */,
+				4EF4F3CE2F8B1E5B005F0E90 /* GrammarDiagnostics.swift in Sources */,
 				4E8D05A72F701BFE0081C6D2 /* GenerateDerivationDiagram.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

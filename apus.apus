@@ -27,10 +27,15 @@ factor      = terminal
             | "<" selection ">"
             | "(" selection ")" .
             
-terminal    = identifier | literal | regex | epsilon .
+terminal    = identifier
+            | literal ["=>>"]                       // Frankenstein terminal, try a prefix match
+            | regex
+            | epsilon .
 
-mode        = [ "===" literal ] [ ">>>" literal | "<<<" ] .
-
+mode        = [ "===" literal | "=/=" literal ]     // enable / disable scanning of this terminal in this mode
+              [ ">>>" literal | "<<<" ] .           // push mode, or pop
+// TODO: use #__ "whitespace"  and __# "whitespace" to disallow leading or trailing white space.
+// How to connect "whitespace" literal to whitespace terminal name?
 ^^^
 whitespace  : /\s+/ .
 linecomment : /\/\/.*/ .
