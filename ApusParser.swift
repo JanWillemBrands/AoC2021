@@ -416,6 +416,13 @@ class ApusParser {
             cI += 1
         case "literal":
             node = literal()
+            
+            // check if this is a frankenstein literal that allows partial prefix matches
+            if token.kind == "=>>" {
+                node.frankensteinMatchAllowed = true
+                cI += 1
+            }
+
         case "epsilon":
             node = epsilon()
         case "regex":

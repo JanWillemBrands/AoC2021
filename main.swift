@@ -101,10 +101,10 @@ for message in grammar.messages {
         stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yield.count)\n"
         stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
     Logger.ui.info("\(stats)")
-//    print("all tokens:")
-//    for t in messageScanner.tokens {
-//        print(t)
-//    }
+    print("all tokens:")
+    for t in messageScanner.tokens {
+        print(t, "image", t.image)
+    }
 //    print("tokensPatterns:")
 //    for tp in grammar.terminals {
 //        print(tp.key, tp.value.source)

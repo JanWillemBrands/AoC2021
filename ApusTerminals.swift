@@ -38,6 +38,7 @@ let apusTerminals: [String:TokenPattern] = [
     "===":          ("===",                     Regex { "===" },                    true,  false, Mode()),
     ">>>":          (">>>",                     Regex { ">>>" },                    true,  false, Mode()),
     "<<<":          ("<<<",                     Regex { "<<<" },                    true,  false, Mode()),
+    "=>>":          ("=>>",                     Regex { "=>>" },                    true,  false, Mode()),
 //    "nonASCII":     (#"[^\p{ASCII}]"#,          /[^\p{ASCII}]/,                     false,  false),
 //    ")?":           (")?",                      Regex { ")?" },                     true,  false),
 //    ")*":           (")*",                      Regex { ")*" },                     true,  false),

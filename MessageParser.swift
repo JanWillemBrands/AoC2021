@@ -95,9 +95,8 @@ class MessageParser {
         // Run GLL algorithm
         nextDescriptor: while getDescriptor() {
             
-            // a mechanism to match tokens on prefixes e.g.  '>?' is a valid operator but also '>' generic close and '?' optional
+            // a mechanism to match tokens on prefixes e.g.  '>?' is a valid operator but also '>' is generic close and '?' is optional
             frankenstein = nil
-            frankensteinMatchAllowed = true
 
             while true {
 
@@ -231,8 +230,7 @@ class MessageParser {
         } while true
     }
 
-    public var frankensteinMatchAllowed = false    // the parser will tell us
-    public var frankenstein: String?        // we will assert frankenstein == nil in addDescriptor and getDescriptor
+    public var frankenstein: String?
     /// Test whether the current token matches the terminal at the current grammar slot.
     /// Considers Schrödinger tokens before it tries a Frankenstein manoeuvre
     /// Uses integer comparison (O(1)) instead of string equality, except for Frankenstein
@@ -252,20 +250,27 @@ class MessageParser {
             current = next
             dualUsed = true
         }
-        if dualUsed { Logger.parse.debug("dual \(self.cL.name) in \(self.tokens[self.cI])") }
+        if dualUsed {
+//            Logger.parse.debug("dual \(self.cL.name) in \(self.tokens[self.cI])")
+        }
         // Last resort: Frankenstein prefix split
-        guard frankensteinMatchAllowed else { return false }
-        return frankensteinMatch()
+        if cL.frankensteinMatchAllowed {
+            Logger.parse.debug("frankenstein allowed \(self.cL.name) at \(self.cL.ebnfDot()) prefix matching in \(self.tokens[self.cI])")
+            return frankensteinMatch()
+        }
+        return false
     }
 
     private func frankensteinMatch() -> Bool {
-        Logger.parse.debug("frankenstein \(self.frankenstein ?? "nil") in \(self.tokens[self.cI].stripped)")
+        Logger.parse.debug("frankenstein \(self.frankenstein ?? "nil") index \(self.cI) image \(self.tokens[self.cI].stripped)")
 
         let token = frankenstein ?? tokens[cI].stripped
-        guard token.hasPrefix(cL.name) else { return false }
-        let remainder = String(token.dropFirst(cL.name.count))
-        frankenstein = remainder.isEmpty ? nil : remainder
-        return true
+        if token.hasPrefix(cL.name) {
+            let remainder = String(token.dropFirst(cL.name.count))
+            frankenstein = remainder.isEmpty ? nil : remainder
+            return true
+        }
+        return false
     }
     
     /// Test whether the current token is in the follow set of a bracket (LHS nonterminal).
@@ -278,4 +283,5 @@ class MessageParser {
             current = next
         } while true
     }
+    
 }

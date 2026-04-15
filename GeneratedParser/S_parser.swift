@@ -3,12 +3,6 @@
 import Foundation
 import RegexBuilder
 
-var g = Grammar()
-var node: GrammarNode!
-var result: GrammarNode!
-var skip = false
-var terminalAlias: String?
-
 var tokens: [Token] = []
 var cI = 0
 var token: Token { tokens[cI] }
@@ -23,15 +17,25 @@ func expect(_ expected: String...) {
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"name":	("/[a-z]+/",	/[a-z]+/,	false,	false),
-	"identifier":	("/[a-z]+/",	/[a-z]+/,	false,	false),
-	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
+	"blockcomment":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
+	">>":	(">>",	Regex { ">>" },	true,	false),
+	">":	(">",	Regex { ">" },	true,	false),
+	"<":	("<",	Regex { "<" },	true,	false),
+	"s":	("s",	Regex { "s" },	true,	false),
 ]
 func S() throws {
-	expect("name")
-	cI += 1
-	expect("identifier")
-	cI += 1
+	switch token.kind {
+	case "<":
+		cI += 1
+		expect("s")
+		cI += 1
+		try S()
+		expect(">")
+		cI += 1
+	default:
+	case ">>":
+		cI += 1
+	}
 }
 func parse() throws {
 	try S()

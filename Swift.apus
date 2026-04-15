@@ -1,10 +1,11 @@
-// SWIFT 6 GRAMMAR
+// SWIFT 6.3 GRAMMAR
 
 topLevelDeclaration = statements? .
 
 // WHITESPACE AND COMMENT
 
 whitespace : /\s+/.                                                     // simplified
+
 //whitespace = whitespaceItem whitespace? .
 //whitespaceItem = lineBreak .
 //whitespaceItem = inlineSpace .
@@ -19,10 +20,23 @@ whitespace : /\s+/.                                                     // simpl
 //inlineSpaces = inlineSpace inlineSpaces? .
 //inlineSpace = U+0009 or U+0020                                        // HORIZONTAL TAB or \t or \u{0009}, SPACE or \u{0020}
 
-comment : /\/\/.*\r?\n?/ .                                              // simplified
-// comment = "//" commentText lineBreak .
+comment : /\/\/.*\r?\n?/ .
 
-multilineComment : /\/\*(?s).*?\*\// .                                  // simplified
+//multilineComment : /\/\*(?s).*?\*\// .                                // simplified, does not match nested comments
+
+// SCANNER MODE ANNOTATIONS TO HANDLE NESTED COMMENTS
+
+multilineCommentHead    : "/*" .
+                        >>> "multiline-comment"
+                        
+multilineCommentText    : /(?s).*?(?=\/\*|\*\/)/ .                      // any string upto, not including, */ or /*
+                        === "multiline-comment"
+                        
+multilineCommentTail    : "*/" .
+                        === "multiline-comment"
+                        <<<
+
+//comment = "//" commentText lineBreak .
 //multilineComment = "/*" multilineCommentText "*/" .
 
 //commentText = commentTextItem commentText? .
@@ -36,7 +50,9 @@ multilineComment : /\/\*(?s).*?\*\// .                                  // simpl
 
 //IDENTIFIERS
 
-plainIdentifier             - /[\p{XID_Start}_]\p{XID_Continue}*/ .       // simplified, but allows identifiers to start with _, or to be _ itself
+plainIdentifier             - /[\p{XID_Start}_]\p{XID_Continue}*/ .     // simplified, and allows plainIdentifier to be _ itself
+                                                                        // which produces a Schrödinger token: '_' ~ plainIdentifier
+                                                                        
 escapedIdentifier           - /`\s*\p{XID_Start}\p{XID_Continue}*\s*`/ .
 implicitParameterName       - /\$[0-9]+/ .
 propertyWrapperProjection   - /\$\p{XID_Continue}+/ .
@@ -109,15 +125,17 @@ staticStringLiteral             = singleLineStringLiteral
                                 | extendedSinglelineStringLiteral
                                 | multilineStringLiteral
                                 | extendedMultilineStringLiteral .
+                                
+// SCANNER MODE ANNOTATIONS TO HANDLE INTERPOLATED STRING EXPRESSIONS
 
 interpolatedStringLiteralHead   - /"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .                // start with " end with \(
-                                >>> "interpolatedString"
+                                >>> "string-interpolation"
                                 
 interpolatedStringLiteralPart   - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .               // start with ) end with \(
-                                === "interpolatedString"
+                                === "string-interpolation"
                                 
 interpolatedStringLiteralTail   - /(?!.*\\\()\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?"/ .        // start with ) end with " and not containing any \(
-                                === "interpolatedString"
+                                === "string-interpolation"
                                 <<<
                                 
 interpolatedStringLiteral       = interpolatedStringLiteralHead
@@ -191,8 +209,8 @@ octalLiteral - /0o[0-7][0-7_]*/ .
 //octalLiteralCharacter = octalDigit | "_" .
 //octalLiteralCharacters = octalLiteralCharacter octalLiteralCharacters? .
 
-decimalNumber - /[0-9][0-9_]*/ .                                      // removed the '-' sign, this is a catchall for decimalLiteral and decimalDigits
-//decimalNumber - /-?[0-9][0-9_]*/ .                                      // this is a catchall for decimalLiteral and decimalDigits
+decimalNumber - /[0-9][0-9_]*/ .                                      // this is a catchall for decimalLiteral and decimalDigits
+
 decimalLiteral = decimalNumber .
 //decimalLiteral = decimalDigit decimalLiteralCharacters? .
 //decimalDigit = Digit 0 through 9
@@ -208,12 +226,17 @@ hexadecimalLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*/ .
 //hexadecimalLiteralCharacter = hexadecimalDigit | "_" .
 //hexadecimalLiteralCharacters = hexadecimalLiteralCharacter hexadecimalLiteralCharacters? .
 
-decimalFloatingPointLiteral     - /[0-9][0-9_]*(?:\.[0-9][0-9_]*)(?:[eE][+-]?[0-9][0-9_]*)?/ .    // made the decimal fraction non-optional to avoid conflict with decimalDigits
-//decimalFloatingPointLiteral     = /-?[0-9][0-9_]*(?:\.[0-9][0-9_]*)?(?:[eE][+-]?[0-9][0-9_]*)?/ .
+// Grammar of a floating-point literal
+
+decimalFloatingPointLiteral     - /[0-9][0-9_]*(?:\.[0-9][0-9_]*)(?:[eE][+-]?[0-9][0-9_]*)?/ .
 
 hexadecimalFloatingPointLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/ .
+
 //floatingPointLiteral = decimalLiteral decimalFraction? decimalExponent? .
 //floatingPointLiteral = hexadecimalLiteral hexadecimalFraction? hexadecimalExponent .
+
+signedFloatingPointLiteral = "-"? floatingPointLiteral .         // Swift 6.3
+
 floatingPointLiteral = decimalFloatingPointLiteral | hexadecimalFloatingPointLiteral .
 
 //decimalFraction = "." decimalLiteral .
@@ -228,10 +251,13 @@ floatingPointLiteral = decimalFloatingPointLiteral | hexadecimalFloatingPointLit
 
 literal = numericLiteral | stringLiteral | regularExpressionLiteral | booleanLiteral | nilLiteral .
 
-//numericLiteral = integerLiteral | floatingPointLiteral .      // no minus sign ???
-numericLiteral = "-"? integerLiteral | "-"? floatingPointLiteral .
+//numericLiteral = "-"? integerLiteral | "-"? floatingPointLiteral .  // Swift 6
+numericLiteral = signedIntegerLiteral | signedFloatingPointLiteral .  // Swift 6.3
+
 booleanLiteral = "true" | "false" .
 nilLiteral = "nil" .
+
+signedIntegerLiteral = "-"? integerLiteral .
 
 integerLiteral = binaryLiteral .
 integerLiteral = octalLiteral .
@@ -307,12 +333,13 @@ type = optionalType .
 type = implicitlyUnwrappedOptionalType .
 type = protocolCompositionType .
 type = opaqueType .
+type = boxedProtocolType .
 type = metatypeType .
 type = anyType .
 type = selfType .
 type = "(" type ")" .
 
-typeAnnotation = ":" attributes? "inout"? type .
+typeAnnotation = ":" attributes? type .
 
 typeIdentifier = typeName genericArgumentClause? | typeName genericArgumentClause? "." typeIdentifier .
 typeName = identifier .
@@ -331,7 +358,7 @@ functionTypeArgumentClause = "(" ")" .
 functionTypeArgumentClause = "(" functionTypeArgumentList "..."? ")" .
 
 functionTypeArgumentList = functionTypeArgument | functionTypeArgument "," functionTypeArgumentList .
-functionTypeArgument = attributes? "inout"? type | argumentLabel typeAnnotation .
+functionTypeArgument = attributes? parameterModifier? type | argumentLabel typeAnnotation .
 argumentLabel = identifier .
 
 throwsClause = "throws" | "throws" "(" type ")" .
@@ -358,16 +385,16 @@ anyType = "Any" .
 selfType = "Self" .
 
 typeInheritanceClause = ":" typeInheritanceList .
-typeInheritanceList = attributes? typeIdentifier | attributes? typeIdentifier "," typeInheritanceList .
+typeInheritanceList = attributes? "~"? typeIdentifier | attributes? "~"? typeIdentifier "," typeInheritanceList .
 
-//typeInheritanceClause = ":" attributes? typeIdentifier { "," attributes? typeIdentifier } .  // EBNF
-
+//typeInheritanceClause     = ":" typeInheritanceClauseItem { "," typeInheritanceClauseItem } .  // EBNF
+//typeInheritanceClauseItem = attributes? "~"? typeIdentifier .
 
 
 
 // EXPRESSIONS
 
-expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .  // WTF is this \ doing here?
+expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 
 prefixExpression = prefixOperator? postfixExpression .
 prefixExpression = inOutExpression .
@@ -411,11 +438,11 @@ primaryExpression = keyPathStringExpression .
 literalExpression = literal .
 literalExpression = arrayLiteral | dictionaryLiteral | playgroundLiteral .
 
-arrayLiteral = "[" arrayLiteralItems? "]" .
+arrayLiteral = "[" arrayLiteralItems? ","? "]" .
 arrayLiteralItems = arrayLiteralItem ","? | arrayLiteralItem "," arrayLiteralItems .
 arrayLiteralItem = expression .
 
-dictionaryLiteral = "[" dictionaryLiteralItems "]" | "[" ":" "]" .
+dictionaryLiteral = "[" dictionaryLiteralItems ","? "]" | "[" ":" "]" .
 dictionaryLiteralItems = dictionaryLiteralItem ","? | dictionaryLiteralItem "," dictionaryLiteralItems .
 dictionaryLiteralItem = expression ":" expression .
 
@@ -451,13 +478,13 @@ closureExpression = "{" attributes? closureSignature? statements? "}" .
 closureSignature = captureList? closureParameterClause "async"? throwsClause? functionResult? "in" .
 closureSignature = captureList "in" .
 
-closureParameterClause = "(" ")" | "(" closureParameterList ")" | identifierList .
+closureParameterClause = "(" ")" | "(" closureParameterList ","? ")" | identifierList .
 closureParameterList = closureParameter | closureParameter "," closureParameterList .
 closureParameter = closureParameterName typeAnnotation? .
 closureParameter = closureParameterName typeAnnotation "..." .
 closureParameterName = identifier .
 
-captureList = "[" captureListItems "]" .
+captureList = "[" captureListItems ","? "]" .
 captureListItems = captureListItem | captureListItem "," captureListItems .
 captureListItem = captureSpecifier? identifier .
 captureListItem = captureSpecifier? identifier "=" expression .
@@ -470,10 +497,12 @@ implicitMemberExpression = "." identifier "." postfixExpression .
 // SCANNER MODE ANNOTATIONS TO HANDLE NESTED BRACKETS
 
 leftParenthesis     - "(" .
-                    >>> "parenthesisMode"
+                    >>> "inside-parentheses"
+                    
 rightParenthesis    - ")" .
-                    === "parenthesisMode"
+                    === "inside-parentheses"
                     <<<
+                    
 parenthesizedExpression = "(" expression ")" .
 
 //leftParenthesis     - /\(/ .
@@ -483,7 +512,7 @@ parenthesizedExpression = "(" expression ")" .
 //                    <<<
 //parenthesizedExpression = leftParenthesis expression rightParenthesis .
 
-tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ")" .
+tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ","? ")" .
 tupleElementList = tupleElement | tupleElement "," tupleElementList .
 tupleElement = expression | identifier ":" expression .
 
@@ -527,7 +556,7 @@ postfixExpression = optionalChainingExpression .
 functionCallExpression = postfixExpression functionCallArgumentClause .
 functionCallExpression = postfixExpression functionCallArgumentClause? trailingClosures .
 
-functionCallArgumentClause = "(" ")" | "(" functionCallArgumentList ")" .
+functionCallArgumentClause = "(" ")" | "(" functionCallArgumentList ","? ")" .
 functionCallArgumentList = functionCallArgument | functionCallArgument "," functionCallArgumentList .
 functionCallArgument = expression | identifier ":" expression .
 functionCallArgument = Operator | identifier ":" Operator .
@@ -677,7 +706,7 @@ platformCondition = "canImport" "(" importPath ")" .
 platformCondition = "targetEnvironment" "(" environment ")" .
 
 operatingSystem = "macOS" | "iOS" | "watchOS" | "tvOS" | "visionOS" | "Linux" | "Windows" .
-architecture = "i386" | "x86_64" | "arm" | "arm64" .
+architecture = "arm" | "arm64" | "i386" | "wasm32" | "x86_64" .
 swiftVersion = decimalDigits swiftVersionContinuation? .
 swiftVersionContinuation = "." decimalDigits swiftVersionContinuation? .
 environment = "simulator" | "macCatalyst" .
@@ -728,6 +757,7 @@ declaration = initializerDeclaration .
 declaration = deinitializerDeclaration .
 declaration = extensionDeclaration .
 declaration = subscriptDeclaration .
+declaration = macroDeclaration .
 declaration = operatorDeclaration .
 declaration = precedenceGroupDeclaration . // WTF is \ doing here ???
 
@@ -785,7 +815,7 @@ functionSignature = parameterClause "async"? "rethrows" functionResult? .
 functionResult = "->" attributes? type .
 functionBody = codeBlock .
 
-parameterClause = "(" ")" | "(" parameterList ")" .
+parameterClause = "(" ")" | "(" parameterList ","? ")" .
 parameterList = parameter | parameter "," parameterList .
 
 // WTF???  grammar error   https://github.com/swiftlang/swift-book/issues/294
@@ -1004,12 +1034,14 @@ expressionPattern = expression .
 
 // GENERIC PARAMETERS AND ARGUMENTS
 
-genericParameterClause = "<" genericParameterList ">" .
+genericParameterClause  = "<" genericParameterList ","? ">"
+                        =>> .  // TODO:  check if frankenstein works
 
 genericParameterList = genericParameter | genericParameter "," genericParameterList .
 genericParameter = typeName .
 genericParameter = typeName ":" typeIdentifier .
 genericParameter = typeName ":" protocolCompositionType .
+genericParameter = "let" typeName ":" type .
 
 genericWhereClause = "where" requirementList .
 requirementList = requirement | requirement "," requirementList .
@@ -1018,34 +1050,21 @@ requirement = conformanceRequirement | sameTypeRequirement .
 conformanceRequirement = typeIdentifier ":" typeIdentifier .
 conformanceRequirement = typeIdentifier ":" protocolCompositionType .
 sameTypeRequirement = typeIdentifier "==" type .
+sameTypeRequirement = typeIdentifier "==" signedIntegerLiteral .
 
-//genericArgumentClause = "<" genericArgumentList ">" =>> .
-genericArgumentClause = "<" genericArgumentList ">" .
+genericArgumentClause   = "<" genericArgumentList ","? ">"
+                        =>> .  // TODO:  check if frankenstein works
+
+//genericArgumentClause = "<" genericArgumentList ","? ">" .
+
+
 genericArgumentList = genericArgument | genericArgument "," genericArgumentList .
-genericArgument = type .
+genericArgument = type | signedIntegerLiteral .
 
 
-//^^^#ApusParser.swift
-//^^^#ApusParserBuilder.swift
-//^^^#ApusTerminals.swift
-//^^^#BinarySubtreeRepresentation.swift
-//^^^#CallReturnForest.swift
-//^^^#Descriptor.swift
-//^^^#GenerateDerivationDiagram.swift
-//^^^#GenerateDiagrams.swift
-//^^^#GenerateParser.swift
-//^^^#Grammar.swift
-//^^^#GrammarNode.swift
-//^^^#GrammarStore.swift
-//^^^#Loggers.swift
-//^^^#ManualOutput.swift
-//^^^#MessageParser.swift
-//^^^#NewScanner.swift
-//^^^#OutputTools.swift
-//^^^#SPPF.swift
-//^^^#Scanner.swift
-//^^^#StringExtensions.swift
-//^^^#main.swift
+/*  α · δ  'N' */
+//func f(dispatched: Set<String>?, _ node: GrammarNode ) {}
+//let x: Set<Set<Int>>        // seems to generate the wrong parse tree
+
 ^^^
 let x: Dictionary<String, Array<Int>>
-//func f(dispatched: Set<String>?, _ node: GrammarNode ) {}

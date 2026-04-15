@@ -49,9 +49,11 @@ extension GrammarNodeKind {
 
 final class GrammarNode {
     
+    var frankensteinMatchAllowed = false    // only valid for GrammarNodes with kind = "literal"
+    
     static var count = 0
     
-    // TODO: remove this hack to give GrammarNodes access to the grammar
+    // this is to give GrammarNodes access to the grammar
     static weak var grammar: Grammar?
     
     var number = 0
@@ -62,6 +64,7 @@ final class GrammarNode {
     
     let kind: GrammarNodeKind
     let name: String
+    
 //    var alt, seq: GrammarNode?
     var alt: GrammarNode? {
         didSet {

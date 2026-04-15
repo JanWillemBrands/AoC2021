@@ -139,7 +139,7 @@ extension GrammarNode {
         var current = self.alt
         while let altNode = current {
             current?.detectSchrödingerConflict()
-            Logger.grammar.debug("ALT: \(altNode.first.sorted())")
+//            Logger.grammar.debug("ALT: \(altNode.first.sorted())")
             if first.contains("plainIdentifier") {
                 schrödingerAlert = true
             } else {
@@ -166,7 +166,7 @@ extension GrammarNode {
             }
         }
         if schrödingerAlert && !conflicts.isEmpty {
-            Logger.grammar.debug("Schrödinger plainIdentifier ~ \(conflicts.sorted())\n\(self.ebnfDot())")
+//            Logger.grammar.debug("Schrödinger plainIdentifier ~ \(conflicts.sorted())\n\(self.ebnfDot())")
         }
     }
     

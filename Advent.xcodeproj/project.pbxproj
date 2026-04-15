@@ -88,7 +88,7 @@
 		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
 		4E42138D2D1C572D00CE6493 /* OutputTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputTools.swift; sourceTree = "<group>"; };
 		4E42138F2D1DC15000CE6493 /* GenerateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateParser.swift; sourceTree = "<group>"; };
-		4E5754B12F5893240067165C /* SPPF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPPF.swift; sourceTree = "<group>"; };
+		4E5754B12F5893240067165C /* SPPF.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SPPF.swift; sourceTree = "<group>"; };
 		4E5754B42F5894BB0067165C /* SPPF.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = SPPF.svg; sourceTree = "<group>"; };
 		4E7709B32F37870300972246 /* AdventTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AdventTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
@@ -120,7 +120,7 @@
 		4EE2FCD32F76263A00105588 /* ApusParserBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParserBuilder.swift; sourceTree = "<group>"; };
 		4EE2FCD72F77C38400105588 /* silent.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = silent.apus; sourceTree = "<group>"; };
 		4EE2FCD82F79066B00105588 /* Loggers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Loggers.swift; sourceTree = "<group>"; };
-		4EE422A22BFB319500D99368 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
+		4EE422A22BFB319500D99368 /* GrammarNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
 		4EF4F3CD2F8B1E2B005F0E90 /* GrammarDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarDiagnostics.swift; sourceTree = "<group>"; };
 		CB6B7315257EA9F400B929C6 /* Advent */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Advent; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */

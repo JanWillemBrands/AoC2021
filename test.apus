@@ -209,10 +209,9 @@ blockcomment: /\/\*(?s).*?\*\// .
 //S = { "x" | "" } .      // nullable closure
 //S = ["a"] "b".         // nullable positive closure
 
-S = { "x" } { "x" } { "x" } .
+//S = { "x" } { "x" } { "x" } .
+
+S = "<" "s" S ">" =>> | "" .
+S = ">>" .
 ^^^
-xxx /*
-
-hjh
-
-*/
+< s < s >>
