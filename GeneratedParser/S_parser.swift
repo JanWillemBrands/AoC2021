@@ -16,26 +16,32 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"blockcomment":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
-	">>":	(">>",	Regex { ">>" },	true,	false),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
+	"x":	("x",	Regex { "x" },	true,	false),
 	">":	(">",	Regex { ">" },	true,	false),
 	"<":	("<",	Regex { "<" },	true,	false),
-	"s":	("s",	Regex { "s" },	true,	false),
+	">>":	(">>",	Regex { ">>" },	true,	false),
 ]
+func B() throws {
+	expect(">>")
+	cI += 1
+}
 func S() throws {
 	switch token.kind {
+	case "x":
+		cI += 1
 	case "<":
 		cI += 1
-		expect("s")
-		cI += 1
-		try S()
-		expect(">")
-		cI += 1
+		try Y()
 	default:
-	case ">>":
-		cI += 1
+		expect("<", "x")
 	}
+}
+func Y() throws {
+	try S()
+	expect(">")
+	cI += 1
 }
 func parse() throws {
 	try S()

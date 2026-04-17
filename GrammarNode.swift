@@ -49,7 +49,7 @@ extension GrammarNodeKind {
 
 final class GrammarNode {
     
-    var frankensteinMatchAllowed = false    // only valid for GrammarNodes with kind = "literal"
+    var frankensteinMatchAllowed = false    // only relevant for GrammarNodes with kind = "literal"
     
     static var count = 0
     
@@ -65,27 +65,27 @@ final class GrammarNode {
     let kind: GrammarNodeKind
     let name: String
     
-//    var alt, seq: GrammarNode?
-    var alt: GrammarNode? {
-        didSet {
-            // alt is overloaded:
-            // - ALT/END nodes: alt points to an .ALT node
-            // - RHS nonterminals (N with seq): alt points to the LHS .N definition
-            if let alt {
-                switch kind {
-                case .N where seq != nil:
-                    assert(alt.kind == .N, "RHS nonterminal alt should point to its LHS .N definition, got \(alt.kind)")
-                default:
-                    assert(alt.kind == .ALT, "alt should always point to a .ALT node, got \(alt.kind)")
-                }
-            }
-        }
-    }
-    var seq: GrammarNode? {
-        didSet {
-            assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
-        }
-    }
+    var alt, seq, prv: GrammarNode?
+//    var alt: GrammarNode? {
+//        didSet {
+//            // alt is overloaded:
+//            // - ALT/END nodes: alt points to an .ALT node
+//            // - RHS nonterminals (N with seq): alt points to the LHS .N definition
+//            if let alt {
+//                switch kind {
+//                case .N where seq != nil:
+//                    assert(alt.kind == .N, "RHS nonterminal alt should point to its LHS .N definition, got \(alt.kind)")
+//                default:
+//                    assert(alt.kind == .ALT, "alt should always point to a .ALT node, got \(alt.kind)")
+//                }
+//            }
+//        }
+//    }
+//    var seq: GrammarNode? {
+//        didSet {
+//            assert(seq?.kind != .ALT, "seq should never point to a .ALT node")
+//        }
+//    }
     init(kind: GrammarNodeKind, name: String, alt: GrammarNode? = nil, seq: GrammarNode? = nil) {
         self.kind = kind
         self.name = name
@@ -228,24 +228,31 @@ extension GrammarNode: CustomStringConvertible {
 }
 
 extension GrammarNode {
-    func resolveEndNodeLinks(parent: GrammarNode?, alternate: GrammarNode?) {
+    // sets the .seq and .alt links for END nodes
+    // sets the .prv links for all nodes (except LHS nonTerminals that have neither valid .seq nor .prv)
+    func resolveGrammarNodeLinks(parent: GrammarNode?, alternate: GrammarNode?) {
         number = GrammarNode.count
         GrammarNode.count += 1
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
-            seq?.resolveEndNodeLinks(parent: parent, alternate: alternate)
+            seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate)
+            seq?.prv = self
         case .N:
-            if let seq { // rhs
-                seq.resolveEndNodeLinks(parent: parent, alternate: alternate)
-            } else { // lhs
-                alt?.resolveEndNodeLinks(parent: self, alternate: alternate)
+            if isRHS {
+                seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate)
+                seq?.prv = self
+            } else {
+                alt?.resolveGrammarNodeLinks(parent: self, alternate: alternate)
             }
         case .ALT:
-            seq?.resolveEndNodeLinks(parent: parent, alternate: self)
-            alt?.resolveEndNodeLinks(parent: parent, alternate: alternate)
+            seq?.resolveGrammarNodeLinks(parent: parent, alternate: self)
+            seq?.prv = self
+            alt?.resolveGrammarNodeLinks(parent: parent, alternate: alternate)
+            prv = parent
         case .DO, .POS, .OPT, .KLN:
-            alt?.resolveEndNodeLinks(parent: self, alternate: alternate)
-            seq?.resolveEndNodeLinks(parent: parent, alternate: alternate)
+            alt?.resolveGrammarNodeLinks(parent: self, alternate: alternate)
+            seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate)
+            seq?.prv = self
         case .END:
             seq = parent
             alt = alternate
@@ -256,8 +263,9 @@ extension GrammarNode {
 extension GrammarNode {
     func clearNodes() {
         yield = []
-        // recursively clear child nodes but avoid loops
+        // recursively clear child nodes but avoid loops from END node .seq and .alt links
         if kind != .END {
+//            alt?.clearNodes()
             seq?.clearNodes()
         }
         // TODO: check if this treatment of .N is correct

@@ -41,13 +41,13 @@ let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
 //    .appendingPathComponent("apus")
 //    .appendingPathComponent("ScanModeTest")
-    .appendingPathComponent("Swift")
+//    .appendingPathComponent("Swift")
 //    .appendingPathComponent("CommentTest")
 //    .appendingPathComponent("attributeHunt")
 //    .appendingPathComponent("AfroozehHunt")
 //    .appendingPathComponent("apusWithAction")
 //    .appendingPathComponent("TortureSyntax")
-//    .appendingPathComponent("test")
+    .appendingPathComponent("test")
 //    .appendingPathComponent("silent")
 //    .appendingPathComponent("tortureART")
 //    .appendingPathComponent("tortureEBNF")
@@ -91,25 +91,25 @@ for message in grammar.messages {
     // use the AST to parse the message
     let start = clock()
     
-        for _ in 0..<1 {
-            messageParser.parse(tokens: messageScanner.tokens)
-        }
+    for _ in 0..<1 {
+        messageParser.parse(tokens: messageScanner.tokens)
+    }
     
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
     var stats = "cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount\n"
-        stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yield.count)\n"
-        stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
+    stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yield.count)\n"
+    stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
     Logger.ui.info("\(stats)")
     print("all tokens:")
     for t in messageScanner.tokens {
         print(t, "image", t.image)
     }
-//    print("tokensPatterns:")
-//    for tp in grammar.terminals {
-//        print(tp.key, tp.value.source)
-//    }
-
+    //    print("tokensPatterns:")
+    //    for tp in grammar.terminals {
+    //        print(tp.key, tp.value.source)
+    //    }
+    
     //    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count)
     
     // Sort elements (if BSR is Comparable) then join
@@ -126,11 +126,11 @@ for message in grammar.messages {
     
 #if DEBUG
     trace = false
+    var info = ""
     
     if grammar.nonTerminals.count < 1000 && messageParser.crf.count < 1000 {    // to avoid huge diagrams and parsers
         
         // MARK: - Generate New Parser
-        var info = ""
         
         let parserFile = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -138,13 +138,13 @@ for message in grammar.messages {
             .appendingPathComponent(grammar.startSymbol + "_parser")
             .appendingPathExtension("swift")
         info += "LL1 is \(grammar.isLL1)\n"
-//        Logger.ui.info("LL1 is \(grammar.isLL1)")
+        //        Logger.ui.info("LL1 is \(grammar.isLL1)")
         //        #Trace("LL1 is", grammar.isLL1)
         if grammar.isLL1 {
             let parserGenerator = ParserGenerator(outputFile: parserFile, grammar: grammar)
             try parserGenerator.generate()
             info += "LL1 recursive descent parser written to \(parserFile.lastPathComponent)\n"
-//            Logger.ui.info( "LL1 recursive descent parser written to \(parserFile.lastPathComponent)")
+            //            Logger.ui.info( "LL1 recursive descent parser written to \(parserFile.lastPathComponent)")
         }
         
         // MARK: - Generate CRF and AST diagrams
@@ -156,37 +156,39 @@ for message in grammar.messages {
         let diagramGenerator = ASTDiagramGenerator(outputFile: diagramFile, grammar: grammar, messageParser: messageParser)
         try diagramGenerator.generate()
         info += "AST diagram written to \(diagramFile.lastPathComponent)\n"
-//        Logger.ui.info( "AST diagram written to \(diagramFile.lastPathComponent)")
-        
-        // MARK: - SPPF and Derivation Diagrams
-        let sppfExtractor = SPPFExtractor(grammar: grammar, tokens: messageScanner.tokens)
-        
-        if let sppfRoot = sppfExtractor.extractSPPF() {
-            let sppfFile = URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent()
-                .appendingPathComponent("SPPF")
-                .appendingPathExtension("gv")
-            try generateSPPFDiagram(outputFile: sppfFile, root: sppfRoot)
-            info += "SPPF diagram written to \(sppfFile.lastPathComponent)\n"
-//            Logger.ui.info( "SPPF diagram written to \(sppfFile.lastPathComponent)")
-            //            #Trace("SPPF diagram written to \(sppfFile.lastPathComponent)")
-            
-        } else {
-            Logger.ui.warning( "SPPF: no parse tree to extract")
-            //            #Trace("\nSPPF: no parse tree to extract")
-        }
-        
-        let derivFile = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .appendingPathComponent("Derivations")
-            .appendingPathExtension("gv")
-        try generateDerivationDiagram(outputFile: derivFile, grammar: grammar, tokens: messageScanner.tokens)
-        info += "Derivation diagram written to \(derivFile.lastPathComponent)\n"
-//        Logger.ui.info( "Derivation diagram written to \(derivFile.lastPathComponent)")
-        //        #Trace("Derivation diagram written to \(derivFile.lastPathComponent)")
-        
-        Logger.ui.info("\(info)")
+        //        Logger.ui.info( "AST diagram written to \(diagramFile.lastPathComponent)")
     }
+    
+    // MARK: - Generate SPPF Diagram
+    let sppfExtractor = SPPFExtractor(grammar: grammar, tokens: messageScanner.tokens)
+    
+    if let sppfRoot = sppfExtractor.extractSPPF() {
+        let sppfFile = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("SPPF")
+            .appendingPathExtension("gv")
+        try generateSPPFDiagram(outputFile: sppfFile, root: sppfRoot)
+        info += "SPPF diagram written to \(sppfFile.lastPathComponent)\n"
+        //            Logger.ui.info( "SPPF diagram written to \(sppfFile.lastPathComponent)")
+        //            #Trace("SPPF diagram written to \(sppfFile.lastPathComponent)")
+        
+    } else {
+        Logger.ui.warning( "SPPF: no parse tree to extract")
+        //            #Trace("\nSPPF: no parse tree to extract")
+    }
+    
+    // MARK: - Generate Derivation Diagram
+    let derivFile = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .appendingPathComponent("Derivations")
+        .appendingPathExtension("gv")
+    try generateDerivationDiagram(outputFile: derivFile, grammar: grammar, tokens: messageScanner.tokens)
+    info += "Derivation diagram written to \(derivFile.lastPathComponent)\n"
+    //        Logger.ui.info( "Derivation diagram written to \(derivFile.lastPathComponent)")
+    //        #Trace("Derivation diagram written to \(derivFile.lastPathComponent)")
+    
+    Logger.ui.info("\(info)")
+    //    }
 #endif
     
     Logger.ui.debug("first/follow set size: \(GrammarNode.sizeofSets) terminals.count: \(grammar.terminals.count) nonTerminals.count: \(grammar.nonTerminals.count)")

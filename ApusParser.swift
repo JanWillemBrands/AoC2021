@@ -105,7 +105,7 @@ class ApusParser {
         
         for (name, node) in grammar.nonTerminals.sorted(by: { $0.key > $1.key }) {      // a fixed ordering with 'S' appearing first in small test grammars
             #Trace("Processing END nodes for:", name)
-            node.resolveEndNodeLinks(parent: node, alternate: node.alt)
+            node.resolveGrammarNodeLinks(parent: node, alternate: node.alt)
         }
         
         // TODO: finalize representation for EOS
@@ -131,6 +131,10 @@ class ApusParser {
         } while newSize != oldSize
         // store the cumulative set size
         GrammarNode.sizeofSets = newSize
+        
+        for frank in grammar.frankensteinTerminals {
+            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
+        }
 
         // this is to a give GrammarNodes access to their own grammar
         GrammarNode.grammar = grammar
@@ -213,7 +217,7 @@ class ApusParser {
                 cI += 1
                 try expect(["literal"])
                 let modeLiteral = literal()
-                if let found = grammar.terminals[terminal.name] {
+                if grammar.terminals[terminal.name] != nil {
                     grammar.terminals[terminal.name]?.mode.pushName = modeLiteral.name
                 } else {
                     print("WARNING: terminal \(terminal.name) not found when parsing mode")
@@ -417,9 +421,10 @@ class ApusParser {
         case "literal":
             node = literal()
             
-            // check if this is a frankenstein literal that allows partial prefix matches
+            // check if this is a frankenstein literal that allows partial token prefix matches
             if token.kind == "=>>" {
-                node.frankensteinMatchAllowed = true
+                grammar.frankensteinTerminals.append(node)
+//                backpropagatePartialTokenMatchAllowed(from: node)
                 cI += 1
             }
 
@@ -472,5 +477,5 @@ class ApusParser {
             throw ApusParserError.unexpectedToken(explanation: "Failed to parse grammar from symbol \(grammar.startSymbol)")
         }
     }
-    
+  
 }

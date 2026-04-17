@@ -16,46 +16,36 @@ import OSLog
 import Foundation
 
 
-// Lightweight value type for CRF dictionary keys or
-// a return edge in the CRF. Matches the paper's crfNode (L, i).
-struct Position: Hashable, Comparable, CustomStringConvertible {
+// Lightweight value type for CRF dictionary keys and return edges.
+// Matches the paper's crfNode (L, i).
+struct ParsePosition: Hashable, Comparable, CustomStringConvertible {
     let slot: GrammarNode
-    let index: Int
-    
-    var description: String {
-        slot.description + "." + index.description
-    }
-    
-    var ebnfDot: String {
-        slot.ebnfDot() + "," + index.description
-    }
-    
-    static func < (lhs: Position, rhs: Position) -> Bool {
+    let index: TokenPosition
+
+    var description: String { "\(slot).\(index)" }
+    var ebnfDot: String { "\(slot.ebnfDot()),\(index)" }
+
+    static func < (lhs: ParsePosition, rhs: ParsePosition) -> Bool {
         lhs.description < rhs.description
     }
 }
 
 // Cluster node in the CRF. Mutable, identity-based.
 // Represents clusterNode (X, k) from the paper.
-final class Cluster: CustomStringConvertible {
+final class ParseCluster: CustomStringConvertible {
     let slot: GrammarNode           // the LHS nonterminal (X)
-    let index: Int                  // input position (k)
-    
-    var returns: Set<Position> = []
-    var pops: Set<Int> = []        // Paper: P — contingent returns
-    
-    init(slot: GrammarNode, index: Int) {
+    let index: TokenPosition        // input position (k)
+
+    var returns: Set<ParsePosition> = []
+    var pops: Set<TokenPosition> = []   // Paper: P — contingent returns
+
+    init(slot: GrammarNode, index: TokenPosition) {
         self.slot = slot
         self.index = index
     }
-    
-    var description: String {
-        slot.description + "." + index.description
-    }
-    
-    var ebnfDot: String {
-        slot.ebnfDot() + "," + index.description
-    }
+
+    var description: String { "\(slot).\(index)" }
+    var ebnfDot: String { "\(slot.ebnfDot()),\(index)" }
 }
 
 
@@ -64,7 +54,7 @@ final class Cluster: CustomStringConvertible {
 extension MessageParser {
 
     // Paper: ntAdd(X, j) — add descriptors for all alternates of a bracket/nonterminal
-    func addDecscriptorsForAlternates(X: GrammarNode, k: Int, i: Int) {
+    func addDecscriptorsForAlternates(X: GrammarNode, k: TokenPosition, i: TokenPosition) {
         assert([.N, .DO, .OPT, .ALT, .KLN, .POS].contains(X.kind), "Called \(#function) on a GrammarNode \(X) which is not a bracket")
         var current = X.alt
         while let alt = current {
@@ -79,25 +69,22 @@ extension MessageParser {
     func call() {
         // cL points to the RHS nonterminal node
         // cL.alt points to the LHS nonterminal node
-        
+
         // Create the return edge: (L=cL, i=cU)
-        let returnEdge = Position(slot: cL, index: cU)
-        
+        let returnEdge = ParsePosition(slot: cL, index: cU)
+
         // Find or create the cluster node for (X=cL.alt!, k=cI)
-        let clusterKey = Position(slot: cL.alt!, index: cI)
-        
+        let clusterKey = ParsePosition(slot: cL.alt!, index: cI)
+
         if let existingCluster = crf[clusterKey] {
-            // Cluster already exists — add the return edge if new
             if existingCluster.returns.insert(returnEdge).inserted {
-                // Add descriptors for previous pop actions from that cluster
                 for pop in existingCluster.pops {
                     addDescriptor(L: cL.seq!, k: cU, i: pop)
                     addYield(L: cL, i: cU, k: cI, j: pop)
                 }
             }
         } else {
-            // Create new cluster
-            let newCluster = Cluster(slot: cL.alt!, index: cI)
+            let newCluster = ParseCluster(slot: cL.alt!, index: cI)
             crf[clusterKey] = newCluster
             newCluster.returns.insert(returnEdge)
             addDecscriptorsForAlternates(X: cL.alt!, k: cI, i: cI)
@@ -106,9 +93,9 @@ extension MessageParser {
     
     // Paper: rtn(X, k, j) — return from a nonterminal
     func rtn(X: GrammarNode) {
-        let clusterKey = Position(slot: X, index: cU)
+        let clusterKey = ParsePosition(slot: X, index: cU)
         guard let cluster = crf[clusterKey] else { return }
-        
+
         if cluster.pops.insert(cI).inserted {
             for rtn in cluster.returns {
                 addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
@@ -120,25 +107,20 @@ extension MessageParser {
     // bracketCall — enter a bracket (DO, OPT, KLN, POS)
     // Similar to call() but the bracket node IS the "nonterminal" — no indirection through .alt
     func bracketCall(bracket: GrammarNode) {
-        // Create return edge: (L=bracket, i=cU) — records where to return
-        let returnEdge = Position(slot: bracket, index: cU)
-        
-        // Find or create cluster for (bracket, cI)
-        let clusterKey = Position(slot: bracket, index: cI)
-        
+        let returnEdge = ParsePosition(slot: bracket, index: cU)
+        let clusterKey = ParsePosition(slot: bracket, index: cI)
+
         if let existingCluster = crf[clusterKey] {
             if existingCluster.returns.insert(returnEdge).inserted {
                 for pop in existingCluster.pops {
-                    // Continue past bracket with restored outer cU
                     addDescriptor(L: bracket.seq!, k: cU, i: pop)
                     addYield(L: bracket, i: cU, k: cI, j: pop)
                 }
             }
         } else {
-            let newCluster = Cluster(slot: bracket, index: cI)
+            let newCluster = ParseCluster(slot: bracket, index: cI)
             crf[clusterKey] = newCluster
             newCluster.returns.insert(returnEdge)
-            // Dispatch alternates inside the bracket
             addDecscriptorsForAlternates(X: bracket, k: cI, i: cI)
         }
     }
@@ -146,25 +128,18 @@ extension MessageParser {
     // bracketRtn — return from a bracket
     // Similar to rtn() but also handles KLN/POS re-entry
     func bracketRtn(bracket: GrammarNode) {
-        let clusterKey = Position(slot: bracket, index: cU)
+        let clusterKey = ParsePosition(slot: bracket, index: cU)
         guard let cluster = crf[clusterKey] else { return }
-        
+
         if cluster.pops.insert(cI).inserted {
             for rtn in cluster.returns {
-                // BSR for the bracket span
                 addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
-                // Continue past the bracket
                 addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
             }
-            
-            // KLN/POS: re-enter the bracket for another iteration.
-            // Each iteration gets its own cluster at (bracket, cI).
-            // The new cluster inherits the SAME return edges as the current cluster,
-            // so that when the next iteration pops, it goes directly back to the
-            // original outer caller(s) — not through a chain of iterations.
+
             if bracket.kind.isClosure {
-                let nextKey = Position(slot: bracket, index: cI)
-                
+                let nextKey = ParsePosition(slot: bracket, index: cI)
+
                 if let existingCluster = crf[nextKey] {
                     for returnEdge in cluster.returns {
                         if existingCluster.returns.insert(returnEdge).inserted {
@@ -175,7 +150,7 @@ extension MessageParser {
                         }
                     }
                 } else {
-                    let newCluster = Cluster(slot: bracket, index: cI)
+                    let newCluster = ParseCluster(slot: bracket, index: cI)
                     crf[nextKey] = newCluster
                     newCluster.returns = cluster.returns
                     addDecscriptorsForAlternates(X: bracket, k: cI, i: cI)

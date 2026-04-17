@@ -69,12 +69,12 @@ class ASTDiagramGenerator {
         
         // generate the call return forest
         // Collect all return positions so we can render them as labeled nodes
-        var returnPositions: Set<Position> = []
+        var returnPositions: Set<ParsePosition> = []
         for (key, cluster) in (messageParser?.crf ?? [:]).sorted(by: { $0.key < $1.key }) {
             let poppedIndexes = cluster.pops.sorted().description.dropFirst().dropLast()
             content.append("\n    \(key) [label = <\(cluster.slot.ebnfDot().graphvizHTML),\(cluster.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
             for edge in cluster.returns {
-                let edgePos = Position(slot: edge.slot, index: edge.index)
+                let edgePos = ParsePosition(slot: edge.slot, index: edge.index)
                 content.append("\n    \(key) -> \(edgePos)")
                 returnPositions.insert(edgePos)
             }
@@ -130,7 +130,7 @@ class ASTDiagramGenerator {
         node.cell = Cell(name: name, r: row, c: col)
         grid[node.cell] = true
         
-        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.yield.sorted().description.graphvizHTML)>]")
+        content.append("\n    \(node.cell) [label = <\(node) \(node.frankensteinMatchAllowed)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.yield.sorted().description.graphvizHTML)>]")
 //        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>am [\(node.ambiguous.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.actions.joined(separator: "<br/>"))>]")
 //        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)>]")
 

@@ -5,45 +5,33 @@ digraph SPPF {
   edge [arrowsize = 0.4]
   rankdir = "TB"
   ordering = out
-  n0 [shape = box, style = rounded, width=0.0, height=0.0, label = <S,0,6>]
-  n1 [shape = rectangle, width=0.0, height=0.0, label = "S=&lt;sS&gt;·,5"]
-  n2 [shape = box, style = rounded, width=0.0, height=0.0, label = <"&gt;",5,6>]
-  n3 [shape = rectangle, width=0.0, height=0.0, label = <S=&lt;sS·&gt;,0,5>]
-  n4 [shape = rectangle, width=0.0, height=0.0, label = "S=&lt;sS·&gt;,2"]
-  n5 [shape = box, style = rounded, width=0.0, height=0.0, label = <S,2,5>]
-  n6 [shape = rectangle, width=0.0, height=0.0, label = <S=&lt;s·S&gt;,0,2>]
-  n7 [shape = rectangle, width=0.0, height=0.0, label = "S=&lt;sS&gt;·,4"]
-  n8 [shape = rectangle, width=0.0, height=0.0, label = "S=&lt;s·S&gt;,1"]
-  n9 [shape = box, style = rounded, width=0.0, height=0.0, label = <"&gt;",4,5>]
-  n10 [shape = rectangle, width=0.0, height=0.0, label = <S=&lt;sS·&gt;,2,4>]
-  n11 [shape = box, style = rounded, width=0.0, height=0.0, label = <"s",1,2>]
-  n12 [shape = box, style = rounded, width=0.0, height=0.0, label = <"&lt;",0,1>]
-  n13 [shape = rectangle, width=0.0, height=0.0, label = "S=&lt;sS·&gt;,4"]
-  n14 [shape = box, style = rounded, width=0.0, height=0.0, label = <S,4,4>]
-  n15 [shape = rectangle, width=0.0, height=0.0, label = <S=&lt;s·S&gt;,2,4>]
-  n16 [shape = rectangle, width=0.0, height=0.0, label = "S=ε·,4"]
-  n17 [shape = rectangle, width=0.0, height=0.0, label = "S=&lt;s·S&gt;,3"]
-  n18 [shape = box, style = "rounded, dashed", width=0.0, height=0.0, label = <ε,4,4>]
-  n19 [shape = box, style = rounded, width=0.0, height=0.0, label = <"s",3,4>]
-  n20 [shape = box, style = rounded, width=0.0, height=0.0, label = <"&lt;",2,3>]
+  n0 [shape = box, style = rounded, width=0.0, height=0.0, label = <S,0,4>]
+  n1 [shape = rectangle, width=0.0, height=0.0, label = "S=&lt;Y·,1"]
+  n2 [shape = box, style = rounded, width=0.0, height=0.0, label = <Y,1,4>]
+  n3 [shape = box, style = rounded, width=0.0, height=0.0, label = <"&lt;",0,1>]
+  n4 [shape = rectangle, width=0.0, height=0.0, label = "Y=S&gt;·,3.1"]
+  n5 [shape = box, style = rounded, width=0.0, height=0.0, label = <"&gt;",3.1,4>]
+  n6 [shape = box, style = rounded, width=0.0, height=0.0, label = <S,1,3.1>]
+  n7 [shape = rectangle, width=0.0, height=0.0, label = "S=&lt;Y·,2"]
+  n8 [shape = box, style = rounded, width=0.0, height=0.0, label = <Y,2,3.1>]
+  n9 [shape = box, style = rounded, width=0.0, height=0.0, label = <"&lt;",1,2>]
+  n10 [shape = rectangle, width=0.0, height=0.0, label = "Y=S&gt;·,3"]
+  n11 [shape = box, style = rounded, width=0.0, height=0.0, label = <"&gt;",3,3.1>]
+  n12 [shape = box, style = rounded, width=0.0, height=0.0, label = <S,2,3>]
+  n13 [shape = rectangle, width=0.0, height=0.0, label = "S=x·,2"]
+  n14 [shape = box, style = rounded, width=0.0, height=0.0, label = <"x",2,3>]
   n0 -> n1
   n1 -> n3
   n1 -> n2
-  n3 -> n4
+  n2 -> n4
   n4 -> n6
   n4 -> n5
-  n5 -> n7
-  n6 -> n8
-  n7 -> n10
+  n6 -> n7
   n7 -> n9
-  n8 -> n12
-  n8 -> n11
-  n10 -> n13
-  n13 -> n15
+  n7 -> n8
+  n8 -> n10
+  n10 -> n12
+  n10 -> n11
+  n12 -> n13
   n13 -> n14
-  n14 -> n16
-  n15 -> n17
-  n16 -> n18
-  n17 -> n20
-  n17 -> n19
 }

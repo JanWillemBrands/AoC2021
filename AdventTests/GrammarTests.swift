@@ -56,8 +56,8 @@ private func parseMatches(grammar grammarString: String, message: String) throws
     let messageParser = MessageParser(grammar: grammar)
     messageParser.parse(tokens: messageScanner.tokens)
 
-    let extent = messageParser.tokens.count - 1
-    return messageParser.currentParseRoot.yield.contains { $0.i == 0 && $0.j == extent }
+    let extent = TokenPosition(token: messageParser.tokens.count - 1)
+    return messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
 }
 
 /// Run all pass/fail messages for a test case.
@@ -1331,6 +1331,112 @@ struct GrammarTests {
         func testNonLL1(_ tc: TestCase) throws {
             let grammar = try Self.parseGrammar(tc.grammar)
             #expect(grammar.isLL1 == false, "\(tc.label): expected non-LL(1) for grammar: \(tc.grammar)")
+        }
+    }
+
+    // MARK: - Schrödinger Tokens
+
+    @Suite("Schrödinger Tokens", .serialized)
+    struct SchrodingerTokens {
+        static let cases: [TestCase] = [
+            // Two named terminals matching the same literal create a Schrödinger dual.
+            // The parser must try both duals to find the successful parse.
+            TestCase(
+                grammar: #"t1 : "x". t2 : "x". S = t1 "a" | t2 "b"."#,
+                pass: ["x a", "x b"],
+                fail: ["x c", "x"],
+                label: "basic Schrödinger dual"
+            ),
+            // Three named terminals on the same literal — three-way Schrödinger.
+            TestCase(
+                grammar: #"t1 : "x". t2 : "x". t3 : "x". S = t1 "a" | t2 "b" | t3 "c"."#,
+                pass: ["x a", "x b", "x c"],
+                fail: ["x d"],
+                label: "three-way Schrödinger"
+            ),
+            // Keyword vs regex: "for" matches both kw (literal) and id (regex) at length 3.
+            // Only one branch leads to a successful parse depending on the following token.
+            TestCase(
+                grammar: #"kw : "for". id : /[a-z]+/. S = kw "(" | id ")"."#,
+                pass: ["for (", "for )", "hello )"],
+                fail: ["for for", "hello ("],
+                label: "keyword vs regex Schrödinger"
+            ),
+            // Schrödinger token in a closure — the dual must be tried on each iteration.
+            TestCase(
+                grammar: #"t1 : "x". t2 : "x". S = {t1} t2 "a"."#,
+                pass: ["x a", "x x a", "x x x a"],
+                fail: ["a"],
+                label: "Schrödinger in closure"
+            ),
+            // Schrödinger with nonterminal indirection.
+            TestCase(
+                grammar: #"t1 : "x". t2 : "x". S = A | B. A = t1 "a". B = t2 "b"."#,
+                pass: ["x a", "x b"],
+                fail: ["x c"],
+                label: "Schrödinger through nonterminals"
+            ),
+        ]
+
+        @Test(arguments: cases)
+        func test(_ tc: TestCase) throws {
+            try runTestCase(tc)
+        }
+    }
+
+    // MARK: - Frankenstein Tokens
+
+    @Suite("Frankenstein Tokens", .serialized)
+    struct FrankensteinTokens {
+        static let cases: [TestCase] = [
+            // Basic two-character split: scanner produces ">>" as longest match,
+            // parser splits it into two ">" via Frankenstein prefix matching.
+            TestCase(
+                grammar: #"shift : ">>". S = ">" =>> ">" =>> | shift."#,
+                pass: [">>", "> >"],
+                label: "basic Frankenstein split or direct match"
+            ),
+            // Frankenstein-only path (no direct match for the composite token).
+            TestCase(
+                grammar: #"shift : ">>". S = ">" =>> ">" =>> ."#,
+                pass: [">>", "> >"],
+                fail: [">"],
+                label: "Frankenstein-only split"
+            ),
+            // Three-character split: ">>>" split into three ">".
+            TestCase(
+                grammar: #"tripleShift : ">>>". shift : ">>". S = ">" =>> ">" =>> ">" =>> ."#,
+                pass: [">>>", ">> >", "> >>", "> > >"],
+                fail: [">>", ">", ">> >>"],
+                label: "three-way Frankenstein split"
+            ),
+            // Frankenstein in the middle of a sequence.
+            TestCase(
+                grammar: #"shift : ">>". S = "a" ">" =>> ">" =>> "b"."#,
+                pass: ["a >> b", "a > > b"],
+                fail: ["a > b", "a b"],
+                label: "Frankenstein mid-sequence"
+            ),
+            // Frankenstein with alternation: one alt splits, other matches directly.
+            TestCase(
+                grammar: #"shift : ">>". S = ">" =>> ">" =>> "a" | shift "b"."#,
+                pass: [">> a", ">> b", "> > a"],
+                fail: ["> > b"],
+                label: "Frankenstein vs direct in alternation"
+            ),
+            // Frankenstein through a nonterminal boundary:
+            // the split ">" pieces are consumed in different nonterminals.
+            TestCase(
+                grammar: #"shift : ">>". S = A B. A = ">" =>> . B = ">" =>> ."#,
+                pass: [">>", "> >"],
+                fail: [">"],
+                label: "Frankenstein across nonterminals"
+            ),
+        ]
+
+        @Test(arguments: cases)
+        func test(_ tc: TestCase) throws {
+            try runTestCase(tc)
         }
     }
 

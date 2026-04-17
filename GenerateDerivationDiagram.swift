@@ -12,12 +12,12 @@ import Foundation
 class ParseTreeNode {
     let name: String
     let token: Token?             // non-nil for terminal leaves
-    let from: Int
-    let to: Int
+    let from: TokenPosition
+    let to: TokenPosition
     var children: [ParseTreeNode] = []
     var isTerminal: Bool { token != nil }
-    
-    init(name: String, from: Int, to: Int, token: Token? = nil) {
+
+    init(name: String, from: TokenPosition, to: TokenPosition, token: Token? = nil) {
         self.name = name
         self.from = from
         self.to = to
@@ -51,8 +51,8 @@ class DerivationBuilder {
     
     private struct ExpansionKey: Hashable {
         let node: ObjectIdentifier
-        let from: Int
-        let to: Int
+        let from: TokenPosition
+        let to: TokenPosition
     }
     
     init(grammar: Grammar, tokens: [Token]) {
@@ -62,16 +62,16 @@ class DerivationBuilder {
     
     /// Entry point: build all parse trees rooted at the grammar's start symbol.
     func buildAllTrees(limit: Int = 10) -> [ParseTreeNode] {
-        let n = tokens.count - 1
-        guard grammar.root.yield.contains(where: { $0.i == 0 && $0.j == n }) else { return [] }
-        return buildNonterminalTrees(grammar.root, from: 0, to: n, limit: limit)
+        let n = TokenPosition(token: tokens.count - 1)
+        guard grammar.root.yield.contains(where: { $0.i == .zero && $0.j == n }) else { return [] }
+        return buildNonterminalTrees(grammar.root, from: .zero, to: n, limit: limit)
     }
     
     // MARK: - Tree Construction
     
     /// Build all parse trees for a nonterminal over [from, to].
     /// Each tree is a ParseTreeNode whose children come from expanding one alternate.
-    private func buildNonterminalTrees(_ nt: GrammarNode, from: Int, to: Int, limit: Int) -> [ParseTreeNode] {
+    private func buildNonterminalTrees(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [ParseTreeNode] {
         let key = ExpansionKey(node: ObjectIdentifier(nt), from: from, to: to)
         guard activeExpansions.insert(key).inserted else { return [] }
         defer { activeExpansions.remove(key) }
@@ -86,7 +86,7 @@ class DerivationBuilder {
     /// Walk the alternate chain of a grammar node (nonterminal or bracket),
     /// expanding each alternate's body over [from, to].
     /// Returns child lists — each list is one valid way to fill the span.
-    private func expandAlternates(_ node: GrammarNode, from: Int, to: Int, limit: Int) -> [[ParseTreeNode]] {
+    private func expandAlternates(_ node: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
         var results: [[ParseTreeNode]] = []
         var altNode = node.alt
         while let alt = altNode {
@@ -105,7 +105,7 @@ class DerivationBuilder {
     /// Expand a sequence of body symbols over [from, to] by scanning left-to-right.
     /// For each symbol, `endPositions` provides the valid split points from BSR evidence.
     /// The cross-product of all symbol positions is computed inline through recursion.
-    private func expandBody(_ symbols: [GrammarNode], from: Int, to: Int, limit: Int) -> [[ParseTreeNode]] {
+    private func expandBody(_ symbols: [GrammarNode], from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
         guard let first = symbols.first else {
             return from == to ? [[]] : []
         }
@@ -130,10 +130,10 @@ class DerivationBuilder {
     ///   - Nonterminal: one option per ambiguous parse, each containing one subtree
     ///   - Bracket: one option per interpretation, each a flat list of inlined children
     ///   - EPS: one option with zero children
-    private func buildSymbolChildren(_ sym: GrammarNode, from: Int, to: Int, limit: Int) -> [[ParseTreeNode]] {
+    private func buildSymbolChildren(_ sym: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
         switch sym.kind {
         case .T, .TI, .C, .B:
-            return [[ParseTreeNode(name: sym.name, from: from, to: to, token: tokens[from])]]
+            return [[ParseTreeNode(name: sym.name, from: from, to: to, token: tokens[from.tokenIndex])]]
         case .N:
             guard let lhs = sym.alt else { return [] }
             return buildNonterminalTrees(lhs, from: from, to: to, limit: limit).map { [$0] }
@@ -151,7 +151,7 @@ class DerivationBuilder {
     /// EBNF brackets are transparent in the parse tree — no bracket node appears.
     /// Instead, each iteration's body symbols are expanded and concatenated as siblings.
     /// For closures (KLN/POS), iterations chain forward: [from,k₁] + [k₁,k₂] + ... + [kₙ,to].
-    private func expandIterations(_ bracket: GrammarNode, from: Int, to: Int, limit: Int) -> [[ParseTreeNode]] {
+    private func expandIterations(_ bracket: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
         if from == to { return [[]] }
         var results: [[ParseTreeNode]] = []
         // Each BSR span (i, k=iterStart, j=iterEnd) in the bracket's yield
@@ -186,25 +186,21 @@ class DerivationBuilder {
     ///     For closures (KLN/POS), chain through multiple iterations via BFS.
     ///     Nullable brackets (KLN/OPT) also include `from` itself (empty match).
     ///   - Epsilon: matches only at `from` (empty span).
-    private func endPositions(_ symbol: GrammarNode, from: Int) -> Set<Int> {
+    private func endPositions(_ symbol: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
         switch symbol.kind {
         case .T, .TI, .C, .B:
-            guard from < tokens.count - 1 else { return [] }
-            var tok = tokens[from]
-            repeat {
-                if tok.kind == symbol.name { return [from + 1] }
-                guard let next = tok.dual else { return [] }
-                tok = next
-            } while true
+            var positions: Set<TokenPosition> = []
+            for span in symbol.yield where span.k == from { positions.insert(span.j) }
+            return positions
         case .N:
             guard let lhs = symbol.alt else { return [] }
-            var positions: Set<Int> = []
+            var positions: Set<TokenPosition> = []
             for span in lhs.yield where span.i == from { positions.insert(span.j) }
             return positions
         case .DO, .OPT, .KLN, .POS:
-            var positions: Set<Int> = []
+            var positions: Set<TokenPosition> = []
             if symbol.kind == .KLN || symbol.kind == .OPT { positions.insert(from) }
-            var visited: Set<Int> = []
+            var visited: Set<TokenPosition> = []
             var queue = [from]
             while !queue.isEmpty {
                 let pos = queue.removeFirst()
@@ -267,7 +263,7 @@ func generateDerivationDiagram(outputFile file: URL, grammar: Grammar, tokens: [
 private func renderTreeBody(_ tree: ParseTreeNode, prefix: String) -> String {
     var dot = ""
     var n = 0
-    var terminals: [(id: String, pos: Int)] = []
+    var terminals: [(id: String, pos: TokenPosition)] = []
     
     func emit(_ node: ParseTreeNode) -> String {
         let id = "\(prefix)n\(n)"; n += 1

@@ -28,9 +28,9 @@ class MessageParser {
 
     // MARK: - GLL algorithm state (paper variables)
     var currentParseRoot: GrammarNode!
-    var cL: GrammarNode!          // current grammar slot
-    var cI: Int = 0               // current input position
-    var cU: Int = 0               // current cluster index
+    var cL: GrammarNode!                    // current grammar slot
+    var cI: TokenPosition = .zero           // current input position
+    var cU: TokenPosition = .zero           // current cluster index
 
     // MARK: - Descriptor management (Paper: R, U)
     var remaining: [Descriptor] = []
@@ -43,13 +43,13 @@ class MessageParser {
     var duplicateDescriptorCount = 0
 
     // MARK: - Call Return Forest (Paper: CRF)
-    var crf: [Position: Cluster] = [:]
+    var crf: [ParsePosition: ParseCluster] = [:]
 
     // MARK: - Binary Subtree Representation (Paper: Υ)
     var yield: Set<BSR> = []
 
     // MARK: - Error reporting, captures the furthest the parse has progressed before a mismatch occurred
-    var furthestMismatchIndex: Int = 0
+    var furthestMismatchIndex: TokenPosition = .zero
     var furthestMismatchSlot: GrammarNode!
     var furthestMismatchExpected: Set<String> = []
 
@@ -75,33 +75,30 @@ class MessageParser {
             }
         }
         currentParseRoot = grammar.root
-        cL = nil; cI = 0; cU = 0
+        cL = nil; cI = .zero; cU = .zero
         unique = []; remaining = []
         failedParses = 0; successfullParses = 0
         descriptorCount = 0; duplicateDescriptorCount = 0
         crf = [:]; yield = []
-        furthestMismatchIndex = 0
+        furthestMismatchIndex = .zero
         furthestMismatchSlot = currentParseRoot
         furthestMismatchExpected = []
 
         // Set up root cluster
-        let rootCluster = Cluster(slot: grammar.root, index: 0)
-        crf[Position(slot: grammar.root, index: 0)] = rootCluster
+        let rootCluster = ParseCluster(slot: grammar.root, index: .zero)
+        crf[ParsePosition(slot: grammar.root, index: .zero)] = rootCluster
         grammar.root.clearNodes()
 
         // Seed initial descriptors (Paper: ntAdd for start symbol)
-        addDecscriptorsForAlternates(X: grammar.root, k: 0, i: 0)
+        addDecscriptorsForAlternates(X: grammar.root, k: .zero, i: .zero)
 
         // Run GLL algorithm
         nextDescriptor: while getDescriptor() {
-            
-            // a mechanism to match tokens on prefixes e.g.  '>?' is a valid operator but also '>' is generic close and '?' is optional
-            frankenstein = nil
 
             while true {
 
                 trace = false
-                #Trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI].kind) \(tokens[cI].image)")
+                #Trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI.tokenIndex].kind) \(tokens[cI.tokenIndex].image)")
                 trace = true
 
                 switch cL.kind {
@@ -109,9 +106,9 @@ class MessageParser {
                     addYield(L: cL, i: cU, k: cI, j: cI)
                     cL = cL.seq!
                 case .T, .TI, .C, .B:
-                    if tokenMatch() {
-                        addYield(L: cL, i: cU, k: cI, j: cI + 1)
-                        cI += 1
+                    if let next = tokenMatch() {
+                        addYield(L: cL, i: cU, k: cI, j: next)
+                        cI = next
                         cL = cL.seq!
                     } else {
                         failedParses += 1
@@ -183,7 +180,8 @@ class MessageParser {
             }
         }
 
-        successfullParses = currentParseRoot.yield.filter { y in y.i == 0 && y.j == tokens.count-1 }.count
+        let eosPosition = TokenPosition(token: tokens.count - 1)
+        successfullParses = currentParseRoot.yield.filter { y in y.i == .zero && y.j == eosPosition }.count
         trace = true
         print(
             "\nmatched:", successfullParses,
@@ -193,7 +191,7 @@ class MessageParser {
             "  duplicateDescriptors:", duplicateDescriptorCount
         )
         if successfullParses == 0 {
-            let mismatchToken = tokens[furthestMismatchIndex]
+            let mismatchToken = tokens[furthestMismatchIndex.tokenIndex]
             let position = mismatchToken.image.base.linePosition(of: mismatchToken.image.startIndex)
             let expected = furthestMismatchExpected.sorted().joined(separator: ", ")
             print("""
@@ -209,7 +207,7 @@ class MessageParser {
 
     // TODO:  why is this no longer used?
     func testRepeat() -> Bool {
-        let d = Descriptor(L: cL, k: Int32(cU), i: Int32(cI))
+        let d = Descriptor(L: cL, k: cU, i: cI)
         return !unique.insert(d).inserted
     }
 
@@ -217,12 +215,20 @@ class MessageParser {
     /// Returns true if any Schrödinger dual of `tokens[cI]` satisfies:
     ///   token ∈ FIRST(slot)  ∨  (ε ∈ FIRST(slot) ∧ token ∈ FOLLOW(bracket))
     /// Uses BitSet membership (O(1) bit test) instead of Set<String>.contains().
+    /// At Frankenstein sub-positions, conservatively returns true (rare path).
     func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
-        var current = tokens[cI]
+        
+        
+//        return true     //  TODO:  REMOVE THIS HACK !!!
+        
+
+        if slot.frankensteinMatchAllowed { return true }
+        print("testSelect \(slot.ebnfDot()) not frankenstein allowed")
+        var current = tokens[cI.tokenIndex]
         repeat { // to handle Schrödinger tokens
-            let kid: Int = current.kindID
-            if slot.firstBS.contains(kid)
-                || slot.firstBS.contains(grammar.epsilonID) && bracket.followBS.contains(kid) {
+            let cID = current.kindID!
+            if slot.firstBS.contains(cID)
+                || slot.firstBS.contains(grammar.epsilonID) && bracket.followBS.contains(cID) {
                 return true
             }
             guard let next = current.dual else { return false }
@@ -230,58 +236,67 @@ class MessageParser {
         } while true
     }
 
-    public var frankenstein: String?
-    /// Test whether the current token matches the terminal at the current grammar slot.
-    /// Considers Schrödinger tokens before it tries a Frankenstein manoeuvre
-    /// Uses integer comparison (O(1)) instead of string equality, except for Frankenstein
-    func tokenMatch() -> Bool {
-        var dualUsed = false
-        // Frankenstein remainder takes priority
-        if frankenstein != nil {
-            return frankensteinMatch()
+    /// Match the current terminal against the token at cI. Returns the next position on success.
+    /// Fast path: integer kindID comparison + Schrödinger duals.
+    /// Frankenstein path: prefix-match against the token image when cI has a charOffset,
+    /// or when the grammar slot allows Frankenstein splitting.
+    func tokenMatch() -> TokenPosition? {
+        let tokenIdx = cI.tokenIndex
+        let charOff  = cI.charOffset
+//        Logger.parse.debug("tokenMatch cI \(self.cI) \(self.cL.name)")
+
+        if charOff != 0 {
+            // RARE: Frankenstein sub-position — match against remainder of token image
+            let image = tokens[tokenIdx].stripped
+            let remainder = image.dropFirst(charOff)
+            Logger.parse.debug("frankenstein remainder \(remainder) index \(self.cI) image \(image)")
+            if remainder.hasPrefix(cL.name) {
+                let newOff = charOff + cL.name.count
+                if newOff >= image.count {
+                    return cI.nextToken()           // token fully consumed
+                }
+                return cI.at(charOffset: newOff)    // more remainder
+            }
+            return nil
         }
-        // Try exact match, including Schrödinger duals
-        var current = tokens[cI]
+
+        // FAST PATH: exact match + Schrödinger duals
+        var current = tokens[tokenIdx]
         while true {
             if cL.nameID == current.kindID {
-                return true
+                return cI.nextToken()
             }
             guard let next = current.dual else { break }
             current = next
-            dualUsed = true
         }
-        if dualUsed {
-//            Logger.parse.debug("dual \(self.cL.name) in \(self.tokens[self.cI])")
-        }
-        // Last resort: Frankenstein prefix split
+
+        
+        // RARE: Frankenstein prefix split
         if cL.frankensteinMatchAllowed {
-            Logger.parse.debug("frankenstein allowed \(self.cL.name) at \(self.cL.ebnfDot()) prefix matching in \(self.tokens[self.cI])")
-            return frankensteinMatch()
+            let image = tokens[tokenIdx].stripped
+            Logger.parse.debug("frankenstein allowed \(self.cL.name) at \(self.cL.ebnfDot()) prefix matching image \(image)")
+            if image.hasPrefix(cL.name) && image.count > cL.name.count {
+                return cI.at(charOffset: cL.name.count)
+            }
         }
-        return false
+        return nil
     }
 
-    private func frankensteinMatch() -> Bool {
-        Logger.parse.debug("frankenstein \(self.frankenstein ?? "nil") index \(self.cI) image \(self.tokens[self.cI].stripped)")
-
-        let token = frankenstein ?? tokens[cI].stripped
-        if token.hasPrefix(cL.name) {
-            let remainder = String(token.dropFirst(cL.name.count))
-            frankenstein = remainder.isEmpty ? nil : remainder
-            return true
-        }
-        return false
-    }
-    
     /// Test whether the current token is in the follow set of a bracket (LHS nonterminal).
     /// Handles Schrödinger tokens by checking all duals.
+    /// At Frankenstein sub-positions, conservatively returns true (rare path).
     func followCheck(bracket: GrammarNode) -> Bool {
-        var current = tokens[cI]
+        
+//        return true         // TODO:  REMOVE THIS HACK ?!@!!
+        
+        if bracket.frankensteinMatchAllowed { return true }
+        print("followCheck \(bracket.ebnfDot()) not frankenstein allowed")
+        var current = tokens[cI.tokenIndex]
         repeat {  // to handle Schrödinger tokens
             if bracket.followBS.contains(current.kindID) { return true }
             guard let next = current.dual else { return false }
             current = next
         } while true
     }
-    
+
 }

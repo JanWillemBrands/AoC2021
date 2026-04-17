@@ -6,28 +6,29 @@ digraph Derivations {
   rankdir = TB
   ordering = out
   labelloc = t
-  label = <S = "&lt;" "s" S "&gt;" | ε .>
+  label = <S = "x" | "&lt;" Y .>
   n0 [shape = ellipse, width=0.0, height=0.0, label = <S>]
   n1 [shape = box, width=0.0, height=0.0, label = <&lt;>]
   n0 -> n1
-  n2 [shape = box, width=0.0, height=0.0, label = <s>]
-  n0 -> n2
+  n2 [shape = ellipse, width=0.0, height=0.0, label = <Y>]
   n3 [shape = ellipse, width=0.0, height=0.0, label = <S>]
   n4 [shape = box, width=0.0, height=0.0, label = <&lt;>]
   n3 -> n4
-  n5 [shape = box, width=0.0, height=0.0, label = <s>]
-  n3 -> n5
+  n5 [shape = ellipse, width=0.0, height=0.0, label = <Y>]
   n6 [shape = ellipse, width=0.0, height=0.0, label = <S>]
-  n3 -> n6
-  n7 [shape = box, width=0.0, height=0.0, label = <&gt;>]
-  n3 -> n7
-  n0 -> n3
-  n8 [shape = box, width=0.0, height=0.0, label = <&gt;>]
-  n0 -> n8
-  { rank = same; n1; n2; n4; n5; n7; n8 }
-  n1 -> n2 [style = invis]
-  n2 -> n4 [style = invis]
-  n4 -> n5 [style = invis]
-  n5 -> n7 [style = invis]
+  n7 [shape = box, width=0.0, height=0.0, label = <x>]
+  n6 -> n7
+  n5 -> n6
+  n8 [shape = box, width=0.0, height=0.0, label = <&gt;&gt;>]
+  n5 -> n8
+  n3 -> n5
+  n2 -> n3
+  n9 [shape = box, width=0.0, height=0.0, label = <&gt;&gt;>]
+  n2 -> n9
+  n0 -> n2
+  { rank = same; n1; n4; n7; n8; n9 }
+  n1 -> n4 [style = invis]
+  n4 -> n7 [style = invis]
   n7 -> n8 [style = invis]
+  n8 -> n9 [style = invis]
 }

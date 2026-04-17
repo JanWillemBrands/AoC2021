@@ -14,6 +14,7 @@ import BitCollections
 class Grammar {
     var startSymbol: String = ""
     var terminals: [String: TokenPattern] = [:]
+    var frankensteinTerminals: [GrammarNode] = []      // these terminals allow partial token matches
     var nonTerminals: [String: GrammarNode] = [:]
     var messages: [String] = []
     var preamble: [String] = []
@@ -226,6 +227,35 @@ extension Grammar {
         if node.follow.contains("ε") {
             node.follow.remove("ε")
             node.follow.formUnion(node.seq!.follow)
+        }
+    }
+}
+
+extension Grammar {
+    func backpropagatePartialTokenMatchAllowed(from: GrammarNode) {
+        // Nodes preceeding a frankenstein literal may be guarded by testSelect() or followCheck() and
+        // the FIRST/FOLLOW sets of these nodes may not accept the frankenstein token.
+        // We'll set frankenstenMatchAllowed on preceeding nodes to avoid premature pruning of paths.
+        var current = from
+        current.frankensteinMatchAllowed = true
+        while let prev = current.prv {
+            switch prev.kind {
+            case .T, .TI, .C, .B:
+                return                      // ends the backpropagation since another match is required here
+            case .EPS:
+                break
+            case .N:
+                if prev.isLHS { return }    // no need to propagate to LHS since any ALT paths have been covered
+            case .ALT:
+                break
+            case .DO, .OPT, .POS, .KLN:
+                if prev.isNullable { break }
+                return
+            case .END, .EOS:
+                fatalError("frankenstein literal terminal can never be preceeded by an END or EOS grammar node")
+            }
+            current = prev
+            current.frankensteinMatchAllowed = true
         }
     }
 }

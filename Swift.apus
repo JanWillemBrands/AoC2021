@@ -1034,8 +1034,9 @@ expressionPattern = expression .
 
 // GENERIC PARAMETERS AND ARGUMENTS
 
-genericParameterClause  = "<" genericParameterList ","? ">"
-                        =>> .  // TODO:  check if frankenstein works
+genericParameterClause  = "<"
+                           genericParameterList ","?
+                          ">" =>> .
 
 genericParameterList = genericParameter | genericParameter "," genericParameterList .
 genericParameter = typeName .
@@ -1052,19 +1053,14 @@ conformanceRequirement = typeIdentifier ":" protocolCompositionType .
 sameTypeRequirement = typeIdentifier "==" type .
 sameTypeRequirement = typeIdentifier "==" signedIntegerLiteral .
 
-genericArgumentClause   = "<" genericArgumentList ","? ">"
-                        =>> .  // TODO:  check if frankenstein works
-
-//genericArgumentClause = "<" genericArgumentList ","? ">" .
-
+genericArgumentClause   = "<"
+                           genericArgumentList ","?
+                          ">" =>> .
 
 genericArgumentList = genericArgument | genericArgument "," genericArgumentList .
 genericArgument = type | signedIntegerLiteral .
 
-
-/*  α · δ  'N' */
-//func f(dispatched: Set<String>?, _ node: GrammarNode ) {}
-//let x: Set<Set<Int>>        // seems to generate the wrong parse tree
-
 ^^^
-let x: Dictionary<String, Array<Int>>
+func f(dispatched: Set<String>?, _ node: GrammarNode ) //{}
+
+//let x: Dictionary<String, Array<Int>>
