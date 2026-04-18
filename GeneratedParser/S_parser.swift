@@ -18,15 +18,11 @@ func expect(_ expected: String...) {
 let tokenPatterns: [String:TokenPattern] = [
 	"blockcomment":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"x":	("x",	Regex { "x" },	true,	false),
-	">":	(">",	Regex { ">" },	true,	false),
 	"<":	("<",	Regex { "<" },	true,	false),
 	">>":	(">>",	Regex { ">>" },	true,	false),
+	">":	(">",	Regex { ">" },	true,	false),
+	"x":	("x",	Regex { "x" },	true,	false),
 ]
-func B() throws {
-	expect(">>")
-	cI += 1
-}
 func S() throws {
 	switch token.kind {
 	case "x":

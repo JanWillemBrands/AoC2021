@@ -49,7 +49,7 @@ extension GrammarNodeKind {
 
 final class GrammarNode {
     
-    var frankensteinMatchAllowed = false    // only relevant for GrammarNodes with kind = "literal"
+//    var frankensteinMatchAllowed = false    // only relevant for GrammarNodes with kind = "literal"
     
     static var count = 0
     

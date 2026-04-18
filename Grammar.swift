@@ -39,6 +39,15 @@ class Grammar {
     // The hot path then uses integer comparison and BitSet.contains() (O(1) bit test).
     // Strings are retained for diagnostics, error messages, and diagram generation.
     
+    // the representation of the BNF empty production are:
+    // in apus grammar specifications: the empty string "" or any of the many unicode epsilon character variants "ε" "ϵ" "Ԑ" "ԑ" "𝛆" "𝛜" "𝜀" "𝜖" "𝜺" "𝝐" "𝝴" "𝞊" "𝞮" "𝟄"
+    // in canonical ebnf() or ebnfDot() output: ε - GREEK SMALL LETTER EPSILON U+03B5
+    // in FIRST and FOLLOW sets: ""
+    
+    // the representation of the end-of-input token is ┴ - BOX DRAWINGS LIGHT UP AND HORIZONTAL (U+2534), or the number 0  ␃ (U+2403)
+    
+    // the representation of a Frankenstein token is the ghost emoji 👻 or Midline Horizontal Ellipsis (⋯) (U+22EF)
+    
     /// Maps terminal name → integer ID. Initialised with "$" → 0 (EOS).
     var symbolToID: [String: Int] = ["$": 0]
     
@@ -146,7 +155,8 @@ extension Grammar {
             updateFollow(for: node)
         case .EOS, .T, .TI, .C, .B:
             try populateFirstFollowSets(for: node.seq!)
-            node.first = [node.name]
+//            node.first = [node.name]
+            node.first.insert(node.name)    // there may already be a frankenstein 👻 ⋯
             updateFollow(for: node)
         case .N:
             try handleNonTerminal(node)
@@ -233,6 +243,7 @@ extension Grammar {
 
 extension Grammar {
     func backpropagatePartialTokenMatchAllowed(from: GrammarNode) {
+        print("backprop \(from.name) \(from.ebnfDot())")
         // Nodes preceeding a frankenstein literal may be guarded by testSelect() or followCheck() and
         // the FIRST/FOLLOW sets of these nodes may not accept the frankenstein token.
         // We'll set frankenstenMatchAllowed on preceeding nodes to avoid premature pruning of paths.
@@ -245,7 +256,12 @@ extension Grammar {
             case .EPS:
                 break
             case .N:
-                if prev.isLHS { return }    // no need to propagate to LHS since any ALT paths have been covered
+                if prev.isRHS && prev.isNullable {
+                    current = prev
+                    current.frankensteinMatchAllowed = current.frankensteinMatchAllowed || current.alt!.frankensteinMatchAllowed    // copy from LHS
+                    continue
+                }
+                return
             case .ALT:
                 break
             case .DO, .OPT, .POS, .KLN:

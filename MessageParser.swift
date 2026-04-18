@@ -220,9 +220,11 @@ class MessageParser {
         
         
 //        return true     //  TODO:  REMOVE THIS HACK !!!
-        
+//        if slot.first.contains("👻⋯") { return true }
+        if slot.first.contains("⋯") { return true }
 
-        if slot.frankensteinMatchAllowed { return true }
+//        if slot.frankensteinMatchAllowed { return true }
+        
         print("testSelect \(slot.ebnfDot()) not frankenstein allowed")
         var current = tokens[cI.tokenIndex]
         repeat { // to handle Schrödinger tokens
@@ -272,7 +274,8 @@ class MessageParser {
 
         
         // RARE: Frankenstein prefix split
-        if cL.frankensteinMatchAllowed {
+        if cL.first.contains("⋯") {
+//        if cL.frankensteinMatchAllowed {
             let image = tokens[tokenIdx].stripped
             Logger.parse.debug("frankenstein allowed \(self.cL.name) at \(self.cL.ebnfDot()) prefix matching image \(image)")
             if image.hasPrefix(cL.name) && image.count > cL.name.count {
@@ -288,8 +291,11 @@ class MessageParser {
     func followCheck(bracket: GrammarNode) -> Bool {
         
 //        return true         // TODO:  REMOVE THIS HACK ?!@!!
+//        if bracket.follow.contains("👻") { return true }
+        if bracket.follow.contains("⋯") { return true }
+
+//        if bracket.frankensteinMatchAllowed { return true }
         
-        if bracket.frankensteinMatchAllowed { return true }
         print("followCheck \(bracket.ebnfDot()) not frankenstein allowed")
         var current = tokens[cI.tokenIndex]
         repeat {  // to handle Schrödinger tokens

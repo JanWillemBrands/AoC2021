@@ -136,6 +136,14 @@ class ApusParser {
             grammar.backpropagatePartialTokenMatchAllowed(from: frank)
         }
 
+        for frank in grammar.frankensteinTerminals {
+            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
+        }
+
+        for frank in grammar.frankensteinTerminals {
+            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
+        }
+
         // this is to a give GrammarNodes access to their own grammar
         GrammarNode.grammar = grammar
         
@@ -413,7 +421,7 @@ class ApusParser {
                 // TODO: currently all terminals must be defined BEFORE they are used
                 node = GrammarNode(kind: .T, name: token.stripped)
             } else {
-                // this string is assumed to be a nonTerminal
+                // this string is assumed to be
                 // nonTerminals may be used before they are defined, and are resolved later
                 node = GrammarNode(kind: .N, name: token.stripped)
             }
@@ -423,6 +431,8 @@ class ApusParser {
             
             // check if this is a frankenstein literal that allows partial token prefix matches
             if token.kind == "=>>" {
+//                node.first.insert("👻⋯")
+                node.first.insert("⋯")     // Midline Horizontal Ellipsis
                 grammar.frankensteinTerminals.append(node)
 //                backpropagatePartialTokenMatchAllowed(from: node)
                 cI += 1

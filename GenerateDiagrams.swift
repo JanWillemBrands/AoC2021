@@ -130,7 +130,7 @@ class ASTDiagramGenerator {
         node.cell = Cell(name: name, r: row, c: col)
         grid[node.cell] = true
         
-        content.append("\n    \(node.cell) [label = <\(node) \(node.frankensteinMatchAllowed)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.yield.sorted().description.graphvizHTML)>]")
+        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.yield.sorted().description.graphvizHTML)>]")
 //        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>am [\(node.ambiguous.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.actions.joined(separator: "<br/>"))>]")
 //        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)>]")
 
