@@ -19,9 +19,13 @@ enum ScannerFailure: Error {
 typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool, mode: Mode)
 
 struct Mode: CustomStringConvertible {
-    var modeName = ""
-    var pushName = ""
+    var modeName = ""   // only scan this tokenpattern when scannerMode == modeName
+    var pushName = ""   //
     var isPop = false
+    
+    var isActive: Bool {
+        !modeName.isEmpty || !pushName.isEmpty || isPop
+    }
     
     var description: String {
         var d = ""
@@ -91,11 +95,11 @@ private struct Pattern {
 final class Scanner {
     
     let input: String
-    var tokens: [Token] = []                // visible tokens can be referenced in the grammar production rules
-    var skippedTokens: [[Token]] = [[]]     // skipped tokens are stored as lists in an array indexed by the visible token following them
+    var tokens: [Token] = []                // normal, visible tokens that can be referenced in the grammar production rules
+    var trivia: [[Token]] = [[]]            // skipped tokens are stored as lists in an array indexed by the visible token following them
     
-    var modeStack: [String] = []
-    var currentMode: String {
+    private var modeStack: [String] = []    // tracks state to allow e.g. nested token construction
+    private var scannerMode: String {       // isolated to the scanner, not driven by the parser
         modeStack.last ?? ""
     }
     
@@ -109,7 +113,6 @@ final class Scanner {
         // A keyword is a true literal if the image string matches exactly the kind string.
         for (kind, pattern) in patterns {
             if pattern.isKeyword && kind == pattern.source {
-                //                if pattern.isKeyword, let m = kind.prefixMatch(of: pattern.regex), m.0 == kind[...] {
                 literalPatterns.append(Pattern(kind: kind, regex: pattern.regex, isKeyword: pattern.isKeyword, isSkip: pattern.isSkip, mode: pattern.mode))
             } else {
                 regexPatterns.append(Pattern(kind: kind, regex: pattern.regex, isKeyword: pattern.isKeyword, isSkip: pattern.isSkip, mode: pattern.mode))
@@ -119,110 +122,112 @@ final class Scanner {
         try scanAllTokens()
     }
     
+    private struct Candidate {
+        let token: Token
+        let pattern: Pattern
+    }
+
     private func scanAllTokens() throws {
         var matchStart = input.startIndex
+
         while matchStart != input.endIndex {
-            var headPattern: Pattern!
             var matchEnd = matchStart
-            var headMatch: Token?                // the highest priority match is at the head of the linked list of Schrödinger tokens
-            var tailMatch: Token?                // the lowest priority match is at the end of the linked list
+            var candidates: [Candidate] = []
             let remaining = input[matchStart...]
-            
+
             // Phase 1: literal keywords via hasPrefix (fast string comparison)
             for lp in literalPatterns {
-                
-                guard lp.mode.modeName == "" || lp.mode.modeName == currentMode else { continue }     // only attempt to match if the patternMode is default or an exact match
+                guard lp.mode.modeName == "" || lp.mode.modeName == scannerMode else { continue }
 
                 if remaining.hasPrefix(lp.kind) {
                     let literalEnd = input.index(matchStart, offsetBy: lp.kind.count)
                     if literalEnd > matchEnd {
-                        // the match is longer than any so far
                         matchEnd = literalEnd
-                        headMatch = Token(image: input[matchStart..<literalEnd], kind: lp.kind)
-                        tailMatch = headMatch
-                        headPattern = lp
-                    } else if literalEnd == matchEnd {
-                        // TODO: check that Schrödinger tokens all have the same push/popmode annotation
-
-                        // the match is the same length as a previous match
-                        if lp.isSkip {
-                            // Schrödinger token goes to the back
-                            tailMatch?.dual = Token(image: input[matchStart..<literalEnd], kind: lp.kind)
-                            tailMatch = tailMatch?.dual
-                        } else {
-                            // Schrödinger token goes to the front
-                            let old = headMatch
-                            headMatch = Token(image: input[matchStart..<literalEnd], kind: lp.kind)
-                            headMatch?.dual = old
-                            headPattern = lp
-                        }
-//                        Logger.scan.debug("Schrödinger strikes again! \(headMatch!)")
-//                        #Trace("Schrödinger strikes again! \(headMatch!)")
+                        candidates.removeAll()
+                    }
+                    // TODO: there can never be more than one literal in a Schrödinger token ???
+                   if literalEnd == matchEnd {
+                        candidates.append(Candidate(
+                            token: Token(image: input[matchStart..<literalEnd], kind: lp.kind),
+                            pattern: lp))
                     }
                 }
             }
-            
+
             // Phase 2: regex patterns via prefixMatch (regex engine)
             for rp in regexPatterns {
-                
-                guard rp.mode.modeName == "" || rp.mode.modeName == currentMode else { continue }     // only attempt to match if the patternMode is default or an exact match
+                guard rp.mode.modeName == "" || rp.mode.modeName == scannerMode else { continue }
 
                 if let match = remaining.prefixMatch(of: rp.regex) {
                     if match.0.endIndex > matchEnd {
-                        // the match is longer than any other match so far
                         matchEnd = match.0.endIndex
-                        headMatch = Token(image: match.0, kind: rp.kind)
-                        tailMatch = headMatch
-                        headPattern = rp
-                    } else if match.0.endIndex == matchEnd {
-                        // the match is the same length as a previous match
-                        // TODO: warn in case Schrödinger tokens have a different mode annotation
-
-                        if rp.isKeyword && !rp.isSkip {
-                            // visible keyword Schrödinger token goes to the front
-                            let old = headMatch
-                            headMatch = Token(image: match.0, kind: rp.kind)
-                            headMatch?.dual = old
-                            headPattern = rp
-                        } else {
-                            // skip or non-keyword Schrödinger token goes to the back
-                            tailMatch?.dual = Token(image: match.0, kind: rp.kind)
-                            tailMatch = tailMatch?.dual
-                        }
-//                        Logger.scan.debug("Schrödinger strikes again! \(headMatch!)")
-//                        #Trace("Schrödinger strikes again! \(headMatch!)")
+                        candidates.removeAll()
+                    }
+                    if match.0.endIndex == matchEnd {
+                        candidates.append(Candidate(
+                            token: Token(image: match.0, kind: rp.kind),
+                            pattern: rp))
                     }
                 }
             }
-            
-            if let headMatch {
-                if headPattern.isSkip {
-                    skippedTokens[tokens.count].append(headMatch)
-                } else {
-//                    Logger.scan.debug("adding token: \(headMatch) image: '\(headMatch.image)' \(headPattern.kind) \(headPattern.mode)")
-                    tokens.append(headMatch)
-                    skippedTokens.append([])
-                }
-                matchStart = matchEnd
-                if headPattern.mode.isPop {
-                    if let _ = modeStack.popLast() {
-//                        Logger.scan.debug("popped into new scan mode: \(self.currentMode)")
-                    } else {
-                        Logger.scan.error("too many pops from mode stack!")
-                        exit(1)
-                    }
-                } else if headPattern.mode.pushName != "" {
-                    modeStack.append(headPattern.mode.pushName)
-//                    Logger.scan.debug("pushed new scan mode: \(self.currentMode)")
-                }
-            } else {
+
+            // Phase 3: resolve candidates — mode-active patterns suppress Schrödinger duals
+            guard !candidates.isEmpty else {
                 try scanError(position: matchStart)
             }
+
+            let modeActive = candidates.filter { $0.pattern.mode.isActive }
+
+            let headMatch: Token
+            let headPattern: Pattern
+
+            if let winner = modeActive.first {
+                // Mode-active pattern wins, no Schrödinger duals
+                if modeActive.count > 1 {
+                    Logger.scan.warning("multiple mode-active patterns match: \(modeActive.map(\.pattern.kind))")
+                }
+                headMatch = winner.token
+                headPattern = winner.pattern
+            } else {
+                // No mode-active patterns — build Schrödinger chain
+                // Keywords/non-skip go to front, skip/non-keyword go to back
+                let front = candidates.filter { $0.pattern.isKeyword && !$0.pattern.isSkip }
+                let back = candidates.filter { !($0.pattern.isKeyword && !$0.pattern.isSkip) }
+                let ordered = front + back
+
+                headMatch = ordered[0].token
+                headPattern = ordered[0].pattern
+                var tail = headMatch
+                for candidate in ordered.dropFirst() {
+                    tail.dual = candidate.token
+                    tail = candidate.token
+//                    Logger.scan.debug("Schrödinger: \(candidate.token.kind)")
+                }
+            }
+
+            if headPattern.isSkip {
+                trivia[tokens.count].append(headMatch)
+            } else {
+                tokens.append(headMatch)
+                trivia.append([])
+            }
+            matchStart = matchEnd
+
+            // manage the scanner mode
+            if headPattern.mode.isPop {
+                if let _ = modeStack.popLast() {
+//                    Logger.scan.debug("popped into previous scan mode: \(self.scannerMode)")
+                } else {
+                    Logger.scan.error("too many pops from scanner mode stack!")
+                    exit(1)
+                }
+            } else if !headPattern.mode.pushName.isEmpty {
+                modeStack.append(headPattern.mode.pushName)
+//                Logger.scan.debug("pushed new scan mode: \(self.scannerMode) match: \(headMatch.image) pattern: \(headPattern.kind)")
+            }
         }
-        // append EndOfString token
-        tokens.append(Token(image: "$", kind: "$"))
-//        Logger.scan.debug("tokens: \(self.tokens)")
-//        Logger.scan.debug("skipped tokens: \(self.skippedTokens)")
+
+        tokens.append(Token(image: "$", kind: "○"))  // append EndOfString token
     }
     
     

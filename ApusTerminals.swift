@@ -125,7 +125,7 @@ let messageRegex = Regex {
 }
 
 enum TokenType: String, CustomStringConvertible, CaseIterable {
-    case endOfString            = "$"
+    case endOfString            = "○"    // BLACK CIRCLE U+25CF
     case epsilon                = "ε"
     case fullStop               = "."
     case colon                  = ":"

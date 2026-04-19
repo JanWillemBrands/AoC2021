@@ -99,7 +99,7 @@ class ParserGenerator {
             emit(dent: .NR, "switch token.kind {")
             var allTokens: Set<String> = []
             for alt in alts {
-                let tokens = alt.first.subtracting(["ε"])
+                let tokens = alt.first.subtracting([""])
                 if tokens.isEmpty {
                     // Epsilon-only alternate: becomes default case
                     emit(dent: .LR, "default:")
@@ -110,7 +110,7 @@ class ParserGenerator {
                 let prefix = emitActionsExtractingPrefix(alt.actions)
                 emitSequence(alt.seq!, dispatched: tokens, pendingPrefix: prefix)
             }
-            if !alts.contains(where: { $0.first.subtracting(["ε"]).isEmpty }) {
+            if !alts.contains(where: { $0.first.subtracting([""]).isEmpty }) {
                 emit(dent: .LR, "default:")
                 if defaultBreak {
                     emit("break")
@@ -246,7 +246,7 @@ class ParserGenerator {
         var result: Set<String> = []
         var current = bracket.alt
         while let alt = current {
-            result.formUnion(alt.first.subtracting(["ε"])) 
+            result.formUnion(alt.first.subtracting([""])) 
             current = alt.alt
         }
         return result

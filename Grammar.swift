@@ -9,17 +9,22 @@ import OSLog
 import AdventMacros
 import BitCollections
 
+// Internal sentinel strings for FIRST/FOLLOW sets and the symbol table:
+//   end-of-input:  "○" (WHITE CIRCLE U+25CB)
+//   epsilon:       ""  (empty string), displayed as "ε"
+//   partial-token: "≋" (TRIPLE TILDE U+224B) a.k.a. Frankenstein
+
+
 // Result of parsing an APUS grammar file.
 // Holds all grammar artifacts needed by downstream consumers.
 class Grammar {
     var startSymbol: String = ""
     var terminals: [String: TokenPattern] = [:]
-    var frankensteinTerminals: [GrammarNode] = []      // these terminals allow partial token matches
     var nonTerminals: [String: GrammarNode] = [:]
     var messages: [String] = []
     var preamble: [String] = []
     var epilogue: [String] = []
-    var root: GrammarNode = GrammarNode(kind: .EOS, name: "$")
+    var root: GrammarNode = GrammarNode(kind: .EOS, name: "○")
     var isLL1: Bool = true
     
     // MARK: - Integer Symbol Table
@@ -41,18 +46,22 @@ class Grammar {
     
     // the representation of the BNF empty production are:
     // in apus grammar specifications: the empty string "" or any of the many unicode epsilon character variants "ε" "ϵ" "Ԑ" "ԑ" "𝛆" "𝛜" "𝜀" "𝜖" "𝜺" "𝝐" "𝝴" "𝞊" "𝞮" "𝟄"
-    // in canonical ebnf() or ebnfDot() output: ε - GREEK SMALL LETTER EPSILON U+03B5
-    // in FIRST and FOLLOW sets: ""
+    // in canonical ebnf() or ebnfDot() output: 'ε' GREEK SMALL LETTER EPSILON U+03B5
+    // internally in FIRST and FOLLOW sets: "" (empty string)
+
+    // the representation of the end-of-input token: "○" (BLACK CIRCLE U+25CF), displayed as "$"
+
+    // the representation of a Frankenstein token: "≋" (TRIPLE TILDE U+224B)
     
-    // the representation of the end-of-input token is ┴ - BOX DRAWINGS LIGHT UP AND HORIZONTAL (U+2534), or the number 0  ␃ (U+2403)
+    /// Maps terminal name → integer ID. Initialised with "○" → 0 (EOS).
+    var symbolToID: [String: Int] = ["○": 0]
     
-    // the representation of a Frankenstein token is the ghost emoji 👻 or Midline Horizontal Ellipsis (⋯) (U+22EF)
-    
-    /// Maps terminal name → integer ID. Initialised with "$" → 0 (EOS).
-    var symbolToID: [String: Int] = ["$": 0]
-    
-    /// The integer ID for the epsilon sentinel "ε" in first/follow BitSets.
-    /// Set by `finalizeSymbolTable()` to T+1 (one past the last terminal ID).
+    /// The integer ID for the partial token sentinel in first/follow BitSets.
+    /// Set by `finalizeSymbolTable()` after all terminals are registered.
+    var frankensteinID: Int!
+
+    /// The integer ID for the epsilon sentinel in first/follow BitSets.
+    /// Set by `finalizeSymbolTable()` after all terminals are registered.
     var epsilonID: Int!
     
     /// Register a terminal kind and return its integer ID. Idempotent.
@@ -68,8 +77,13 @@ class Grammar {
     /// Assign epsilon its ID (T+1). Call after all terminals are registered
     /// but before `assignNameIDs()`.
     func finalizeSymbolTable() {
+        frankensteinID = symbolToID.count
+        symbolToID["≋"] = frankensteinID
         epsilonID = symbolToID.count
-        symbolToID["ε"] = epsilonID
+        symbolToID[""] = epsilonID
+//        for (name, id) in symbolToID {
+//            print("ID", id, "for terminal", name)
+//        }
     }
     
     /// Walk all grammar nodes and set `nameID` on terminal-like nodes
@@ -77,7 +91,7 @@ class Grammar {
     /// Nonterminal nodes keep the default `nameID = -1` since they are never
     /// compared against tokens — only terminal nodes need to match token kinds.
     func assignNameIDs() {
-        root.nameID = symbolToID["$"]!
+        root.nameID = symbolToID["○"]!
         for (_, node) in nonTerminals {
             assignNameIDsRecursive(node)
         }
@@ -86,7 +100,7 @@ class Grammar {
     private func assignNameIDsRecursive(_ node: GrammarNode) {
         switch node.kind {
         case .EOS:
-            node.nameID = symbolToID["$"]!
+            node.nameID = symbolToID["○"]!
         case .T, .TI, .C, .B:
             node.nameID = symbolToID[node.name]!
         case .EPS:
@@ -156,7 +170,7 @@ extension Grammar {
         case .EOS, .T, .TI, .C, .B:
             try populateFirstFollowSets(for: node.seq!)
 //            node.first = [node.name]
-            node.first.insert(node.name)    // there may already be a frankenstein 👻 ⋯
+            node.first.insert(node.name)    // there may already be a frankenstein sentinel
             updateFollow(for: node)
         case .N:
             try handleNonTerminal(node)
@@ -167,18 +181,18 @@ extension Grammar {
         case .DO:
             try handleBracket(node)
         case .OPT:
-            node.first.insert("ε")
+            node.first.insert("")
             try handleBracket(node)
         case .KLN:
-            node.first.insert("ε")
+            node.first.insert("")
             try handleBracket(node)
         case .POS:
             try handleBracket(node)
         case .END:
-            node.first = ["ε"]
+            node.first = [""]
             node.follow = node.seq!.follow
             if node.seq!.kind == .KLN || node.seq!.kind == .POS {
-                node.follow.formUnion(node.seq!.first.subtracting(["ε"]))
+                node.follow.formUnion(node.seq!.first.subtracting([""]))
             }
         }
         GrammarNode.sizeofSets += node.first.count + node.follow.count
@@ -191,8 +205,8 @@ extension Grammar {
             if let production = nonTerminals[node.name] {
                 node.alt = production
                 node.first = production.first
-                if node.first.contains("ε") {
-                    node.first.remove("ε")
+                if node.first.contains("") {
+                    node.first.remove("")
                     node.first.formUnion(seq.first)
                 }
                 production.follow.formUnion(node.follow)
@@ -216,8 +230,8 @@ extension Grammar {
     private func handleBracket(_ node: GrammarNode) throws {
         try populateFirstFromAlts(node)
         try populateFirstFollowSets(for: node.seq!)
-        if node.first.contains("ε") {
-            node.first.remove("ε")
+        if node.first.contains("") {
+            node.first.remove("")
             node.first.formUnion(node.seq!.first)
         }
         updateFollow(for: node)
@@ -234,44 +248,44 @@ extension Grammar {
     
     private func updateFollow(for node: GrammarNode) {
         node.follow = node.seq!.first
-        if node.follow.contains("ε") {
-            node.follow.remove("ε")
+        if node.follow.contains("") {
+            node.follow.remove("")
             node.follow.formUnion(node.seq!.follow)
         }
     }
 }
 
-extension Grammar {
-    func backpropagatePartialTokenMatchAllowed(from: GrammarNode) {
-        print("backprop \(from.name) \(from.ebnfDot())")
-        // Nodes preceeding a frankenstein literal may be guarded by testSelect() or followCheck() and
-        // the FIRST/FOLLOW sets of these nodes may not accept the frankenstein token.
-        // We'll set frankenstenMatchAllowed on preceeding nodes to avoid premature pruning of paths.
-        var current = from
-        current.frankensteinMatchAllowed = true
-        while let prev = current.prv {
-            switch prev.kind {
-            case .T, .TI, .C, .B:
-                return                      // ends the backpropagation since another match is required here
-            case .EPS:
-                break
-            case .N:
-                if prev.isRHS && prev.isNullable {
-                    current = prev
-                    current.frankensteinMatchAllowed = current.frankensteinMatchAllowed || current.alt!.frankensteinMatchAllowed    // copy from LHS
-                    continue
-                }
-                return
-            case .ALT:
-                break
-            case .DO, .OPT, .POS, .KLN:
-                if prev.isNullable { break }
-                return
-            case .END, .EOS:
-                fatalError("frankenstein literal terminal can never be preceeded by an END or EOS grammar node")
-            }
-            current = prev
-            current.frankensteinMatchAllowed = true
-        }
-    }
-}
+//extension Grammar {
+//    func backpropagatePartialTokenMatchAllowed(from: GrammarNode) {
+//        print("backprop \(from.name) \(from.ebnfDot())")
+//        // Nodes preceeding a frankenstein literal may be guarded by testSelect() or followCheck() and
+//        // the FIRST/FOLLOW sets of these nodes may not accept the frankenstein token.
+//        // We'll set frankenstenMatchAllowed on preceeding nodes to avoid premature pruning of paths.
+//        var current = from
+//        current.frankensteinMatchAllowed = true
+//        while let prev = current.prv {
+//            switch prev.kind {
+//            case .T, .TI, .C, .B:
+//                return                      // ends the backpropagation since another match is required here
+//            case .EPS:
+//                break
+//            case .N:
+//                if prev.isRHS && prev.isNullable {
+//                    current = prev
+//                    current.frankensteinMatchAllowed = current.frankensteinMatchAllowed || current.alt!.frankensteinMatchAllowed    // copy from LHS
+//                    continue
+//                }
+//                return
+//            case .ALT:
+//                break
+//            case .DO, .OPT, .POS, .KLN:
+//                if prev.isNullable { break }
+//                return
+//            case .END, .EOS:
+//                fatalError("frankenstein literal terminal can never be preceeded by an END or EOS grammar node")
+//            }
+//            current = prev
+//            current.frankensteinMatchAllowed = true
+//        }
+//    }
+//}

@@ -13,7 +13,8 @@ message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 grammar     = < production > { message } .
               
 production  = identifier
-                ( ( ":" | "-" ) ( regex | literal ) "." mode
+                ( ":" ( regex | literal ) "." scanmode          // skip token
+                ( "-" ( regex | literal ) "." scanmode          // regular token
                 | "=" selection "."
                 ) .
                 
@@ -27,19 +28,17 @@ factor      = terminal
             | "<" selection ">"
             | "(" selection ")" .
             
-terminal    = identifier
-            | literal ["=>>"]                               // Frankenstein terminal, try a prefix match
+terminal    = identifier [ "\\\" "(" <literal> ")" ]        // exclude literal tokens (aka keywords) from any Schrödinger match
+            | literal ["=>>"]                               // Frankenstein terminal, allow partial prefix token match TODO: replace with "~~~"
             | regex
             | epsilon .
 
-mode        = [ "===" literal ]                             // enable scanning of this terminal only in this mode
+scanmode    = [ "===" literal ]                             // enable scanning of this terminal only in this mode
               [ ">>>" literal | "<<<" ]                     // push mode, or pop
-              [ "---" "(" <literal> ")" ]                   // exclude literal tokens (aka keywords) from any Schrödinger match
               .
               
 // TODO: use #__ "whitespace"  and __# "whitespace" to disallow leading or trailing white space.
 // TODO: How to connect "whitespace" literal to whitespace terminal name?
-// TODO: Use ~/~ as literal exclusion operator e.g. let, var, input not allowed as function parameter names.
 
 ^^^
 whitespace  : /\s+/ .

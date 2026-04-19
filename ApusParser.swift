@@ -108,8 +108,7 @@ class ApusParser {
             node.resolveGrammarNodeLinks(parent: node, alternate: node.alt)
         }
         
-        // TODO: finalize representation for EOS
-        grammar.root.follow.insert("$")
+        grammar.root.follow.insert("○")
         grammar.finalizeSymbolTable()
         grammar.assignNameIDs()
         trace = false
@@ -132,17 +131,17 @@ class ApusParser {
         // store the cumulative set size
         GrammarNode.sizeofSets = newSize
         
-        for frank in grammar.frankensteinTerminals {
-            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
-        }
-
-        for frank in grammar.frankensteinTerminals {
-            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
-        }
-
-        for frank in grammar.frankensteinTerminals {
-            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
-        }
+//        for frank in grammar.frankensteinTerminals {
+//            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
+//        }
+//
+//        for frank in grammar.frankensteinTerminals {
+//            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
+//        }
+//
+//        for frank in grammar.frankensteinTerminals {
+//            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
+//        }
 
         // this is to a give GrammarNodes access to their own grammar
         GrammarNode.grammar = grammar
@@ -176,12 +175,12 @@ class ApusParser {
         // Collect epilogue actions (after last production, before messages/$)
         grammar.epilogue = collectActions(at: cI)
         
-        try expect(["message", "$"])
+        try expect(["message", "○"])
         while token.kind == "message" {
             message()
         }
-        
-        try expect(["$"])
+
+        try expect(["○"])
     }
     
     func production() throws {
@@ -228,7 +227,7 @@ class ApusParser {
                 if grammar.terminals[terminal.name] != nil {
                     grammar.terminals[terminal.name]?.mode.pushName = modeLiteral.name
                 } else {
-                    print("WARNING: terminal \(terminal.name) not found when parsing mode")
+                    Logger.parse.warning("WARNING: terminal \(terminal.name) not found when parsing >>> mode")
                 }
             } else if token.kind == "<<<" {
                 cI += 1
@@ -290,8 +289,8 @@ class ApusParser {
     /// Collect action tokens from the skipped tokens at the given visible-token index.
     /// Since action is a silent terminal, action tokens land in scanner.skippedTokens.
     private func collectActions(at index: Int) -> [String] {
-        guard index < scanner.skippedTokens.count else { return [] }
-        return scanner.skippedTokens[index]
+        guard index < scanner.trivia.count else { return [] }
+        return scanner.trivia[index]
             .filter { $0.kind == "action" }
             .map { $0.stripped }
     }
@@ -432,8 +431,8 @@ class ApusParser {
             // check if this is a frankenstein literal that allows partial token prefix matches
             if token.kind == "=>>" {
 //                node.first.insert("👻⋯")
-                node.first.insert("⋯")     // Midline Horizontal Ellipsis
-                grammar.frankensteinTerminals.append(node)
+                node.first.insert("≋")
+//                grammar.frankensteinTerminals.append(node)
 //                backpropagatePartialTokenMatchAllowed(from: node)
                 cI += 1
             }

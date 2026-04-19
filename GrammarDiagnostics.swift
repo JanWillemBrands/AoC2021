@@ -22,7 +22,7 @@ extension GrammarNode {
                 // look-through tokens from the continuation, which would cause
                 // false conflicts.
                 if let production = alt, production.isNullable {
-                    let definitionFirst = production.first.subtracting(["ε"])
+                    let definitionFirst = production.first.subtracting([""])
                     ambiguous = definitionFirst.intersection(follow)
                 }
             } else { // lhs
@@ -96,7 +96,7 @@ extension GrammarNode {
             if let seq { // rhs
                 seq.detectSchrödingerConflict()
             } else { // lhs
-//                Logger.grammar.debug("detectSchrödingerConflict in RULE: \(self.name)")
+                Logger.grammar.debug("detectSchrödingerConflict in RULE: \(self.name)")
                 handleAlternatesSchrödingerConflict()
             }
         case .ALT:
@@ -107,7 +107,7 @@ extension GrammarNode {
         case .END:
             break
         }
-//        identifierKeywordConflict()
+        identifierKeywordConflict()
     }
 
     func possibleMatch(of tokenType: String, with: String) -> Bool {
@@ -172,3 +172,12 @@ extension GrammarNode {
     
 }
 
+I have run Advent on Swift.apus, which uses the contents of SPPF.swift as the test message, and found that 194833 descriptors are generated and the crf has 72110 nodes.  This is a lot and we need to find ways to reduce that.  Part of the reason is that the Swift grammar is highly ambiguous from a GLL point of view, which we cannot change.  The Schrödinger tokens add a level of indecision and I've written detectSchrödingerConflict to find the root causes.  I need help analysing the results.
+
+I have thought about how to implement plainIdentifier vs keyword overlap and the need to exclude keywords from being recognized as identifiers depending on context.  One way may be to add a apus feature like ---("if" "while" etc) and to store this as exclusion sets similar to first/follow.  Maybe this is overkill ?
+
+I also noticed that Schrödinger tokens can have at most one literal.  Maybe we can ignore regex-to-regex Schrödinger overlap and let the GLL algorithm deal with it? DetectSchrodingerOverlap should be able to tell us.
+
+Also TokenPattern contains isKeyword, can we change that to isLiteral?  (I remember we had to do something special because epsilon is  a keyword but defined by a regex.  Why?)
+
+In general, what else can we do to make the discriptor count lower?

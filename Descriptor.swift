@@ -19,7 +19,7 @@ struct TokenPosition: Hashable, Comparable, CustomStringConvertible {
 
     var tokenIndex: Int         { Int(bits) >> Self.shift }
     var charOffset: Int         { Int(bits & Self.mask) }
-    var isFrankenstein: Bool    { bits & Self.mask != 0 }
+//    var isFrankenstein: Bool    { bits & Self.mask != 0 }
 
     init(token: Int, charOffset: Int = 0) {
         self.bits = Int32(token << Self.shift | charOffset)
@@ -36,7 +36,7 @@ struct TokenPosition: Hashable, Comparable, CustomStringConvertible {
     static func < (lhs: TokenPosition, rhs: TokenPosition) -> Bool { lhs.bits < rhs.bits }
 
     var description: String {
-        isFrankenstein ? "\(tokenIndex).\(charOffset)" : "\(tokenIndex)"
+        charOffset == 0 ? "\(tokenIndex)" : "\(tokenIndex).\(charOffset)"
     }
 }
 

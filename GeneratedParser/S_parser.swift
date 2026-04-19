@@ -16,12 +16,12 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"blockcomment":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"<":	("<",	Regex { "<" },	true,	false),
+	"blockcomment":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
 	">>":	(">>",	Regex { ">>" },	true,	false),
-	">":	(">",	Regex { ">" },	true,	false),
+	"<":	("<",	Regex { "<" },	true,	false),
 	"x":	("x",	Regex { "x" },	true,	false),
+	">":	(">",	Regex { ">" },	true,	false),
 ]
 func S() throws {
 	switch token.kind {

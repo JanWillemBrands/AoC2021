@@ -218,24 +218,27 @@ class MessageParser {
     /// At Frankenstein sub-positions, conservatively returns true (rare path).
     func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
         
+//        if slot.firstBS.contains(grammar.frankensteinID) { return true }
         
-//        return true     //  TODO:  REMOVE THIS HACK !!!
-//        if slot.first.contains("👻⋯") { return true }
-        if slot.first.contains("⋯") { return true }
-
-//        if slot.frankensteinMatchAllowed { return true }
-        
-        print("testSelect \(slot.ebnfDot()) not frankenstein allowed")
         var current = tokens[cI.tokenIndex]
-        repeat { // to handle Schrödinger tokens
+        while true {
             let cID = current.kindID!
             if slot.firstBS.contains(cID)
                 || slot.firstBS.contains(grammar.epsilonID) && bracket.followBS.contains(cID) {
                 return true
             }
-            guard let next = current.dual else { return false }
-            current = next
-        } while true
+            //            guard let next = current.dual else { return false }
+            //            current = next
+            if let next = current.dual {
+                current = next
+            } else {
+                if slot.firstBS.contains(grammar.frankensteinID)
+                    || slot.firstBS.contains(grammar.epsilonID) && bracket.followBS.contains(grammar.frankensteinID) {
+                    return true
+                }
+                return false
+            }
+        }
     }
 
     /// Match the current terminal against the token at cI. Returns the next position on success.
@@ -245,13 +248,12 @@ class MessageParser {
     func tokenMatch() -> TokenPosition? {
         let tokenIdx = cI.tokenIndex
         let charOff  = cI.charOffset
-//        Logger.parse.debug("tokenMatch cI \(self.cI) \(self.cL.name)")
 
         if charOff != 0 {
             // RARE: Frankenstein sub-position — match against remainder of token image
             let image = tokens[tokenIdx].stripped
             let remainder = image.dropFirst(charOff)
-            Logger.parse.debug("frankenstein remainder \(remainder) index \(self.cI) image \(image)")
+//            Logger.parse.debug("frankenstein remainder \(remainder) index \(self.cI) image \(image)")
             if remainder.hasPrefix(cL.name) {
                 let newOff = charOff + cL.name.count
                 if newOff >= image.count {
@@ -274,10 +276,9 @@ class MessageParser {
 
         
         // RARE: Frankenstein prefix split
-        if cL.first.contains("⋯") {
-//        if cL.frankensteinMatchAllowed {
+        if cL.firstBS.contains(grammar.frankensteinID) {
             let image = tokens[tokenIdx].stripped
-            Logger.parse.debug("frankenstein allowed \(self.cL.name) at \(self.cL.ebnfDot()) prefix matching image \(image)")
+//            Logger.parse.debug("frankenstein allowed \(self.cL.name) at \(self.cL.ebnfDot()) prefix matching image \(image)")
             if image.hasPrefix(cL.name) && image.count > cL.name.count {
                 return cI.at(charOffset: cL.name.count)
             }
@@ -290,19 +291,17 @@ class MessageParser {
     /// At Frankenstein sub-positions, conservatively returns true (rare path).
     func followCheck(bracket: GrammarNode) -> Bool {
         
-//        return true         // TODO:  REMOVE THIS HACK ?!@!!
-//        if bracket.follow.contains("👻") { return true }
-        if bracket.follow.contains("⋯") { return true }
+//        if bracket.followBS.contains(grammar.frankensteinID) { return true }
 
-//        if bracket.frankensteinMatchAllowed { return true }
-        
-        print("followCheck \(bracket.ebnfDot()) not frankenstein allowed")
         var current = tokens[cI.tokenIndex]
-        repeat {  // to handle Schrödinger tokens
+        while true {
             if bracket.followBS.contains(current.kindID) { return true }
-            guard let next = current.dual else { return false }
+            guard let next = current.dual else {
+                if bracket.followBS.contains(grammar.frankensteinID) { return true }
+                return false
+            }
             current = next
-        } while true
+        }
     }
 
 }

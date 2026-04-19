@@ -9,11 +9,6 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 358.79)">
 <title>G</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-358.79 897,-358.79 897,4 -4,4"/>
-<g id="clust1" class="cluster">
-<title>CallReturnForest</title>
-<polygon fill="none" stroke="black" points="8,-188.52 8,-323.92 270,-323.92 270,-188.52 8,-188.52"/>
-<text text-anchor="start" x="16" y="-310.42" font-family="Menlo" font-size="10.00" fill="green">↵&lt;&lt;·x·&gt;&gt;↵</text>
-</g>
 <g id="clust2" class="cluster">
 <title>clusterS</title>
 <polygon fill="none" stroke="black" points="278,-8 278,-346.79 654,-346.79 654,-8 278,-8"/>
@@ -23,6 +18,11 @@
 <title>clusterY</title>
 <polygon fill="none" stroke="black" points="662,-8 662,-346.79 885,-346.79 885,-8 662,-8"/>
 <text text-anchor="start" x="670" y="-333.29" font-family="Menlo" font-size="10.00">Y = S &quot;&gt;&quot; .</text>
+</g>
+<g id="clust1" class="cluster">
+<title>CallReturnForest</title>
+<polygon fill="none" stroke="black" points="8,-188.52 8,-323.92 270,-323.92 270,-188.52 8,-188.52"/>
+<text text-anchor="start" x="16" y="-310.42" font-family="Menlo" font-size="10.00" fill="green">↵&lt;&lt;·x·&gt;&gt;↵</text>
 </g>
 <!-- 0.1 -->
 <g id="node1" class="node">
@@ -111,20 +111,20 @@
 <g id="node10" class="node">
 <title>SR0C0</title>
 <polygon fill="none" stroke="gray" points="429.88,-318.04 286.12,-318.04 286.12,-248.53 429.88,-248.53 429.88,-318.04"/>
-<text text-anchor="start" x="337" y="-305.66" font-family="Menlo" font-size="10.00">5 false</text>
+<text text-anchor="start" x="355" y="-305.66" font-family="Menlo" font-size="10.00">5</text>
 <text text-anchor="start" x="349" y="-292.91" font-family="Menlo" font-size="10.00">N S</text>
 <text text-anchor="start" x="331" y="-280.16" font-family="Menlo" font-size="10.00">fi [&lt;, x]</text>
-<text text-anchor="start" x="322" y="-267.41" font-family="Menlo" font-size="10.00">fo [$, &gt;, ⋯]</text>
+<text text-anchor="start" x="322" y="-267.41" font-family="Menlo" font-size="10.00">fo [&gt;, ≋, ○]</text>
 <text text-anchor="start" x="289" y="-254.66" font-family="Menlo" font-size="10.00">[0:0:4, 1:1:3.1, 2:2:3]</text>
 </g>
 <!-- SR0C1 -->
 <g id="node11" class="node">
 <title>SR0C1</title>
 <polygon fill="none" stroke="gray" points="525.88,-318.04 448.12,-318.04 448.12,-248.53 525.88,-248.53 525.88,-318.04"/>
-<text text-anchor="start" x="466" y="-305.66" font-family="Menlo" font-size="10.00">6 false</text>
+<text text-anchor="start" x="484" y="-305.66" font-family="Menlo" font-size="10.00">6</text>
 <text text-anchor="start" x="475" y="-292.91" font-family="Menlo" font-size="10.00">ALT </text>
 <text text-anchor="start" x="469" y="-280.16" font-family="Menlo" font-size="10.00">fi [x]</text>
-<text text-anchor="start" x="451" y="-267.41" font-family="Menlo" font-size="10.00">fo [$, &gt;, ⋯]</text>
+<text text-anchor="start" x="451" y="-267.41" font-family="Menlo" font-size="10.00">fo [&gt;, ≋, ○]</text>
 <text text-anchor="start" x="481" y="-254.66" font-family="Menlo" font-size="10.00">[]</text>
 </g>
 <!-- SR0C0&#45;&gt;SR0C1 -->
@@ -139,10 +139,10 @@
 <g id="node12" class="node">
 <title>SR1C1</title>
 <polygon fill="none" stroke="gray" points="525.88,-240.53 448.12,-240.53 448.12,-171.02 525.88,-171.02 525.88,-240.53"/>
-<text text-anchor="start" x="466" y="-228.15" font-family="Menlo" font-size="10.00">7 false</text>
+<text text-anchor="start" x="484" y="-228.15" font-family="Menlo" font-size="10.00">7</text>
 <text text-anchor="start" x="472" y="-215.4" font-family="Menlo" font-size="10.00">T &quot;x&quot;</text>
 <text text-anchor="start" x="469" y="-202.65" font-family="Menlo" font-size="10.00">fi [x]</text>
-<text text-anchor="start" x="451" y="-189.9" font-family="Menlo" font-size="10.00">fo [$, &gt;, ⋯]</text>
+<text text-anchor="start" x="451" y="-189.9" font-family="Menlo" font-size="10.00">fo [&gt;, ≋, ○]</text>
 <text text-anchor="start" x="466" y="-177.15" font-family="Menlo" font-size="10.00">[2:2:3]</text>
 </g>
 <!-- SR0C1&#45;&gt;SR1C1 -->
@@ -155,7 +155,7 @@
 <g id="node14" class="node">
 <title>SR0C2</title>
 <polygon fill="none" stroke="gray" points="624.88,-318.04 565.12,-318.04 565.12,-248.53 624.88,-248.53 624.88,-318.04"/>
-<text text-anchor="start" x="574" y="-305.66" font-family="Menlo" font-size="10.00">9 false</text>
+<text text-anchor="start" x="592" y="-305.66" font-family="Menlo" font-size="10.00">9</text>
 <text text-anchor="start" x="583" y="-292.91" font-family="Menlo" font-size="10.00">ALT </text>
 <text text-anchor="start" x="577" y="-280.16" font-family="Menlo" font-size="10.00">fi [&lt;]</text>
 <text text-anchor="start" x="568" y="-267.41" font-family="Menlo" font-size="10.00">fo [&lt;, x]</text>
@@ -171,10 +171,10 @@
 <g id="node13" class="node">
 <title>SR2C1</title>
 <polygon fill="none" stroke="gray" points="525.88,-163.02 448.12,-163.02 448.12,-93.51 525.88,-93.51 525.88,-163.02"/>
-<text text-anchor="start" x="466" y="-150.64" font-family="Menlo" font-size="10.00">8 false</text>
+<text text-anchor="start" x="484" y="-150.64" font-family="Menlo" font-size="10.00">8</text>
 <text text-anchor="start" x="475" y="-137.89" font-family="Menlo" font-size="10.00">END </text>
-<text text-anchor="start" x="469" y="-125.14" font-family="Menlo" font-size="10.00">fi [ε]</text>
-<text text-anchor="start" x="451" y="-112.39" font-family="Menlo" font-size="10.00">fo [$, &gt;, ⋯]</text>
+<text text-anchor="start" x="472" y="-125.14" font-family="Menlo" font-size="10.00">fi []</text>
+<text text-anchor="start" x="451" y="-112.39" font-family="Menlo" font-size="10.00">fo [&gt;, ≋, ○]</text>
 <text text-anchor="start" x="481" y="-99.64" font-family="Menlo" font-size="10.00">[]</text>
 </g>
 <!-- SR1C1&#45;&gt;SR2C1 -->
@@ -189,7 +189,7 @@
 <g id="node15" class="node">
 <title>SR1C2</title>
 <polygon fill="none" stroke="gray" points="639.88,-240.53 550.12,-240.53 550.12,-171.02 639.88,-171.02 639.88,-240.53"/>
-<text text-anchor="start" x="571" y="-228.15" font-family="Menlo" font-size="10.00">10 false</text>
+<text text-anchor="start" x="589" y="-228.15" font-family="Menlo" font-size="10.00">10</text>
 <text text-anchor="start" x="580" y="-215.4" font-family="Menlo" font-size="10.00">T &quot;&lt;&quot;</text>
 <text text-anchor="start" x="577" y="-202.65" font-family="Menlo" font-size="10.00">fi [&lt;]</text>
 <text text-anchor="start" x="568" y="-189.9" font-family="Menlo" font-size="10.00">fo [&lt;, x]</text>
@@ -205,10 +205,10 @@
 <g id="node16" class="node">
 <title>SR2C2</title>
 <polygon fill="none" stroke="gray" points="645.88,-163.02 544.12,-163.02 544.12,-93.51 645.88,-93.51 645.88,-163.02"/>
-<text text-anchor="start" x="571" y="-150.64" font-family="Menlo" font-size="10.00">11 false</text>
+<text text-anchor="start" x="589" y="-150.64" font-family="Menlo" font-size="10.00">11</text>
 <text text-anchor="start" x="586" y="-137.89" font-family="Menlo" font-size="10.00">N Y</text>
 <text text-anchor="start" x="568" y="-125.14" font-family="Menlo" font-size="10.00">fi [&lt;, x]</text>
-<text text-anchor="start" x="559" y="-112.39" font-family="Menlo" font-size="10.00">fo [$, &gt;, ⋯]</text>
+<text text-anchor="start" x="559" y="-112.39" font-family="Menlo" font-size="10.00">fo [&gt;, ≋, ○]</text>
 <text text-anchor="start" x="547" y="-99.64" font-family="Menlo" font-size="10.00">[0:1:4, 1:2:3.1]</text>
 </g>
 <!-- SR1C2&#45;&gt;SR2C2 -->
@@ -221,10 +221,10 @@
 <g id="node17" class="node">
 <title>SR3C2</title>
 <polygon fill="none" stroke="gray" points="633.88,-85.51 556.12,-85.51 556.12,-16 633.88,-16 633.88,-85.51"/>
-<text text-anchor="start" x="571" y="-73.13" font-family="Menlo" font-size="10.00">12 false</text>
+<text text-anchor="start" x="589" y="-73.13" font-family="Menlo" font-size="10.00">12</text>
 <text text-anchor="start" x="583" y="-60.38" font-family="Menlo" font-size="10.00">END </text>
-<text text-anchor="start" x="577" y="-47.63" font-family="Menlo" font-size="10.00">fi [ε]</text>
-<text text-anchor="start" x="559" y="-34.88" font-family="Menlo" font-size="10.00">fo [$, &gt;, ⋯]</text>
+<text text-anchor="start" x="580" y="-47.63" font-family="Menlo" font-size="10.00">fi []</text>
+<text text-anchor="start" x="559" y="-34.88" font-family="Menlo" font-size="10.00">fo [&gt;, ≋, ○]</text>
 <text text-anchor="start" x="589" y="-22.13" font-family="Menlo" font-size="10.00">[]</text>
 </g>
 <!-- SR2C2&#45;&gt;SR3C2 -->
@@ -245,20 +245,20 @@
 <g id="node22" class="node">
 <title>YR0C0</title>
 <polygon fill="none" stroke="gray" points="771.88,-318.04 670.12,-318.04 670.12,-248.53 771.88,-248.53 771.88,-318.04"/>
-<text text-anchor="start" x="700" y="-305.66" font-family="Menlo" font-size="10.00">0 false</text>
+<text text-anchor="start" x="718" y="-305.66" font-family="Menlo" font-size="10.00">0</text>
 <text text-anchor="start" x="712" y="-292.91" font-family="Menlo" font-size="10.00">N Y</text>
 <text text-anchor="start" x="694" y="-280.16" font-family="Menlo" font-size="10.00">fi [&lt;, x]</text>
-<text text-anchor="start" x="685" y="-267.41" font-family="Menlo" font-size="10.00">fo [$, &gt;, ⋯]</text>
+<text text-anchor="start" x="685" y="-267.41" font-family="Menlo" font-size="10.00">fo [&gt;, ≋, ○]</text>
 <text text-anchor="start" x="673" y="-254.66" font-family="Menlo" font-size="10.00">[1:1:4, 2:2:3.1]</text>
 </g>
 <!-- YR0C1 -->
 <g id="node23" class="node">
 <title>YR0C1</title>
 <polygon fill="none" stroke="gray" points="849.88,-318.04 790.12,-318.04 790.12,-248.53 849.88,-248.53 849.88,-318.04"/>
-<text text-anchor="start" x="799" y="-305.66" font-family="Menlo" font-size="10.00">1 false</text>
+<text text-anchor="start" x="817" y="-305.66" font-family="Menlo" font-size="10.00">1</text>
 <text text-anchor="start" x="808" y="-292.91" font-family="Menlo" font-size="10.00">ALT </text>
 <text text-anchor="start" x="793" y="-280.16" font-family="Menlo" font-size="10.00">fi [&lt;, x]</text>
-<text text-anchor="start" x="793" y="-267.41" font-family="Menlo" font-size="10.00">fo [&gt;, ⋯]</text>
+<text text-anchor="start" x="793" y="-267.41" font-family="Menlo" font-size="10.00">fo [&gt;, ≋]</text>
 <text text-anchor="start" x="814" y="-254.66" font-family="Menlo" font-size="10.00">[]</text>
 </g>
 <!-- YR0C0&#45;&gt;YR0C1 -->
@@ -273,10 +273,10 @@
 <g id="node24" class="node">
 <title>YR1C1</title>
 <polygon fill="none" stroke="gray" points="870.88,-240.53 769.12,-240.53 769.12,-171.02 870.88,-171.02 870.88,-240.53"/>
-<text text-anchor="start" x="799" y="-228.15" font-family="Menlo" font-size="10.00">2 false</text>
+<text text-anchor="start" x="817" y="-228.15" font-family="Menlo" font-size="10.00">2</text>
 <text text-anchor="start" x="811" y="-215.4" font-family="Menlo" font-size="10.00">N S</text>
 <text text-anchor="start" x="793" y="-202.65" font-family="Menlo" font-size="10.00">fi [&lt;, x]</text>
-<text text-anchor="start" x="793" y="-189.9" font-family="Menlo" font-size="10.00">fo [&gt;, ⋯]</text>
+<text text-anchor="start" x="793" y="-189.9" font-family="Menlo" font-size="10.00">fo [&gt;, ≋]</text>
 <text text-anchor="start" x="772" y="-177.15" font-family="Menlo" font-size="10.00">[1:1:3.1, 2:2:3]</text>
 </g>
 <!-- YR0C1&#45;&gt;YR1C1 -->
@@ -289,10 +289,10 @@
 <g id="node25" class="node">
 <title>YR2C1</title>
 <polygon fill="none" stroke="gray" points="876.88,-163.02 763.12,-163.02 763.12,-93.51 876.88,-93.51 876.88,-163.02"/>
-<text text-anchor="start" x="802" y="-150.64" font-family="Menlo" font-size="10.00">3 true</text>
+<text text-anchor="start" x="817" y="-150.64" font-family="Menlo" font-size="10.00">3</text>
 <text text-anchor="start" x="805" y="-137.89" font-family="Menlo" font-size="10.00">T &quot;&gt;&quot;</text>
-<text text-anchor="start" x="793" y="-125.14" font-family="Menlo" font-size="10.00">fi [&gt;, ⋯]</text>
-<text text-anchor="start" x="784" y="-112.39" font-family="Menlo" font-size="10.00">fo [$, &gt;, ⋯]</text>
+<text text-anchor="start" x="793" y="-125.14" font-family="Menlo" font-size="10.00">fi [&gt;, ≋]</text>
+<text text-anchor="start" x="784" y="-112.39" font-family="Menlo" font-size="10.00">fo [&gt;, ≋, ○]</text>
 <text text-anchor="start" x="766" y="-99.64" font-family="Menlo" font-size="10.00">[1:3.1:4, 2:3:3.1]</text>
 </g>
 <!-- YR1C1&#45;&gt;YR2C1 -->
@@ -305,10 +305,10 @@
 <g id="node26" class="node">
 <title>YR3C1</title>
 <polygon fill="none" stroke="gray" points="858.88,-85.51 781.12,-85.51 781.12,-16 858.88,-16 858.88,-85.51"/>
-<text text-anchor="start" x="799" y="-73.13" font-family="Menlo" font-size="10.00">4 false</text>
+<text text-anchor="start" x="817" y="-73.13" font-family="Menlo" font-size="10.00">4</text>
 <text text-anchor="start" x="808" y="-60.38" font-family="Menlo" font-size="10.00">END </text>
-<text text-anchor="start" x="802" y="-47.63" font-family="Menlo" font-size="10.00">fi [ε]</text>
-<text text-anchor="start" x="784" y="-34.88" font-family="Menlo" font-size="10.00">fo [$, &gt;, ⋯]</text>
+<text text-anchor="start" x="805" y="-47.63" font-family="Menlo" font-size="10.00">fi []</text>
+<text text-anchor="start" x="784" y="-34.88" font-family="Menlo" font-size="10.00">fo [&gt;, ≋, ○]</text>
 <text text-anchor="start" x="814" y="-22.13" font-family="Menlo" font-size="10.00">[]</text>
 </g>
 <!-- YR2C1&#45;&gt;YR3C1 -->

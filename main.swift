@@ -41,13 +41,13 @@ let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
 //    .appendingPathComponent("apus")
 //    .appendingPathComponent("ScanModeTest")
-//    .appendingPathComponent("Swift")
+    .appendingPathComponent("Swift")
 //    .appendingPathComponent("CommentTest")
 //    .appendingPathComponent("attributeHunt")
 //    .appendingPathComponent("AfroozehHunt")
 //    .appendingPathComponent("apusWithAction")
 //    .appendingPathComponent("TortureSyntax")
-    .appendingPathComponent("test")
+//    .appendingPathComponent("test")
 //    .appendingPathComponent("silent")
 //    .appendingPathComponent("tortureART")
 //    .appendingPathComponent("tortureEBNF")
@@ -101,10 +101,13 @@ for message in grammar.messages {
     stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yield.count)\n"
     stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
     Logger.ui.info("\(stats)")
-    print("all tokens:")
-    for t in messageScanner.tokens {
-        print(t, "image", t.image)
-    }
+//    print("all tokens:")
+//    for t in messageScanner.tokens.indices {
+//        for s in messageScanner.skippedTokens[t] {
+//            print(s)
+//        }
+//        print(messageScanner.tokens[t])
+//    }
     //    print("tokensPatterns:")
     //    for tp in grammar.terminals {
     //        print(tp.key, tp.value.source)
@@ -138,13 +141,10 @@ for message in grammar.messages {
             .appendingPathComponent(grammar.startSymbol + "_parser")
             .appendingPathExtension("swift")
         info += "LL1 is \(grammar.isLL1)\n"
-        //        Logger.ui.info("LL1 is \(grammar.isLL1)")
-        //        #Trace("LL1 is", grammar.isLL1)
         if grammar.isLL1 {
             let parserGenerator = ParserGenerator(outputFile: parserFile, grammar: grammar)
             try parserGenerator.generate()
             info += "LL1 recursive descent parser written to \(parserFile.lastPathComponent)\n"
-            //            Logger.ui.info( "LL1 recursive descent parser written to \(parserFile.lastPathComponent)")
         }
         
         // MARK: - Generate CRF and AST diagrams
@@ -156,8 +156,7 @@ for message in grammar.messages {
         let diagramGenerator = ASTDiagramGenerator(outputFile: diagramFile, grammar: grammar, messageParser: messageParser)
         try diagramGenerator.generate()
         info += "AST diagram written to \(diagramFile.lastPathComponent)\n"
-        //        Logger.ui.info( "AST diagram written to \(diagramFile.lastPathComponent)")
-    }
+//    }
     
     // MARK: - Generate SPPF Diagram
     let sppfExtractor = SPPFExtractor(grammar: grammar, tokens: messageScanner.tokens)
@@ -169,12 +168,8 @@ for message in grammar.messages {
             .appendingPathExtension("gv")
         try generateSPPFDiagram(outputFile: sppfFile, root: sppfRoot)
         info += "SPPF diagram written to \(sppfFile.lastPathComponent)\n"
-        //            Logger.ui.info( "SPPF diagram written to \(sppfFile.lastPathComponent)")
-        //            #Trace("SPPF diagram written to \(sppfFile.lastPathComponent)")
-        
     } else {
         Logger.ui.warning( "SPPF: no parse tree to extract")
-        //            #Trace("\nSPPF: no parse tree to extract")
     }
     
     // MARK: - Generate Derivation Diagram
@@ -184,14 +179,12 @@ for message in grammar.messages {
         .appendingPathExtension("gv")
     try generateDerivationDiagram(outputFile: derivFile, grammar: grammar, tokens: messageScanner.tokens)
     info += "Derivation diagram written to \(derivFile.lastPathComponent)\n"
-    //        Logger.ui.info( "Derivation diagram written to \(derivFile.lastPathComponent)")
-    //        #Trace("Derivation diagram written to \(derivFile.lastPathComponent)")
     
     Logger.ui.info("\(info)")
-    //    }
+        }
 #endif
     
-    Logger.ui.debug("first/follow set size: \(GrammarNode.sizeofSets) terminals.count: \(grammar.terminals.count) nonTerminals.count: \(grammar.nonTerminals.count)")
+//    Logger.ui.debug("first/follow set size: \(GrammarNode.sizeofSets) terminals.count: \(grammar.terminals.count) nonTerminals.count: \(grammar.nonTerminals.count)")
     
 }
 //}

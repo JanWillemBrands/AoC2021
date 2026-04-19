@@ -123,7 +123,7 @@ final class GrammarNode {
     var isNullable: Bool {
         switch kind {
         case .OPT, .KLN: return true
-        default: return first.contains("ε")
+        default: return first.contains("")
         }
     }
     
@@ -136,11 +136,11 @@ extension GrammarNode {
     func isExpecting(_ token: Token) -> Bool {
         if first.contains(token.kind) {
             return true
-        } else if first.contains("ε") && follow.contains(token.kind) {
+        } else if first.contains("") && follow.contains(token.kind) {
             return true
         } else {
             var expectedTokens = first
-            if first.contains("ε") {
+            if first.contains("") {
                 expectedTokens.formUnion(follow)
             }
             #Trace("expected \"\(token.kind)\" to be in", expectedTokens)
