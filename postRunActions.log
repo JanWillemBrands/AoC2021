@@ -63,10 +63,6 @@ Verbose 5
  [33] ZapfChancery-MediumItalic => "Times New Roman,  ITALIC"
  [34] ZapfDingbats => "Impact,  REGULAR"
 fontname: "Menlo" resolved to: (PangoCairoCoreTextFont) "Menlo 9.999" 
-network simplex:  6 nodes 6 edges maxiter=24 balance=1
-network simplex: 6 nodes 6 edges 0 iter 0.00 sec
-network simplex:  4 nodes 3 edges maxiter=16 balance=1
-network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  2 nodes 1 edges maxiter=18 balance=1
 network simplex: 2 nodes 1 edges 0 iter 0.00 sec
 network simplex:  2 nodes 1 edges maxiter=18 balance=1
@@ -77,6 +73,10 @@ network simplex:  2 nodes 1 edges maxiter=18 balance=1
 network simplex: 2 nodes 1 edges 0 iter 0.00 sec
 network simplex:  2 nodes 1 edges maxiter=18 balance=1
 network simplex: 2 nodes 1 edges 0 iter 0.00 sec
+network simplex:  6 nodes 6 edges maxiter=24 balance=1
+network simplex: 6 nodes 6 edges 0 iter 0.00 sec
+network simplex:  4 nodes 3 edges maxiter=16 balance=1
+network simplex: 4 nodes 3 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=58 balance=0
 network simplex: 1 nodes 0 edges 0 iter 0.00 sec
 network simplex:  1 nodes 0 edges maxiter=58 balance=0
@@ -91,15 +91,15 @@ merge2: graph G, rank 0 has only 3 < 10 nodes
 merge2: graph G, rank 1 has only 3 < 9 nodes
 merge2: graph G, rank 2 has only 2 < 5 nodes
 merge2: graph G, rank 3 has only 2 < 5 nodes
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
 mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross G: 0 crossings, 0.00 secs.
 network simplex:  56 nodes 107 edges maxiter=58 balance=2
 network simplex: 56 nodes 107 edges 22 iter 0.00 sec
-routesplines: 19 edges, 57 boxes 0.00 sec
+routesplines: 19 edges, 57 boxes 0.02 sec
 Using render: svg:core
 Using device: svg:svg:core
 gvRenderJobs G: 0.00 secs.
@@ -251,7 +251,7 @@ mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross Derivations: 0 crossings, 0.00 secs.
 network simplex:  39 nodes 52 edges maxiter=20 balance=2
 network simplex: 39 nodes 52 edges 6 iter 0.00 sec
-routesplines: 10 edges, 46 boxes 0.02 sec
+routesplines: 10 edges, 46 boxes 0.00 sec
 Using render: svg:core
 Using device: svg:svg:core
 gvRenderJobs Derivations: 0.00 secs.

@@ -106,12 +106,19 @@ final class GrammarNode {
     var first:      Set<String> = []
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
-    
-    /// BitSet mirrors of first/follow/ambiguous, populated by `Grammar.populateBitSets()`.
+
+    /// Exclusion set for Schrödinger dual suppression.
+    /// When a Schrödinger token's primary (head) kindID is in `excludeBS`,
+    /// the parser will not try this node's dual path.
+    /// Populated by `---("if" "let" ...)` annotations in APUS grammar rules.
+    var exclude:    Set<String> = []
+
+    /// BitSet mirrors of first/follow/ambiguous/exclude, populated by `Grammar.populateBitSets()`.
     /// Used by `testSelect()` and the follow check on the hot path for O(1) membership tests.
     var firstBS:      BitSet = []
     var followBS:     BitSet = []
     var ambiguousBS:  BitSet = []
+    var excludeBS:    BitSet = []
     
     static var sizeofSets = 0
     static var isLL1 = true

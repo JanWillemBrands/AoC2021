@@ -217,18 +217,23 @@ class MessageParser {
     /// Uses BitSet membership (O(1) bit test) instead of Set<String>.contains().
     /// At Frankenstein sub-positions, conservatively returns true (rare path).
     func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
-        
+
 //        if slot.firstBS.contains(grammar.frankensteinID) { return true }
-        
-        var current = tokens[cI.tokenIndex]
+
+        let headToken = tokens[cI.tokenIndex]
+        let headID = headToken.kindID!
+        var current = headToken
         while true {
             let cID = current.kindID!
-            if slot.firstBS.contains(cID)
+            // Skip this dual if it's excluded by the slot's ---(...) annotation.
+            // The head token (primary match) is the keyword/literal; if it's in
+            // the exclusion set, this dual path should not be taken.
+            if current !== headToken && slot.excludeBS.contains(headID) {
+                // This is a dual being tested, and the primary token is excluded
+            } else if slot.firstBS.contains(cID)
                 || slot.firstBS.contains(grammar.epsilonID) && bracket.followBS.contains(cID) {
                 return true
             }
-            //            guard let next = current.dual else { return false }
-            //            current = next
             if let next = current.dual {
                 current = next
             } else {
@@ -265,9 +270,13 @@ class MessageParser {
         }
 
         // FAST PATH: exact match + Schrödinger duals
-        var current = tokens[tokenIdx]
+        let headToken = tokens[tokenIdx]
+        var current = headToken
         while true {
-            if cL.nameID == current.kindID {
+            // Skip duals excluded by ---(...) annotation on the grammar slot
+            if current !== headToken && cL.excludeBS.contains(headToken.kindID) {
+                // This dual is suppressed; the primary token is in the exclusion set
+            } else if cL.nameID == current.kindID {
                 return cI.nextToken()
             }
             guard let next = current.dual else { break }

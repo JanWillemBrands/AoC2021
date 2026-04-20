@@ -145,6 +145,10 @@ class Grammar {
         for s in node.ambiguous {
             if let id = symbolToID[s] { node.ambiguousBS.insert(id) }
         }
+        node.excludeBS = BitSet()
+        for s in node.exclude {
+            if let id = symbolToID[s] { node.excludeBS.insert(id) }
+        }
         if node.kind != .END {
             if let seq = node.seq { populateBitSetsRecursive(seq) }
         }

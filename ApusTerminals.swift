@@ -8,6 +8,8 @@
 import OSLog
 import RegexBuilder
 
+//typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool, mode: Mode)
+
 let apusTerminals: [String:TokenPattern] = [
     "whitespace":   (#"\s+"#,                   /\s+/,                              false, true, Mode()),
     "linecomment":  (#"//.*"#,                  /\/\/.*/,                           false, true, Mode()),
@@ -39,6 +41,7 @@ let apusTerminals: [String:TokenPattern] = [
     ">>>":          (">>>",                     Regex { ">>>" },                    true,  false, Mode()),
     "<<<":          ("<<<",                     Regex { "<<<" },                    true,  false, Mode()),
     "=>>":          ("=>>",                     Regex { "=>>" },                    true,  false, Mode()),
+    "---":          ("---",                     Regex { "---" },                    true,  false, Mode()),
 //    "nonASCII":     (#"[^\p{ASCII}]"#,          /[^\p{ASCII}]/,                     false,  false),
 //    ")?":           (")?",                      Regex { ")?" },                     true,  false),
 //    ")*":           (")*",                      Regex { ")*" },                     true,  false),

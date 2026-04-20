@@ -201,7 +201,6 @@ final class Scanner {
                 for candidate in ordered.dropFirst() {
                     tail.dual = candidate.token
                     tail = candidate.token
-//                    Logger.scan.debug("Schrödinger: \(candidate.token.kind)")
                 }
             }
 

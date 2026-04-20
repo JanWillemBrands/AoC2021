@@ -337,9 +337,8 @@ class ApusParser {
     
     func regex() throws -> GrammarNode {
         #Trace("regex", token)
+        // the name of the regex is either the LHS identifier of the production rule, or the lineposition
         let name = terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex)
-        // TODO: remove temporary rename to filter for regex-defined terminals
-//        let name = "$$" + (terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex))
 
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
@@ -382,7 +381,6 @@ class ApusParser {
         // the token is a string literal, use a regex builder to create a Regex
         // a literal may occur multiple times in a grammar, including as a terminal definition
         // we don't want to enter the same literal over and over, especially when it might overwrite initial mode annotations
-//        print("check B: \(name) mode: \(String(describing: grammar.terminals[name]?.mode))")
         if grammar.terminals[name] == nil {
             // to build the correct regex we need to remove the escape sequences from the token because the literal uses Swift string notation.
             // e.g. "//" in the grammar matches a single '/' in the message, and a "\t" will match a tab character in the message
@@ -393,7 +391,6 @@ class ApusParser {
         } else {
 //            Logger.parse.debug("already defined literal name: \(name) image: \(self.token.image)")
         }
-//        print("check A: \(name) mode: \(String(describing: grammar.terminals[name]?.mode))")
 
         
         cI += 1
@@ -465,6 +462,23 @@ class ApusParser {
             try expect(["identifier", "literal", "epsilon", "regex", "(", "[", "{", "<"])
             fatalError("expect() should have thrown - this line should never be reached")
         }
+
+        // check for Schrödinger exclusion annotation: ---("if" "let" ...)
+        if token.kind == "---" {
+            cI += 1
+            try expect(["("])
+            cI += 1
+            while token.kind == "literal" {
+                let excluded = token.stripped
+                if !excluded.isEmpty {
+                    node.exclude.insert(excluded)
+                }
+                cI += 1
+            }
+            try expect([")"])
+            cI += 1
+        }
+
         return node
     }
     

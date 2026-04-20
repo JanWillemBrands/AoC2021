@@ -124,7 +124,7 @@ extension GrammarNode {
         if first.contains("plainIdentifier") {
             let overlap = Set(first.filter { possibleIdentifier($0) })
             if !overlap.isEmpty {
-                Logger.grammar.debug("Schrödinger plainIdentifier ~ \(overlap.sorted())\n\(self.ebnfDot())")
+                print("Schrödinger NODE plainIdentifier ~ \(overlap.sorted())\n  \(self.ebnfDot())")
             }
         }
     }
@@ -166,18 +166,18 @@ extension GrammarNode {
             }
         }
         if schrödingerAlert && !conflicts.isEmpty {
-//            Logger.grammar.debug("Schrödinger plainIdentifier ~ \(conflicts.sorted())\n\(self.ebnfDot())")
+            print("Schrödinger ALTERNATES plainIdentifier ~ \(conflicts.sorted())\n  \(self.ebnfDot())")
         }
     }
     
 }
 
-I have run Advent on Swift.apus, which uses the contents of SPPF.swift as the test message, and found that 194833 descriptors are generated and the crf has 72110 nodes.  This is a lot and we need to find ways to reduce that.  Part of the reason is that the Swift grammar is highly ambiguous from a GLL point of view, which we cannot change.  The Schrödinger tokens add a level of indecision and I've written detectSchrödingerConflict to find the root causes.  I need help analysing the results.
-
-I have thought about how to implement plainIdentifier vs keyword overlap and the need to exclude keywords from being recognized as identifiers depending on context.  One way may be to add a apus feature like ---("if" "while" etc) and to store this as exclusion sets similar to first/follow.  Maybe this is overkill ?
-
-I also noticed that Schrödinger tokens can have at most one literal.  Maybe we can ignore regex-to-regex Schrödinger overlap and let the GLL algorithm deal with it? DetectSchrodingerOverlap should be able to tell us.
-
-Also TokenPattern contains isKeyword, can we change that to isLiteral?  (I remember we had to do something special because epsilon is  a keyword but defined by a regex.  Why?)
-
-In general, what else can we do to make the discriptor count lower?
+//I have run Advent on Swift.apus, which uses the contents of SPPF.swift as the test message, and found that 194833 descriptors are generated and the crf has 72110 nodes.  This is a lot and we need to find ways to reduce that.  Part of the reason is that the Swift grammar is highly ambiguous from a GLL point of view, which we cannot change.  The Schrödinger tokens add a level of indecision and I've written detectSchrödingerConflict to find the root causes.  I need help analysing the results.
+//
+//I have thought about how to implement plainIdentifier vs keyword overlap and the need to exclude keywords from being recognized as identifiers depending on context.  One way may be to add a apus feature like ---("if" "while" etc) and to store this as exclusion sets similar to first/follow.  Maybe this is overkill ?
+//
+//I also noticed that Schrödinger tokens can have at most one literal.  Maybe we can ignore regex-to-regex Schrödinger overlap and let the GLL algorithm deal with it? DetectSchrodingerOverlap should be able to tell us.
+//
+//Also TokenPattern contains isKeyword, can we change that to isLiteral?  (I remember we had to do something special because epsilon is  a keyword but defined by a regex.  Why?)
+//
+//In general, what else can we do to make the discriptor count lower?
