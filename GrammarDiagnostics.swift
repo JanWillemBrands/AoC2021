@@ -96,7 +96,7 @@ extension GrammarNode {
             if let seq { // rhs
                 seq.detectSchrödingerConflict()
             } else { // lhs
-                Logger.grammar.debug("detectSchrödingerConflict in RULE: \(self.name)")
+//                Logger.grammar.debug("detectSchrödingerConflict in RULE: \(self.name)")
                 handleAlternatesSchrödingerConflict()
             }
         case .ALT:
