@@ -52,22 +52,31 @@ plainIdentifier             - /[\p{XID_Start}_]\p{XID_Continue}*/ .     // simpl
                                                                         // which produces a Schrödinger token: '_' ~ plainIdentifier
                                                                         
 escapedIdentifier           - /`\s*\p{XID_Start}\p{XID_Continue}*\s*`/ .
-rawIdentifier               - /`[^`\n\r\u{000B}\u{000C}\u{0085}\u{2028}\u{2029}]+`/ .       // 6.2 allows ` hello world `
+//rawIdentifier               - /`[^`\n\r\u{000B}\u{000C}\u{0085}\u{2028}\u{2029}]+`/ .       // 6.2 allows ` hello world `
 
 implicitParameterName       - /\$[0-9]+/ .
 propertyWrapperProjection   - /\$\p{XID_Continue}+/ .           // TODO: overlaps with implicitParameterName, check GLL
 
 //identifier = "_" | plainIdentifier | escapedIdentifier | implicitParameterName | propertyWrapperProjection .
 
-// Schrödinger exclusion: these hard keywords can NEVER be used as a plainIdentifier.
+/*
+all Swift 6.3 literals that start with a letter
+"Any" "Linux" "Protocol" "Self" "Type" "Windows" "actor" "alpha" "any" "arch" "arm" "arm64" "as" "assignment" "associatedtype" "associativity" "async" "await" "blue" "borrowing" "break" "canImport" "case" "catch" "class" "compiler" "consuming" "continue" "convenience" "default" "defer" "deinit" "didSet" "discard" "do" "dynamic" "each" "else" "enum" "extension" "fallthrough" "false" "file" "fileprivate" "final" "for" "func" "get" "getter" "green" "guard" "higherThan" "i386" "iOS" "iOSApplicationExtension" "if" "import" "in" "indirect" "infix" "init" "inout" "internal" "is" "isolated" "lazy" "left" "let" "line" "lowerThan" "macCatalyst" "macCatalystApplicationExtension" "macOS" "macOSApplicationExtension" "macro" "move" "mutating" "nil" "none" "nonisolated" "nonmutating" "open" "operator" "optional" "os" "override" "package" "postfix" "precedencegroup" "prefix" "private" "protocol" "public" "red" "repeat" "required" "resourceName" "rethrows" "return" "right" "safe" "self" "set" "setter" "simulator" "some" "static" "struct" "subscript" "super" "swift" "switch" "targetEnvironment" "throw" "throws" "true" "try" "tvOS" "tvOSApplicationExtension" "typealias" "unowned" "unsafe" "var" "visionOS" "visionOSApplicationExtension" "wasm32" "watchOS" "watchOSApplicationExtension" "weak" "where" "while" "willSet" "x86_64" "yield"
+*/
+
+/*
+all Swift 6.3 literals that start with #
+"#" "#available" "#colorLiteral" "#else" "#elseif" "#endif" "#error" "#fileLiteral" "#if" "#imageLiteral" "#keyPath" "#selector" "#sourceLocation" "#unavailable" "#warning"
+*/
+
+///*
+//all remaining Swift 6.3 literals (punctuation and operators)
+//"!" "%" "&" "&&" "(" ")" "*" "*/" "+" "," "-" "->" "." "..." "/" "/*" ":" ";" "<" "=" "==" ">" ">=" "?" "[" "\\" "\\." "]" "^" "_" "{" "|" "||" "}" "~"
+//*/
+
+// Schrödinger exclusion: these hard keywords cannot be used as a plainIdentifier.
 // All contextual keywords (actor, async, await, yield, some, any, ...) are allowed as identifiers
 // so they are NOT in this exclusion list.
-
-"actor" "Any" "as" "associatedtype" "associativity" "async" "await" "borrowing" "break" "case" "catch" "class" "consuming" "continue" "convenience" "copy" "default" "defer" "deinit" "didSet" "discard" "do" "dynamic" "each" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "final" "for" "func" "get" "guard" "higherThan" "if" "import" "in" "indirect" "init" "inout" "internal" "is" "isolated" "lazy" "left" "let" "lowerThan" "move" "mutating" "nil" "none" "nonisolated" "nonmutating" "open" "operator" "optional" "override" "package" "postfix" "precedencegroup" "prefix" "private" "protocol" "public" "repeat" "required" "rethrows" "return" "right" "self" "Self" "set" "some" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "unowned" "var" "weak" "where" "while" "willSet" "yield"
-
-
-
-
 
 identifier = plainIdentifier
                 // exclude the hard reserved keywords
@@ -389,7 +398,7 @@ arrayType = "[" type "]" .
 
 dictionaryType = "[" type ":" type "]" .
 
-optionalType = type "?" .
+optionalType = type "?" .       // TODO: no space allowed between type and "?"
 
 implicitlyUnwrappedOptionalType = type "!" .
 
@@ -423,7 +432,7 @@ prefixExpression = inOutExpression .
 
 inOutExpression = "&" primaryExpression .
 
-tryOperator = "try" | "try" "?" | "try" "!" .
+tryOperator = "try" | "try" "?" | "try" "!" .       // TODO: no space allowed between "try" and "?" or "!"
 
 awaitOperator = "await" .
 
@@ -435,12 +444,12 @@ infixExpressions = infixExpression infixExpressions? .
 
 assignmentOperator = "=" .
 
-conditionalOperator = "?" expression ":" .
+conditionalOperator = "?" expression ":" .          // TODO: there must be space before and after "?" and ":"    <+>
 
 typeCastingOperator = "is" type .
 typeCastingOperator = "as" type .
-typeCastingOperator = "as" "?" type .
-typeCastingOperator = "as" "!" type .
+typeCastingOperator = "as" "?" type .               // TODO: no space allowed between "as" and "?"              >:<
+typeCastingOperator = "as" "!" type .               // TODO: no space allowed between "as" and "!"
 
 primaryExpression = identifier genericArgumentClause? .
 primaryExpression = literalExpression .
@@ -511,7 +520,7 @@ captureListItems = captureListItem | captureListItem "," captureListItems .
 captureListItem = captureSpecifier? identifier .
 captureListItem = captureSpecifier? identifier "=" expression .
 captureListItem = captureSpecifier? selfExpression .
-captureSpecifier = "weak" | "unowned" | "unowned(safe)" | "unowned(unsafe)" .
+captureSpecifier = "weak" | "unowned" | "unowned" "(" "safe" ")" | "unowned" "(" "unsafe" ")" . // TODO: no space allowed before "(" here
 
 implicitMemberExpression = "." identifier .
 implicitMemberExpression = "." identifier "." postfixExpression .
@@ -531,7 +540,7 @@ parenthesizedExpression = "(" expression ")" .
 
 tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ","? ")" .
 tupleElementList = tupleElement | tupleElement "," tupleElementList .
-tupleElement = expression | identifier ":" expression .
+tupleElement = expression | argumentIdentifier ":" expression .
 
 wildcardExpression = "_" .
 
@@ -545,18 +554,18 @@ keyPathExpression = "\\." keyPathComponents .      // WTFFFF    dummy
 ////////////
 
 
-keyPathExpression = "\\" type? "." keyPathComponents .      // escape needed
+keyPathExpression = "\\" type? "." keyPathComponents .      // escape needed for apus literal, which copies Swift string syntax
 //keyPathExpression = "\" type? "." keyPathComponents .
 
 keyPathComponents = keyPathComponent | keyPathComponent "." keyPathComponents .
 keyPathComponent = identifier keyPathPostfixes? | keyPathPostfixes .
 
 keyPathPostfixes = keyPathPostfix keyPathPostfixes? .
-keyPathPostfix = "?" | "!" | "self" | "[" functionCallArgumentList "]" .
+keyPathPostfix = "?" | "!" | "self" | "[" functionCallArgumentList "]" .    // TODO: remove spaces before "?" and "!"
 
 selectorExpression = "#selector" "(" expression ")" .
-selectorExpression = "#selector" "(" "getter:" expression ")" .
-selectorExpression = "#selector" "(" "setter:" expression ")" .
+selectorExpression = "#selector" "(" "getter" ":" expression ")" .
+selectorExpression = "#selector" "(" "setter" ":" expression ")" .
 
 keyPathStringExpression = "#keyPath" "(" expression ")" .
 
@@ -580,7 +589,7 @@ functionCallArgument = Operator | argumentIdentifier ":" Operator .
 
 trailingClosures = closureExpression labeledTrailingClosures? .
 labeledTrailingClosures = labeledTrailingClosure labeledTrailingClosures? .
-labeledTrailingClosure = identifier ":" closureExpression .
+labeledTrailingClosure = argumentIdentifier ":" closureExpression .
 
 initializerExpression = postfixExpression "." "init" .
 initializerExpression = postfixExpression "." "init" "(" argumentNames ")" .
@@ -591,15 +600,15 @@ explicitMemberExpression = postfixExpression "." identifier "(" argumentNames ")
 explicitMemberExpression = postfixExpression conditionalCompilationBlock .
 
 argumentNames = argumentName argumentNames? .
-argumentName = identifier ":" .
+argumentName = argumentIdentifier ":" .
 
 postfixSelfExpression = postfixExpression "." "self" .
 
 subscriptExpression = postfixExpression "[" functionCallArgumentList "]" .
 
-forcedValueExpression = postfixExpression "!" .
+forcedValueExpression = postfixExpression "!" .           // TODO: remove spaces before "!"
 
-optionalChainingExpression = postfixExpression "?" .
+optionalChainingExpression = postfixExpression "?" .            // TODO: remove spaces before "?"
 
 
 
@@ -840,8 +849,8 @@ parameter = attributes? externalParameterName? localParameterName parameterTypeA
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation .
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation "..." .
 
-externalParameterName = identifier .
-localParameterName = identifier .
+externalParameterName = argumentIdentifier .
+localParameterName = argumentIdentifier .
 parameterTypeAnnotation = ":" attributes? parameterModifier? type .
 parameterModifier = "inout" | "borrowing" | "consuming" .
 defaultArgumentClause = "=" expression .
@@ -1001,10 +1010,10 @@ attribute = attributeMarker attributeArgumentClause? .        // WTF???   Swift 
 attributeArgumentClause = "(" balancedTokens? ")" .
 attributes = attribute attributes? .
 
-//keyword = "actor" | "associatedtype" | "class" | "deinit" | "enum" | "extension" | "fileprivate" | "func" | "import" | "init" | "inout" | "internal" | "let" | "open" | "operator" | "private" | "precedencegroup" | "protocol" | "public" | "rethrows" | "static" | "struct" | "subscript" | "typealias" | "var" | "break" | "case" | "catch" | "continue" | "default" | "defer" | "do" | "else" | "fallthrough" | "for" | "guard" | "if" | "in" | "repeat" | "return" | "switch" | "throw" | "try" | "where" | "while" | "Any" | "as" | "borrowing" | "consuming" | "copy" | "discard" | "false" | "is" | "move" | "nil" | "self" | "Self" | "super" | "throws" | "true" | "_" | "each" | "associativity" | "convenience" | "didSet" | "dynamic" | "final" | "get" | "higherThan" | "indirect" | "lazy" | "left" | "lowerThan" | "mutating" | "nonmutating" | "none" | "optional" | "override" | "postfix" | "prefix" | "required" | "right" | "set" | "some" | "unowned" | "weak" | "willSet" | "#available" | "#colorLiteral" | "#column" | "#dsohandle" | "#elseif" | "#else" | "#endif" | "#error" | "#file" | "#fileID" | "#fileLiteral" | "#filePath" | "#function" | "#if" | "#imageLiteral" | "#keyPath" | "#line" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "(" | ")" | "{" | "}" | "[" | "]" | "." | "," | ":" | ";" | "=" | "@" | "#" | "&" | "?" | "!" | "<" | ">" | "|" | "^" | "~" | "%" | "*" | "+" | "-" | "/" | "isolated" | "nonisolated" | "async" | "await" | "yield" | "package" .
+//keyword = "actor" | "associatedtype" | "class" | "deinit" | "enum" | "extension" | "fileprivate" | "func" | "import" | "init" | "inout" | "internal" | "let" | "open" | "operator" | "private" | "precedencegroup" | "protocol" | "public" | "rethrows" | "static" | "struct" | "subscript" | "typealias" | "var" | "break" | "case" | "catch" | "continue" | "default" | "defer" | "do" | "else" | "fallthrough" | "for" | "guard" | "if" | "in" | "repeat" | "return" | "switch" | "throw" | "try" | "where" | "while" | "Any" | "as" | "borrowing" | "consuming" | "discard" | "false" | "is" | "move" | "nil" | "self" | "Self" | "super" | "throws" | "true" | "_" | "each" | "associativity" | "convenience" | "didSet" | "dynamic" | "final" | "get" | "higherThan" | "indirect" | "lazy" | "left" | "lowerThan" | "mutating" | "nonmutating" | "none" | "optional" | "override" | "postfix" | "prefix" | "required" | "right" | "set" | "some" | "unowned" | "weak" | "willSet" | "#available" | "#colorLiteral" | "#column" | "#dsohandle" | "#elseif" | "#else" | "#endif" | "#error" | "#file" | "#fileID" | "#fileLiteral" | "#filePath" | "#function" | "#if" | "#imageLiteral" | "#keyPath" | "#line" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "(" | ")" | "{" | "}" | "[" | "]" | "." | "," | ":" | ";" | "=" | "@" | "#" | "&" | "?" | "!" | "<" | ">" | "|" | "^" | "~" | "%" | "*" | "+" | "-" | "/" | "isolated" | "nonisolated" | "async" | "await" | "yield" | "package" .
 
 
-keywordMinusBrackets = "actor" | "associatedtype" | "class" | "deinit" | "enum" | "extension" | "fileprivate" | "func" | "import" | "init" | "inout" | "internal" | "let" | "open" | "operator" | "private" | "precedencegroup" | "protocol" | "public" | "rethrows" | "static" | "struct" | "subscript" | "typealias" | "var" | "break" | "case" | "catch" | "continue" | "default" | "defer" | "do" | "else" | "fallthrough" | "for" | "guard" | "if" | "in" | "repeat" | "return" | "switch" | "throw" | "try" | "where" | "while" | "Any" | "as" | "borrowing" | "consuming" | "copy" | "discard" | "false" | "is" | "move" | "nil" | "self" | "Self" | "super" | "throws" | "true" | "_" | "each" | "associativity" | "convenience" | "didSet" | "dynamic" | "final" | "get" | "higherThan" | "indirect" | "lazy" | "left" | "lowerThan" | "mutating" | "nonmutating" | "none" | "optional" | "override" | "postfix" | "prefix" | "required" | "right" | "set" | "some" | "unowned" | "weak" | "willSet" | "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "#" | "&" | "?" | "!" | "<" | ">" | "|" | "^" | "~" | "%" | "*" | "+" | "-" | "/" | "isolated" | "nonisolated" | "async" | "await" | "yield" | "package" .   // removed @ since that is not a valid standalone keyword
+keywordMinusBrackets = "actor" | "associatedtype" | "class" | "deinit" | "enum" | "extension" | "fileprivate" | "func" | "import" | "init" | "inout" | "internal" | "let" | "open" | "operator" | "private" | "precedencegroup" | "protocol" | "public" | "rethrows" | "static" | "struct" | "subscript" | "typealias" | "var" | "break" | "case" | "catch" | "continue" | "default" | "defer" | "do" | "else" | "fallthrough" | "for" | "guard" | "if" | "in" | "repeat" | "return" | "switch" | "throw" | "try" | "where" | "while" | "Any" | "as" | "borrowing" | "consuming" | "discard" | "false" | "is" | "move" | "nil" | "self" | "Self" | "super" | "throws" | "true" | "_" | "each" | "associativity" | "convenience" | "didSet" | "dynamic" | "final" | "get" | "higherThan" | "indirect" | "lazy" | "left" | "lowerThan" | "mutating" | "nonmutating" | "none" | "optional" | "override" | "postfix" | "prefix" | "required" | "right" | "set" | "some" | "unowned" | "weak" | "willSet" | "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "#" | "&" | "?" | "!" | "<" | ">" | "|" | "^" | "~" | "%" | "*" | "+" | "-" | "/" | "isolated" | "nonisolated" | "async" | "await" | "yield" | "package" .   // removed @ since that is not a valid standalone keyword
 
 balancedToken = identifier | keywordMinusBrackets | literal | Operator .
 //balancedToken = Any identifier, keyword, literal, or operator .
@@ -1036,7 +1045,7 @@ valueBindingPattern = "var" pattern | "let" pattern .               // WTF  'let
 
 tuplePattern = "(" tuplePatternElementList? ")" .
 tuplePatternElementList = tuplePatternElement | tuplePatternElement "," tuplePatternElementList .
-tuplePatternElement = pattern | identifier ":" pattern .
+tuplePatternElement = pattern | argumentIdentifier ":" pattern .
 
 enumCasePattern = typeIdentifier? "." enumCaseName tuplePattern? .
 
@@ -1051,6 +1060,7 @@ expressionPattern = expression .
 
 // GENERIC PARAMETERS AND ARGUMENTS
 
+// ANNOTATION FOR PARTIAL TOKEN MATCH A.K.A. FRANKENSTEIN
 genericParameterClause  = "<"
                            genericParameterList ","?
                           ">" =>> .
@@ -1070,6 +1080,7 @@ conformanceRequirement = typeIdentifier ":" protocolCompositionType .
 sameTypeRequirement = typeIdentifier "==" type .
 sameTypeRequirement = typeIdentifier "==" signedIntegerLiteral .
 
+// ANNOTATION FOR PARTIAL TOKEN MATCH A.K.A. FRANKENSTEIN
 genericArgumentClause   = "<"
                            genericArgumentList ","?
                           ">" =>> .

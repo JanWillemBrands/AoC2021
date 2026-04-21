@@ -218,8 +218,6 @@ class MessageParser {
     /// At Frankenstein sub-positions, conservatively returns true (rare path).
     func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
 
-//        if slot.firstBS.contains(grammar.frankensteinID) { return true }
-
         let headToken = tokens[cI.tokenIndex]
         let headID = headToken.kindID!
         var current = headToken
@@ -299,9 +297,6 @@ class MessageParser {
     /// Handles Schrödinger tokens by checking all duals.
     /// At Frankenstein sub-positions, conservatively returns true (rare path).
     func followCheck(bracket: GrammarNode) -> Bool {
-        
-//        if bracket.followBS.contains(grammar.frankensteinID) { return true }
-
         var current = tokens[cI.tokenIndex]
         while true {
             if bracket.followBS.contains(current.kindID) { return true }

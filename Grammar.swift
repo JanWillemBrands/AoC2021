@@ -122,6 +122,176 @@ class Grammar {
         }
     }
     
+    // MARK: - Schrödinger Exclusion Set Propagation
+    //
+    // Background: the scanner produces Schrödinger tokens when multiple patterns
+    // match the same input at the same length (e.g. "if" matches both the `if`
+    // keyword and `plainIdentifier`). The GLL parser explores ALL duals, which
+    // is correct but creates many descriptors that will ultimately fail.
+    //
+    // The `---` annotation in APUS grammar files declares that certain keywords
+    // should never be treated as a specific terminal in that context:
+    //
+    //   identifier = plainIdentifier ---("if" "let" "var" ...) | escapedIdentifier .
+    //
+    // This means: when the head token is "if", don't try the plainIdentifier dual
+    // for this grammar node. The annotation seeds an `exclude` set on the terminal.
+    //
+    // Propagation: the exclude set is propagated upward through the grammar so that
+    // parent nonterminals can reject Schrödinger duals early in `testSelect`,
+    // before creating descriptors that would fail deep inside the grammar.
+    //
+    // The propagation rules are:
+    //   - Terminal with `---`:    seed (already set by ApusParser)
+    //   - RHS nonterminal N(X):  inherit from LHS definition of X
+    //   - LHS nonterminal:       intersection over alternates that contribute the terminal
+    //   - ALT:                   inherit from the first seq-chain symbol that contributes
+    //   - Bracket (DO/OPT/KLN/POS): intersection over alternates
+    //   - Sequence with nullable prefix: skip nullable nodes whose own content doesn't
+    //     contribute, continue to the next symbol in the chain
+    //
+    // Intersection semantics ensure that if ANY path to the terminal lacks an
+    // exclusion, the parent conservatively allows the dual (no false rejections).
+    // Alternates with empty exclude (not yet resolved) are skipped to let the
+    // fixpoint converge for self-referencing rules.
+    //
+    // The exclude sets are independent of FIRST/FOLLOW — they are computed in a
+    // separate pass after FIRST/FOLLOW have converged, and stored in `exclude`
+    // (Set<String>) / `excludeBS` (BitSet) on each GrammarNode.
+    //
+    // At parse time, `testSelect` and `tokenMatch` check: when walking the
+    // Schrödinger dual chain, if the head token's kindID is in `slot.excludeBS`,
+    // skip the dual.
+
+    /// Entry point: propagate `exclude` sets from seed terminals upward through the grammar.
+    /// Call after FIRST/FOLLOW have converged and before `populateBitSets`.
+    func propagateExcludeSets() {
+        var excludedTerminals: Set<String> = []
+        for (_, nt) in nonTerminals {
+            collectExcludedTerminals(nt, into: &excludedTerminals)
+        }
+        guard !excludedTerminals.isEmpty else { return }
+
+        var changed = true
+        while changed {
+            changed = false
+            for (_, nt) in nonTerminals {
+                changed = propagateExcludeRecursive(nt, excludedTerminals: excludedTerminals) || changed
+            }
+        }
+    }
+
+    private func collectExcludedTerminals(_ node: GrammarNode, into result: inout Set<String>) {
+        if !node.exclude.isEmpty && node.kind.isTerminal {
+            result.insert(node.name)
+        }
+        walkChildren(node) { collectExcludedTerminals($0, into: &result) }
+    }
+
+    private func propagateExcludeRecursive(_ node: GrammarNode, excludedTerminals: Set<String>) -> Bool {
+        var changed = false
+
+        guard !node.first.isDisjoint(with: excludedTerminals) else {
+            return walkChildrenChanged(node, excludedTerminals: excludedTerminals)
+        }
+
+        if !node.kind.isTerminal && node.kind != .EPS {
+            let newExclude: Set<String>
+            switch node.kind {
+            case .N where node.seq != nil:
+                newExclude = node.alt?.exclude ?? []
+            case .N:
+                newExclude = intersectExcludesFromAlts(node, excludedTerminals: excludedTerminals)
+            case .ALT:
+                newExclude = excludeFromSeqChain(node.seq, excludedTerminals: excludedTerminals)
+            case .DO, .OPT, .KLN, .POS:
+                newExclude = intersectExcludesFromAlts(node, excludedTerminals: excludedTerminals)
+            default:
+                newExclude = []
+            }
+            if !newExclude.isEmpty && !newExclude.isSubset(of: node.exclude) {
+                node.exclude.formUnion(newExclude)
+                changed = true
+            }
+        }
+
+        return walkChildrenChanged(node, excludedTerminals: excludedTerminals) || changed
+    }
+
+    private func intersectExcludesFromAlts(_ node: GrammarNode, excludedTerminals: Set<String>) -> Set<String> {
+        var result: Set<String>? = nil
+        var alt = node.alt
+        while let a = alt {
+            if !a.first.isDisjoint(with: excludedTerminals) && !a.exclude.isEmpty {
+                if let current = result {
+                    result = current.intersection(a.exclude)
+                } else {
+                    result = a.exclude
+                }
+            }
+            alt = a.alt
+        }
+        return result ?? []
+    }
+
+    private func excludeFromSeqChain(_ start: GrammarNode?, excludedTerminals: Set<String>) -> Set<String> {
+        var node = start
+        while let n = node {
+            if n.kind == .END { break }
+            if ownFirstContains(n, excludedTerminals: excludedTerminals) {
+                if n.isNullable {
+                    let contExclude = excludeFromSeqChain(n.seq, excludedTerminals: excludedTerminals)
+                    return contExclude.isEmpty ? n.exclude : n.exclude.intersection(contExclude)
+                }
+                return n.exclude
+            }
+            guard n.isNullable else { break }
+            node = n.seq
+        }
+        return []
+    }
+
+    /// Does this node's OWN content (not continuation) contribute an excluded terminal to FIRST?
+    private func ownFirstContains(_ node: GrammarNode, excludedTerminals: Set<String>) -> Bool {
+        switch node.kind {
+        case .T, .TI, .C, .B:
+            return excludedTerminals.contains(node.name)
+        case .N:
+            guard let lhs = node.alt else { return false }
+            return !lhs.first.isDisjoint(with: excludedTerminals)
+        case .DO, .OPT, .KLN, .POS:
+            var alt = node.alt
+            while let a = alt {
+                if !a.first.isDisjoint(with: excludedTerminals) { return true }
+                alt = a.alt
+            }
+            return false
+        default:
+            return false
+        }
+    }
+
+    // MARK: - Grammar Graph Traversal Helpers
+
+    /// Visit children of a grammar node (seq and alt links), avoiding cycles.
+    private func walkChildren(_ node: GrammarNode, _ visit: (GrammarNode) -> Void) {
+        if node.kind != .END, let seq = node.seq { visit(seq) }
+        if node.kind == .N {
+            if node.seq == nil, let alt = node.alt { visit(alt) }
+        } else if node.kind != .END {
+            if let alt = node.alt { visit(alt) }
+        }
+    }
+
+    /// Recurse into children for exclude propagation, returning whether anything changed.
+    private func walkChildrenChanged(_ node: GrammarNode, excludedTerminals: Set<String>) -> Bool {
+        var changed = false
+        walkChildren(node) {
+            changed = propagateExcludeRecursive($0, excludedTerminals: excludedTerminals) || changed
+        }
+        return changed
+    }
+
     /// Convert each node's string-based first/follow/ambiguous `Set<String>`
     /// into the corresponding `firstBS`/`followBS`/`ambiguousBS` `BitSet`,
     /// using `symbolToID` for the mapping.

@@ -20,7 +20,7 @@ enum ApusParserError: Error {
 }
 
 class ApusParser {
-
+    
     let grammar = Grammar()
     var scanner: Scanner
     var tokens: [Token] { scanner.tokens }
@@ -131,18 +131,18 @@ class ApusParser {
         // store the cumulative set size
         GrammarNode.sizeofSets = newSize
         
-//        for frank in grammar.frankensteinTerminals {
-//            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
-//        }
-//
-//        for frank in grammar.frankensteinTerminals {
-//            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
-//        }
-//
-//        for frank in grammar.frankensteinTerminals {
-//            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
-//        }
-
+        //        for frank in grammar.frankensteinTerminals {
+        //            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
+        //        }
+        //
+        //        for frank in grammar.frankensteinTerminals {
+        //            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
+        //        }
+        //
+        //        for frank in grammar.frankensteinTerminals {
+        //            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
+        //        }
+        
         // this is to a give GrammarNodes access to their own grammar
         GrammarNode.grammar = grammar
         
@@ -153,6 +153,7 @@ class ApusParser {
             node.detectSchrödingerConflict()
         }
         grammar.isLL1 = GrammarNode.isLL1
+        grammar.propagateExcludeSets()
         grammar.populateBitSets()
         
         return grammar
@@ -179,7 +180,7 @@ class ApusParser {
         while token.kind == "message" {
             message()
         }
-
+        
         try expect(["○"])
     }
     
@@ -200,19 +201,19 @@ class ApusParser {
                 terminal = try regex()
             case "literal":
                 // do NOT assign the name of the production to the regex, instead use the literal image as the name
-//                terminalAlias = nonTerminalName
+                //                terminalAlias = nonTerminalName
                 terminal = literal()
             default:
                 try expect(["regex", "literal"])
             }
-
+            
             // reset
             terminalAlias = nil
             skip = false
             
             try expect(["."])
             cI += 1
-
+            
             // handle scanner mode annotations
             if token.kind == "===" {
                 cI += 1
@@ -233,7 +234,7 @@ class ApusParser {
                 cI += 1
                 grammar.terminals[terminal.name]?.mode.isPop = true
             }
-//            print("terminal: \(terminal.name) mode: \(String(describing: grammar.terminals[terminal.name]?.mode))")
+            //            print("terminal: \(terminal.name) mode: \(String(describing: grammar.terminals[terminal.name]?.mode))")
             
         } else {
             // production rule
@@ -265,7 +266,7 @@ class ApusParser {
             }
             try expect(["."])
             cI += 1
-       }
+        }
     }
     
     func message() {
@@ -327,7 +328,7 @@ class ApusParser {
             termNode = termNode.seq!
             // trailing actions (after factor/operator, before next factor or end)
             termNode.actions = collectActions(at: cI)
-
+            
         } while ["literal", "identifier", "epsilon", "regex", "(", "[", "{", "<"].contains(token.kind)
         
         termNode.seq = GrammarNode(kind: .END, name: "")
@@ -339,7 +340,7 @@ class ApusParser {
         #Trace("regex", token)
         // the name of the regex is either the LHS identifier of the production rule, or the lineposition
         let name = terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex)
-
+        
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
                 Logger.parse.warning("redefinition of \(name) as \(self.skip ? "skipped" : "not skipped")")
@@ -370,8 +371,8 @@ class ApusParser {
             return GrammarNode(kind: .EPS, name: "ε")
         }
         
-//        let name = terminalAlias ?? token.stripped
-//        print("literal terminalAlias: \(terminalAlias ?? "nil") token.stripped: \(token.stripped)")
+        //        let name = terminalAlias ?? token.stripped
+        //        print("literal terminalAlias: \(terminalAlias ?? "nil") token.stripped: \(token.stripped)")
         let name = token.stripped
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
@@ -387,11 +388,11 @@ class ApusParser {
             let regex = Regex { token.stripped.escapesRemoved }
             grammar.terminals[name] = (String(token.image), regex, true, skip, Mode())
             grammar.registerTerminal(name)
-//            Logger.parse.debug("added literal name: \(name) image: \(self.token.image)")
+            //            Logger.parse.debug("added literal name: \(name) image: \(self.token.image)")
         } else {
-//            Logger.parse.debug("already defined literal name: \(name) image: \(self.token.image)")
+            //            Logger.parse.debug("already defined literal name: \(name) image: \(self.token.image)")
         }
-
+        
         
         cI += 1
         return GrammarNode(kind: .T, name: name)
@@ -427,13 +428,13 @@ class ApusParser {
             
             // check if this is a frankenstein literal that allows partial token prefix matches
             if token.kind == "=>>" {
-//                node.first.insert("👻⋯")
+                //                node.first.insert("👻⋯")
                 node.first.insert("≋")
-//                grammar.frankensteinTerminals.append(node)
-//                backpropagatePartialTokenMatchAllowed(from: node)
+                //                grammar.frankensteinTerminals.append(node)
+                //                backpropagatePartialTokenMatchAllowed(from: node)
                 cI += 1
             }
-
+            
         case "epsilon":
             node = epsilon()
         case "regex":
@@ -462,7 +463,7 @@ class ApusParser {
             try expect(["identifier", "literal", "epsilon", "regex", "(", "[", "{", "<"])
             fatalError("expect() should have thrown - this line should never be reached")
         }
-
+        
         // check for Schrödinger exclusion annotation: ---("if" "let" ...)
         if token.kind == "---" {
             cI += 1
@@ -478,11 +479,11 @@ class ApusParser {
             try expect([")"])
             cI += 1
         }
-
+        
         return node
     }
     
-    func expect(_ expectedTokens: Set<String>) throws {
+    func expect(_ expectedTokens : Set<String>) throws {
         var error = "expect \"\(token.kind)\" to be in \(expectedTokens)\n"
         if !expectedTokens.contains(token.kind) {
             error += "parse error: found \"\(token.kind)\" but expected one of \(expectedTokens)\n"
@@ -500,5 +501,5 @@ class ApusParser {
             throw ApusParserError.unexpectedToken(explanation: "Failed to parse grammar from symbol \(grammar.startSymbol)")
         }
     }
-  
 }
+

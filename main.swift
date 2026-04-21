@@ -112,7 +112,34 @@ for message in grammar.messages {
     //    for tp in grammar.terminals {
     //        print(tp.key, tp.value.source)
     //    }
-    
+  
+//    do {
+//        var keywords: [String] = []
+//        var macro: [String] = []
+//        var punctuation: [String] = []
+//        for (key, value) in grammar.terminals {
+//            if value.isKeyword {
+//                if let first = key.first, first.isLetter {
+//                    keywords.append(key)
+//                } else if let first = key.first, first == "#" {
+//                    macro.append(key)
+//                } else{
+//                    punctuation.append(key)
+//                }
+//            }
+//        }
+//        for k in keywords.sorted() {
+//            print("\"\(k)\" ", terminator: "")
+//        }
+//        print()
+//        for m in macro.sorted() {
+//            print("\"\(m)\" ", terminator: "")
+//        }
+//        print()
+//       for p in punctuation.sorted() {
+//            print("\"\(p)\" ", terminator: "")
+//        }
+//    }
     //    print(cpuTime, messageParser.descriptorCount, messageParser.crf.count)
     
     // Sort elements (if BSR is Comparable) then join
