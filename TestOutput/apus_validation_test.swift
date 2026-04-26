@@ -16,35 +16,40 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
-	"blockcomment":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
-	"action":	("/@(?:[^@\\\\]|\\\\.)+@/",	/@(?:[^@\\]|\\.)+@/,	false,	true),
-	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)*\\\"/",	/\"(?:[^\"\\]|\\.)*\"/,	false,	false),
-	"epsilon":	("/[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/",	/[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/,	false,	false),
+	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"identifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
+	"epsilon":	("/[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/",	/[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/,	false,	false),
+	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)*\\\"/",	/\"(?:[^\"\\]|\\.)*\"/,	false,	false),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"regex":	("/\\/(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?:[^\/\\]|\\.)+\//,	false,	false),
-	"linecomment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"]":	("]",	Regex { "]" },	true,	false),
-	"=":	("=",	Regex { "=" },	true,	false),
-	">":	(">",	Regex { ">" },	true,	false),
-	".":	(".",	Regex { "." },	true,	false),
-	"}":	("}",	Regex { "}" },	true,	false),
-	"[":	("[",	Regex { "[" },	true,	false),
+	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
+	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
+	"action":	("/@(?:[^@\\\\]|\\\\.)+@/",	/@(?:[^@\\]|\\.)+@/,	false,	true),
 	"<":	("<",	Regex { "<" },	true,	false),
-	"-":	("-",	Regex { "-" },	true,	false),
-	"(":	("(",	Regex { "(" },	true,	false),
-	"*":	("*",	Regex { "*" },	true,	false),
-	"{":	("{",	Regex { "{" },	true,	false),
-	")":	(")",	Regex { ")" },	true,	false),
-	"|":	("|",	Regex { "|" },	true,	false),
-	"?":	("?",	Regex { "?" },	true,	false),
+	"ε":	("ε",	Regex { "ε" },	true,	false),
+	"=>>":	("=>>",	Regex { "=>>" },	true,	false),
 	"+":	("+",	Regex { "+" },	true,	false),
+	">":	(">",	Regex { ">" },	true,	false),
+	")":	(")",	Regex { ")" },	true,	false),
+	"[":	("[",	Regex { "[" },	true,	false),
+	"?":	("?",	Regex { "?" },	true,	false),
+	"---":	("---",	Regex { "---" },	true,	false),
+	".":	(".",	Regex { "." },	true,	false),
+	"=":	("=",	Regex { "=" },	true,	false),
+	"}":	("}",	Regex { "}" },	true,	false),
+	"|":	("|",	Regex { "|" },	true,	false),
+	"*":	("*",	Regex { "*" },	true,	false),
 	":":	(":",	Regex { ":" },	true,	false),
+	"<<<":	("<<<",	Regex { "<<<" },	true,	false),
+	"(":	("(",	Regex { "(" },	true,	false),
+	"===":	("===",	Regex { "===" },	true,	false),
+	">>>":	(">>>",	Regex { ">>>" },	true,	false),
+	"{":	("{",	Regex { "{" },	true,	false),
+	"]":	("]",	Regex { "]" },	true,	false),
+	"-":	("-",	Regex { "-" },	true,	false),
 ]
 func factor() throws {
 	switch token.kind {
-	case "epsilon", "identifier", "literal", "regex":
+	case "identifier", "literal", "regex", "ε":
 		try terminal()
 	case "[":
 		cI += 1
@@ -67,7 +72,7 @@ func factor() throws {
 		expect(")")
 		cI += 1
 	default:
-		expect("(", "<", "[", "epsilon", "identifier", "literal", "regex", "{")
+		expect("(", "<", "[", "identifier", "literal", "regex", "{", "ε")
 	}
 }
 func grammar() throws {
@@ -84,20 +89,56 @@ func production() throws {
 	switch token.kind {
 	case ":":
 		cI += 1
-		expect("regex")
+		switch token.kind {
+		case "regex":
+			cI += 1
+		case "literal":
+			cI += 1
+		default:
+			expect("literal", "regex")
+		}
+		expect(".")
 		cI += 1
+		try scanmode()
 	case "-":
 		cI += 1
-		expect("regex")
+		switch token.kind {
+		case "regex":
+			cI += 1
+		case "literal":
+			cI += 1
+		default:
+			expect("literal", "regex")
+		}
+		expect(".")
 		cI += 1
+		try scanmode()
 	case "=":
 		cI += 1
 		try selection()
+		expect(".")
+		cI += 1
 	default:
 		expect("-", ":", "=")
 	}
-	expect(".")
-	cI += 1
+}
+func scanmode() throws {
+	switch token.kind {
+	case "===":
+		cI += 1
+		expect("literal")
+		cI += 1
+	case ">>>":
+		cI += 1
+		expect("literal")
+		cI += 1
+	case "<<<":
+		cI += 1
+		expect("literal")
+		cI += 1
+	default:
+		break
+	}
 }
 func selection() throws {
 	try sequence()
@@ -119,20 +160,33 @@ func sequence() throws {
 		default:
 			break
 		}
-	} while ["(", "<", "[", "epsilon", "identifier", "literal", "regex", "{"].contains(token.kind)
+	} while ["(", "*", "+", "<", "?", "[", "identifier", "literal", "regex", "{", "ε"].contains(token.kind)
 }
 func terminal() throws {
 	switch token.kind {
 	case "identifier":
 		cI += 1
+		if ["---"].contains(token.kind) {
+			cI += 1
+			expect("(")
+			cI += 1
+			repeat {
+				expect("literal")
+				cI += 1
+			} while ["literal"].contains(token.kind)
+			expect(")")
+			cI += 1
+		}
 	case "literal":
 		cI += 1
+		if ["=>>"].contains(token.kind) {
+			cI += 1
+		}
 	case "regex":
 		cI += 1
-	case "epsilon":
+	case "ε":
 		cI += 1
 	default:
-		expect("epsilon", "identifier", "literal", "regex")
 	}
 }
 func parse() throws {
