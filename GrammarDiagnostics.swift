@@ -10,13 +10,15 @@ import AdventMacros
 
 extension GrammarNode {
 
-    func detectAmbiguity() {
+    @discardableResult
+    func verifyLL1() -> Bool {
+        var subtreeIsLL1 = true
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
-            seq?.detectAmbiguity()
+            if seq?.verifyLL1() == false { subtreeIsLL1 = false }
         case .N:
             if let seq { // rhs
-                seq.detectAmbiguity()
+                if !seq.verifyLL1() { subtreeIsLL1 = false }
                 // For a RHS nonterminal, check the definition's FIRST (via alt)
                 // against this position's FOLLOW. The positional 'first' includes
                 // look-through tokens from the continuation, which would cause
@@ -26,19 +28,19 @@ extension GrammarNode {
                     ambiguous = definitionFirst.intersection(follow)
                 }
             } else { // lhs
-//                Logger.grammar.debug("detectAmbiguity in RULE: \(self.name)")
-                handleAlternatesAmbiguity()
+//                Logger.grammar.debug("verifyLL1 in RULE: \(self.name)")
+                if !handleAlternatesAmbiguity() { subtreeIsLL1 = false }
             }
         case .ALT:
-            seq?.detectAmbiguity()
+            if seq?.verifyLL1() == false { subtreeIsLL1 = false }
         case .DO, .POS, .OPT, .KLN:
-            seq?.detectAmbiguity()
-            handleAlternatesAmbiguity()
+            if seq?.verifyLL1() == false { subtreeIsLL1 = false }
+            if !handleAlternatesAmbiguity() { subtreeIsLL1 = false }
         case .END:
             break
         }
         if !ambiguous.isEmpty {
-            GrammarNode.isLL1 = false
+            subtreeIsLL1 = false
         }
         let saved = traceIndent
         traceIndent += 2
@@ -47,25 +49,20 @@ extension GrammarNode {
         #Trace("first    ", first.sorted())
         #Trace("follow   ", follow.sorted())
         #Trace("ambiguous", ambiguous.sorted())
-//        if !ambiguous.isEmpty {
-//            if kind == .N, seq == nil {
-//                print("Ambiguity in \(name)", ambiguous.sorted())
-//            }
-//        }
         traceIndent = saved
-        
-//        identifierKeywordConflict()
 
+        return subtreeIsLL1
     }
 
-    private func handleAlternatesAmbiguity() {
+    private func handleAlternatesAmbiguity() -> Bool {
         // ambiguity set of KLN and POS is the intersection of follow(KLN) with the union of the pairwise intersections of all its first(ALT)'s ('duplicates')
+        var subtreeIsLL1 = true
 
         var occurances: [String:Int] = [:]
         // count occurances in firsts
         var current = self.alt
         while let altNode = current {
-            current?.detectAmbiguity()
+            if current?.verifyLL1() == false { subtreeIsLL1 = false }
             for element in altNode.first {
                 occurances[element, default: 0] += 1
             }
@@ -82,6 +79,11 @@ extension GrammarNode {
         for (element, count) in occurances where count > 1 {
             ambiguous.insert(element)
         }
+        if !ambiguous.isEmpty {
+            isLocallyLL1 = false
+            subtreeIsLL1 = false
+        }
+        return subtreeIsLL1
     }
     
 }

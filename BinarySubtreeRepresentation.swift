@@ -35,9 +35,8 @@ extension MessageParser {
     // Paper: bsrAdd(X ::= α·β, i, k, j) — add BSR element to the yield
     func addYield(L: GrammarNode, i: TokenPosition, k: TokenPosition, j: TokenPosition) {
         let triple = BinarySpan(i: i, k: k, j: j)
-        L.yield.insert(triple)
-
-        let bsr = BSR(slot: L, i: i, k: k, j: j)
-        yield.insert(bsr)
+        if L.yield.insert(triple).inserted {
+            yieldCount += 1
+        }
     }
 }

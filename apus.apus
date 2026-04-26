@@ -1,6 +1,5 @@
 whitespace  : /\s+/ .
-linecomment : /\/\/.*/ .
-blockcomment: /\/\*(?s).*?\*\// .
+comment     : /\/\/.*/ .
 
 action      : /@(?:[^@\\]|\\.)+@/ .
 
@@ -14,8 +13,8 @@ grammar     = < production > { message } .
               
 production  = identifier
                 ( ":" ( regex | literal ) "." scanmode          // skip token
-                ( "-" ( regex | literal ) "." scanmode          // regular token
-                | "=" selection "."
+                | "-" ( regex | literal ) "." scanmode          // regular token
+                | "=" selection "."                             // grammar production
                 ) .
                 
 selection   = sequence { "|" sequence } .
@@ -26,40 +25,42 @@ factor      = terminal
             | "[" selection "]"
             | "{" selection "}"
             | "<" selection ">"
-            | "(" selection ")" .
+            | "(" selection ")"
+            .
             
-terminal    = identifier [ "\\\" "(" <literal> ")" ]        // exclude literal tokens (aka keywords) from any Schrödinger match
-            | literal ["=>>"]                               // Frankenstein terminal, allow partial prefix token match TODO: replace with "~~~"
+terminal    = identifier    [ "---" "(" <literal> ")" ]     // exclude literal tokens (aka keywords) from any Schrödinger match
+            | literal       ["=>>"]                         // Frankenstein terminal, allow partial prefix token match TODO: replace with "~~~"
             | regex
-            | epsilon .
+            | "ε" | ""                                      // epsilon
+            .
 
-scanmode    = [ "===" literal ]                             // enable scanning of this terminal only in this mode
-              [ ">>>" literal | "<<<" ]                     // push mode, or pop
-              .
+scanmode    = [ "===" literal                                 // enable scanning of this terminal only in this mode
+              | ">>>" literal                                 // push new mode
+              | "<<<" literal                                 // pop
+              ] .
               
 // TODO: use #__ "whitespace"  and __# "whitespace" to disallow leading or trailing white space.
 // TODO: How to connect "whitespace" literal to whitespace terminal name?
 
 ^^^
 whitespace  : /\s+/ .
-linecomment : /\/\/.*/ .
-blockcomment: /\/\*(?s).*?\*\// .
+comment     : /\/\/.*/ .
 
 action      : /@(?:[^@\\]|\\.)+@/ .
 
 identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
 literal     - /\"(?:[^\"\\]|\\.)*\"/ .
 epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
-regex       - /\/(?:[^\/\\]|\\.)+\// .
+regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
 production  = identifier
-                ( ":" regex         // silent terminal
-                | "-" regex         // regular terminal
-                | "=" selection     // production rule
-                ) "." .
+                ( ":" ( regex | literal ) "." scanmode          // skip token
+                | "-" ( regex | literal ) "." scanmode          // regular token
+                | "=" selection "."                             // grammar production
+                ) .
                 
 selection   = sequence { "|" sequence } .
 
@@ -69,6 +70,20 @@ factor      = terminal
             | "[" selection "]"
             | "{" selection "}"
             | "<" selection ">"
-            | "(" selection ")" .
+            | "(" selection ")"
+            .
             
-terminal    = identifier | literal | regex | epsilon .
+terminal    = identifier    [ "---" "(" <literal> ")" ]     // exclude literal tokens (aka keywords) from any Schrödinger match
+            | literal       ["=>>"]                         // Frankenstein terminal, allow partial prefix token match TODO: replace with "~~~"
+            | regex
+            | epsilon
+            .
+
+scanmode    = [ "===" literal                                 // enable scanning of this terminal only in this mode
+              | ">>>" literal                                 // push new mode
+              | "<<<" literal                                 // pop
+              ] .
+              
+// TODO: use #__ "whitespace"  and __# "whitespace" to disallow leading or trailing white space.
+// TODO: How to connect "whitespace" literal to whitespace terminal name?
+

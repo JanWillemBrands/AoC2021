@@ -56,10 +56,17 @@ extension MessageParser {
     // Paper: ntAdd(X, j) — add descriptors for all alternates of a bracket/nonterminal
     func addDecscriptorsForAlternates(X: GrammarNode, k: TokenPosition, i: TokenPosition) {
         assert([.N, .DO, .OPT, .ALT, .KLN, .POS].contains(X.kind), "Called \(#function) on a GrammarNode \(X) which is not a bracket")
+        // For LL(1) nonterminals without Schrödinger duals or Frankenstein tokens,
+        // at most one alternate can match — stop after finding it.
+        let canEarlyTerminate = X.isLocallyLL1
+            && tokens[i.tokenIndex].dual == nil
+            && i.charOffset == 0
+            && !X.firstBS.contains(grammar.frankensteinID)
         var current = X.alt
         while let alt = current {
             if testSelect(slot: alt, bracket: X) {
                 addDescriptor(L: alt.seq!, k: k, i: i)
+                if canEarlyTerminate { return }
             }
             current = alt.alt
         }
@@ -79,8 +86,12 @@ extension MessageParser {
         if let existingCluster = crf[clusterKey] {
             if existingCluster.returns.insert(returnEdge).inserted {
                 for pop in existingCluster.pops {
-                    addDescriptor(L: cL.seq!, k: cU, i: pop)
-                    addYield(L: cL, i: cU, k: cI, j: pop)
+                    if continuationViable(continuation: cL.seq!, at: pop) {
+                        addDescriptor(L: cL.seq!, k: cU, i: pop)
+                        addYield(L: cL, i: cU, k: cI, j: pop)
+                    } else {
+                        suppressedDescriptorCount += 1
+                    }
                 }
             }
         } else {
@@ -98,8 +109,12 @@ extension MessageParser {
 
         if cluster.pops.insert(cI).inserted {
             for rtn in cluster.returns {
-                addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
-                addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
+                if continuationViable(continuation: rtn.slot.seq!, at: cI) {
+                    addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
+                    addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
+                } else {
+                    suppressedDescriptorCount += 1
+                }
             }
         }
     }
@@ -113,8 +128,12 @@ extension MessageParser {
         if let existingCluster = crf[clusterKey] {
             if existingCluster.returns.insert(returnEdge).inserted {
                 for pop in existingCluster.pops {
-                    addDescriptor(L: bracket.seq!, k: cU, i: pop)
-                    addYield(L: bracket, i: cU, k: cI, j: pop)
+                    if continuationViable(continuation: bracket.seq!, at: pop) {
+                        addDescriptor(L: bracket.seq!, k: cU, i: pop)
+                        addYield(L: bracket, i: cU, k: cI, j: pop)
+                    } else {
+                        suppressedDescriptorCount += 1
+                    }
                 }
             }
         } else {
@@ -133,8 +152,12 @@ extension MessageParser {
 
         if cluster.pops.insert(cI).inserted {
             for rtn in cluster.returns {
-                addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
-                addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
+                if continuationViable(continuation: rtn.slot.seq!, at: cI) {
+                    addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
+                    addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
+                } else {
+                    suppressedDescriptorCount += 1
+                }
             }
 
             if bracket.kind.isClosure {
@@ -144,8 +167,12 @@ extension MessageParser {
                     for returnEdge in cluster.returns {
                         if existingCluster.returns.insert(returnEdge).inserted {
                             for pop in existingCluster.pops {
-                                addYield(L: returnEdge.slot, i: returnEdge.index, k: cI, j: pop)
-                                addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: pop)
+                                if continuationViable(continuation: returnEdge.slot.seq!, at: pop) {
+                                    addYield(L: returnEdge.slot, i: returnEdge.index, k: cI, j: pop)
+                                    addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: pop)
+                                } else {
+                                    suppressedDescriptorCount += 1
+                                }
                             }
                         }
                     }

@@ -121,7 +121,11 @@ final class GrammarNode {
     var excludeBS:    BitSet = []
     
     static var sizeofSets = 0
-    static var isLL1 = true
+    
+    /// Per-node LL(1) flag: true when this nonterminal or bracket has disjoint
+    /// prediction sets across its alternates. Used to enable early termination
+    /// in addDecscriptorsForAlternates(). Default true, set to false during verifyLL1().
+    var isLocallyLL1 = true
     
     // Whether this node is intrinsically nullable (can derive ε).
     // Per Definition 6 of "GLL syntax analysers for EBNF grammars":
@@ -446,4 +450,3 @@ extension GrammarNode {
         }
     }
 }
-

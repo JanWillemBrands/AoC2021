@@ -31,8 +31,8 @@ class ApusParser {
         do {
             scanner = try Scanner(fromString: inputString, patterns: apusTerminals)
         } catch {
-            Logger.scan.error("Failed to create scanner for input string '\(inputString.prefix(100))'")
-            exit(1)
+            Logger.scan.error("Failed to create scanner for input string '\(inputString.prefix(100), privacy: .public)'")
+            throw ApusParserError.scanningFailed(error: error)
         }
     }
     
@@ -71,8 +71,8 @@ class ApusParser {
         do {
             scanner = try Scanner(fromString: input, patterns: apusTerminals)
         } catch {
-            Logger.scan.info("Failed to create scanner for input file: \(inputFileURL)")
-            exit(1)
+            Logger.scan.info("Failed to create scanner for input file: \(inputFileURL, privacy: .public)")
+            throw ApusParserError.scanningFailed(error: error)
         }
     }
     
@@ -114,7 +114,6 @@ class ApusParser {
         trace = false
         #Trace("start symbol '\(grammar.startSymbol)' first:", grammar.root.first, "follow:", grammar.root.follow)
         
-        trace = false
         var oldSize = 0
         var newSize = 0
         repeat {
@@ -146,13 +145,13 @@ class ApusParser {
         // this is to a give GrammarNodes access to their own grammar
         GrammarNode.grammar = grammar
         
-        GrammarNode.isLL1 = true
+        var isLL1 = true
         for (name, node) in grammar.nonTerminals {
             #Trace("Detecting ambiguity for:", name)
-            node.detectAmbiguity()
+            if !node.verifyLL1() { isLL1 = false }
             node.detectSchrödingerConflict()
         }
-        grammar.isLL1 = GrammarNode.isLL1
+        grammar.isLL1 = isLL1
         grammar.propagateExcludeSets()
         grammar.populateBitSets()
         
@@ -220,21 +219,25 @@ class ApusParser {
                 try expect(["literal"])
                 let modeLiteral = literal()
                 grammar.terminals[terminal.name]?.mode.modeName = modeLiteral.name
-            }
-            if token.kind == ">>>" {
+                grammar.terminals[terminal.name]?.mode.isCheck = true
+            } else if token.kind == ">>>" {
                 cI += 1
                 try expect(["literal"])
                 let modeLiteral = literal()
                 if grammar.terminals[terminal.name] != nil {
-                    grammar.terminals[terminal.name]?.mode.pushName = modeLiteral.name
+                    grammar.terminals[terminal.name]?.mode.modeName = modeLiteral.name
+                    grammar.terminals[terminal.name]?.mode.isPush = true
                 } else {
-                    Logger.parse.warning("WARNING: terminal \(terminal.name) not found when parsing >>> mode")
+                    Logger.parse.warning("WARNING: terminal \(terminal.name, privacy: .public) not found when parsing >>> mode")
                 }
             } else if token.kind == "<<<" {
                 cI += 1
+                try expect(["literal"])
+                let modeLiteral = literal()
+                grammar.terminals[terminal.name]?.mode.modeName = modeLiteral.name
                 grammar.terminals[terminal.name]?.mode.isPop = true
             }
-            //            print("terminal: \(terminal.name) mode: \(String(describing: grammar.terminals[terminal.name]?.mode))")
+//            print("terminal: \(terminal.name) mode: \(String(describing: grammar.terminals[terminal.name]?.mode))")
             
         } else {
             // production rule
@@ -307,7 +310,14 @@ class ApusParser {
         termNode.actions = collectActions(at: cI)
         
         repeat {
-            termNode.seq = try factor()
+            if token.kind == ">>|" || token.kind == "|<<" {
+                let name = String(token.image)
+                grammar.registerTerminal(name)
+                termNode.seq = GrammarNode(kind: .T, name: name)
+                cI += 1
+            } else {
+                termNode.seq = try factor()
+            }
             // handle postfix EBNF operators
             if ["?", "*", "+"].contains(token.kind) {
                 // wrap the preceding factor in its own little sequence
@@ -329,7 +339,7 @@ class ApusParser {
             // trailing actions (after factor/operator, before next factor or end)
             termNode.actions = collectActions(at: cI)
             
-        } while ["literal", "identifier", "epsilon", "regex", "(", "[", "{", "<"].contains(token.kind)
+        } while ["literal", "identifier", "epsilon", "regex", "(", "[", "{", "<", ">>|", "|<<"].contains(token.kind)
         
         termNode.seq = GrammarNode(kind: .END, name: "")
         // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
@@ -343,7 +353,7 @@ class ApusParser {
         
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
-                Logger.parse.warning("redefinition of \(name) as \(self.skip ? "skipped" : "not skipped")")
+                Logger.parse.warning("redefinition of \(name, privacy: .public) as \(self.skip ? "skipped" : "not skipped", privacy: .public)")
             }
         }
         do {
@@ -353,7 +363,7 @@ class ApusParser {
             grammar.registerTerminal(name)
             #Trace("regex name:", name, "image:", token.image)
         } catch {
-            Logger.parse.error("grammar parse error: \(self.token.image) is not a valid literal Regex \(error)")
+            Logger.parse.error("grammar parse error: \(self.token.image, privacy: .public) is not a valid literal Regex \(error, privacy: .public)")
             throw ApusParserError.invalidRegex(image: String(token.image), error: error)
         }
         
@@ -426,12 +436,8 @@ class ApusParser {
         case "literal":
             node = literal()
             
-            // check if this is a frankenstein literal that allows partial token prefix matches
             if token.kind == "=>>" {
-                //                node.first.insert("👻⋯")
-                node.first.insert("≋")
-                //                grammar.frankensteinTerminals.append(node)
-                //                backpropagatePartialTokenMatchAllowed(from: node)
+                node.first.insert("≋")      // insert a partial-token sentinel, which then gets propagated through FIRST/FOLLOW
                 cI += 1
             }
             
@@ -461,7 +467,7 @@ class ApusParser {
             cI += 1
         default:
             try expect(["identifier", "literal", "epsilon", "regex", "(", "[", "{", "<"])
-            fatalError("expect() should have thrown - this line should never be reached")
+            fatalError("\(#function) expect() should have thrown - this line should never be reached")
         }
         
         // check for Schrödinger exclusion annotation: ---("if" "let" ...)
@@ -497,7 +503,7 @@ class ApusParser {
             for _ in 0 ..< token.image.count {
                 error += "^"
             }
-            Logger.grammar.error("\(error)")
+            Logger.grammar.error("\(error, privacy: .public)")
             throw ApusParserError.unexpectedToken(explanation: "Failed to parse grammar from symbol \(grammar.startSymbol)")
         }
     }

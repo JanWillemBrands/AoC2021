@@ -41,12 +41,13 @@ class MessageParser {
     var successfullParses = 0
     var descriptorCount = 0
     var duplicateDescriptorCount = 0
+    var suppressedDescriptorCount = 0
 
     // MARK: - Call Return Forest (Paper: CRF)
     var crf: [ParsePosition: ParseCluster] = [:]
 
     // MARK: - Binary Subtree Representation (Paper: Υ)
-    var yield: Set<BSR> = []
+    var yieldCount = 0
 
     // MARK: - Error reporting, captures the furthest the parse has progressed before a mismatch occurred
     var furthestMismatchIndex: TokenPosition = .zero
@@ -78,8 +79,8 @@ class MessageParser {
         cL = nil; cI = .zero; cU = .zero
         unique = []; remaining = []
         failedParses = 0; successfullParses = 0
-        descriptorCount = 0; duplicateDescriptorCount = 0
-        crf = [:]; yield = []
+        descriptorCount = 0; duplicateDescriptorCount = 0; suppressedDescriptorCount = 0
+        crf = [:]; yieldCount = 0
         furthestMismatchIndex = .zero
         furthestMismatchSlot = currentParseRoot
         furthestMismatchExpected = []
@@ -93,13 +94,19 @@ class MessageParser {
         addDecscriptorsForAlternates(X: grammar.root, k: .zero, i: .zero)
 
         // Run GLL algorithm
+        var progressCounter = 0
+        let progressInterval = 10_000
+        let totalTokens = tokens.count
         nextDescriptor: while getDescriptor() {
+            progressCounter += 1
+            if progressCounter % progressInterval == 0 {
+                print("  progress: \(progressCounter) descriptors processed, token \(cI.tokenIndex)/\(totalTokens), pending \(remaining.count), crf \(crf.count)")
+            }
 
             while true {
 
                 trace = false
                 #Trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI.tokenIndex].kind) \(tokens[cI.tokenIndex].image)")
-                trace = true
 
                 switch cL.kind {
                 case .EPS:
@@ -172,7 +179,7 @@ class MessageParser {
                         bracketRtn(bracket: bracket)
                         continue nextDescriptor
                    default:
-                        fatalError("unexpected bracket kind at END seq link \(bracket.kind)")
+                        fatalError("\(#function) unexpected bracket kind at END seq link \(bracket.kind)")
                     }
                 case .EOS:
                     break
@@ -182,13 +189,14 @@ class MessageParser {
 
         let eosPosition = TokenPosition(token: tokens.count - 1)
         successfullParses = currentParseRoot.yield.filter { y in y.i == .zero && y.j == eosPosition }.count
-        trace = true
+        trace = false
         print(
             "\nmatched:", successfullParses,
             "  failed:", failedParses,
             "  crf size:", crf.count,
             "  descriptors:", descriptorCount,
-            "  duplicateDescriptors:", duplicateDescriptorCount
+            "  duplicateDescriptors:", duplicateDescriptorCount,
+            "  suppressedDescriptors:", suppressedDescriptorCount
         )
         if successfullParses == 0 {
             let mismatchToken = tokens[furthestMismatchIndex.tokenIndex]
@@ -303,6 +311,28 @@ class MessageParser {
             guard let next = current.dual else {
                 if bracket.followBS.contains(grammar.frankensteinID) { return true }
                 return false
+            }
+            current = next
+        }
+    }
+
+    /// Test whether a continuation grammar slot can proceed with the token at a given position.
+    /// Used to suppress descriptors in rtn/bracketRtn/pop replay when the continuation
+    /// cannot match the current token. Conservative: returns true for nullable, END, EPS,
+    /// and Frankenstein sub-positions to avoid false rejections.
+    func continuationViable(continuation: GrammarNode, at position: TokenPosition) -> Bool {
+        // Structural nodes that don't consume input are always viable
+        if continuation.kind == .END || continuation.kind == .EPS { return true }
+        // Nullable continuation: can't determine without enclosing FOLLOW context
+        if continuation.firstBS.contains(grammar.epsilonID) { return true }
+        // Frankenstein sub-position: conservatively viable (rare path)
+        if position.charOffset != 0 { return true }
+        // Check token (and Schrödinger duals) against FIRST(continuation)
+        var current = tokens[position.tokenIndex]
+        while true {
+            if continuation.firstBS.contains(current.kindID) { return true }
+            guard let next = current.dual else {
+                return continuation.firstBS.contains(grammar.frankensteinID)
             }
             current = next
         }

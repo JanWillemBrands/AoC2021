@@ -27,12 +27,11 @@ comment : /\/\/.*\r?\n?/ .
 multilineCommentHead    : "/*" .
                         >>> "multiline-comment"
                         
-multilineCommentText    : /(?s).*?(?=\/\*|\*\/)/ .                      // any string upto and not including */ or /*
+multilineCommentText    : /(?s).*?(?=\/\*|\*\/)/ .                      // any character upto and not including */ or /*
                         === "multiline-comment"
                         
 multilineCommentTail    : "*/" .
-                        === "multiline-comment"
-                        <<<
+                        <<< "multiline-comment"
 
 //comment = "//" commentText lineBreak .
 //multilineComment = "/*" multilineCommentText "*/" .
@@ -144,7 +143,7 @@ stringLiteral = staticStringLiteral | interpolatedStringLiteral .
 singleLineStringLiteral         - /"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ .
 
 extendedSinglelineStringLiteral - /#+".*?"#+/ .
-multilineStringLiteral          - /"""(?!.*\\\()(?:[^\\]|\\#*u\{[0-9a-fA-F]+\}|\\#*[0\\tnr"']|\\#*\s*\n|\\#*.)*"""/ . // start with """ end with """ and not containing any \(
+multilineStringLiteral          - /"""(?!.*\\\()(?:[^"\\]|\\.|"(?!""))*"""/ . // start with """ end with """ and not containing any \(
 extendedMultilineStringLiteral  - /#+"""(?s).*?"""#+/ .
 
 staticStringLiteral             = singleLineStringLiteral
@@ -162,8 +161,7 @@ interpolatedStringLiteralPart   - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|
                
 interpolatedStringLiteralTail   - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ .        // start with ) end with " and not containing any \(
 //interpolatedStringLiteralTail   - /(?!.*\\\()\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?"/ .        // start with ) end with " and not containing any \(
-                                === "string-interpolation"
-                                <<<
+                                <<< "string-interpolation"
                                 
 interpolatedStringLiteral       = interpolatedStringLiteralHead
                                   expression { interpolatedStringLiteralPart expression }
@@ -298,16 +296,15 @@ integerLiteral = hexadecimalLiteral .
 
 //simpleOperator = "/" | "=" | "-" | "+" | "!" | "*" | "%" | "<" | ">" | "&" | "|" | "^" | "~" | "?" .      // captured as literals used elsewhere ("/")
 //compoundOperator = /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                // overlaps with simpleOperator, and literals win
-plainOperator - /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                     // overlaps with literals like '/' and '='
+rawOperator - /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                     // overlaps with literals like '/' and '='
 
 dotOperator   - /\.[\.\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .           // captures legal Swift operators already validated by the compiler
 
-//plainOperator = simpleOperator | compoundOperator .
-Operator = plainOperator | dotOperator .                                // capitalized to 'Operator' to avoid conflict with "operator" literal
+//rawOperator = simpleOperator | compoundOperator .
+Operator = rawOperator | dotOperator .                                // capitalized to 'Operator' to avoid conflict with "operator" literal
 
 //operator = operatorHead operatorCharacters? .
 //operator = dotOperatorHead dotOperatorCharacters .
-
 
 //operatorHead = "/" | "=" | "-" | "+" | "!" | "*" | "%" | "<" | ">" | "&" | "|" | "^" | "~" | "?" .
 // Grok: the following characters are covered by Sm (Symbol, Math), and So (Symbol, Other).
@@ -527,8 +524,7 @@ leftParenthesis     - "(" .
                     >>> "inside-parentheses"
                     
 rightParenthesis    - ")" .
-                    === "inside-parentheses"
-                    <<<
+                    <<< "inside-parentheses"
                     
 //parenthesizedExpression = leftParenthesis expression rightParenthesis .  // TODO: is this better ?
 
@@ -845,8 +841,9 @@ parameter = attributes? externalParameterName? localParameterName parameterTypeA
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation .
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation "..." .
 
-externalParameterName = argumentIdentifier .
-localParameterName = argumentIdentifier .
+externalParameterName = argumentIdentifier .        // accept all keywords except let, var, inout
+localParameterName = identifier .                   // keywords not accepted
+
 parameterTypeAnnotation = ":" attributes? parameterModifier? type .
 parameterModifier = "inout" | "borrowing" | "consuming" .
 defaultArgumentClause = "=" expression .
@@ -1081,6 +1078,7 @@ genericArgumentClause   = "<"
 genericArgumentList = genericArgument | genericArgument "," genericArgumentList .
 genericArgument = type | signedIntegerLiteral .
 
+^^^#AllSources.swift
 ^^^#ApusParser.swift
 ^^^#ApusParserBuilder.swift
 ^^^#ApusTerminals.swift

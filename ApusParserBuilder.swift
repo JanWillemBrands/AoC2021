@@ -334,11 +334,11 @@ func buildGrammarWithDSL() throws -> Grammar {
 
     grammar.populateBitSets()
 
-    GrammarNode.isLL1 = true
+    var isLL1 = true
     for (_, node) in grammar.nonTerminals {
-        node.detectAmbiguity()
+        if !node.verifyLL1() { isLL1 = false }
     }
-    grammar.isLL1 = GrammarNode.isLL1
+    grammar.isLL1 = isLL1
 
     return grammar
 }

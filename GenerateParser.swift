@@ -189,7 +189,7 @@ class ParserGenerator {
                 pendingPrefix = emitActionsExtractingPrefix(n.actions)
                return
             case .ALT:
-                fatalError("ALT node encountered in sequence walk")
+                fatalError("ALT node encountered in \(#function)")
             case .EOS:
                 return
             }

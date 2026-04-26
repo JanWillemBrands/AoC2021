@@ -295,7 +295,7 @@ class Grammar {
     /// Convert each node's string-based first/follow/ambiguous `Set<String>`
     /// into the corresponding `firstBS`/`followBS`/`ambiguousBS` `BitSet`,
     /// using `symbolToID` for the mapping.
-    /// Call after the first/follow fixpoint has converged and after `detectAmbiguity`.
+    /// Call after the first/follow fixpoint has converged and after `verifyLL1`.
     func populateBitSets() {
         for (_, node) in nonTerminals {
             populateBitSetsRecursive(node)
@@ -391,7 +391,7 @@ extension Grammar {
                 if definedAsTerminal {
                     error += "instead it was defined as terminal \(terminals[node.name]!.source)\n"
                     error += "if this was intended please define the terminal before using it in the grammar"
-                    Logger.grammar.error("\(error)")
+                    Logger.grammar.error("\(error, privacy: .public)")
 //                    #Trace("but it was defined as terminal \(terminals[node.name]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
                 throw GrammarNodeError.undefinedNonTerminal(name: node.name, definedAsTerminal: definedAsTerminal)
@@ -428,38 +428,3 @@ extension Grammar {
         }
     }
 }
-
-//extension Grammar {
-//    func backpropagatePartialTokenMatchAllowed(from: GrammarNode) {
-//        print("backprop \(from.name) \(from.ebnfDot())")
-//        // Nodes preceeding a frankenstein literal may be guarded by testSelect() or followCheck() and
-//        // the FIRST/FOLLOW sets of these nodes may not accept the frankenstein token.
-//        // We'll set frankenstenMatchAllowed on preceeding nodes to avoid premature pruning of paths.
-//        var current = from
-//        current.frankensteinMatchAllowed = true
-//        while let prev = current.prv {
-//            switch prev.kind {
-//            case .T, .TI, .C, .B:
-//                return                      // ends the backpropagation since another match is required here
-//            case .EPS:
-//                break
-//            case .N:
-//                if prev.isRHS && prev.isNullable {
-//                    current = prev
-//                    current.frankensteinMatchAllowed = current.frankensteinMatchAllowed || current.alt!.frankensteinMatchAllowed    // copy from LHS
-//                    continue
-//                }
-//                return
-//            case .ALT:
-//                break
-//            case .DO, .OPT, .POS, .KLN:
-//                if prev.isNullable { break }
-//                return
-//            case .END, .EOS:
-//                fatalError("frankenstein literal terminal can never be preceeded by an END or EOS grammar node")
-//            }
-//            current = prev
-//            current.frankensteinMatchAllowed = true
-//        }
-//    }
-//}

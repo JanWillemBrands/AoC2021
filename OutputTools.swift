@@ -9,7 +9,7 @@ import OSLog
 import Foundation
 import AdventMacros
 
-var trace = true
+var trace = false
 var traceIndent = 0
 
 /// Called by the #Trace macro expansion.
