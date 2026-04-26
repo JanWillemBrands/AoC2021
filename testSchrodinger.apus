@@ -1,0 +1,40 @@
+//
+//  testSchrodinger.apus
+//  Advent
+//
+//  Test grammar for Schrödinger tokens: when multiple scanner patterns match
+//  the same input at the same length, creating ambiguous dual-linked tokens.
+//
+//  Keywords "if", "do", "end" all match the 'name' regex too.
+//  The GLL parser explores all duals, creating extra descriptors.
+//
+
+whitespace  : /\s+/ .
+
+// identifier regex — also matches keywords
+name        - /[a-z]+/ .
+
+// A small language with keywords and identifier positions.
+// "if" / "do" / "end" create Schrödinger duals with 'name'.
+// The parser must correctly handle both keyword and identifier paths.
+
+program = { statement } .
+
+statement = ifStatement
+          | doStatement
+          | assignment .
+
+ifStatement  = "if" name "do" statement "end" .
+doStatement  = "do" statement "end" .
+assignment   = name "=" name .
+
+^^^
+if x do y = z end
+^^^
+do x = y end
+^^^
+x = y
+^^^
+if if do end = if end
+^^^
+do do x = y end end

@@ -1,0 +1,67 @@
+//
+//  testExclusionSets.apus
+//  Advent
+//
+//  Test grammar for the ---() exclusion set mechanism.
+//
+//  Same language as testSchrodinger.apus but with exclusion annotations.
+//  Compares: without ---, "if" as identifier creates extra descriptors.
+//  With ---, the dual is suppressed and descriptor count drops.
+//
+//  Also tests different exclusion scopes via two identifier variants:
+//  - safeIdent:  excludes all keywords (tight context)
+//  - labelIdent: excludes only "do" (loose context, keywords as labels)
+//
+
+whitespace  : /\s+/ .
+
+// identifier regex — also matches keywords
+name        - /[a-z]+/ .
+
+// start symbol must be first
+program = { statement } .
+
+statement = ifStatement
+          | doStatement
+          | assignment
+          | labeled .
+
+ifStatement  = "if" safeIdent "do" statement "end" .
+doStatement  = "do" statement "end" .
+assignment   = safeIdent "=" safeIdent .
+
+// labeled statement: label can be a keyword (except "do")
+labeled      = labelIdent ":" statement .
+
+// Tight: excludes all keywords — used in most positions
+safeIdent = name ---("if" "do" "end") .
+
+// Loose: excludes only "do" — allows "if"/"end" as labels
+labelIdent = name ---("do") .
+
+
+// Test messages:
+
+// basic keyword usage — exclusion suppresses name-duals on "if"/"do"/"end"
+^^^
+if x do y = z end
+
+// nested blocks
+^^^
+do do x = y end end
+
+// simple assignment
+^^^
+x = y
+
+// keyword "if" used as identifier in label position (labelIdent allows it)
+^^^
+if : x = y
+
+// keyword "end" used as label
+^^^
+end : x = y
+
+// no label uses keyword — all go through safeIdent
+^^^
+if x do x = x end

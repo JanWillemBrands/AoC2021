@@ -1,0 +1,67 @@
+//
+//  testFrankenstein.apus
+//  Advent
+//
+//  Test grammar for Frankenstein (partial token match) via =>> annotation.
+//
+//  The =>> on a literal means it can match a PREFIX of a longer token.
+//  This is needed for languages where e.g. ">>" is scanned as one token
+//  but the grammar needs two separate ">" symbols (nested generics).
+//
+//  The scanner produces ">>" as a single token. The parser, seeing ">" =>>
+//  in the grammar, matches the first character and creates a sub-position
+//  (charOffset) for the remainder.
+//
+
+whitespace  : /\s+/ .
+
+// identifier for type names
+name        - /[a-z]+/ .
+
+// A generic-bracket language where >> must be split.
+// type = name | name "<" typeList ">" =>>
+// This mirrors Swift/Java/C++ nested generics.
+
+program = { type } .
+
+type = name [ "<" typeList ">" =>> ] .
+
+typeList = type { "," type } .
+
+// Test messages:
+
+// simple type, no generics
+^^^
+foo
+
+// single generic
+^^^
+foo < bar >
+
+// nested generic — two separate ">" tokens
+^^^
+foo < bar < baz > >
+
+// nested generic — fused ">>" token must be Frankenstein-split
+^^^
+foo < bar < baz >>
+
+// double nested — fused ">>>" must be split three ways
+^^^
+foo < bar < baz < qux >>>
+
+// generic with multiple type args
+^^^
+foo < bar , baz >
+
+// nested with multiple args and fused close
+^^^
+foo < bar < baz > , qux >
+
+// sequence of types
+^^^
+foo bar < baz >
+
+// deeply nested with partial fusion
+^^^
+foo < bar < baz < qux >> >
