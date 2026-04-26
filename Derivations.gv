@@ -6,6 +6,245 @@ digraph Derivations {
   rankdir = TB
   ordering = out
   labelloc = t
-  label = <topLevelDeclaration = [ statements ] .>
-  n0 [shape = ellipse, width=0.0, height=0.0, label = <topLevelDeclaration>]
+  label = <file = &lt; statement &gt; .>
+  subgraph cluster_0 {
+    label = "Derivation 1"
+    style = dashed
+  d0_n0 [shape = ellipse, width=0.0, height=0.0, label = <file>]
+  d0_n1 [shape = ellipse, width=0.0, height=0.0, label = <statement>]
+  d0_n2 [shape = ellipse, width=0.0, height=0.0, label = <compound_stmt>]
+  d0_n3 [shape = ellipse, width=0.0, height=0.0, label = <function_def>]
+  d0_n4 [shape = box, width=0.0, height=0.0, label = <class>]
+  d0_n3 -> d0_n4
+  d0_n5 [shape = box, width=0.0, height=0.0, label = <Point>]
+  d0_n3 -> d0_n5
+  d0_n6 [shape = box, width=0.0, height=0.0, label = <:>]
+  d0_n3 -> d0_n6
+  d0_n7 [shape = ellipse, width=0.0, height=0.0, label = <parameters>]
+  d0_n8 [shape = ellipse, width=0.0, height=0.0, label = <param_no_default>]
+  d0_n9 [shape = ellipse, width=0.0, height=0.0, label = <param>]
+  d0_n10 [shape = box, width=0.0, height=0.0, label = <<br/>>]
+  d0_n9 -> d0_n10
+  d0_n8 -> d0_n9
+  d0_n7 -> d0_n8
+  d0_n3 -> d0_n7
+  d0_n11 [shape = box, width=0.0, height=0.0, label = <>]
+  d0_n3 -> d0_n11
+  d0_n12 [shape = box, width=0.0, height=0.0, label = <x>]
+  d0_n3 -> d0_n12
+  d0_n13 [shape = ellipse, width=0.0, height=0.0, label = <block>]
+  d0_n14 [shape = box, width=0.0, height=0.0, label = <=>]
+  d0_n13 -> d0_n14
+  d0_n15 [shape = box, width=0.0, height=0.0, label = <0>]
+  d0_n13 -> d0_n15
+  d0_n16 [shape = ellipse, width=0.0, height=0.0, label = <statement>]
+  d0_n17 [shape = ellipse, width=0.0, height=0.0, label = <simple_stmts>]
+  d0_n18 [shape = ellipse, width=0.0, height=0.0, label = <simple_stmt>]
+  d0_n19 [shape = ellipse, width=0.0, height=0.0, label = <return_stmt>]
+  d0_n20 [shape = box, width=0.0, height=0.0, label = <<br/>>]
+  d0_n19 -> d0_n20
+  d0_n21 [shape = ellipse, width=0.0, height=0.0, label = <star_expressions>]
+  d0_n22 [shape = ellipse, width=0.0, height=0.0, label = <star_expression>]
+  d0_n23 [shape = ellipse, width=0.0, height=0.0, label = <expression>]
+  d0_n24 [shape = ellipse, width=0.0, height=0.0, label = <disjunction>]
+  d0_n25 [shape = ellipse, width=0.0, height=0.0, label = <conjunction>]
+  d0_n26 [shape = ellipse, width=0.0, height=0.0, label = <inversion>]
+  d0_n27 [shape = ellipse, width=0.0, height=0.0, label = <comparison>]
+  d0_n28 [shape = ellipse, width=0.0, height=0.0, label = <bitwise_or>]
+  d0_n29 [shape = ellipse, width=0.0, height=0.0, label = <bitwise_xor>]
+  d0_n30 [shape = ellipse, width=0.0, height=0.0, label = <bitwise_and>]
+  d0_n31 [shape = ellipse, width=0.0, height=0.0, label = <shift_expr>]
+  d0_n32 [shape = ellipse, width=0.0, height=0.0, label = <sum>]
+  d0_n33 [shape = ellipse, width=0.0, height=0.0, label = <sum>]
+  d0_n34 [shape = ellipse, width=0.0, height=0.0, label = <term>]
+  d0_n35 [shape = ellipse, width=0.0, height=0.0, label = <factor>]
+  d0_n36 [shape = ellipse, width=0.0, height=0.0, label = <power>]
+  d0_n37 [shape = ellipse, width=0.0, height=0.0, label = <await_primary>]
+  d0_n38 [shape = ellipse, width=0.0, height=0.0, label = <primary>]
+  d0_n39 [shape = ellipse, width=0.0, height=0.0, label = <atom>]
+  d0_n40 [shape = box, width=0.0, height=0.0, label = <y>]
+  d0_n39 -> d0_n40
+  d0_n38 -> d0_n39
+  d0_n37 -> d0_n38
+  d0_n36 -> d0_n37
+  d0_n35 -> d0_n36
+  d0_n34 -> d0_n35
+  d0_n33 -> d0_n34
+  d0_n32 -> d0_n33
+  d0_n41 [shape = box, width=0.0, height=0.0, label = <=>]
+  d0_n32 -> d0_n41
+  d0_n42 [shape = ellipse, width=0.0, height=0.0, label = <term>]
+  d0_n43 [shape = ellipse, width=0.0, height=0.0, label = <factor>]
+  d0_n44 [shape = ellipse, width=0.0, height=0.0, label = <power>]
+  d0_n45 [shape = ellipse, width=0.0, height=0.0, label = <await_primary>]
+  d0_n46 [shape = ellipse, width=0.0, height=0.0, label = <primary>]
+  d0_n47 [shape = ellipse, width=0.0, height=0.0, label = <atom>]
+  d0_n48 [shape = box, width=0.0, height=0.0, label = <0>]
+  d0_n47 -> d0_n48
+  d0_n46 -> d0_n47
+  d0_n45 -> d0_n46
+  d0_n44 -> d0_n45
+  d0_n43 -> d0_n44
+  d0_n42 -> d0_n43
+  d0_n32 -> d0_n42
+  d0_n31 -> d0_n32
+  d0_n30 -> d0_n31
+  d0_n29 -> d0_n30
+  d0_n28 -> d0_n29
+  d0_n27 -> d0_n28
+  d0_n26 -> d0_n27
+  d0_n25 -> d0_n26
+  d0_n24 -> d0_n25
+  d0_n23 -> d0_n24
+  d0_n22 -> d0_n23
+  d0_n21 -> d0_n22
+  d0_n19 -> d0_n21
+  d0_n18 -> d0_n19
+  d0_n17 -> d0_n18
+  d0_n49 [shape = box, width=0.0, height=0.0, label = <<br/>>]
+  d0_n17 -> d0_n49
+  d0_n16 -> d0_n17
+  d0_n13 -> d0_n16
+  d0_n50 [shape = box, width=0.0, height=0.0, label = <>]
+  d0_n13 -> d0_n50
+  d0_n3 -> d0_n13
+  d0_n2 -> d0_n3
+  d0_n1 -> d0_n2
+  d0_n0 -> d0_n1
+  { rank = same; d0_n4; d0_n5; d0_n6; d0_n10; d0_n11; d0_n12; d0_n14; d0_n15; d0_n20; d0_n40; d0_n41; d0_n48; d0_n49; d0_n50 }
+  d0_n4 -> d0_n5 [style = invis]
+  d0_n5 -> d0_n6 [style = invis]
+  d0_n6 -> d0_n10 [style = invis]
+  d0_n10 -> d0_n11 [style = invis]
+  d0_n11 -> d0_n12 [style = invis]
+  d0_n12 -> d0_n14 [style = invis]
+  d0_n14 -> d0_n15 [style = invis]
+  d0_n15 -> d0_n20 [style = invis]
+  d0_n20 -> d0_n40 [style = invis]
+  d0_n40 -> d0_n41 [style = invis]
+  d0_n41 -> d0_n48 [style = invis]
+  d0_n48 -> d0_n49 [style = invis]
+  d0_n49 -> d0_n50 [style = invis]
+  }
+
+  subgraph cluster_1 {
+    label = "Derivation 2"
+    style = dashed
+  d1_n0 [shape = ellipse, width=0.0, height=0.0, label = <file>]
+  d1_n1 [shape = ellipse, width=0.0, height=0.0, label = <statement>]
+  d1_n2 [shape = ellipse, width=0.0, height=0.0, label = <compound_stmt>]
+  d1_n3 [shape = ellipse, width=0.0, height=0.0, label = <function_def>]
+  d1_n4 [shape = box, width=0.0, height=0.0, label = <class>]
+  d1_n3 -> d1_n4
+  d1_n5 [shape = box, width=0.0, height=0.0, label = <Point>]
+  d1_n3 -> d1_n5
+  d1_n6 [shape = box, width=0.0, height=0.0, label = <:>]
+  d1_n3 -> d1_n6
+  d1_n7 [shape = ellipse, width=0.0, height=0.0, label = <parameters>]
+  d1_n8 [shape = ellipse, width=0.0, height=0.0, label = <param_no_default>]
+  d1_n9 [shape = ellipse, width=0.0, height=0.0, label = <param>]
+  d1_n10 [shape = box, width=0.0, height=0.0, label = <<br/>>]
+  d1_n9 -> d1_n10
+  d1_n8 -> d1_n9
+  d1_n7 -> d1_n8
+  d1_n3 -> d1_n7
+  d1_n11 [shape = box, width=0.0, height=0.0, label = <>]
+  d1_n3 -> d1_n11
+  d1_n12 [shape = box, width=0.0, height=0.0, label = <x>]
+  d1_n3 -> d1_n12
+  d1_n13 [shape = ellipse, width=0.0, height=0.0, label = <block>]
+  d1_n14 [shape = box, width=0.0, height=0.0, label = <=>]
+  d1_n13 -> d1_n14
+  d1_n15 [shape = box, width=0.0, height=0.0, label = <0>]
+  d1_n13 -> d1_n15
+  d1_n16 [shape = ellipse, width=0.0, height=0.0, label = <statement>]
+  d1_n17 [shape = ellipse, width=0.0, height=0.0, label = <simple_stmts>]
+  d1_n18 [shape = ellipse, width=0.0, height=0.0, label = <simple_stmt>]
+  d1_n19 [shape = ellipse, width=0.0, height=0.0, label = <return_stmt>]
+  d1_n20 [shape = box, width=0.0, height=0.0, label = <<br/>>]
+  d1_n19 -> d1_n20
+  d1_n21 [shape = ellipse, width=0.0, height=0.0, label = <star_expressions>]
+  d1_n22 [shape = ellipse, width=0.0, height=0.0, label = <star_expression>]
+  d1_n23 [shape = ellipse, width=0.0, height=0.0, label = <expression>]
+  d1_n24 [shape = ellipse, width=0.0, height=0.0, label = <disjunction>]
+  d1_n25 [shape = ellipse, width=0.0, height=0.0, label = <conjunction>]
+  d1_n26 [shape = ellipse, width=0.0, height=0.0, label = <inversion>]
+  d1_n27 [shape = ellipse, width=0.0, height=0.0, label = <comparison>]
+  d1_n28 [shape = ellipse, width=0.0, height=0.0, label = <bitwise_or>]
+  d1_n29 [shape = ellipse, width=0.0, height=0.0, label = <bitwise_xor>]
+  d1_n30 [shape = ellipse, width=0.0, height=0.0, label = <bitwise_and>]
+  d1_n31 [shape = ellipse, width=0.0, height=0.0, label = <shift_expr>]
+  d1_n32 [shape = ellipse, width=0.0, height=0.0, label = <sum>]
+  d1_n33 [shape = ellipse, width=0.0, height=0.0, label = <sum>]
+  d1_n34 [shape = ellipse, width=0.0, height=0.0, label = <term>]
+  d1_n35 [shape = ellipse, width=0.0, height=0.0, label = <factor>]
+  d1_n36 [shape = ellipse, width=0.0, height=0.0, label = <power>]
+  d1_n37 [shape = ellipse, width=0.0, height=0.0, label = <await_primary>]
+  d1_n38 [shape = ellipse, width=0.0, height=0.0, label = <primary>]
+  d1_n39 [shape = ellipse, width=0.0, height=0.0, label = <atom>]
+  d1_n40 [shape = box, width=0.0, height=0.0, label = <y>]
+  d1_n39 -> d1_n40
+  d1_n38 -> d1_n39
+  d1_n37 -> d1_n38
+  d1_n36 -> d1_n37
+  d1_n35 -> d1_n36
+  d1_n34 -> d1_n35
+  d1_n33 -> d1_n34
+  d1_n32 -> d1_n33
+  d1_n41 [shape = box, width=0.0, height=0.0, label = <=>]
+  d1_n32 -> d1_n41
+  d1_n42 [shape = ellipse, width=0.0, height=0.0, label = <term>]
+  d1_n43 [shape = ellipse, width=0.0, height=0.0, label = <factor>]
+  d1_n44 [shape = ellipse, width=0.0, height=0.0, label = <power>]
+  d1_n45 [shape = ellipse, width=0.0, height=0.0, label = <await_primary>]
+  d1_n46 [shape = ellipse, width=0.0, height=0.0, label = <primary>]
+  d1_n47 [shape = ellipse, width=0.0, height=0.0, label = <atom>]
+  d1_n48 [shape = box, width=0.0, height=0.0, label = <0>]
+  d1_n47 -> d1_n48
+  d1_n46 -> d1_n47
+  d1_n45 -> d1_n46
+  d1_n44 -> d1_n45
+  d1_n43 -> d1_n44
+  d1_n42 -> d1_n43
+  d1_n32 -> d1_n42
+  d1_n31 -> d1_n32
+  d1_n30 -> d1_n31
+  d1_n29 -> d1_n30
+  d1_n28 -> d1_n29
+  d1_n27 -> d1_n28
+  d1_n26 -> d1_n27
+  d1_n25 -> d1_n26
+  d1_n24 -> d1_n25
+  d1_n23 -> d1_n24
+  d1_n22 -> d1_n23
+  d1_n21 -> d1_n22
+  d1_n19 -> d1_n21
+  d1_n18 -> d1_n19
+  d1_n17 -> d1_n18
+  d1_n49 [shape = box, width=0.0, height=0.0, label = <<br/>>]
+  d1_n17 -> d1_n49
+  d1_n16 -> d1_n17
+  d1_n13 -> d1_n16
+  d1_n50 [shape = box, width=0.0, height=0.0, label = <>]
+  d1_n13 -> d1_n50
+  d1_n3 -> d1_n13
+  d1_n2 -> d1_n3
+  d1_n1 -> d1_n2
+  d1_n0 -> d1_n1
+  { rank = same; d1_n4; d1_n5; d1_n6; d1_n10; d1_n11; d1_n12; d1_n14; d1_n15; d1_n20; d1_n40; d1_n41; d1_n48; d1_n49; d1_n50 }
+  d1_n4 -> d1_n5 [style = invis]
+  d1_n5 -> d1_n6 [style = invis]
+  d1_n6 -> d1_n10 [style = invis]
+  d1_n10 -> d1_n11 [style = invis]
+  d1_n11 -> d1_n12 [style = invis]
+  d1_n12 -> d1_n14 [style = invis]
+  d1_n14 -> d1_n15 [style = invis]
+  d1_n15 -> d1_n20 [style = invis]
+  d1_n20 -> d1_n40 [style = invis]
+  d1_n40 -> d1_n41 [style = invis]
+  d1_n41 -> d1_n48 [style = invis]
+  d1_n48 -> d1_n49 [style = invis]
+  d1_n49 -> d1_n50 [style = invis]
+  }
+
 }
