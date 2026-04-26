@@ -1,0 +1,233 @@
+Compilers
+
+October 8, 2007
+
+FIRST and FOLLOW sets – a necessary preliminary to constructing
+the LL(1) parsing table
+
+Remember: A predictive parser can only be built for an LL(1) grammar. A grammar is not
+LL(1) if it is:
+1. Left recursive, or
+2. Not left factored.
+However, grammars that are not left recursive and are left factored may still not be LL(1).
+To see if a grammar is LL(1), try to build the parse table for the predictive parser by the
+method we are about to describe. If any element in the table contains more than one
+grammar rule right-hand side, then the grammar is not LL(1).
+To build the table, we must must compute FIRST and FOLLOW sets for the grammar.
+
+1
+
+Compilers
+
+October 8, 2007
+
+FIRST Sets
+
+Ultimately, we want to define FIRST sets for the right-hand sides of each of the grammar’s
+productions. The idea is that for a sequence α of symbols, FIRST(α) is the set of terminals
+that begin the strings derivable from α, and also, if α can derive ǫ, then ǫ is in FIRST(α).
+By allowing ǫ to be in FIRST(α), we can avoid defining the notion of “nullable” as Appel
+does in the book. More formally:
+
+F IRST (α) = {t | (t is a terminal and α ⇒∗ tβ) or (t = ǫ and α ⇒∗ ǫ)}
+To define F IRST (α) for arbitrary α, we start by defining F IRST (X), for a single
+symbol X (a terminal, a nonterminal, or ǫ):
+
+• X is a terminal: F IRST (X) = X
+• X is ǫ: F IRST (X) = ǫ
+2
+
+Compilers
+
+October 8, 2007
+
+• X is a nonterminal. In this case, we must look at all grammar productions with X on
+the left, i.e., productions of the form:
+X → Y1 Y2 Y3 . . . Y k
+where each Yk is a single terminal or nonterminal (or there is just one Y, and it is ǫ).
+For each such production, we perform the following actions:
+– Put F IRST (Y1 ) − {ǫ} into F IRST (X).
+– If ǫ is in F IRST (Y1 ), then put F IRST (Y2 ) − {ǫ} into F IRST (X).
+– If ǫ is in F IRST (Y2 ), then put F IRST (Y3 ) − {ǫ} into F IRST (X).
+– ...
+– If ǫ is in F IRST (Yi ) for 1  i  k (all production right- hand sides) then put ǫ
+into F IRST (X).
+For example, compute the FIRST sets of each of the non-terminals in the following
+grammar:
+′
+
+exp → term exp
+
+3
+
+Compilers
+
+October 8, 2007
+
+exp′ → − term exp′ | ǫ
+′
+term → f actor term
+′
+′
+term → / f actor term | ǫ
+f actor → IN T LIT ERAL | ( exp )
+Once we have computed FIRST(X) for each terminal and nonterminal X, we can compute
+FIRST(α) for every production’s right-hand-side α. In general, alpha will be of the form:
+
+X1X2 . . . Xn
+where each X is a single terminal or nonterminal, or there is just one X1 and it is ǫ. The
+rules for computing FIRST(α) are essentially the same as the rules for computing the first
+set of a nonterminal.
+
+• Put F IRST (X1 ) − {ǫ} into F IRST (α)
+• If ǫ is in F IRST (X1 ) put F IRST (X2 ) − {ǫ} into F IRST (α).
+4
+
+Compilers
+
+October 8, 2007
+
+• ...
+• If ǫ is in the FIRST set for every Xk , put ǫ into F IRST (α).
+For the example grammar above, compute the FIRST sets for each production’s right-hand
+side.
+Why do we care about the FIRST(α) sets? During parsing, suppose the top-of- stack
+symbol is nonterminal A, that there are two productions A → α and A → β , and that
+the current token is a. Well, if FIRST(α) includes a . . .
+
+5
+
+Compilers
+
+October 8, 2007
+
+FOLLOW sets
+
+FOLLOW sets are only defined for single nonterminals. The definition is as follows:
+For a nonterminal A, FOLLOW(A) is the set of terminals that can appear immediately to
+the right of A in some partial derivation; i.e., terminal t is in FOLLOW(A) if:
+
+S ⇒+ . . . A t . . .
+where t is a terminal
+Furthermore, if A can be the rightmost symbol in a derivation, then EOF is in FOLLOW(A).
+It is worth noting that epsilon is never in a FOLLOW set.
+Notationally:
+6
+
+Compilers
+
+October 8, 2007
+
+F OLLOW (A) = {t | (t is a terminal and S ⇒+ α A t β) or (t is EOF and S ⇒∗ αA)}
+
+Some conditions under which symbols a, c, and EOF are in the FOLLOW set of nonterminal
+A:
+S
+/ \
+/
+\
+/
+\
+/ /\
+\
+A \
+/\
+/ \
+(a)b c
+|
+|
+a is in FOLLOW(A)
+
+S
+/ \
+\
+/ X Y\
+/ / | \
+/\ |
+A B /\
+/ / \
+epsilon /
+\
+/______\
+(c)d e f
+|
+|
+\
+c is in FOLLOW(A)
+
+S
+/ \
+/
+\
+/
+\
+
+/
+
+/
+
+\
+(A)
+|
+|
+/
+EOF is in FOLLOW(A)
+
+7
+
+Compilers
+
+October 8, 2007
+
+How to compute FOLLOW(A) for each nonterminal A:
+
+• If A is the start nonterminal, put EOF in FOLLOW(A)
+Find the productions with A on the right-hand-side:
+
+• For each production X → αAβ , put F IRST (β) − {ǫ} in FOLLOW(A)
+• If ǫ is in F IRST (β) then put F OLLOW (X) into F OLLOW (A)
+• For each production X → αA, put FOLLOW(X) into FOLLOW(A)
+Note that
+
+• To compute FIRST(A) you must look for A on a production’s left-hand side.
+• To compute FOLLOW(A) you must look for A on a production’s right-hand side.
+• FIRST and FOLLOW sets are always sets of terminals (plus, perhaps, ǫ for FIRST sets,
+and EOF for follow sets). Nonterminals are never in a FIRST or a FOLLOW set.
+8
+
+Compilers
+
+October 8, 2007
+
+Example: Compute FOLLOW sets of the non-terminals in the following language:
+
+S→Bc | DB
+B→ab | cS
+D→d|ǫ
+Why do we care about FOLLOW sets? Suppose during parsing we have X on top of the
+stack and a is the current token. What if X has two productions X → α and X → β
+but a is not in the FIRST set of either α or β ?
+
+9
+
+Compilers
+
+October 8, 2007
+
+How to build parse tables – and tell if a grammar is LL(1)
+
+To build the table, we fill in the rows one at a time for each nonterminal X as follows:
+
+• for each production X → α
+– for each terminal t in First(α): put α in Table[X,t]
+– if ǫ is in First(α) then:
+∗ for each terminal t in Follow(X): put α in Table[X,t]
+The grammar is not LL(1) if and only if there is more than one entry for any cell in the
+table. Try building a parse table for the following grammar:
+
+S→Bc | DB
+B→ab | cS
+D→d|ǫ
+10
+
+

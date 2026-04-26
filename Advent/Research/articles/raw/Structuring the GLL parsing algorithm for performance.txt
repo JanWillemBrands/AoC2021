@@ -1,0 +1,2617 @@
+Structuring the GLL parsing algorithm for performance
+Elizabeth Scott and Adrian Johnstone
+Abstract
+GLL (Generalised LL) parsing algorithms provide a sequentialisation of recursive-descent
+style parsing that yields efficient, compiled parsers which admit any context free grammar,
+including left recursive and non-left-factored rules. The resulting parsers retain the ‘recursively decent’ property that the structure of the parser closely follows the structure of the
+grammar; as such it is feasible to debug grammars by tracing the corresponding GLL parser
+using a conventional code debugger.
+In this paper we develop two variants of the GLL algorithm called FGLL and RGLL
+which respectively support (i) efficient parsing of factorised grammars and (ii) parsing using
+a reduced set of descriptors. Both techniques yield significant speed up on programming
+language grammars compared to the base GLL algorithm. We also discuss the ordering of
+descriptor processing and its effects on performance.
+
+1
+
+Introduction
+
+GLL (Generalised LL) parsing algorithms provide a sequentialisation of recursive-descent style
+parsing that yields efficient, compiled parsers which admit any context free grammar, including
+left recursive and non-left-factored rules. The resulting parsers retain what could be called the
+‘recursively decent’ property that the structure of the parser closely follows the structure of the
+grammar; as such it is feasible to debug grammars by tracing the corresponding GLL parser
+using a conventional code debugger.
+The GLL algorithm in [12] can only handle BNF grammars. It may of course be trivially
+applied to EBNF specifications by translating EBNF constructs to some equivalent BNF, but
+in general that would entail the creation of extra nonterminals and associated parse-time stack
+activity. Directly implemented EBNF constructs can increase efficiency; the extension of GLL
+to directly support so-called FBNF (BNF with additional syntactic left factorisation capability)
+is relatively straightforward, and can be done in a way which is essentially invisible to the user
+of a GLL parser generator. We shall describe FGLL, a process which takes a user defined BNF
+grammar, carries out automatic syntactic left factorisation to produce an FBNF grammar and
+then generates a form of GLL parser which is defined directly on the FBNF grammar. The
+important point here is that, from a user point of view, the resulting parser behaves almost
+exactly as the corresponding BNF GLL parser, but with potentially significant performance
+improvements.
+Another potential improvement to the efficiency of a GLL parser, without any change from
+the viewpoint of the user of either the parser generator or the parser itself, is to exploit the
+fundamental property of context free grammars that any derivation from a nonterminal A is
+a valid derivation from any instance, X ::= αAβ, of A in any grammar rule. Consider, for
+example, the grammar
+S ::= A A b | a A a
+
+A ::= a | b b a
+
+and the string abbaa. A GLL parser will try one rule, say S ::= AAb, matching the first A to
+a, the second A to bba and then failing on the final a. Then trying the other rule, the parser
+will repeat the match of A to bba. The repeated match is not actually necessary because the
+1
+
+result of the first match will already be recorded in the output derivation structure (essentially
+facilitating a form of memoisation). We can modify the GLL algorithm so that this match is
+not repeated by changing the nature of the GLL process descriptors. We refer to the modified
+approach as reduced descriptor GLL (RGLL)1 . RGLL requires changes to the GLL support
+functions which build the underlying graph structured stack, but this is invisible to a user.
+The RGLL and FGLL modifications have resonances with the DFA states constructed for
+LR-parsers [2]. All of the grammar positions represented by the so-called LR items in a given
+DFA state can be reached from the same input sequence, and all of the positions reachable
+after ‘matching’ a nonterminal, X say, are combined under a single X-transition to another
+DFA state. This grouping together of grammar positions allows deterministic LR behaviour in
+many cases where a simple recursive descent parser would be non-deterministic. For generalised
+parsers, both GLR [15] and GLL, nondeterminism does not create a problem, but reducing it
+makes the parsers more efficient. One of the conclusions of this paper will be that, as for LR
+parsers, most of the efficiency gain arises from the effective syntactic left factorisation of an input
+BNF grammar. There is, however, further efficiency gain from applying RGLL particularly for
+left recursive grammar rules.
+In this paper we extend the theoretical treatment in [12] to cover FBNF grammars, describe
+small extensions to the GLL machinery which are needed to build the output shared packed
+parse forest derivation representations and we give GLL parser generation templates for FBNF
+grammars. We describe an automatic transformation which syntactically left factors grammars,
+and give a mechanism by which GLL parsers can return derivations with respect to the original,
+unfactored, grammar whilst performing parses using the factored grammars. For RGLL we give
+the modified parse stack support functions and give a discussion on the impact that this has on
+parse stack construction. We also discuss the impact of GLL descriptor processing order on the
+efficiency of the parsers, showing that the processing order can dramatically change the number of
+contingent actions which must be carried out. If these actions are not implemented carefully they
+can be much less efficient than their non-contingent alternatives, and then descriptor processing
+order will impact on GLL performance.
+We conclude with some experimental analysis of the advantages and trade-offs of both the
+FGLL and RGLL approaches for conventional programming language grammars; the motivation
+is performance: for strings parsed using the ANSI-C grammar the throughput more than doubles.
+
+2
+
+Background - GLL parsing
+
+The core data structures for a GLL parser include: a Graph Structured Stack (GSS) which
+embeds the ‘parse function’ call stacks associated with calling instances of nonterminals; a
+Shared Packed Parse Forest (SPPF) which encodes the (potentially infinite) set of derivations;
+a set of process descriptors which encode parser configurations and allow the parser to deal
+efficiently with nondeterminism; a set of pending descriptors which have not yet been processed;
+and book keeping to track which stack nodes have been processed as part of a ‘function call
+return’ (pop). In this section we shall introduce the grammar definitions and notations that we
+shall use and discuss the GLL approach in a way which allows us to extend it to FGLL and
+RGLL. An example GLL parser is given in Section 2.4.
+A BNF grammar consists of a set T of terminals, a set N of nonterminals disjoint from T,
+1
+
+A modification of the GLL algorithm which exploits the CFG property by constructing a different form of
+graph structured stack was originally proposed by Alex ten Brink, see Section 4.
+
+2
+
+a start symbol S ∈ N, and a set of grammar rules X ::= α1 | . . . | αt , one for each nonterminal
+X ∈ N, where each αk , 1 ≤ k ≤ t, is a string over the alphabet T ∪ N. We refer to the αk as
+the production alternates, or just alternates, of X, and to X ::= αk as a production rule, or just
+a production, and αk may be the empty string, .
+A derivation step is an expansion γY β⇒γαβ where γ, β ∈ (T ∪ N)∗ and α is an alternate
+∗
+of Y . A derivation of τ from σ is a sequence σ⇒β1 ⇒ . . . ⇒βn−1 ⇒τ , also written σ ⇒τ . A
+derivation tree is a graphical representation of a derivation. The root node is labelled with the
+start symbol, leaf nodes are labelled with a terminal or . An interior node is labelled with a
+nonterminal, X say, and its children are labelled with the symbols of an alternate of X.
+As is usual for recursive descent parsers, GLL parsers use one symbol lookahead to reduce
+the number of potential options at each step of a parse. Thus we need the standard first and
+follow sets. If γ is a string in (N ∪ T)∗
+∗
+
+f irstT (γ) = {a ∈ T | γ ⇒aβ, for some β}
+
+∗
+f irst(γ) = f irstT (γ) ∪ {} if γ ⇒
+otherwise
+f irstT (γ)
+For A ∈ N, where S is the grammar start symbol and $ is the end-of-string symbol:
+∗
+
+f ollowT (A) = {a ∈ T | S ⇒αAaβ, for some α, β}
+
+∗
+f ollow(A) = f ollowT (A) ∪ { $} if S ⇒αA
+f ollowT (A)
+otherwise
+∗
+
+We say that A is left recursive if A⇒γ⇒Aδ for some γ, δ.
+At each step in its execution a GLL parser tests the current input symbol, x, against the
+current grammar position and terminates the execution thread if there is no derivation from
+this point that begins with x. Formally, we define a function testSelect(a, X, ρ), where a is a
+terminal or the end-of-string symbol, X is a nonterminal and ρ ∈ (N ∪ T)∗ .
+testSelect(a, X, ρ) {
+if ((a ∈ first(ρ)) or ( ∈ first(ρ) and a ∈ follow(X)) { return true }
+else { return false } }
+
+2.1
+
+SPPFs and grammar slots
+
+A shared packed parse forest, SPPF, is a representation of all of the derivation trees of a given
+string a1 . . . an . Symbol nodes are labelled with a terminal or nonterminal, x, and the extent,
+∗
+(j, i), of the substring generated by that symbol, so x⇒aj+1 . . . ai . Extents are included to ensure
+that a symbol node is uniquely identified by its label. If the grammar is ambiguous a node can
+have several families of children, corresponding to different parses of the string. Each family is
+grouped together under a packed node. In order to ensure that the parser has worst-case cubic
+runtime, the SPPFs are binarised by introducing intermediate nodes. (A discussion of the need
+for SPPF binarisation to achieve cubic general parsing can be found in [13].) For ambiguous
+grammars intermediate nodes may have several families of children, also grouped together under
+packed nodes.
+A grammar slot is a position before or after a terminal or nonterminal on the right hand
+side of a production rule. We use a ‘dot’ to indicate a grammar slot. Thus A ::= µ · xν denotes
+3
+
+the slot immediately before x. (These slots are called items in LR parsing but we need slots
+in FBNF grammars as well, and we use the term slot to avoid concerns over the definition of
+FBNF LR items.) We also need a special slot, L0 , to label the main algorithm loop. We think
+of this as corresponding to the end of an augmented grammar start rule S 0 ::= S·.
+Packed nodes are labelled with a grammar slot and an integer, and intermediate nodes are
+labelled with a slot and two integer extents. For a BNF grammar, the label of a packed node is
+of the form (X ::= αx · β, k), its right child will be a node labelled (x, k, i) and its left child, if it
+exists, will be a node labelled (X ::= α · xβ, j, k), or (y, j, k) if y = α has length 1. For example,
+for the grammar
+S ::= b a c | b a a | b A c
+A ::= a
+the following is the SPPF for the string bac. The rectangular nodes are the intermediate nodes,
+and the nodes with one integer in their label are the packed nodes.
+
+
+S, 0, 3
+
+
+9
+
+
+
+XXX
+XX
+z
+
+S ::= bac·, 2
+
+
+
+S ::= bAc·, 2
+
+S ::= ba · c, 0, 2
+
+S ::= bA · c, 0, 2
+
+QQ
+s
+
+
+?
+S ::= ba · c, 1
+
+S ::= bA · c, 1
+
+PP
+q
+P
+ 
+
+
+Z
+
+
+
+ 
+
+
+
+A, 1, 2
+
+Z
+
+
+
+
+
+Z
+Z
+
+A ::= a·, 1
+
+Z
+~
+Z
+a, 1, 2
+
+b, 0, 1
+
+
+9
+
+
+
+
+
+
+c, 2, 3
+
+The two packed node children of the root node (S, 0, 3) correspond to two derivations, one using
+each of the rules which label the packed nodes. The SPPF embeds the two (binarised) derivation
+trees below
+
+
+S, 0, 3
+
+
+
+S
+
+S, 0, 3
+
+S
+b, 0, 1
+
+S
+@
+R
+@
+b, 0, 1
+
+a, 1, 2
+
+S
+w
+ S
+
+= ZZ
+
+~
+
+S
+S
+w
+ S
+
+
+
+c, 2, 3
+
+A, 1, 2
+
+
+
+c, 2, 3
+
+? 
+a, 1, 2
+
+For a production of length zero or one, an SPPF node will have only one child. Rather than
+writing special cases of various functions, we use a special ‘dummy’ node, denoted by ∆, for
+the missing child. By convention ∆ will always be the left child. Dummy nodes will only be
+explicitly used in the algorithms, for clarity they will be omitted from the displayed graphs.
+
+2.2
+
+Slot notations
+
+GLL parsers are defined via a specification which generates an algorithm from a grammar. The
+specification takes the form of a set of ‘templates’ and a parsing algorithm is constructed by
+substituting actual grammar symbols, alternates and sets of terminals into the templates. In
+the FGLL parser specification we will use subexpressions of the production alternates and will
+4
+
+need to know the position of that subexpression in the production to identify slots. Thus it
+is convenient to use instance annotations to uniquely define each terminal, nonterminal and 
+instance in each production rule. These instances essentially correspond to slots. Each symbol
+instance on the right hand side of a grammar rule is given an unique instance number, which we
+write as a superscript. We call x(j) a symbol (nonterminal, terminal or ) instance and we say
+that x is the underlying symbol of the instance x(j) . We call an expression, r, whose elements
+are symbol instances an expression instance, and we write exp(r) for the underlying expression
+which has the instance subscripts removed.
+We let Ex(j) denote the slot immediately to the right of a symbol instance x(j) , so Ex(j) is
+of the form Y ::= αx · δ. We let lhs(x(j) ) denote the nonterminal on the left hand side of the
+production rule in which the instance x(j) occurs.
+The functions that build the SPPF take a grammar slot, L, as a parameter. The nodes
+constructed are labelled with slots related to L; the specific construction depends on the type of
+slot. The following notation is used for the required properties. We say that L is eoR, end-ofrule, if L is the end of a production. We say that L is fiR, first-in-rule, if L is X ::= x.yτ where
+∗
+x, y ∈ T ∪ N and if x⇒ then x 6= y (see the note at the end of Section 2.4 for a discussion
+of this subtle condition). Finally, lhs L denotes the nonterminal on the left hand side of L, so
+lhs Ex(j) = lhs(x(j) ).
+
+2.3
+
+GLL parsers
+
+In this section we give an overview of the GLL parser format for BNF grammars. A reader
+who is not familiar with GLL can find a motivational discussion in [11], an engineering oriented
+description in [4] and a description of the GLL parser for a BNF grammar in [12]. The specification is slightly different from that given in [12] because we need a different formulation to allow
+extension to FBNF grammars. However, the actual parsers generated using this specification
+will be the same as those generated from the specification in [12].
+In a GLL parser the parse functions associated with the related recursive descent parser are
+replaced with algorithm line labels, goto statements and an explicit stack. For each nonterminal
+A there is a labelled block of code corresponding to each alternate of A and a return label for
+each position immediately after each nonterminal instance in the context free grammar.
+When executing, a GLL parser is essentially traversing the grammar and the input string,
+and to this end it employs three variables, cU which holds the current stack top (a GSS node),
+cI which holds the current input position and cN which holds the current SPPF node. When
+a GLL parser is created for a non-LL(1) grammar, there can be many traversal paths for a
+given input string. These paths are all explored, and the exploration is managed with the use of
+process descriptors, 4-tuples of the form (L, u, i, w) where L is a grammar slot, u is a GSS node,
+i is a position in the input string and w is an SPPF node. When a descriptor is created the
+values of cU , cI and cN are recorded in the descriptor and when a descriptor is processed, these
+variables are reset using the values in the descriptor. The outer loop of a GLL parser, labelled
+L0 , selects the next descriptor for processing and processing of a descriptor is terminated with
+a jump back to L0 .
+Each traversal has its own associated stack, and these multiple stacks are combined into a
+graph structured stack. The stack elements are nodes of the graph and there is a directed edge
+from node u to node v if u is immediately above v on a stack. The edges of the GSS are labelled
+with an SPPF node or the dummy node. This edge label will be the left child of the SPPF node
+constructed when the associated subparse is complete. A node, u, is labelled with a grammar
+
+5
+
+slot and an integer, (L, j), where L is the algorithm line label to be returned to when the stack
+element is popped, and j is the current input position when (L, j) is created. We call j the level
+of u and write level u to denote this integer.
+The function add() creates descriptors and ensures that the same descriptor is not created
+more than once. The function create() pushes return labels onto the stack embedded in the
+GSS and the function pop() takes a GSS node u = (L, j) and ‘pops’ it: for each edge (u, v) in
+the GSS, i.e. for each stack with u at the top, pop() creates a descriptor with code label L and
+stack node v.
+It is possible for new edges to be added to a GSS node u after a pop() action has been
+applied. Thus, when pop(u, i, z) is called, the element (u, z) is stored in a set P. If later a new
+edge is added to u, by the function create(), then the set P is inspected and any earlier pop
+actions associated with u will be applied down the new edge by create(). We refer to this as
+contingent pop application and to the pops performed by create() as contingent pop actions.
+The functions getN odeE(i) and getN odeT (a, i) construct (if necessary) and return SPPF
+nodes labelled (, i, i) and (a, i, i + 1), respectively. The other symbol and intermediate SPPF
+nodes are constructed at the same time as their first packed node child by the function getN ode().
+The functions add(), create(), pop() and getN ode() are formally described in Section 2.5,
+and the formal structure of a GLL parser in defined Section 2.6. But first we give an example
+GLL parser. In this example, and throughout, we use the following notation:
+m
+I
+cI
+GSS
+cU
+cN
+cR
+U
+R
+P
+∆
+
+integer: length of the input string
+integer array of size m + 1: input string with I[m] = $
+integer: input pointer
+weighted directed graph: nodes are labelled with elements of the form (L, j)
+where L is a grammar slot or L0
+GSS node: current stack top
+SPPF node: current node
+SPPF node: right child
+current set of descriptors
+set of descriptors yet to be processed
+set of GSS node, SPPF pairs which have already been popped
+a dummy node used when there is no left child, omitted from displayed graphs
+
+When the descriptors have all been dealt with, the test for acceptance is made by checking for
+the existence of the SPPF node labelled with the start symbol and the extent (0, m).
+
+2.4
+
+An example GLL parser
+
+In this section we give an example GLL parser for the grammar
+S ::= A A c
+
+A ::= 
+
+followed by a walk-through using a small input string, in order to illustrate the basic GLL
+mechanisms.
+u0 := (L0 , 0) (GSS base node)
+cI := 0 (current input index)
+cU := u0 (current GSS node)
+cN := ∆ (current SPPF node)
+6
+
+U := ∅ (descriptor set)
+R := ∅ (descriptors still to be processed)
+P := ∅ (popped nodes set)
+goto JS
+L0 : if (R 6= ∅) { remove (L0 , k, i, w) from R;
+cU := k; cI := i; cN := w; goto L0 }
+else { if (there is an SPPF node (S, 0, m)) report success
+else report failure }
+JS : if (I[cI ] ∈ first(AAc)) add(LS1 , cU , cI , ∆); goto L0
+LS1 : cU := create(R1 , cU , cI , cN ); goto JA
+R1 : if (I[cI ] 6∈ first(Ac)) goto L0
+cU := create(R2 , cU , cI , cN ); goto JA
+R2 : if (I[cI ] 6∈ first(c)) goto L0
+cR := getN odeT (c, cI ); cI := cI + 1; cN := getN ode(S ::= AAc·, cN , cR )
+if (I[cI ] ∈ follow(S)) pop(cU , cI , cN ); goto L0
+JA : if (I[cI ] ∈ follow(A)) add(LA1 , cU , cI , ∆); goto L0
+LA1 : cR := getN odeE(cI ); cN := getN ode(A ::= ·, cN , cR )
+pop(cU , cI , cN ); goto L0
+Example walk-through We illustrate this algorithm using the very simple input c$. Initially,
+at the line labelled JS , the test I[0] = c ∈ first(AAc) = {c} succeeds and so (LS1 , u0 , 0, ∆) is
+added to U and to R, and we have
+cU = u0 , cI = 0, cN = ∆, P = ∅, U = R = {(LS1 , u0 , 0, ∆)}
+The algorithm will construct the GSS on the left and the SPPF on the right below.
+S, 0, 1
+
+
+w4
+
+ 
+
+
+S ::= AAc·, 0
+
+=
+
+
+L0 , 0
+
+6
+∆
+R1 , 0
+R2 , 0
+
+3
+
+I w2
+
+?
+
+S ::= AA · c, 0
+
+u1
+
+
+=
+
+
+ w
+2
+
+S ::= A · Ac, 0, 0
+
+?
+
+S ::= A · Ac, 0
+
+? w1
+
+
+
+A, 0, 0
+
+?
+
+A ::= ·, 0
+
+
+
+? 
+
+, 0, 0
+
+7
+
+
+
+@
+@
+R
+@
+
+S ::= AA · c, 0, 0
+
+u0
+
+
+u2
+
+
+w
+
+
+
+c, 0, 1
+
+
+
+At line L0 , we remove the element from R, set L0 = LS1 and then go to LS1 . Then we create
+a new GSS node, u1 , labelled (R1 , 0) and an edge labelled cN = ∆ from u1 to cU = u0 . Then
+we set cU := u1 .
+At JA the test I[0] = c ∈ follow(A) = {c} succeeds so (LA1 , u1 , 0, ∆) is added to U and
+R, and then removed from R. At L0 :
+cU = u1 , cI = 0, cN = ∆, P = ∅, U = {(LS1 , u0 , 0, ∆), (LA1 , u1 , 0, ∆)}, R = ∅
+At LA1 , SPPF nodes labelled (, 0, 0), (A ::= ·, 0) and (A, 0, 0) are created, and then the
+node cU = u1 is popped, with cN = w1 . This results in the creation of an intermediate node, w2 ,
+labelled (S ::= A·Ac, 0, 0) and its associated packed node child, and the descriptor (R1 , u0 , 0, w2 )
+which is added to U and R.
+cU = u1 , cI = 0, cN = w2 , P = {(u1 , w1 )},
+U = {(LS1 , u0 , 0, ∆), (LA1 , u1 , 0, ∆), (R1 , u0 , 0, w2 )}, R = {(R1 , u0 , 0, w2 )}
+Removing (R1 , u0 , 0, w2 ) from R, at R1 we create the GSS node, u2 , labelled (R2 , 0) with an
+edge to cU = u0 labelled cN = w2 . At JA the descriptor (LA1 , u2 , 0, ∆) is added to U and R.
+When this descriptor is processed, at L0 , we get
+cU = u2 , cI = 0, cN = ∆, P = {(u1 , w1 )},
+U = {(LS1 , u0 , 0, ∆), (LA1 , u1 , 0, ∆), (R1 , u0 , 0, w2 ), (LA1 , u2 , 0, ∆)}, R = ∅
+At LA1 , SPPF nodes labelled (, 0, 0), and (A, 0, 0) = w1 are found to already exist, so
+cN := w1 and no initial SPPF activity occurs. The node cU = u2 is then popped, resulting in
+the creation of an intermediate node, w3 , labelled (S ::= AA · c, 0, 0) with grandchildren w2 and
+w1 , and the descriptor (R2 , u0 , 0, w3 ).
+P = {(u1 , w1 ), (u2 , w1 )}, R = {(R2 , u0 , 0, w3 )}
+U = {(LS1 , u0 , 0, ∆), (LA1 , u1 , 0, ∆), (R1 , u0 , 0, w2 ), (LA1 , u2 , 0, ∆), (R2 , u0 , 0, w3 )}
+Removing the descriptor from R we have cN = u0 and cN = w3 , and at R2 we create the
+SPPF nodes (c, 0, 1), (S ::= AAc·, 0) and (S, 0, 1) = w4 . When u0 is popped no action is taken
+as it has no out edges, so at L0 , R is empty. The algorithm reports success as a result of the
+SPPF node w4 .
+Note, this simple example does not trigger the application of the elements of the contingent
+pop set P, but it does illustrate the subtlety of the SPPF intermediate node creation. The
+property fiR stops the creation of a redundant intermediate node above a leftmost child. However, SPPFs have the property that symbol nodes are uniquely defined by their labels, and this
+ultimately underpins the proof that an SPPF has at most cubic size. If we allowed the fiR
+property to hold for the slot S ::= A · Ac then the corresponding intermediate node would be
+supressed, resulting in a structure which is a multigraph and not a graph.
+
+8
+
+w3
+
+?
+
+S ::= AA · c, 0, 0
+
+?
+
+S ::= AA · c, 0
+
+
+
+?
+
+?
+
+A, 0, 0
+
+w1
+
+?
+
+
+
+A ::= ·, 0
+
+? 
+
+, 0, 0
+
+2.5
+
+GSS and SPPF constructing functions
+
+For FBNF parsers, the functions add(), pop() and create() are the same as those for the BNF
+parser [12]. But getN ode() needs to be modified for FGLL, and all the functions need to be
+modified for RGLL, so we give the BNF versions here for later reference.
+add(L, u, i, w) { if ((L, u, i, w) 6∈ U) { add (L, u, w, i) to U and to R } }
+pop(u, i, z) {
+let (L, k) be the label of u
+add (u, z) to P
+for each edge (u, w, v) {
+let y be the node returned by getN ode(L, w, z)
+add(L, v, i, y) } }
+create(L, u, i, w) {
+if there is not already a GSS node labelled (L, i) create one
+let v be the GSS node labelled (L, i)
+if there is not an edge from v to u labelled w {
+create an edge from v to u labelled w
+for all ((v, z) ∈ P) {
+let y be the node returned by getN ode(L, w, z)
+add(L, u, h, y)) where z has right extent h } }
+return v }
+getN ode(L, w, z) {
+if (L is fiR) { return z }
+else {
+suppose that w has label (q, k, i)
+if w = ∆ let j := k else suppose that w has label (s, j, k)
+if (L is eoR) set t := lhs L else set t := L
+if there does not exist an SPPF node y labelled (t, j, i) create one
+if y does not have a child labelled (L, k) {
+create one with right child z and, if w 6= ∆, left child w }
+return y } }
+
+9
+
+2.6
+
+GLL BNF parser specification
+
+For each nonterminal X in the grammar there is a section, code(X), of the algorithm. This
+section is labelled JX and is built using functions code(r), where r is a string of nonterminal,
+terminal and  instances. In the following specification the notation we use for the variables is
+the same as that used in Section 2.3.
+
+Outer level structure of a GLL parser
+We suppose that the nonterminals of a grammar Γ are A, . . . , X, and that S is the start nonterminal. Then the GLL algorithm for Γ is specified by:
+set m to be the length of the input string
+read the input into an array I and set I[m] := $
+create GSS node u0 = (L0 , 0)
+cU := u0 ; cN := ∆; cI := 0; U := ∅; R := ∅; P := ∅
+goto JS
+L0 : if R 6= ∅ { remove a descriptor, (L, u, i, w) say, from R
+cU := u, cN := w, cI := i, goto L }
+else if (there exists an SPPF node labelled (S, 0, m)) { report success }
+else { report failure }
+JA : code(A)
+...
+JX : code(X)
+
+The code() templates for a BNF grammar
+We write templates codeN T (x(j) ) for instances x(j) of each symbol x ∈ T∪N∪{} and templates
+code(r) for strings, r, of such symbols. Then we give templates for each grammar rule.
+For a terminal instance a(j) with underlying terminal a
+codeT N (a(j) )
+
+=
+
+cR := getN odeT (a, cI ); cI := cI + 1
+cN := getN ode(Ea(j) , cN , cR )
+
+For a nonterminal instance Y (j) with underlying nonterminal Y
+codeT N (Y (j) )
+
+=
+
+cU := create(EY (j) , cU , cI , cN ); goto JY
+EY (j) :
+
+For instances (j) we need both symbol and string versions
+codeT N ((j) )
+
+=
+
+cR := getN odeE(cI ); cN := getN ode(E(j) , cN , cR )
+
+code((j) )
+
+=
+
+codeT N ((j) )
+pop(cU , cI , cN );
+
+10
+
+goto L0
+
+For a nonempty string of terminal and nonterminal instances, g1 . . . gd , where X is lhs(g1 )
+code(g1 . . . gd )
+
+=
+
+codeT N (g1 )
+if (testSelect(I[cI ], X, exp(g2 . . . gd )) is f alse) goto L0
+codeT N (g2 )
+...
+if (testSelect(I[cI ], X, exp(gd )) is f alse) goto L0
+codeT N (gd )
+if (I[cI ] ∈ f ollow(X)) pop(cU , cI , cN ); goto L0
+
+For a grammar rule of the form X ::= α1 | . . . | αp , let ri denote the instance version of αi ,
+1 ≤ i ≤ p. We define code(X) as follows.
+code(X)
+
+3
+
+if (testSelect(I[cI ], X, α1 )) { add(Lr1 , cU , cI , ∆) }
+...
+if (testSelect(I[cI ], X, αp )) { add(Lrp , cU , cI , ∆) }
+goto L0
+Lr1 : code(r1 )
+...
+Lrp : code(rp )
+=
+
+FGLL parsing
+
+In this section we define syntactically left factorised BNF (FBNF) grammars and corresponding
+GLL-style parsers. An FGLL parser is generated for a BNF grammar Γ by syntactically left
+factorising Γ to obtain Γ0 , and then generating a GLL-style parser from Γ0 using the specification
+defined below. The syntactic left factorisation procedure is defined in Section 3.5, the issue of
+derivations with respect to the original grammar is addressed in Section 3.6 and in Section 5 the
+performance of the FGLL parser is compared to corresponding BNF GLL and reduced descriptor
+GLL parsers.
+
+3.1
+
+FBNF grammars
+
+For an alphabet A a syntactically left factorised slf-expression over A is defined as follows
+• Any string in A∗ is an slf-expression.
+• If γ is a nonempty string in A∗ and ρ1 , . . . , ρk are slf-expressions, then γ(ρ1 | . . . |ρk ) is an
+slf-expression.
+Slf-expressions are regular expressions and hence denote sets of strings in the usual manner.
+We write δ ∈ ρ to indicate that δ ∈ A∗ is a string in the pattern of the regular expression ρ.
+An FBNF grammar is a modification of a BNF grammar in which the production alternates,
+αi , are slf-expressions over T ∪ N. An FBNF grammar derivation step is of the form γY β⇒γδβ,
+where α is a production alternate of Y and δ ∈ α.
+We extend the definition of first sets to slf-expressions as follows. For a string γ
+
+∗
+f irst(γ(ρ1 | . . . |ρk )) = f irstT (γ) ∪ f irst(ρ1 ) ∪ . . . ∪ f irst(ρk ) if γ ⇒
+f irst(γ)
+otherwise
+11
+
+We need a slot type for labelling lines of the parsing algorithm associated with alternates
+inside slf-expressions. As for BNF grammars, we give each terminal, nonterminal and  instance on the right hand sides of productions of an FBNF grammar a unique instance number.
+Slf-expressions, r, whose elements are symbol instances will be referred to as slf-expression
+instances, and exp(r) will denote the underlying slf-expression obtained by removing the instance superscripts. For each slf-expression instance r, which begins immediately after an
+opening parenthesis, (, or alternation symbol, |, we write Lr for the slot immediately to the
+left of the first symbol of exp(r). So these slots are of the form Y ::= α( ·µ1 | . . . | µd ) or
+Y ::= α( µ1 | . . . | γ( ν1 | . . . | · νf )) | . . . | µd ) ) etc.
+We also need to identify slots at the end of alternates for SPPF construction. We say that
+L is eoA, end-of-alternate, if L is a position immediately before an alternation symbol | or a
+closing parenthesis ).
+
+3.2
+
+SPPFs for FBNF grammars
+
+For FBNF, to ensure the uniqueness of packed node labels for a given parent, for productions
+X ::= ρ where ρ contains bracketed subexpressions, the packed nodes under nodes for X will be
+labelled with slots at the end of alternates rather than the end of the production. For example,
+for the grammar
+S ::= b ( a ( c | a ) | A c )
+A ::= a
+and input bac there will be two packed nodes (S ::= b(a(c|a)|Ac·), 2) and (S ::= b(a(c·|a)|Ac), 2),
+under the node (S, 0, 3).
+S, 0, 3
+
+
+9
+
+
+
+S ::= b(a(c · |a)|Ac), 2
+
+S ::= b(a · (c|a)|Ac), 1
+
+
+
+
+ 
+w1
+
+b, 0, 1
+
+XX
+
+
+
+XXX
+z
+
+S ::= b(a(c|a)|Ac·), 2
+w7
+S ::= b(a(c|a)|A · c), 0, 2
+
+S ::= b(a · (c|a)|Ac), 0, 2
+w3
+
+?
+
+
+w5
+
+QQ
+s
+
+
+
+S ::= b(a(c|a)|A · c), 1
+
+PP
+q
+P
+
+
+
+
+A, 1, 2 w6
+
+Z
+
+ 
+
+
+Z
+Z
+Z
+
+A ::= a·, 1
+
+~
+
+9
+
+w2 Z
+a, 1, 2
+
+
+
+Z
+
+
+
+c, 2, 3
+
+
+w4
+
+Note that the structure of the derivation trees will not reflect parenthesisation in the grammar, although in some cases the FBNF SPPF will have more node sharing than the SPPF for
+the corresponding BNF grammar.
+For an FGLL parser the GSS and SPPF construction functions described in Section 2.5 are
+unchanged except that the condition if (L is eoR) in getN ode() is modified to if (L is eoR or eoA).
+
+3.3
+
+GLL parsers for FBNF grammars
+
+Apart from the minor change to getN ode() mentioned in the previous section, the GSS and
+SPPF construction functions for GLL FBNF parsers are the same as those for BNF parsers.
+The specification for the parsers themselves is an extension of the BNF specification. We
+just add one further template for slf-expression instances which contain parentheses.
+
+12
+
+For a slf-expression instance g1 . . . gd ( r1 | . . . | rk ), where d, k ≥ 1, g1 , . . . , gd are terminal and
+nonterminal instances, and X is lhs(g1 )
+code(g1 . . . gd ( r1 | . . . | rk )) =
+codeT N (g1 )
+if (testSelect(I[cI ], X, exp(g2 . . . gd )) is f alse) goto L0
+codeT N (g2 )
+...
+if (testSelect(I[cI ], X, exp(gd )) is f alse) goto L0
+codeT N (gd )
+if (testSelect(I[cI ], X, exp(r1 ))) { add(Lr1 , cU , cI , cN ) }
+...
+if (testSelect(I[cI ], X, exp(rk ))) { add(Lrd , cU , cI , cN ) }
+goto L0
+Lr1 : code(r1 )
+...
+Lrk : code(rk )
+
+3.4
+
+An example FGLL parser
+
+Consider again the grammar:
+S ::= b ( a ( c | a ) | A c )
+
+A ::= a
+
+and instance the symbols as follows
+S ::= b(1) ( a(1) ( c(1) | a(2) ) | A(1) c(2) )
+
+A ::= a(3)
+
+We let LS1 , LS2 , LS3 , LS4 , LS5 , and LA1 denote the slots immediately before b(1) , a(1) , c(1) , a(2) ,
+A(1) , and a(3) , respectively.
+To make the parser easier to read we shall instantiate the actual slots for the general Ex(j)
+denoted slots of the specification templates, and we shall let R1 denote the slot EA(1) , the slot
+immediately after A(1) .
+The GLL parser for this FBNF grammar is then as follows.
+u0 := (L0 , 0); cU := u0 ; cN := ∆; cI := 0; U := ∅; R := ∅; P := ∅
+goto JS
+L0 : if (R 6= ∅) { remove (L, u, i, w) from R
+cU := u; cI := i; cN := w; goto L }
+else if (there exists and SPPF node labelled (S, 0, m)) report success
+else report failure
+JS : if (testSelect(I[cI ], S, b(a(c|a)|Ac)) add(LS1 , cU , cI , ∆)
+goto L0
+LS1 : cR := getN odeT (b, cI ); cI := cI + 1
+cN := getN ode(S ::= b · (a(c|a)|Ac), cN , cR )
+if (testSelect(I[cI ], S, a(c|a))) add(LS2 , cU , cI , cN )
+if (testSelect(I[cI ], S, Ac)) add(LS5 , cU , cI , cN )
+13
+
+goto L0
+LS2 : cR := getN odeT (a, cI ); cI := cI + 1
+cN := getN ode(S ::= b(a · (c|a)|Ac), cN , cR )
+if (testSelect(I[cI ], S, c)) add(LS3 , cU , cI , cN )
+if (testSelect(I[cI ], S, a)) add(LS4 , cU , cI , cN )
+goto L0
+LS3 : cR := getN odeT (c, cI ); cI := cI + 1
+cN := getN ode(S ::= b(a(c · |a)|Ac), cN , cR )
+if(I[cI ] ∈ f ollow(S)) pop(cU , cI , cN ); goto L0
+LS4 : cR := getN odeT (a, cI ); cI := cI + 1
+cN := getN ode(S ::= b(a(c|a·)|Ac), cN , cR )
+if(I[cI ] ∈ f ollow(S)) pop(cU , cI , cN ); goto L0
+LS5 : cU := create(R1 , cU , cI , cN ); goto JA
+R1 : if (testSelect(I[cI ], S, c) is false) goto L0
+cR := getN odeT (c, cI ); cI := cI + 1
+cN := getN ode(S ::= b(a(c|a)|Ac·), cN , cR )
+if(I[cI ] ∈ f ollow(S)) pop(cU , cI , cN ); goto L0
+JA : if (testSelect(I[cI ], A, a)) add(LA1 , cU , cI , ∆); goto L0
+LA1 : cR := getN odeT (a, cI ); cI := cI + 1
+cN := getN ode(A ::= a·, cN , cR )
+if(I[cI ] ∈ f ollow(A)) pop(cU , cI , cN ); goto L0
+We illustrate the algorithm using the string bac$ and constructing the SPPF shown at the
+end of Section 3.2. The final descriptor set will be
+U ={
+
+(LS1 , u0 , 0, ∆), (LS2 , u0 , 1, w1 ), (LS5 , u0 , 1, w1 ),
+(LS3 , u0 , 2, w3 ), (LA1 , u1 , 1, ∆), (R1 , u0 , 2, w7 ) }
+
+The descriptors will be constructed in the order that they are listed above, and will be removed
+from R in insertion (first in, first out) order. The SPPF names w1 , . . . , w7 refer to the labels on
+the SPPF in Section 3.2. We initialise the variables and then go to line JS .
+JS : since I[0] = b, testSelect(I[cI ], S, b(a(c|a)|Ac)) succeeds so (LS1 , u0 , 0, ∆) is added to U and
+R, and then removed from R at L0 .
+LS1 : the SPPF node w1 is created and the assignments cR := w1 , cI := 1 are made. Because
+of the f iR property, getN odeT () returns w1 , so cN := w1 . Since cI = 1 and I[1] = a, both
+testSelect() calls return true, and so (LS2 , u0 , 1, w1 ) and (LS5 , u0 , 1, w1 ) are added to U and R.
+LS2 : the SPPF node w2 is created, then assignments cR := w2 , cI := 2, and then getN odeT ()
+returns w3 , so cN := w3 . Since I[cI ] = I[2] = c, only the first call to testSelect() returns true,
+and (LS3 , u0 , 2, w3 ) is added to U and R.
+SPPF
+
+S ::= b(a · (c|a)|Ac), 0, 2 w3
+
+?
+S ::= b(a · (c|a)|Ac), 1
+
+
+
+b, 0, 1
+
+GSS
+
+
+
+6
+w1
+
+Q
+
+w1
+
+u0
+
+L0 , 0
+
+
+
+Q
+Q
+w2 s
+
+u1
+
+
+R1 , 0
+
+a, 1, 2
+
+LS5 : cI = 1, cU = u0 , cN = w1 . A GSS node, u1 , labelled (R1 , 0) is created along with an edge
+labelled w1 to u0 , then cU := u1 and we go to JA .
+14
+
+JA : I[1] = a, so (LA1 , u1 , 1, ∆) is added to U and R, and we go to L0 .
+LS3 : cI = 2, cU = u0 , cN = w3 . The SPPF node w4 is created, cR := w4 , cI := 3, and then
+the SPPF node w5 is created, and cN := w5 . Since I[3] = $, pop(u0 , 3, w5 ) is called, but has no
+action other than to add (u0 , w5 ) to P. So we return to L0 .
+S, 0, 3
+
+
+w5
+
+
+9
+
+ S
+
+S ::= b(a(c · |a)|Ac), 2
+
+S
+S
+w
+c, 2, 3
+
+S ::= b(a · (c|a)|Ac), 0, 2
+w3
+
+
+w4
+
+?
+
+LA1 : cI = 1, cU = u1 , cN = ∆. An SPPF node labelled (a, 1, 2) already exists, so cR := w2 and
+cI := 2, and then w6 is created by getN ode(), cN := w6 . Then pop(u1 , 2, w6 ) creates the SPPF
+node w7 and the descriptor (R1 , u0 , 2, w7 ), and adds (u1 , w6 ) to P.
+S, 0, 3
+
+
+w5
+
+
+9
+
+
+
+S ::= b(a(c · |a)|Ac), 2
+
+w7
+S ::= b(a(c|a)|A · c), 0, 2
+
+S ::= b(a · (c|a)|Ac), 0, 2
+w3
+
+?
+S ::= b(a · (c|a)|Ac), 1
+
+
+
+
+ 
+w1
+
+QQ
+s
+
+
+
+S ::= b(a(c|a)|A · c), 1
+
+PP
+q
+P
+
+
+
+A, 1, 2 w6
+
+Z
+
+ 
+
+
+Z
+
+b, 0, 1
+
+
+
+Z
+Z
+
+A ::= a·, 1
+
+~
+
+9
+
+w2 Z
+a, 1, 2
+
+
+
+Z
+
+
+
+c, 2, 3
+
+
+w4
+
+R1 : cI = 2, cU = u0 , cN = w7 . We get cR := w5 and then getN ode() adds a new packed
+node, with children w7 and w4 , as a child of the existing node w5 . As w5 already exists, no new
+descriptors are created and, at L0 , R = ∅ and the algorithm terminates in success.
+
+3.5
+
+Automatic factorisation
+
+Our application focus in this paper is on improving the efficiency of the GLL algorithm on
+BNF grammars. So, for the FGLL algorithm, the first step is a factorisation from BNF into
+FBNF. In this section we describe the automatic factorisation process in our ART GLL parser
+generator [5]. The general principle is to load each nonterminal’s productions into a trie data
+structure,2 and then to write out the contents of the trie as an FBNF rule.
+A trie or prefix tree stores a set of strings in such a way that common prefixes are shared.
+The root and leaf nodes of a trie are special scaffolding nodes denoted by $. Each interior node
+is labelled with an element of a string.
+An empty trie comprises a single scaffolding node. We load a string s of length n into the
+trie by maintaining an index i into the string and a pointer t into the tree. Initially i is 1 and t
+points to the root of the trie.
+loadT rie(s) {
+i := 1
+2
+
+We are grateful to a referee for pointing out that tries are also used for left factoring in [8]
+
+15
+
+t is set to point to the root of the trie
+while (i ≤ n) {
+if there exists a child c of t labelled s[i] { advance t to c }
+else { create a child c of t labelled s[i]
+advance t to c }
+i := i + 1 }
+add a scaffolding node as a child of t
+}
+Consider the rule S ::= a a B c d | a a c d | a a c e | a a which factorises to S
+a a ( B c d | c ( d | e ) |  ). If we load the unfactorised productions into a trie, we have:
+c
+B
+d
+$
+$
+
+a
+
+a
+
+c
+
+d
+
+$
+
+$
+
+e
+
+$
+
+::=
+
+The scaffolding nodes are represented here as $ nodes.
+The trie directly represents the bracketing structure of the left-factored rule, and it is easy to
+write out the factored rule by traversing the trie. Note that an empty branch occurs whenever
+a scaffolding node has siblings: empty branches are rendered as epsilon sub-rules.
+As noted by a referee, the above algorithm works even for grammars with repeated rules.
+Repeated rules will result in the same linear subgraph up to the penultimate node, and then
+will end a separate scaffolding node for each repetition.
+
+3.6
+
+Extracting derivations in the original grammar
+
+An uncomfortable side-effect of any factorisation process is that derivations from the associated
+parser would normally be in the factorised grammar, not the original grammar. This obscures
+understanding, and requires some care in the implementation of semantic actions. We expect
+the internal behaviour of an FGLL parser to be invisible to a user who supplies a BNF grammar
+to the parser generator, and producing derivations in a modified grammar would certainly not
+be acceptable.
+We should first note that in a generalised parser, semantic actions cannot usually be executed
+at parse time as a side-effect of the parsing, even for unambiguous grammars; fully general parsers
+may well explore many avenues which are not part of the eventual derivation. So semantic
+evaluation will in general be delayed until after a complete SPPF has been constructed. At
+that point a single derivation can be extracted, according to some disambiguation strategy if
+necessary, and returned for downstream use. It is this derivation which should be with respect
+to the original grammar.
+It is a feature of an FGLL built SPPF that it is easy to extract a derivation in the original,
+unmodified grammar. There is a one-to-one relationship between slots which are eoA or eoR, as
+defined in Section 3.1, in the factored grammar, the slots which are eoR in the original grammar,
+and the scaffolding leaf nodes in the trie. For example, S ::= aa(Bcd|c(d · |e)|) corresponds to
+S ::= aacd·. This provides a map between the derivation steps in the as-parsed grammar and
+the equivalent derivation steps in the original grammar.
+To facilitate derivation extraction, as each production X ::= α in the original grammar is
+loaded into the trie we can create an attribute in the final scaffolding node that contains the
+slot (X ::= α.). We then write into the FGLL parser the rules of the original grammar and
+a map from slots in the factorised grammar to slots in the original grammar. After parsing is
+16
+
+complete, the SPPF can be traversed with any chosen derivation selection specification. As each
+set of siblings is completed, the map can be checked to see if the rightmost slot corresponds to a
+factorised production, and if it does the derivation tree construction will use the corresponding
+sequence of elements from the original production.
+
+4
+
+Reduced descriptor GLL parsers
+
+The descriptors defined in Section 2.3 contain slightly more information than is actually needed
+to record a parser configuration. A GSS node u = (X ::= αA · β, k) is created at the point
+of what would be a call to the parse function for A in a recursive descent parser. The current
+GSS node is included in a descriptor as part of the parser configuration. In fact, any action
+which is applied to u will eventually also be applied to any GSS node with a label of the form
+(Y ::= γA·δ, k). This is because, as described in the introduction, any valid derivation from A at
+the point X ::= αA · β is also a valid derivation at the point Y ::= γA · δ. By modifying the GSS
+construction functions we can change the descriptors to record just the level k rather than the
+GSS node (the nonterminal A is identifiable from the label in the descriptor). This reduces the
+number of descriptors created and processed and also removes some repeated activity associated
+with A.
+Whilst writing his MSc thesis [14], ten Brink made this observation that the runtime efficiency of some GLL recognisers can be improved by removing repeated activity associated with
+multiple instances of nonterminals. Ten Brink’s proposal involves changing the nature of the
+GSS, producing a different graph whose edges are labelled with nodes of the original GSS and
+whose nodes are new nodes associated with grammar nonterminals. Although not expressed in
+this form by ten Brink, it is perhaps easiest to understand the modification as an extension of
+an original GSS
+
+}
+Z
+u
+ZZ
+
+
+C ::= µB · ν, h
+B ::= αA · β, k 
+
+u2 D ::= γB · δ, h
+u1
+
+v
+A ::= γ · δ, j
+
+
+
+to a bipartite graph in which nodes u and v which were adjacent in the original GSS are separated
+by a new nonterminal node. GSS pop actions are then applied down paths of length 2 between
+nonterminal nodes.
+
+}
+Z
+ZZ
+C ::= µB · ν, h 
+
+u2 D ::= γB · δ, h
+u1
+
+y
+B, h
+
+
+
+
+u
+
+
+B ::= αA · β, k 
+
+A, k
+
+
+
+
+v
+A ::= γ · δ, j
+
+
+
+The advantage is that when a GSS node in the original format has two or more edges to nodes
+at the same level, a pop action down these edges results in a single descriptor (B ::= αA · β, y, i)
+rather than two or more descriptors of the form (B ::= αA · β, u1 , i), (B ::= αA · β, u2 , i) etc.
+(Ten Brink focussed only on recognisers so neither the descriptors nor the GSS include SPPF
+nodes.)
+One of the major attractions of the GLL approach is that the algorithm parse traces correspond directly to the set of paths through a nondeterministic recursive descent parser, and
+the GSS is the combination of the corresponding function call stacks. Hence we do not want to
+change the nature of the GSS in the manner suggested by ten Brink. However, it is possible to
+modify the GSS construction functions to achieve a similar efficiency gain without changing the
+17
+
+structure of the GSS. The modified construction functions are more complicated than the original GLL ones, and care is needed to ensure that the data structures support constant look-up
+time, but the implementation of these functions does not need to be visible to someone building
+or using a GLL parser, whereas the GSS is visible to them. Thus we gain efficiency without
+disrupting the user view of the algorithm. The visible change is that descriptors contain GSS
+levels rather than GSS nodes. For this reason we call this reduced descriptor GLL, RGLL.
+We give the specification of an RGLL parser and, in Section 6, we make comparisons with
+the corresponding FGLL parsers. Note, the reduced descriptor approach may reduce the number
+of descriptors and thus some computational overhead, but it does not save any SPPF or GSS
+construction.
+
+4.1
+
+The RGLL GSS construction functions
+
+Recall that a GSS node u has a label of the form (B ::= αA·β, k) and we treat L0 as being of the
+form S 0 ::= S·, so u0 is labelled (S 0 ::= S·, 0). We call A the nonterminal of u and B the left hand
+side of u, and we write level u, nt u and lhs u to denote k, A and B respectively. Motivated
+by the discussion above, the idea is conceptually to group together GSS nodes which have the
+same level and the same nonterminal, so u and v are in the same group if level u = level v and
+nt u = nt v. If level u = level v and nt u = nt v we say that u and v are pop equivalent; we
+can apply a given pop action to all GSS nodes with the same nonterminal and level at the same
+time.
+The focus of our original presentation [12] was to describe GLL as an extension of recursive
+descent, so that it is easy to understand the basic approach. Recording the current code position,
+input position and stack top in the descriptors is thus natural. However, as discussed above,
+we can write instead reduced descriptors of the form (B ::= αA · β, k, i, w), where k is a GSS
+level. This reduces the number of descriptors created and processed, and rather than having
+the global variable cU hold the current GSS node, it simply holds the current GSS level. (The
+nonterminal is passed directly into the pop action at the point where it is called.) We also
+modify the create() function so that it doesn’t return anything.
+A cost is that it is necessary to represent the GSS in a way which allows the set of all nodes
+of the form (B ::= αA · β, k) for a specified A and k to be found in time proportional to the
+number of such nodes. The implementation we use in Section 6 has this property.
+The set P is used by create() to perform contingent pop actions down new edges. In the
+reduced descriptor formulation a pop action may have been applied at a node which is pop
+equivalent to the source node of a new edge. Thus we record pop actions which have been
+applied to nodes with a given nonterminal and level. The level is the left extent of the SPPF
+node, z, so P is a set of elements of the form (A, z).
+The other change when using reduced descriptors is that some in-edges are added to GSS
+nodes on creation. For any GSS node y, if lhs y is A, say, then for each child, v, of y we have
+nt v = A.
+v
+
+
+
+A ::= γ 0 · δ 0 , i
+
+D ::= µA · ν, k 
+
+
+y
+
+Furthermore, because of the fundamental property of context free grammars discussed above,
+two pop-equivalent GSS nodes will have the same set of parent nodes once the GSS is complete.
+Thus if, during the non-reduced descriptor GLL parse, a GSS node u is created with nt u = A
+and level u = level v then at some point an edge will also be added from y to u. So in an RGLL
+
+18
+
+parse, when a node u is created, if there is a pop-equivalent node v then for all edges into v a
+corresponding edge into u is immediately created.
+
+
+u
+
+B ::= αA · β, k
+
+v
+
+Y
+H
+H
+HH
+H
+
+
+H
+y
+D ::= µA · ν, k 
+A ::= γ 0 · δ 0 , i
+
+Also, if a new node x is created as a parent of v (or of u) then it is also immediately made a
+parent of the pop-equivalent node u (or v).
+
+
+u
+
+B ::= αA · β, k 
+
+A ::= γ · δ, i
+
+v
+
+Y
+H
+H
+
+H
+H
+ HH
+
+
+
+D ::= µA · ν, k 
+
+A ::= γ 0 · δ 0 , i
+
+
+x
+
+
+y
+
+The GSS construction functions for an RGLL parser are thus defined as follows.
+add(L, k, i, w) { if ((L, k, i, w) 6∈ U { add (L, k, i, w) to U and to R } }
+pop(A, k, i, z) {
+if (A, z) 6∈ P {
+add (A, z) to P
+for each GSS node u = (Y ::= αA · β, k) {
+for each edge (u, w, v) {
+let y be the node returned by getN ode(Y ::= αA · β, w, z)
+add(Y ::= αA · β, level v, i, y)) } } } }
+create(L, k, i, w) {
+let L be of the form B ::= τ A · µ
+if there is not already a GSS node labelled (L, i) {
+create a GSS node v labelled (L, i)
+if there exists a GSS node v 0 6= v which is pop equivalent to v {
+let v 0 6= v be some node which is pop equivalent to v
+for all edges (x, f, v 0 ) { create an edge (x, f, v) } } }
+let v be the GSS node labelled (L, i)
+for each GSS node u with label of the form (Y ::= αB · β, k) {
+create an edge from v to u labelled w }
+for all (A, z) ∈ P where the left extent of z is i {
+let y be the node returned by getN ode(L, w, z)
+add(L, k, h, y) where z has right extent h } } }
+The SPPF construction functions for an RGLL parser are unchanged, they are the same as
+those given in Section 2.5.
+
+4.2
+
+RGLL parser specification
+
+By changing the type of cU from GSS node to integer we can essentially use the BNF GLL
+specification for RGLL. The outer structure of an RGLL parser is the same as that of the
+19
+
+BNF parser specified in Section 2.6 except that cU is initialised to 0 rather than to u0 . The
+templates code((j) ) and code(g1 . . . gd ) have pop(cu , ci , cN ) replaced with pop(X, cu , ci , cN ) where
+X is lhs((j) ) or lhs(g1 ) respectively. The template codeT N (Y (j) ) has a change to the use of
+create() as follows.
+codeT N (Y (j) )
+
+=
+
+create(EY (j) , cU , cI , cN ); goto JY
+EY (j) :
+
+The template for code(X) has a corresponding change to the calls to add(): add(Lr , cU , cI , ∆)
+is replaced with add(Lr , cI , cI , ∆). The double use of cI here is an artefact of the algorithm;
+descriptors created for the start of alternates have a GSS node whose level is the same as the
+current input index. In the create and pop functions, add() can be called with integers which
+are not the same as each other.
+
+4.3
+
+Example
+S ::= A b | A b c
+
+A ::= A b | 
+
+u0 := (L0 , 0); cI := 0; cU := 0; cN := ∆; U := ∅; R := ∅; P := ∅
+goto JS
+L0 :
+
+if (R 6= ∅) { remove (L, k, i, w) from R;
+cU := k; cI := i; cN := w; goto L }
+else { if (there is an SPPF node (S, 0, m)) report success
+else report failure }
+
+JS :
+
+if (I[cI ] ∈ {b}) add(LS1 , cI , cI , ∆)
+if (I[cI ] ∈ {b}) add(LS2 , cI , cI , ∆);
+
+goto L0
+
+LS1 : create(R1 , cU , cI , cN ); goto JA
+R1 : if (I[cI ] 6∈ {b}) goto L0
+cR := getN odeT (b, cI ); cI := cI + 1; cN := getN ode(S ::= Ab·, cN , cR )
+if (I[cI ] ∈ {∆}) pop(S, cU , cI , cN ); goto L0
+LS2 : create(R2 , cU , cI , cN ); goto JA
+R2 : if (I[cI ] 6∈ {b}) goto L0
+cR := getN odeT (b, cI ); cI := cI + 1; cN := getN ode(S ::= Ab · c, cN , cR )
+if (I[cI ] 6∈ {c}) goto L0
+cR := getN odeT (c, cI ); cI := cI + 1; cN := getN ode(S ::= Abc·, cN , cR )
+if (I[cI ] ∈ {∆}) pop(S, cU , cI , cN ); goto L0
+JA :
+
+if (I[cI ] ∈ {b}) add(LA1 , cI , cI , ∆)
+if (I[cI ] ∈ {b}) add(LA2 , cI , cI , ∆);
+
+goto L0
+
+LA1 : create(R3 , cU , cI , cN ); goto JA
+R3 : if (I[cI ] 6∈ {b}) goto L0
+cR := getN odeT (b, cI ); cI := cI + 1; cN := getN ode(A ::= Ab·, cN , cR )
+if (I[cI ] ∈ {b}) pop(A, cU , cI , cN ); goto L0
+20
+
+LA2 : cR := getN odeE(cI ); cN := getN ode(A ::= ·, cN , cR )
+pop(A, cU , cI , cN ); goto L0
+We set I = [b, $].
+L0 , 0
+$
+
+6$
+
+:
+
+R1 , 0
+R2 , 0
+
+6$
+$
+$
+
+R3 , 0
+
+u
+0
+u1
+
+u2
+
+u3
+
+
+*
+
+P = { (A, w1 ), (S, w6 ) }
+U =
+
+{ (LS1 , 0, 0, ∆), (LS2 , 0, 0, ∆), (LA1 , 0, 0, ∆), (LA2 , 0, 0, ∆),
+(R1 , 0, 0, w2 ), (R2 , 0, 0, w3 ), (R3 , 0, 0, w4 ) }
+S, 0, 1
+
+
+w6
+
+?
+S ::= Ab·, 0
+
+
+
+/
+
+
+S ::= A · b, 0
+
+w5
+
+?
+
+
+
+S ::= Ab · c, 0
+
+A, 0, 1
+
+?
+
+
+
+
+
+?
+
+S ::= A · bc, 0
+
+
+
+w4
+
+S ::= A · b, 0, 0
+
+S ::= A · bc, 0, 0
+
+
+
+
+w7
+
+A ::= A · b, 0
+
+
++
+
+
+w3
+
+w2
+
+S ::= A · b, 0, 0
+
+?
+
+
+
+S ::= Ab · c, 0, 1
+
+?
+
+S ::= A · b, 0
+
+
+
+? w1
+
+
+A, 0, 0 
+?
+
+A ::= ·, 0
+
+
+
+? 
+
+, 0, 0
+
+s
+
+
+
+b, 0, 1
+
+)
+
+For the non-reduced parser we have:
+U =
+
+{(LS1 , u0 , 0, ∆), (LS2 , u0 , 0, ∆), (LA1 , u1 , 0, ∆), (LA2 , u1 , 0, ∆),
+(LA1 , u2 , 0, ∆), (LA2 , u2 , 0, ∆), (LA1 , u3 , 0, ∆), (LA2 , u3 , 0, ∆)
+(R3 , u3 , 0, w4 ), (R3 , u2 , 0, w4 ), (R3 , u1 , 0, w4 ), (R2 , u0 , 0, w3 ), (R1 , u0 , 0, w2 )}
+P = { (u1 , w1 ), (u2 , w1 ), (u3 , w1 ), (u0 , w6 ) }
+
+5
+
+The impact of FGLL and RGLL
+
+Factorised grammars in general generate smaller GSS and SPPF structures than their natural
+BNF equivalents. Significantly, we also see a reduction in the number of calls to the support
+21
+
+functions. Recall that the purpose of the SPPF is to share sub-parts of derivations. The effect
+of this is that in a BNF grammar there may be several attempts to construct a shared piece
+of the SPPF for the common prefixes of some productions, but when factorised we only need
+a single instance of the prefix’s derivation in the SPPF. This can result in a reduction in both
+the amount of processing and the size of the SPPF. Sometimes factorisation can add additional
+ alternates and thus additional SPPF leaf nodes, as is the case in the second example below.
+However this is more than offset by the reductions as a result of increased node sharing.
+Consider this triplet of language-equivalent grammars.
+BNF1
+
+S ::= A A a a | A A A c | A A a b
+
+XNT1
+
+S ::= A A X
+
+FBNF1
+
+S ::= A A ( a ( a | b ) | A c )
+
+A ::= a a
+
+X ::= a Y | A c
+
+A ::= a a
+
+Y ::= a | b
+
+A := a a
+
+getNodeT()
+
+getNode()
+15
+9
+8
+11
+
+getNodeE()
+
+16
+11
+9
+16
+
+Support calls
+7
+8
+0 17
+5
+6
+0
+8
+3
+4
+0
+8
+3
+8
+0
+9
+
+create()
+
+pop()
+
+7
+5
+3
+3
+
+add()
+
+pop set
+
+16
+11
+9
+12
+
+SPPF
+16 9
+14 7
+13 6
+16 9
+
+Pack nodes
+
+NonP nodes
+
+GSS
+8 7
+6 5
+4 3
+8 7
+
+Descriptors
+
+BNF1
+XNT1
+FGLL
+RGLL
+
+Edges
+
+Nodes
+
+Grammar XNT1 is a factorisation of BNF1 which uses an extra nonterminal; grammar FBNF1
+uses parentheses to achieve the same effect.
+When matching the string aaaaaa we see the following behaviour: the first two lines of
+results are for GLL on the two grammars, the third and fourth lines are for FGLL and RGLL,
+respectively, on BNF1.
+
+Both XNT1 and FGLL show a significant reduction in the size of the data structures and the
+number of calls made. The FGLL/BNF1 configuration is more efficient than GLL/XNT1 in
+respect of both data structure size and overall number of calls. (FBNF1 is the internal grammar
+constructed in the FGLL parser. We can construct an FGLL parser for FBNF1 directly, but
+this will give the same data structure statistics as the FGLL/BNF1 version.) For such a small
+example, the improvements seem small. However, they scale with string length.
+Next we consider another triplet of grammars which generate the language of strings containing an even number of b’s.
+BNF2
+
+S ::= b b | b b S
+
+XNT2
+
+S ::= b b X
+
+FBNF2
+
+S ::= b b (  | S )
+
+X ::=  | S
+
+When run on the string b20 we see the same general SPPF improvement for FGLL as with
+the previous grammars, but for XNT2 the triggering of instances of the extra nonterminals
+bloats the GSS, and generates an increase in the number of calls to the GSS support functions.
+22
+
+NonP nodes
+
+Pack nodes
+
+pop set
+
+add()
+
+pop()
+
+getNodeT()
+
+getNode()
+
+SPPF
+50 29
+52 30
+42 20
+50 29
+
+10
+20
+10
+10
+
+29
+39
+29
+29
+
+Support calls
+10 10 0 40
+20 20 1 20
+10 10 1 20
+10 10 0 40
+
+31
+32
+22
+31
+
+getNodeE()
+
+Descriptors
+29
+39
+29
+29
+
+create()
+
+Edges
+
+GSS
+10 9
+20 19
+10 9
+10 9
+
+Nodes
+BNF2
+XNT2
+FGLL
+RGLL
+
+However, this example shows that even left factoring using extra nonterminals can significantly
+reduce the size of the SPPF and the number of calls to the SPPF support functions, although
+not by as much as using FGLL. Also, the advantage is offset by an increase in GSS activity.
+Thus, depending on the relative efficiency of a parser’s GSS and SPPF implementations, there
+may or may not be an overall performance advantage. Using FGLL gives the efficiency gains
+without the losses.
+The BNF1 example shows that both FGLL and RGLL generate efficiencies for grammars
+where there are nonterminals whose alternates have the same nonterminals at the start. The
+BNF2 example shows that FGLL delivers these efficiencies in the case of common terminals
+rather than nonterminals.
+There are also cases in which RGLL can deliver efficiencies when FGLL does not. As we
+have already said in Section 4, the efficiency gain for an RGLL parser arises because any valid
+derivation from A at a point X ::= αA · β is also a valid derivation at a point Y ::= γA · δ,
+if both points are reached at the same input position. Thus the parse actions associated with
+the second instance of A need not be repeated. In BNF1 such points occur in alternates with
+common left hand ends. Grammars with left recursion, whether direct or indirect, also naturally
+have grammar points of this form because, of course, for a left recursive nonterminal there is an
+initial calling point and then a subsequent recursive call which is encountered before any further
+input is read. This situation does not involve common left hand ends of alternates and thus
+FGLL does not give any efficiency improvement. For the following grammar, BNF3, both the
+syntactically left factored and nonterminal factored grammars are the same as BNF3.
+BNF3
+
+S ::= A a
+
+A ::= B b
+
+B ::= A d | d
+
+23
+
+getNodeT()
+
+getNode()
+15
+11
+
+getNodeE()
+
+23
+20
+
+Support calls
+13 5
+0 13
+9
+4
+0
+9
+
+create()
+
+pop()
+
+13
+9
+
+add()
+
+pop set
+
+21
+16
+
+SPPF
+19 9
+19 9
+
+Pack nodes
+
+NonP nodes
+
+GSS
+4 4
+4 4
+
+Descriptors
+
+BNF3
+RGLL
+
+Edges
+
+Nodes
+
+However, the RGLL parser exhibits the following efficiencies over the basic GLL parser when
+parsing the string (db)4 a
+
+6
+
+Performance on programming language grammars
+
+In this section we give experimental results for real programs in ANSI-C, ANSI-C++, C#, and
+Java using grammars from the relevant programming language standards documents which have
+been processed using our automatic transformation, implemented as an optional step in our ART
+parser generator.
+We have removed the lexical parts of each grammar by introducing the following rules whose
+left hand sides are tokens.
+identifier ::= ’ID’;
+stringLiteral ::= ’STRING’;
+charLiteral ::= ’CHAR’;
+integerLiteral ::= ’INTEGER’;
+realLiteral ::= ’REAL’;
+booleanLiteral ::= ’true’ | ’false’;
+We then used a separate lexical analyser to read programs written in the target language and
+pretty-print them with instances of identifiers and literals replaced with the corresponding tokens; thus our results are for token level grammars. Lexical structure of languages varies in
+complexity, and lexical processing can require significant computation; we use these ‘tokenised’
+strings to normalise the performance of the phrase-level parser.
+Our example source code strings listed below come from a variety of projects, mostly inhouse, and so cannot claim to be fully representative. Nevertheless, these examples give good
+indications as to performance in general, and we have used them as standard benchmarks over
+several years.
+Our grammars are drawn from programming language standards documents. We used the
+1989 ANSI C standard, and a late-1997 draft of the ANSI C++ standard. Since C is (almost) a
+subset of C++, we can use our C examples to test both parsers; there is also one C++-specific
+string. The C++ grammar is considerably more baroque than the C grammar, so we would
+expect parsing to be more expensive. Our C# grammar is from the 2002 ECMA standard for C#
+version 1.2, and for Java, we have used the BNF grammar from the first Java Language Standard.
+We note that these grammars are far from LL-deterministic. Our tools report numbers of LL(1)
+violations ranging from 335 for the C# grammar to 162 for the Java grammar; the C# grammar
+has 56 left recursive nonterminals and the Java grammar has 36; and all the grammars apart
+∗
+from the one for ANSI-C have nonterminals X such that X ⇒ but first(X) and follow(X)
+are not disjoint. The test strings are as follows:
+Name
+gtb src.tok
+rdp full.tok
+artsupport.tok
+twitter.tok
+life.tok
+
+Language
+C
+C
+C++
+C#
+Java
+
+Tokens
+36,827
+26,551
+36,444
+33,840
+36,975
+
+Function
+Full source code for the grammar tool box
+Full source code for the rdp RD parser generator
+C++ support for ART parsers (two concatenations)
+Fragment from a Twitter application (ten concatenations)
+Conway’s Game of Life with graphics (ten concatenations)
+
+The efficiency gains associated with the RGLL, FGLL and combined RFGLL variants are
+shown in Table 1 in comparison to the performance of the base algorithm described in [12].
+All four parsing methods have been implemented in the same programming language, compiled
+with identical levels of optimization, and are programmed with similar data structures and
+24
+
+Edges
+
+|P |
+
+Nodes
+
+Packed nodes
+
+Symbol Nodes
+
+Descriptors
+
+tokens/s
+
+CPU s
+
+473,257
+473,257
+455,001
+455,001
+
+475,542
+475,542
+442,696
+442,696
+
+1,036,075
+1,036,075
+699,979
+699,979
+
+4,755,333
+4,755,333
+1,041,455
+1,041,455
+
+874,868
+327,317
+550,054
+327,317
+
+561,139
+561,139
+546,631
+546,631
+
+562,843
+562,843
+534,871
+534,871
+
+1,270,903
+1,270,903
+851,117
+851,117
+
+6,392,785
+6,392,785
+1,344,152
+1,344,152
+
+1,110,400
+400,296
+696,118
+400,296
+
+425,385
+425,385
+413,356
+413,356
+
+426,291
+426,291
+404,307
+404,307
+
+942,742
+942,742
+628,871
+628,871
+
+4,709,390
+4,709,390
+999,579
+999,579
+
+841,963
+305,134
+529,526
+305,134
+
+297,677
+297,677
+301,884
+301,884
+
+261,401
+261,401
+252,578
+252,578
+
+564,437
+564,437
+377,255
+377,255
+
+2,042,843
+2,042,843
+665,042
+665,042
+
+559,859
+220,185
+362,288
+220,185
+
+222,206
+222,206
+226,338
+226,338
+
+195,799
+195,799
+190,570
+190,570
+
+417,204
+417,204
+279,895
+279,895
+
+1,510,486
+1,510,486
+496,272
+496,272
+
+425,730
+167,593
+279,154
+167,593
+
+255,343
+255,343
+256,449
+256,449
+
+225,052
+225,052
+220,738
+220,738
+
+443,304
+443,304
+365,471
+365,471
+
+1,056,916
+1,056,916
+606,718
+606,718
+
+390,990
+170,453
+317,958
+170,453
+
+260,377
+260,377
+255,502
+255,502
+
+223,401
+223,401
+212,601
+212,601
+
+505,179
+505,179
+414,304
+414,304
+
+1,249,154
+1,249,154
+755,554
+755,554
+
+402,501
+171,002
+311,701
+171,002
+
+SPPF
+ANSI C++ on artsupport.tok
+base
+2.00 18,249
+9,493,519
+RGLL
+0.84 43,231
+1,894,009
+FGLL
+0.47 77,872
+1,988,699
+RFGLL 0.44 83,396
+1,285,245
+ANSI C++ on gtb src.tok
+base
+2.89 12,761 13,061,222
+RGLL
+1.09 33,755
+2,366,346
+FGLL
+0.59 62,103
+2,584,505
+RFGLL 0.55 67,449
+1,581,871
+ANSI C++ on rdp full.tok
+base
+2.01 13,196
+9,687,071
+RGLL
+0.78 34,040
+1,771,700
+FGLL
+0.45 58,611
+1,946,233
+RFGLL 0.39 68,079
+1,185,093
+ANSI C on gtb src.tok
+base
+0.76 48,203
+4,178,345
+RGLL
+0.41 90,707
+1,127,572
+FGLL
+0.30 124,416 1,331,757
+RFGLL 0.25 147,308
+766,618
+ANSI C on rdp full.tok
+base
+0.53 50,002
+3,122,638
+RGLL
+0.30 89,397
+844,344
+FGLL
+0.22 121,237 1,009,146
+RFGLL 0.19 141,984
+576,271
+C# 1.2 on twitter.tok
+base
+0.39 86,769
+2,024,014
+RGLL
+0.28 120,427
+837,254
+FGLL
+0.25 135,360 1,157,630
+RFGLL 0.22 154,521
+695,780
+Java JLS1 on life.tok
+base
+0.42 87,827
+2,302,532
+RGLL
+0.31 118,510
+911,430
+FGLL
+0.28 131,584 1,321,207
+RFGLL 0.23 158,013
+740,655
+
+GSS
+
+Table 1: Performance on programming language grammars
+
+25
+
+algorithmic approaches. The pattern for all of our combinations of grammars and strings is that
+FGLL achieves greater speedup than RGLL, but that using both techniques together offers the
+best performance.
+Although FGLL is the most effective mechanism for nearly all grammar idioms, as illustrated
+by the grammar BNF3 above, FGLL cannot improve the performance of left recursive rules, since
+there is no factorisation for such rules. The RGLL technique, though, can reduce the amount
+of work required when parsing left recursive rules. On the other hand, RGLL alone does not
+exploit all of the speedup available to FGLL.
+The main driver for performance is the number of independent computations being performed, which corresponds to the number of descriptors created. The detailed timing effects
+are complex since individual descriptors might process only an epsilon production, a production
+with a single nonterminal instance or a production with a long sequence of terminals. Variations
+in the size of the GSS and SPPF are also significant, since initial node creation is significantly
+more costly than simply finding a pre-existing node.
+Table 1 also describes the size of the main GLL data structures, which gives an indication of
+memory use. The RGLL variant constructs the same SPPF and GSS as the base algorithm, but
+in each case very substantially reduces the number of descriptors. FGLL provides substantial
+reductions in the size of the GSS, and usually also in the size of the SPPF. Epsilon rules can
+generate additional nodes in the FGLL SPPF, and in the ANSI-C and C# examples this effect
+is sufficient to cause a small increase in the overall size of the FGLL SPPF. The FGLL variant
+also generates larger pop element sets (recorded in the column labelled |P|) than the RGLL
+version, but actually performs fewer applications of the pop elements. The combined RFGLL
+algorithm displays the lower number of pop elements.
+Apart from this reduction in space, the reduction in activity leads to significantly greater
+throughput, with speedup factors between about 2 and 5 for these grammars. In this paper we
+have limited our discussion to algorithm-level variants of the original GLL parsing algorithm. A
+detailed consideration of the effects driving these reductions in processing time and space requires
+analysis at the level of a particular implementation (see for instance [4]); we shall examine the
+space of data structure and control flow implementations for GLL in a future engineering-focused
+paper.
+
+7
+
+Ordering descriptor processing
+
+We complete our algorithmic level GLL performance considerations by looking at the possible
+impact of the order in which descriptors are processed and at some other ad hoc issues.
+As we have already mentioned in Section 2.5, it is possible for new edges to be added to
+a GSS node after a pop action has been applied to that node. For this reason the set, P, of
+pop actions is maintained and the create() function applies these pops, referred to as contingent
+pops, when it adds a new edge to an existing node. We can ask whether it is possible to process
+the descriptors in some order that ensures that all the edges are added to a GSS node u before
+any pop action is carried out on u. In fact this is not the case. In some cases a new edge is
+added from u as a result of a pop action being applied to u. The grammar in Section 2.4 has
+this property for RGLL, and for the closely related grammar
+S ::= A A c
+
+A ::= B
+
+B ::= 
+
+the base GLL algorithm requires contingent pops, regardless of the descriptor processing order.
+26
+
+The need for contingent pops is paralleled in other general parsing algorithms. In Earley’s
+algorithm [3], when the COMPLETER adds a new item, (X ::= α · Dβ, k) say, it checks to see if
+the REDUCER has already applied a reduction of the form D ::= γ· at the current level k. If so
+then the reduction is immediately applied to the new item. For grammars with right recursion, in
+Tomita’s GLR algorithm [15] the REDUCER can add new edges to existing GSS nodes. Tomita
+addressed this by adding duplicate nodes, but this causes nontermination for grammars with
+hidden left recursion. Farshi [9] ‘solved’ the problem by doing a brute force search rather than
+using duplicate nodes, but this was not very efficient. The RNGLR algorithm [10] solved the
+problem by extending the definition of a reduction, effectively defining ‘contingent reductions’.
+Since it is not possible to order the GLL descriptors so that pops are only applied once all
+the edges of a node have been constructed, we cannot avoid the overhead of maintaining the
+set P and checking for contingent pops in the create() function. However, depending on the
+implementation, it may improve the efficiency of a GLL algorithm if elements are added to the
+set P as late as possible, thus keeping the number of contingent pops as low as possible. (Note,
+the total number of pops always remains the same, decreasing the number of contingent pops
+increases the number of non-contingent pops.) In particular, a naı̈ve implementation might
+perform a linear search of P when a contingent pop is detected, and that could become very
+costly.
+Because a descriptor which pops a GSS node will always be created after a descriptor which
+creates the node has been processed, processing descriptors in creation order is likely to reduce
+the number of contingent pops. This has the advantage of not requiring any additional ‘machinery’. However, ordering the processing by descriptor type can reduce the number of contingent
+pops further.
+The processing of a given descriptor (X ::= α · β, u, i, w) begins when it is removed from
+R and concludes with a goto L0 action. The goto action either follows the return from a
+call to pop(), or follows a goto JA action which follows a return from a call to create(). The
+latter case occurs when β is of the form vAδ, and the former case occurs when β does not
+contain any nonterminals. If β has no nonterminals we refer to (X ::= α · β, u, i, w) as a popping
+descriptor. The number of contingent pops can be reduced to close to minimum by selecting a
+popping descriptor for processing only if there are no non-popping descriptors in R. Of course,
+depending on the implementation this may introduce an overhead associated with establishing
+the descriptor type.
+The table below shows the worst and best variants for these optimisations for our six grammar
+and input string examples. In each case, the data labelled ‘stack plain’ shows the effect of
+grouping all descriptors into a single set, and accessing it in Last-In, First-out (stack) order.
+Since there is only one set of descriptors, there are no delayed descriptors to be processed.
+The ‘queue delayed’ variant splits the descriptors into non-popping (Immediate) and popping
+(Delayed) subsets. Descriptors are only fetched from the Delayed set if the Immediate set is
+empty, and both sets are accessed in creation order.
+The impact on contingent pops is dramatic: in the case of C# and Java the ‘queue delayed’
+model yields zero contingent pops on these input strings, and for ANSI C and C++ the number
+of contingent pops is reduced by four orders of magnitude.
+The work done by contingent and primary pops is equivalent; only the point within the
+algorithm at which they are executed varies, with the caveat that we must be able to locate
+contingent pops efficiently. An implementation which naı̈vely searches the whole pop set for
+applicable contingent pops might display very significant speedup for ‘queue delayed’ over ‘stack
+plain’. In our implementation, in addition to the global pop set we maintain local lists of pops
+27
+
+for each GSS node or GSS cluster, and that allows us to efficiently iterate over the contingent
+pops without searching the whole pop set. The data in this table shows that this optimisation
+is likely to be crucial for any efficient GLL implementation; however once efficient iteration over
+pops is available, the extra performance gains associated with descriptor ordering are very small
+since the reduced iteration is counterbalanced by the extra computation of conditionals that is
+required for every descriptor set access.
+Descriptors
+Delayed Immediate
+ANSI C++ on artsupport.tok
+stack plain
+9,493,519
+queue delayed 1,737,840 7,755,679
+ANSI C++ on gtb src.tok
+stack plain
+13,061,222
+queue delayed 2,394,127 10,667,095
+ANSI C++ on rdp full.tok
+stack plain
+9,687,071
+queue delayed 1,800,176 7,886,895
+ANSI C on gtb src.tok
+stack plain
+4,178,345
+queue delayed
+995,059
+3,183,286
+ANSI C on rdp full.tok
+stack plain
+3,122,638
+queue delayed
+741,485
+2,381,153
+C# 1.2 on twitter.tok
+stack plain
+2,024,014
+queue delayed
+476,648
+1,547,366
+Java JLS1 on life.tok
+stack plain
+2,302,532
+queue delayed
+497,826
+1,804,706
+
+Primary
+
+Pops
+Contingent
+
+CPU s
+
+2,768,466
+4,944,148
+
+2,108,950
+6,046
+
+2.00
+2.00
+
+3,995,505
+7,396,673
+
+3,144,256
+7,935
+
+2.89
+2.85
+
+2,978,431
+5,554,538
+
+2,368,538
+6,894
+
+2.01
+2.00
+
+1,334,537
+2,164,241
+
+829,473
+95
+
+0.76
+0.73
+
+1,007,294
+1,630,858
+
+623,496
+6
+
+0.53
+0.52
+
+684,842
+976,898
+
+289,786
+0
+
+0.39
+0.38
+
+676,201
+1,055,101
+
+378,900
+0
+
+0.42
+0.42
+
+Finally we note two other potential efficiency savings. It is possible to make the storage
+space required for the GSS smaller. The SPPF node labels on the GSS edges are not strictly
+necessary. The label of the SPPF node can be computed from the label of the source GSS node
+and from the level of the target GSS node. Of course, this label does have to be computed and
+then the SPPF node must be found. Whether it is more efficient to record the nodes in the
+GSS or to compute the labels will depend on the implementation. Furthermore, since the size
+of the GSS is worst case quadratic while the size of U is worst case cubic, the size of the GSS is
+unlikely to be an issue in practice.
+The fact that the GSS edge label can be computed implies that all the edges between two
+given nodes will have the same label. Although we have not constructed a proof, we believe that
+the nature of the GLL algorithm ensures that there is never an attempt to insert the same GSS
+edge twice. An informal argument supporting this has been given by Afroozeh [1]. We have also
+used ART to count the number of attempts to insert a GSS edge for all of the grammars and
+strings in our extensive repository of test examples, and in all cases this number is equal to the
+number of GSS edges, adding experimental support for the hypothesis. Thus the test on the
+third line of the create() function in Section 2.5 may probably be suppressed without increasing
+the work done by the parser. The test is not, in any case, required for algorithm correctness it
+is just there to avoid repeated computation.
+
+28
+
+8
+
+Conclusions and related work
+
+We have extended our GLL algorithm to FGLL and RGLL, and shown that throughput improvements of up to a factor five are available on real programming language grammars. These
+speed improvements are accompanied by very significant reductions in the cardinalities of the
+data structures constructed by the GLL algorithm, with concomitant space reductions.
+We have demonstrated that syntactic left factorisation of grammars delivers significant gains,
+and this technique will be applicable in many parsing technologies. In FGLL the factorisation
+is essentially invisible to the user as an input BNF grammar is automatically transformed and
+the BNF derivations are reconstructed after parsing is complete. Of course, FGLL performs
+identically to GLL where the grammar offers no opportunities for factorisation.
+The RGLL technique is specific to GLL parsers. However, the underlying context free
+property on which it is based could yield analogous improvements to other styles of top down
+parser. The changes to base GLL required for the FGLL and RGLL variants are orthogonal to
+each other, and can be applied together. Our experimental results demonstrate the resulting
+FRGLL parsing algorithm is preferable in all cases to the base GLL algorithm.
+We have also discussed two mechanisms for ordering descriptor evaluation: the extraction of
+descriptors in LIFO or FIFO order; and the partitioning of the descriptor set into popping and
+nonpopping elements. We have shown that for naı̈ve implementations which require search, the
+reduction in contingent pops arising from the partitioning approach is extremely significant, but
+that for implementations which maintain separate lists of pops in addition to the main set, the
+improvements are slight.
+In an earlier paper on generalised LR parsing [10] we gave a review of the landscape of nondeterministic grammar parsing approaches. As far as we are aware, little has been published
+on the usefulness of syntactically left factoring grammars to improve parser performance. This
+is not particularly surprising as the concepts of syntactic left factorisation and combined nonterminal instance processing are not natural topics for study for LR-style parsers; the LR tables
+already incorporate these efficiencies. So the literature on GLR parsing does not address the
+topics covered in this paper. For example, the GLR-based ASF+SDF compiler generator [16]
+accepts EBNF constructs but converts them to BNF for LR table construction.
+Top-down techniques [7] lend themselves to efficient direct implementation of EBNF grammars. However, much of the focus of generalised top-down parser generators has been on dealing
+efficiently with issues such as backtracking and left recursive grammars. The tendency to use
+on-the-fly semantic evaluation may also have discouraged interest in automatic left factoring.
+There is little work directly related to RGLL, however the Rascal [6] developers have implemented a preliminary version of RGLL and informally report efficiency improvements. But the
+work is still under development and there is no published statistical data.
+The work presented in this paper sits at the nexus of LR-style factoring and direct EBNF
+support, offering efficient top-down EBNF-style parsing whilst retaining the structures and behaviour inherent in the underlying user-supplied BNF grammar.
+
+References
+[1] A. Afroozeh. Private Communication. CWI Amsterdam, 2014.
+[2] A. V. Aho, R. Sethi, and J. D. Ullman. Compilers: principles, techniques, and tools.
+Addison-Wesley, 1986.
+29
+
+[3] J. Earley. An efficient context-free parsing algorithm. Communications of the ACM,
+13(2):94–102, Feb. 1970.
+[4] A. Johnstone and E. Scott. Modelling GLL parser implementations. In M. d. B. B.Malloy,
+S.Staab, editor, SLE 2010, volume 6563 of Lecture Notes in Computer Science, pages 42–61.
+Springer-Verlag, 2011.
+[5] A. Johnstone and E. Scott. Translator generation using ART. In M. d. B. B.Malloy,
+S.Staab, editor, SLE 2010, volume 6563 of Lecture Notes in Computer Science, pages 306–
+315. Springer-Verlag, 2011.
+[6] P. Klint, T. van der Storm, and J. Vinju. Rascal: A domain specific language for source
+code analysis and manipulation. In Source Code Analysis and Manipulation, pages 108–177.
+IEEE, 2009.
+[7] D. E. Knuth. Top-down syntax analysis. Acta Informatica, 1:79–110, 1971.
+[8] P. Ljunglöf. Pure Functional Programming, an advanced tutorial. Göteburg University,
+Sweden, 2002.
+[9] R. Nozohoor-Farshi. GLR parsing for -grammars. In M. Tomita, editor, Generalized LR
+Parsing, pages 60–75. Kluwer Academic Publishers, The Netherlands, 1991.
+[10] E. Scott and A. Johnstone. Right nulled GLR parsers. ACM Transactions on Programming
+Languages and Systems, 28(4):577–618, July 2006.
+[11] E. Scott and A. Johnstone. GLL parsing. Electronic Notes in Theoretical Computer Science,
+253:177–189, 2010.
+[12] E. Scott and A. Johnstone. GLL parse-tree generation. Science of Computer Programming,
+78:1828–1844, 2013.
+[13] E. Scott, A. Johnstone, and G. Economopoulos. A cubic Tomita style GLR parsing algorithm. Acta Informatica, 44(6):427–461, 2007.
+[14] A. P. ten Brink. Disambiguation mechanisms and disambiguation strategies, Masters Thesis.
+Eindhoven University of Technology, 2013.
+[15] M. Tomita. Efficient parsing for natural language. Kluwer Academic Publishers, Boston,
+1986.
+[16] M. van den Brand, J. Heering, P. Klint, and P. Olivier. Compiling language definitions:
+the ASF+SDF compiler. ACM Transactions on Programming Languages and Systems,
+24(4):334–368, 2002.
+
+30
+
+
