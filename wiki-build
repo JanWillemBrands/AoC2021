@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DB_PATH="${ROOT_DIR}/wiki/index.db"
+
+python3 "${ROOT_DIR}/tools/wiki/build_wiki.py" --root "${ROOT_DIR}" --db "${DB_PATH}"
