@@ -20,23 +20,24 @@ typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bo
 
 struct Mode: CustomStringConvertible {
     var modeName = ""   // only scan this tokenpattern when scannerMode == modeName
-    var pushName = ""   //
+    var isPush = false
+    var isCheck = false
     var isPop = false
     
     var isActive: Bool {
-        !modeName.isEmpty || !pushName.isEmpty || isPop
+        isPush || isCheck || isPop
     }
     
     var description: String {
         var d = ""
-        if !modeName.isEmpty {
-            d += "=== \(modeName) "
+        if isPush {
+            d += ">>> \(modeName)"
         }
-        if !pushName.isEmpty {
-            d += ">>> \(pushName)"
+        if isCheck {
+            d += "=== \(modeName)"
         }
         if isPop {
-            d += "<<<"
+            d += "<<< \(modeName)"
         }
         return d
     }
@@ -100,7 +101,7 @@ final class Scanner {
     
     private var modeStack: [String] = []    // tracks state to allow e.g. nested token construction
     private var scannerMode: String {       // isolated to the scanner, not driven by the parser
-        modeStack.last ?? ""
+        return modeStack.last ?? ""
     }
     
     private var literalPatterns: [Pattern] = []
@@ -126,9 +127,15 @@ final class Scanner {
         let token: Token
         let pattern: Pattern
     }
-
+    
     private func scanAllTokens() throws {
         var matchStart = input.startIndex
+        var charsScanned = 0
+        let inputSize = input.utf8.count
+        let scanInterval = 10_000
+        let scanByteLimit = 0
+        var patternTime: [String: Double] = [:]
+        var patternCalls: [String: Int] = [:]
 
         while matchStart != input.endIndex {
             var matchEnd = matchStart
@@ -137,7 +144,7 @@ final class Scanner {
 
             // Phase 1: literal keywords via hasPrefix (fast string comparison)
             for lp in literalPatterns {
-                guard lp.mode.modeName == "" || lp.mode.modeName == scannerMode else { continue }
+                guard lp.mode.modeName == "" || lp.mode.modeName == scannerMode || lp.mode.isPush else { continue }
 
                 if remaining.hasPrefix(lp.kind) {
                     let literalEnd = input.index(matchStart, offsetBy: lp.kind.count)
@@ -145,8 +152,7 @@ final class Scanner {
                         matchEnd = literalEnd
                         candidates.removeAll()
                     }
-                    // TODO: there can never be more than one literal in a Schrödinger token ???
-                   if literalEnd == matchEnd {
+                    if literalEnd == matchEnd {
                         candidates.append(Candidate(
                             token: Token(image: input[matchStart..<literalEnd], kind: lp.kind),
                             pattern: lp))
@@ -156,9 +162,18 @@ final class Scanner {
 
             // Phase 2: regex patterns via prefixMatch (regex engine)
             for rp in regexPatterns {
-                guard rp.mode.modeName == "" || rp.mode.modeName == scannerMode else { continue }
+                guard rp.mode.modeName == "" || rp.mode.modeName == scannerMode  || rp.mode.isPush else { continue }
 
-                if let match = remaining.prefixMatch(of: rp.regex) {
+                let t0 = CFAbsoluteTimeGetCurrent()
+                let match = remaining.prefixMatch(of: rp.regex)
+                let elapsed = CFAbsoluteTimeGetCurrent() - t0
+                patternTime[rp.kind, default: 0] += elapsed
+                patternCalls[rp.kind, default: 0] += 1
+                if elapsed > 1.0 {
+                    print("  SLOW REGEX: '\(rp.kind)' took \(String(format: "%.1f", elapsed))s at byte \(charsScanned)/\(inputSize)")
+                }
+
+                if let match {
                     if match.0.endIndex > matchEnd {
                         matchEnd = match.0.endIndex
                         candidates.removeAll()
@@ -170,21 +185,21 @@ final class Scanner {
                     }
                 }
             }
-
+            
             // Phase 3: resolve candidates — mode-active patterns suppress Schrödinger duals
             guard !candidates.isEmpty else {
                 try scanError(position: matchStart)
             }
-
+            
             let modeActive = candidates.filter { $0.pattern.mode.isActive }
-
+            
             let headMatch: Token
             let headPattern: Pattern
-
+            
             if let winner = modeActive.first {
                 // Mode-active pattern wins, no Schrödinger duals
                 if modeActive.count > 1 {
-                    Logger.scan.warning("multiple mode-active patterns match: \(modeActive.map(\.pattern.kind))")
+                    Logger.scan.warning("multiple mode-active patterns match: \(modeActive.map(\.pattern.kind), privacy: .public)")
                 }
                 headMatch = winner.token
                 headPattern = winner.pattern
@@ -194,7 +209,7 @@ final class Scanner {
                 let front = candidates.filter { $0.pattern.isKeyword && !$0.pattern.isSkip }
                 let back = candidates.filter { !($0.pattern.isKeyword && !$0.pattern.isSkip) }
                 let ordered = front + back
-
+                
                 headMatch = ordered[0].token
                 headPattern = ordered[0].pattern
                 var tail = headMatch
@@ -203,7 +218,7 @@ final class Scanner {
                     tail = candidate.token
                 }
             }
-
+            
             if headPattern.isSkip {
                 trivia[tokens.count].append(headMatch)
             } else {
@@ -211,27 +226,44 @@ final class Scanner {
                 trivia.append([])
             }
             matchStart = matchEnd
+            charsScanned += headMatch.image.utf8.count
+            if charsScanned % scanInterval < headMatch.image.utf8.count {
+                print("  scan: \(charsScanned)/\(inputSize) bytes, \(tokens.count) tokens")
+            }
+            if scanByteLimit > 0 && charsScanned >= scanByteLimit {
+                print("  scan stopped at byte limit \(scanByteLimit)")
+                break
+            }
 
             // manage the scanner mode
-            if headPattern.mode.isPop {
+            if headPattern.mode.isPush {
+                modeStack.append(headPattern.mode.modeName)
+//                Logger.scan.debug("pushed new scan mode: \(self.scannerMode) match: \(headMatch.image) pattern: \(headPattern.kind)")
+            } else if headPattern.mode.isPop {
                 if let _ = modeStack.popLast() {
 //                    Logger.scan.debug("popped into previous scan mode: \(self.scannerMode)")
                 } else {
-                    Logger.scan.error("too many pops from scanner mode stack!")
-                    exit(1)
+                    fatalError("\(#function) too many pops from scanner mode stack!")
                 }
-            } else if !headPattern.mode.pushName.isEmpty {
-                modeStack.append(headPattern.mode.pushName)
-//                Logger.scan.debug("pushed new scan mode: \(self.scannerMode) match: \(headMatch.image) pattern: \(headPattern.kind)")
             }
         }
-
+        
         tokens.append(Token(image: "$", kind: "○"))  // append EndOfString token
+
+        let sortedByTime = patternTime.sorted { $0.value > $1.value }
+        print("  scan complete: \(inputSize) bytes, \(tokens.count) tokens")
+        print("  regex pattern timing (top 10):")
+        for (kind, time) in sortedByTime.prefix(10) {
+            let calls = patternCalls[kind, default: 0]
+            let avg = calls > 0 ? time / Double(calls) : 0
+            print("    \(String(format: "%8.3f", time * 1000))ms total, \(String(format: "%6d", calls)) calls, \(String(format: "%.3f", avg * 1000))ms avg — \(kind)")
+        }
     }
-    
-    
-    // TODO: use https://developer.apple.com/documentation/foundation/nsregularexpression/1408386-escapedpattern
-    
+
+    var gaps: GapChannel {
+        GapChannel(tokens: tokens, input: input, tabWidth: 8)
+    }
+
     private func scanError(position: String.Index) throws -> Never {
         var error = "scan error: input characters at position \(input.linePosition(of: position)) do not match any symbol in the grammar\n"
         let lineRange = input.lineRange(for: position ..< input.index(after: position))
@@ -241,10 +273,76 @@ final class Scanner {
             error += " "
         }
         error += "^~~~~~~~"
-//        for rp in regexPatterns {
-//            error += "\n\(rp.kind)"
-//        }
-        Logger.scan.error("\(error)")
+        //        for rp in regexPatterns {
+        //            error += "\n\(rp.kind)"
+        //        }
+        Logger.scan.error("\(error, privacy: .public)")
         throw ScannerFailure.charactersDoNotMatchAnySymbol(position: position, input: input)
     }
 }
+
+// MARK: - Gap Channel
+//
+// Layer 1 of the layout-sensitive parsing architecture (see "Layout Sensitive Parsing.md").
+//
+// GapChannel is a lazy, non-caching view that computes spatial relationships between adjacent
+// tokens on demand. All computations derive from Token.image Substring positions in the original
+// input string — no auxiliary data structures needed.
+//
+// Three fields answer three questions:
+//   empty      — are the tokens touching?       (for future >:< / <:> constraints)
+//   lineBreaks — how many lines apart?           (for >>| / |<< indent injection)
+//   column     — where on the line does it sit?  (for >>| / |<< indent injection)
+//
+// Key design choice: the newline scan spans from the previous token's START (not END) to the
+// current token's start. This is necessary for languages where newlines are visible tokens
+// (e.g. Python's NEWLINE): the \n is consumed by the token, leaving zero characters in the
+// inter-token gap. Scanning from the previous token's start ensures the newline is detected.
+
+struct Gap {
+    let empty: Bool
+    let lineBreaks: Int
+    let column: Int
+}
+
+struct GapChannel {
+    let tokens: [Token]
+    let input: String
+    let tabWidth: Int
+
+    subscript(i: Int) -> Gap {
+        guard i > 0 else {
+            let col = columnOf(tokens[0].image.startIndex)
+            return Gap(empty: true, lineBreaks: 1, column: col)
+        }
+        let prevEnd = tokens[i - 1].image.endIndex
+        let currStart = tokens[i].image.startIndex
+        let gapEmpty = prevEnd == currStart
+        // Scan from previous token's START so that newlines inside the
+        // previous token (e.g. a visible NEWLINE terminal) are detected.
+        let span = input[tokens[i - 1].image.startIndex..<currStart]
+        var breaks = 0
+        var prevWasCR = false
+        for ch in span {
+            let isCR = ch == "\r"
+            let isLF = ch == "\n"
+            if isCR || (isLF && !prevWasCR) { breaks += 1 }
+            prevWasCR = isCR
+        }
+        return Gap(empty: gapEmpty, lineBreaks: breaks, column: columnOf(currStart))
+    }
+
+    private func columnOf(_ index: String.Index) -> Int {
+        var col = 0
+        var i = index
+        while i > input.startIndex {
+            let prev = input.index(before: i)
+            let ch = input[prev]
+            if ch == "\n" || ch == "\r" { break }
+            col += ch == "\t" ? (tabWidth - col % tabWidth) : 1
+            i = prev
+        }
+        return col
+    }
+}
+

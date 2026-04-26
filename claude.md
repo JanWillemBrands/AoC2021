@@ -1,5 +1,18 @@
 # GLL Parser with ART Implementation - Background
 
+## How to Think About This Project
+
+Take time. No rush to start coding. Strive for elegance, simplicity and generality. A clean design that handles three cases is better than a hack that handles one. Read the grammar papers before proposing parser changes — the algorithms are subtle and the papers are short.
+
+When something goes wrong: stop, think, diagnose. Don't patch symptoms. Don't add flags. Find the actual bug.
+
+## Available Tools
+
+- **pdftotext** — extract text from research PDFs in `articles/`. Use `pdftotext -layout "path.pdf" -` to pipe to stdout
+- **OSLog reading** — Logger calls go to unified logging, NOT stdout. Read with: `/usr/bin/log show --last 30s --info --debug --no-pager --predicate 's="com.magenta.apusParser"' 2>&1 | head -100`. Must use full path `/usr/bin/log` (zsh builtin conflicts). All Logger interpolations use `privacy: .public` so content is visible
+- **wiki-search** / **wiki-build** — project wiki tools in `tools/wiki/`. `wiki-search` queries the local SQLite index. `wiki-build` rebuilds from markdown notes in `wiki/notes/`
+- **BuildProject** — always build before running. Never trust stale DerivedData. Debug binary: `/Users/janwillem/Library/Developer/Xcode/DerivedData/Advent-ctnlmtxiyxptaedefnxgsxptokfx/Build/Products/Debug/Advent`
+
 ## Overview
 This project implements a GLL (Generalized LL) parser following ART (Abstract Recognition Tree) concepts. GLL is a generalized parsing algorithm that can handle all context-free grammars, including ambiguous and left-recursive grammars that traditional LL parsers cannot handle.
 
@@ -172,10 +185,26 @@ The implementation tracks:
 - CPU time for parsing
 - CRF size
 
+### APUS Gotchas
+- **Comments use `//`**, NOT `#`. The `#` character is not an APUS token and will cause scan errors
+- **Messages (`^^^` blocks)** capture everything between markers including any interstitial text. Don't put comments between `^^^` blocks — they become part of the message content
+- **Named terminals** (e.g. `shift - />>/.`) cannot be referenced by name in production rules — use the string literal `">>"` instead
+
+### Test Organization
+Tests live in `AdventTests/` with this structure:
+- `TestInfrastructure.swift` — shared TestCase struct, parseMatches(), runTestCase(), loadGrammarFile(), parseGrammar()
+- `CoreGrammarTests.swift` — literals, sequences, selection, EBNF brackets, indirection, recursion, ambiguity, named grammars, empty constructs, regex, self-parsing
+- `SpecialTokenTests.swift` — Schrödinger tokens, Frankenstein tokens, exclusion sets
+- `LL1DetectionTests.swift` — LL(1) property detection (40+ LL1, 30+ non-LL1 cases)
+- `LanguageGrammarTests.swift` — loads real .apus grammar files and parses their embedded `^^^` messages (Python, APUS)
+- `PerformanceTests.swift` — benchmark harness with configurable warmup/measured runs
+- `ParserGeneratorTests.swift` — code generation tests
+
 ### Test Grammars
 Various test cases are available:
 - `test.apus`: Basic test grammar
-- `Swift.apus`: Swift language grammar
+- `Swift.apus`: Swift language grammar (large, many non-LL(1) rules)
+- `grammars/Python/Python.apus`: Python subset grammar with 32 test messages (layout-sensitive)
 - `apusAmbiguous.apus`: Ambiguous grammar tests
 - `TortureSyntax.apus`: Stress tests for complex grammar constructs
 - `AfroozehHunt.apus`: Grammar examples from Afroozeh & Izmaylova's paper on disambiguation
@@ -196,6 +225,10 @@ Various test cases are available:
 - **Schrödinger tokens**: Ambiguous scanner matches of equal length, linked via `Token.dual`
 - **First/Follow sets**: Prediction sets used by the GLL algorithm to decide which alternatives to explore
 - **ε (epsilon)**: Sentinel in first sets signalling that a grammar position is nullable
+- **Frankenstein token `≋`**: Partial token match sentinel in FIRST sets — allows the parser to split a fused token (e.g. `>>` → `>` `>`) via the `=>>` annotation
+- **Exclusion sets `---()`**: Annotation on a nonterminal that suppresses specific Schrödinger duals, e.g. `safeId = id ---("if" "end")` blocks keyword duals from matching as identifiers
+- **GapChannel**: Lazy spatial relationship channel between adjacent tokens (empty, lineBreaks, column) — foundation for layout-sensitive parsing
+- **`>>|` / `|<<`**: Synthetic indent/dedent tokens injected pre-parse by `injectLayoutTokens()`
 
 ## Design Decisions
 
@@ -207,6 +240,35 @@ SPPF is the original shared packed parse forest from the GLL papers. BSR is a mo
 
 ### APUS Language Design
 APUS is a self-describing EBNF-style notation (`apus.apus` defines itself). It supports regex-based terminal definitions, semantic actions, and standard EBNF brackets (grouping, option, Kleene closure, positive closure).
+
+### Parser State Ownership (Concurrency)
+- For descriptor deduplication (`unique`), prefer parser-owned state over grammar-node-owned state for reentrancy and future concurrency.
+- The same isolation argument applies to `yield`, but moving `yield` out of `GrammarNode` is a larger refactor because SPPF/Derivation code paths currently query `slot.yield` directly.
+- **Static variables on `GrammarNode` are not concurrency-safe.** Test suites run in parallel (each `@Suite` is an independent top-level struct), and any `static var` on `GrammarNode` is shared mutable state across all of them. The `static var isLL1` race was caught and fixed — `verifyLL1()` now returns a `Bool` and `parse()` accumulates locally. Remaining statics that could race under parallel tests:
+  - `count` — node numbering counter, reset in test helpers. Duplicate numbers would break `Hashable` if nodes from different grammars share a container.
+  - `grammar` — weak ref set in `parse()`. Concurrent overwrites could corrupt Schrödinger diagnostic output.
+  - `sizeofSets` — FIRST/FOLLOW size accumulator. Concurrent writes would produce wrong metrics.
+  - `containingNonterminal`, `toplevelAlternate`, `dottedSlot`, `dottedEBNF` — used by `ebnfDot()` for diagram labels. Would produce garbled output under concurrent access.
+- **Rule of thumb**: never use `GrammarNode` statics for values that vary per grammar instance. Prefer local variables in `parse()`, instance properties on `Grammar`, or return values.
+
+### Descriptor Deduplication: Global Set Only
+- An alternative distributed-packed-by-slot dedup mode was implemented and benchmarked. It used per-slot `Set<UInt64>` keyed by `GrammarNode.number` with packed `(k, i)` keys.
+- Benchmarking on the Swift grammar (both individual files and a 227KB concatenated source) showed identical descriptor/CRF/yield counts and no meaningful wall-clock difference (~2% faster at best).
+- The added complexity (enum, switch in hot path, extra array) was not justified. Removed in favour of the single global `Set<Descriptor>`.
+
+### Layout-Sensitive Parsing (GapChannel + Indent Injection)
+Three-layer architecture for handling Python-style INDENT/DEDENT and similar layout rules:
+- **Layer 1: GapChannel** (`Scanner.swift`) — lazy struct computing spatial relationships (empty, lineBreaks, column) between adjacent tokens from Substring positions in the original input
+- **Layer 2: Indent injection** (`LayoutTokenInjection.swift`) — free function `injectLayoutTokens()` reads GapChannel, injects synthetic `>>|`/`|<<` tokens pre-parse. Called from `main.swift` between scanning and parsing, only when the grammar defines `>>|`
+- **Layer 3: Constraint checking** (future) — `>:<` `<:>` `>.<` `<.>` post-parse spatial constraints
+
+Key detail: visible NEWLINE tokens (image is only `\n`/`\r`) are skipped by indent injection to avoid false dedents on blank lines. Bracket pairs (configurable) suppress indent tracking inside them.
+
+Design doc: `Layout Sensitive Parsing.md`
+
+### Scanner Regex: Avoid Overlapping Alternations
+- The `multilineStringLiteral` regex originally used `(?:[^\\]|\\#*...|\\#*.)*"""` — alternations that overlap (`[^\\]` vs `\\#*.`), causing catastrophic backtracking on large inputs (hung at ~50KB).
+- Replaced with `(?:[^"\\]|\\.|"(?!""))*"""` — three unambiguous branches. Scanner now processes 227KB in < 100ms.
 
 ## Completed Optimizations
 
@@ -230,6 +292,7 @@ APUS is a self-describing EBNF-style notation (`apus.apus` defines itself). It s
 
 ### Performance Optimizations
 - **TODO: profile the performance on tortureART and decide on priority of speed and memory
+- **TODO: scanner regex speed** — `rawIdentifier` (`\p{XID_Start}`) and `plainOperator` (`\p{Sm}`, `\p{So}`) are the slowest regex patterns (~68ms and ~63ms over 40K calls on 227KB input). Options: (1) ASCII first-byte guard to skip regex when first byte can't match, (2) replace Unicode property classes with explicit ranges, (3) two-pass scanning with fast ASCII pass first
 
 ## References
 - Scott, E. and Johnstone, A. "GLL parse-tree generation"
