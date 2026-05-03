@@ -32,7 +32,7 @@ import Foundation
 //func run() {
 
 trace = false
-let enableDiagrams = false
+let enableDiagrams = true
 
 // transform the APUS EBNF grammar from the input file into a grammar tree (Abstract Syntax Tree)
 // by using grammarParser, which is a hand-built recursive descent parser
@@ -41,10 +41,11 @@ let enableDiagrams = false
 
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-    .appendingPathComponent("apus")
+//    .appendingPathComponent("Swift")
+    .appendingPathComponent("layout")
+//    .appendingPathComponent("apus")
 //    .appendingPathComponent("grammars/Python/Python")
 //    .appendingPathComponent("ScanModeTest")
-//    .appendingPathComponent("Swift")
 //    .appendingPathComponent("CommentTest")
 //    .appendingPathComponent("attributeHunt")
 //    .appendingPathComponent("AfroozehHunt")
@@ -97,11 +98,11 @@ for (mi, message) in grammar.messages.enumerated() {
         continue
     }
 
-    if grammar.symbolToID[">>|"] != nil {
+    if grammar.usesInjectedLayoutTokens {
         injectLayoutTokens(
             tokens: &messageScanner.tokens,
             trivia: &messageScanner.trivia,
-            gaps: messageScanner.gaps,
+            input: messageScanner.input,
             bracketPairs: [("(", ")"), ("[", "]"), ("{", "}")]
         )
     }
@@ -110,7 +111,7 @@ for (mi, message) in grammar.messages.enumerated() {
     let start = clock()
 
     for _ in 0..<1 {
-        messageParser.parse(tokens: messageScanner.tokens)
+        messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
     }
 
     let end = clock()
@@ -119,14 +120,11 @@ for (mi, message) in grammar.messages.enumerated() {
     stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yieldCount)\n"
     stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
     Logger.ui.info("\(stats, privacy: .public)")
-//    print("all tokens:")
-//    for t in messageScanner.tokens.indices {
-//        for s in messageScanner.skippedTokens[t] {
-//            print(s)
-//        }
-//        print(messageScanner.tokens[t])
+//    print("all message tokens:")
+//    for t in messageScanner.tokens{
+//        print(t, t.image)
 //    }
-//    print("tokensPatterns:")
+//    print("tokenPatterns:")
 //    for tp in grammar.terminals {
 //        print(tp.key, tp.value.source)
 //    }
@@ -136,7 +134,7 @@ for (mi, message) in grammar.messages.enumerated() {
 //        var macro: [String] = []
 //        var punctuation: [String] = []
 //        for (key, value) in grammar.terminals {
-//            if value.isKeyword {
+//            if value.isLiteral {
 //                if let first = key.first, first.isLetter {
 //                    keywords.append(key)
 //                } else if let first = key.first, first == "#" {

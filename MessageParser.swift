@@ -25,6 +25,8 @@ class MessageParser {
 
     // MARK: - Per-parse input
     var tokens: [Token] = []
+    var trivia: [[Token]] = []
+    var input: String = ""
 
     // MARK: - GLL algorithm state (paper variables)
     var currentParseRoot: GrammarNode!
@@ -62,9 +64,11 @@ class MessageParser {
 
     // MARK: - Parse API
 
-    func parse(tokens: [Token]) {
+    func parse(tokens: [Token], trivia: [[Token]] = [], input: String = "") {
         // Reset all per-parse state
         self.tokens = tokens
+        self.trivia = trivia
+        self.input = input
         // Map each token's string kind to its integer kindID from the symbol table.
         // This includes Schrödinger duals (linked via token.dual) which represent
         // ambiguous scanner matches of equal length.
@@ -100,7 +104,7 @@ class MessageParser {
         nextDescriptor: while getDescriptor() {
             progressCounter += 1
             if progressCounter % progressInterval == 0 {
-                print("  progress: \(progressCounter) descriptors processed, token \(cI.tokenIndex)/\(totalTokens), pending \(remaining.count), crf \(crf.count)")
+//                print("  progress: \(progressCounter) descriptors processed, token \(cI.tokenIndex)/\(totalTokens), pending \(remaining.count), crf \(crf.count)")
             }
 
             while true {
@@ -112,20 +116,21 @@ class MessageParser {
                 case .EPS:
                     addYield(L: cL, i: cU, k: cI, j: cI)
                     cL = cL.seq!
-                case .T, .TI, .C, .B:
+                case .B:
+                    if boundaryMatches(cL.name, at: cI) {
+                        addYield(L: cL, i: cU, k: cI, j: cI)
+                        cL = cL.seq!
+                    } else {
+                        recordMismatch(expected: cL.name)
+                        continue nextDescriptor
+                    }
+                case .T, .TI, .C:
                     if let next = tokenMatch() {
                         addYield(L: cL, i: cU, k: cI, j: next)
                         cI = next
                         cL = cL.seq!
                     } else {
-                        failedParses += 1
-                        if cI > furthestMismatchIndex {
-                            furthestMismatchIndex = cI
-                            furthestMismatchSlot = cL
-                            furthestMismatchExpected = [cL.name]
-                        } else if cI == furthestMismatchIndex {
-                            furthestMismatchExpected.insert(cL.name)
-                        }
+                        recordMismatch(expected: cL.name)
                         continue nextDescriptor
                     }
                 case .N:
@@ -212,6 +217,33 @@ class MessageParser {
     }
 
     // MARK: - Internal helpers
+
+    func recordMismatch(expected: String) {
+        failedParses += 1
+        if cI > furthestMismatchIndex {
+            furthestMismatchIndex = cI
+            furthestMismatchSlot = cL
+            furthestMismatchExpected = [expected]
+        } else if cI == furthestMismatchIndex {
+            furthestMismatchExpected.insert(expected)
+        }
+    }
+
+    /// Evaluate a boundary operator at a token position.
+    /// Boundaries are predicates between the previous and current token.
+    func boundaryMatches(_ boundary: String, at position: TokenPosition) -> Bool {
+        guard position.tokenIndex > 0 && position.tokenIndex < tokens.count else { return false }
+        let left = position.tokenIndex - 1
+        let right = position.tokenIndex
+        switch boundary {
+        case "<:>": return hasInterTokenGap(at: left, and: right)
+        case "<.>": return lineBreakCountBetweenTokens(at: left, and: right) > 0
+        case ">:<": return !hasInterTokenGap(at: left, and: right)
+        case ">.<": return lineBreakCountBetweenTokens(at: left, and: right) == 0
+        default:
+            fatalError("\(#function): unexpected boundary \(boundary)")
+        }
+    }
 
     // TODO:  why is this no longer used?
     func testRepeat() -> Bool {
@@ -336,6 +368,27 @@ class MessageParser {
             }
             current = next
         }
+    }
+
+    /// Count line breaks from the first token's START index to the second token's START index.
+    /// `\r\n` counts as one line break.
+    func lineBreakCountBetweenTokens(at first: Int, and second: Int) -> Int {
+        let span = input[tokens[first].image.startIndex..<tokens[second].image.startIndex]
+        var breaks = 0
+        var prevWasCR = false
+        for ch in span {
+            let isCR = ch == "\r"
+            let isLF = ch == "\n"
+            if isCR || (isLF && !prevWasCR) { breaks += 1 }
+            prevWasCR = isCR
+        }
+        return breaks
+    }
+
+    /// True when there are source characters between the first token END and the second token START.
+    /// This backs <:> and >:< so synthetic layout tokens can still observe source spacing.
+    func hasInterTokenGap(at first: Int, and second: Int) -> Bool {
+        tokens[first].image.endIndex < tokens[second].image.startIndex
     }
 
 }

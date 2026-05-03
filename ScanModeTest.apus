@@ -9,10 +9,10 @@ whitespace  : /\s+/ .
 linecomment : /\/\/.*/ .
 
 leftParenthesis     - "(" .
-                    >>> "parenthesisMode"
+                    === "" >>> "parenthesisMode"
+                    === "parenthesisMode" >>> "parenthesisMode"
 rightParenthesis    - ")" .
-                    === "parenthesisMode"
-                    <<<
+                    === "parenthesisMode" <<<
 
 
 grammar = { stringLiteral } .
@@ -46,10 +46,9 @@ expression                      = < "expr" | stringLiteral >
                                 | parenthesizedExpression .
 
 //leftParenthesis     - /\(/ .
-//                    >>> "expressionMode"
+//                    === "" >>> "expressionMode"
 //rightParenthesis    - /\)/ .
-//                    === "expressionMode"
-//                    <<<
+//                    === "expressionMode" <<<
 
 //parenthesizedExpression = leftParenthesis expression rightParenthesis .
 parenthesizedExpression = "(" expression ")" .

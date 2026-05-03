@@ -1,27 +1,27 @@
 # Layout-Sensitive Parsing
 
 Date: 2026-04-26
+Updated: 2026-05-04
 
 ## What We Built
 
-Three-layer architecture for handling Python-style INDENT/DEDENT and similar layout rules without touching the parser core.
+Two-layer architecture for handling Python-style INDENT/DEDENT and similar layout rules without touching the parser core.
 
-### Layer 1: GapChannel (Scanner.swift)
+### Spatial Computation
 
-Lazy struct. Computes spatial facts between adjacent tokens on demand from their Substring positions in the original input. No caching, no auxiliary arrays.
+All spatial facts are computed lazily from token `image.startIndex`/`endIndex` positions in the original input string. No auxiliary data structures — the original `GapChannel` struct was removed in favour of inline computation.
 
-Three fields:
-- `empty` — tokens touching? (for future `>:<` / `<:>`)
-- `lineBreaks` — how many lines apart? (for `>>|` / `|<<` and future `>.<` / `<.>`)
-- `column` — column on the line (for indent level)
+Key utilities in `StringExtensions.swift`:
+- `String.columnOf(_:tabWidth:)` — scans forward from line start to index, with tab expansion
+- `String.linePosition(of:)` — returns `"L{line}P{position}"` for diagnostics, handles `\n`, `\r`, `\r\n`
 
-Key design choice: scan from previous token's START (not END) to current token's start. This catches newlines inside visible NEWLINE tokens that would leave zero characters in the inter-token gap.
+Key design choice: line break detection scans from previous token's START (not END) to current token's start. This catches newlines inside visible NEWLINE tokens that would leave zero characters in the inter-token gap.
 
-`\r\n` counts as one line break, not two.
+`\r\n` counts as one line break, not two (the `prevWasCR` guard).
 
-### Layer 2: Indent Injection (LayoutTokenInjection.swift)
+### Layer 1: Indent Injection (LayoutTokenInjection.swift)
 
-Free function `injectLayoutTokens(tokens:trivia:gaps:bracketPairs:)`. Reads GapChannel, injects synthetic `>>|`/`|<<` tokens. Called between scanning and parsing.
+Free function `injectLayoutTokens(tokens:trivia:input:tabWidth:bracketPairs:)`. Computes line breaks and columns inline, injects synthetic `>>|`/`|<<` tokens. Called between scanning and parsing.
 
 Algorithm: indent stack starting at [0]. On each token with a line break before it, compare column to stack top. Push on indent, pop on dedent. At EOS, emit remaining dedents.
 
@@ -29,22 +29,22 @@ Bracket pairs (configurable) suppress indent tracking inside `()`, `[]`, `{}`.
 
 Visible NEWLINE tokens (image is only `\n`/`\r`) are skipped — they sit at column 0 but carry no indentation intent.
 
-### Layer 3: Constraint Checking (future)
+### Layer 2: Constraint Checking (future)
 
-`>:<` `<:>` `>.<` `<.>` would be checked post-parse by filtering the derivation forest. GapChannel provides the data. Not implemented yet.
+`>:<` `<:>` `>.<` `<.>` — spatial constraints between adjacent symbols in a grammar sequence. Design direction: model as a new `GrammarNodeKind` (pass-through node in the grammar graph). Checked during parsing, not post-parse.
 
 ## Why This Design
 
 - Parser core stays untouched — no new code paths in the GLL algorithm
-- GapChannel is pure observation — read-only, no mutations
+- All spatial facts derived lazily from token positions — no auxiliary arrays
 - Works for Python, Haskell, F#, Nim, YAML — anything with column-based structure
 - Adams (2013) IS-CFG approach rejected: too invasive, requires parser-level column tracking
 
 ## Files
 
-- `Scanner.swift` — Gap, GapChannel structs
-- `LayoutTokenInjection.swift` — injectLayoutTokens()
-- `main.swift` — wiring (conditional on `>>|` in grammar)
+- `StringExtensions.swift` — `columnOf(_:tabWidth:)`, `linePosition(of:)`
+- `LayoutTokenInjection.swift` — `injectLayoutTokens()`
+- `main.swift` — wiring (conditional on layout token usage in grammar)
 - `Layout Sensitive Parsing.md` — full design document
 
 ## Python Grammar Status

@@ -160,6 +160,7 @@ class ApusParser {
     
     private var skip = false
     private var terminalAlias: String?
+    private var literalAliases: [String: String] = [:]
     
     func parseApusGrammar() throws {
         #Trace("parseApusGrammar", token)
@@ -199,9 +200,8 @@ class ApusParser {
                 terminalAlias = nonTerminalName
                 terminal = try regex()
             case "literal":
-                // do NOT assign the name of the production to the regex, instead use the literal image as the name
-                //                terminalAlias = nonTerminalName
                 terminal = literal()
+                literalAliases[nonTerminalName] = terminal.name
             default:
                 try expect(["regex", "literal"])
             }
@@ -213,31 +213,30 @@ class ApusParser {
             try expect(["."])
             cI += 1
             
-            // handle scanner mode annotations
-            if token.kind == "===" {
+            // handle gated transitions: === "gate" [<<<] [>>> "push"]
+            // Gate/push mode names are scanner-state labels, not literals or identifier, although they share the same strucrure.
+            // TODO: extend gate/push operand parsing to accept identifier operands (in addition to literal/empty)
+            //       so regex named captures can drive mode gating/transitions (e.g. === tag, >>> tag).
+            while token.kind == "===" {
                 cI += 1
-                try expect(["literal"])
-                let modeLiteral = literal()
-                grammar.terminals[terminal.name]?.mode.modeName = modeLiteral.name
-                grammar.terminals[terminal.name]?.mode.isCheck = true
-            } else if token.kind == ">>>" {
+                try expect(["literal", "empty"])
+                let gate = token.stripped.escapesRemoved
                 cI += 1
-                try expect(["literal"])
-                let modeLiteral = literal()
-                if grammar.terminals[terminal.name] != nil {
-                    grammar.terminals[terminal.name]?.mode.modeName = modeLiteral.name
-                    grammar.terminals[terminal.name]?.mode.isPush = true
-                } else {
-                    Logger.parse.warning("WARNING: terminal \(terminal.name, privacy: .public) not found when parsing >>> mode")
+                let pops = token.kind == "<<<"
+                if pops { cI += 1 }
+                var push: String? = nil
+                if token.kind == ">>>" {
+                    cI += 1
+                    try expect(["literal", "empty"])
+                    push = token.stripped.escapesRemoved
+                    cI += 1
                 }
-            } else if token.kind == "<<<" {
-                cI += 1
-                try expect(["literal"])
-                let modeLiteral = literal()
-                grammar.terminals[terminal.name]?.mode.modeName = modeLiteral.name
-                grammar.terminals[terminal.name]?.mode.isPop = true
+                guard grammar.terminals[terminal.name] != nil else {
+                    Logger.parse.warning("WARNING: terminal \(terminal.name, privacy: .public) not found when parsing mode transition")
+                    continue
+                }
+                grammar.terminals[terminal.name]?.transitions.append(GatedTransition(gate: gate, pops: pops, push: push))
             }
-//            print("terminal: \(terminal.name) mode: \(String(describing: grammar.terminals[terminal.name]?.mode))")
             
         } else {
             // production rule
@@ -300,7 +299,7 @@ class ApusParser {
     }
     
     func sequence() throws -> GrammarNode {
-        // sequence = < factor [ "?" | "*" | "+" ] > .
+        // sequence = [ layout ] < factor [ "?" | "*" | "+" ] [ layout ] > .
         // Actions are collected from skippedTokens at each position.
         #Trace("sequence", token)
         let startOfSequence = GrammarNode(kind: .ALT, name: "")
@@ -308,42 +307,73 @@ class ApusParser {
         
         // leading actions (before first factor)
         termNode.actions = collectActions(at: cI)
-        
-        repeat {
-            if token.kind == ">>|" || token.kind == "|<<" {
-                let name = String(token.image)
-                grammar.registerTerminal(name)
-                termNode.seq = GrammarNode(kind: .T, name: name)
-                cI += 1
-            } else {
-                termNode.seq = try factor()
+        var sawFactor = false
+        while true {
+            // Allow layout operators before a factor.
+            while let layoutNode = try layout() {
+                termNode.seq = layoutNode
+                termNode = layoutNode
+                termNode.actions = collectActions(at: cI)
             }
-            // handle postfix EBNF operators
-            if ["?", "*", "+"].contains(token.kind) {
-                // wrap the preceding factor in its own little sequence
-                let miniSeq = GrammarNode(kind: .ALT, name: "")
-                miniSeq.seq = termNode.seq
-                miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
-                if token.kind == "?" {
-                    termNode.seq = GrammarNode(kind: .OPT, name: "", alt: miniSeq)
-                } else if token.kind == "*" {
-                    termNode.seq = GrammarNode(kind: .KLN, name: "", alt: miniSeq)
-                } else if token.kind == "+" {
-                    termNode.seq = GrammarNode(kind: .POS, name: "", alt: miniSeq)
+
+            guard ["literal", "identifier", "epsilon", "empty", "regex", "(", "[", "{", "<"].contains(token.kind) else {
+                if !sawFactor {
+                    try expect(["identifier", "literal", "epsilon", "empty", "regex", "(", "[", "{", "<"])
                 }
-                termNode.seq?.alt = miniSeq
-                cI += 1
+                break
             }
-            
-            termNode = termNode.seq!
-            // trailing actions (after factor/operator, before next factor or end)
+
+            sawFactor = true
+            var itemNode = try factor()
+
+            switch token.kind {
+            case "?", "*", "+":
+                let miniSeq = GrammarNode(kind: .ALT, name: "")
+                miniSeq.seq = itemNode
+                miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+
+                switch token.kind {
+                case "?":
+                    itemNode = GrammarNode(kind: .OPT, name: "", alt: miniSeq)
+                case "*":
+                    itemNode = GrammarNode(kind: .KLN, name: "", alt: miniSeq)
+                case "+":
+                    itemNode = GrammarNode(kind: .POS, name: "", alt: miniSeq)
+                default:
+                    break
+                }
+                itemNode.alt = miniSeq
+                cI += 1
+            default:
+                break
+            }
+
+            termNode.seq = itemNode
+            termNode = itemNode
             termNode.actions = collectActions(at: cI)
-            
-        } while ["literal", "identifier", "epsilon", "regex", "(", "[", "{", "<", ">>|", "|<<"].contains(token.kind)
+        }
         
         termNode.seq = GrammarNode(kind: .END, name: "")
         // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
         return startOfSequence
+    }
+
+    func layout() throws -> GrammarNode? {
+        switch token.kind {
+        case ">>|", "|<<":
+            let name = token.kind
+            grammar.usesInjectedLayoutTokens = true
+            grammar.registerTerminal(name)
+            cI += 1
+            return GrammarNode(kind: .T, name: name)
+        case "<.>", "<:>", ">.<", ">:<":
+            let name = token.kind
+            grammar.registerTerminal(name)
+            cI += 1
+            return GrammarNode(kind: .B, name: name)
+        default:
+            return nil
+        }
     }
     
     func regex() throws -> GrammarNode {
@@ -359,7 +389,7 @@ class ApusParser {
         do {
             // the token is a regex definition, try to initialize a Regex with it
             let regex = try Regex<Substring>(String(token.stripped))
-            grammar.terminals[name] = (String(token.image), regex, false, skip, Mode())
+            grammar.terminals[name] = TokenPattern(String(token.image), regex, false, skip)
             grammar.registerTerminal(name)
             #Trace("regex name:", name, "image:", token.image)
         } catch {
@@ -375,11 +405,11 @@ class ApusParser {
         #Trace("literal", token, token.stripped)
         
         // epsilon has two representations in apus grammars, either the greek letter ε, or the empty string literal ""
-        if token.stripped == "" {
-            #Trace("epsilon", token, token.stripped)
-            cI += 1
-            return GrammarNode(kind: .EPS, name: "ε")
-        }
+//        if token.stripped == "" {
+//            #Trace("epsilon", token, token.stripped)
+//            cI += 1
+//            return GrammarNode(kind: .EPS, name: "ε")
+//        }
         
         //        let name = terminalAlias ?? token.stripped
         //        print("literal terminalAlias: \(terminalAlias ?? "nil") token.stripped: \(token.stripped)")
@@ -395,8 +425,9 @@ class ApusParser {
         if grammar.terminals[name] == nil {
             // to build the correct regex we need to remove the escape sequences from the token because the literal uses Swift string notation.
             // e.g. "//" in the grammar matches a single '/' in the message, and a "\t" will match a tab character in the message
-            let regex = Regex { token.stripped.escapesRemoved }
-            grammar.terminals[name] = (String(token.image), regex, true, skip, Mode())
+            let source = token.stripped.escapesRemoved
+            let regex = Regex { source }
+            grammar.terminals[name] = TokenPattern(source, regex, true, skip)
             grammar.registerTerminal(name)
             //            Logger.parse.debug("added literal name: \(name) image: \(self.token.image)")
         } else {
@@ -419,29 +450,27 @@ class ApusParser {
         let node: GrammarNode
         switch token.kind {
         case "identifier":
-            // the identifier can be a terminal or nonTerminal but not both
-            if grammar.terminals[String(token.image)] != nil {
-                if grammar.nonTerminals[String(token.image)] != nil {
+            let name = token.stripped
+            if let literalName = literalAliases[name] {
+                node = GrammarNode(kind: .T, name: literalName)
+            } else if grammar.terminals[name] != nil {
+                if grammar.nonTerminals[name] != nil {
                     #Trace("grammar parse error: \(token.image) is both a terminal and a nonTerminal")
                 }
-                // this string was defined previously as a terminal
-                // TODO: currently all terminals must be defined BEFORE they are used
-                node = GrammarNode(kind: .T, name: token.stripped)
+                node = GrammarNode(kind: .T, name: name)
             } else {
-                // this string is assumed to be
-                // nonTerminals may be used before they are defined, and are resolved later
-                node = GrammarNode(kind: .N, name: token.stripped)
+                node = GrammarNode(kind: .N, name: name)
             }
             cI += 1
         case "literal":
             node = literal()
             
-            if token.kind == "=>>" {
+            if token.kind == "~~~" {
                 node.first.insert("≋")      // insert a partial-token sentinel, which then gets propagated through FIRST/FOLLOW
                 cI += 1
             }
             
-        case "epsilon":
+        case "epsilon", "empty":
             node = epsilon()
         case "regex":
             node = try regex()
@@ -466,11 +495,11 @@ class ApusParser {
             try expect([">"])
             cI += 1
         default:
-            try expect(["identifier", "literal", "epsilon", "regex", "(", "[", "{", "<"])
+            try expect(["identifier", "literal", "epsilon", "empty", "regex", "(", "[", "{", "<"])
             fatalError("\(#function) expect() should have thrown - this line should never be reached")
         }
         
-        // check for Schrödinger exclusion annotation: ---("if" "let" ...)
+        // check for Schrödinger exclusion annotation: ---("if" "while" ...)
         if token.kind == "---" {
             cI += 1
             try expect(["("])
@@ -508,4 +537,3 @@ class ApusParser {
         }
     }
 }
-

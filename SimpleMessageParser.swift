@@ -25,6 +25,8 @@ class SimpleMessageParser {
 
     // MARK: - Per-parse input
     var tokens: [Token] = []
+    var trivia: [[Token]] = []
+    var input: String = ""
 
     // MARK: - GLL algorithm state (paper variables)
     var currentParseRoot: GrammarNode!
@@ -62,9 +64,11 @@ class SimpleMessageParser {
 
     // MARK: - Parse API
 
-    func parse(tokens: [Token]) {
+    func parse(tokens: [Token], trivia: [[Token]] = [], input: String = "") {
         // Reset all per-parse state
         self.tokens = tokens
+        self.trivia = trivia
+        self.input = input
         // Map each token's string kind to its integer kindID from the symbol table.
         // This includes Schrödinger duals (linked via token.dual) which represent
         // ambiguous scanner matches of equal length.
@@ -105,7 +109,76 @@ class SimpleMessageParser {
                 case .EPS:
                     addYield(L: cL, i: cU, k: cI, j: cI)
                     cL = cL.seq!
-                case .T, .TI, .C, .B:
+                case .B:
+                    // Boundary constraints apply between previous and current token.
+                    guard cI.tokenIndex > 0 && cI.tokenIndex < tokens.count else {
+                        failedParses += 1
+                        if cI > furthestMismatchIndex {
+                            furthestMismatchIndex = cI
+                            furthestMismatchSlot = cL
+                            furthestMismatchExpected = [cL.name]
+                        } else if cI == furthestMismatchIndex {
+                            furthestMismatchExpected.insert(cL.name)
+                        }
+                        continue nextDescriptor
+                    }
+                    let left = cI.tokenIndex - 1
+                    let right = cI.tokenIndex
+                    switch cL.name {
+                    case "<:>":     // there must be spacing between previous and current token
+                        if !hasInterTokenGap(at: left, and: right) {
+                            failedParses += 1
+                            if cI > furthestMismatchIndex {
+                                furthestMismatchIndex = cI
+                                furthestMismatchSlot = cL
+                                furthestMismatchExpected = [cL.name]
+                            } else if cI == furthestMismatchIndex {
+                                furthestMismatchExpected.insert(cL.name)
+                            }
+                            continue nextDescriptor
+                        }
+                    case "<.>":     // previous and current token must be on different lines
+                        if lineBreakCountBetweenTokens(at: left, and: right) == 0 {
+                            failedParses += 1
+                            if cI > furthestMismatchIndex {
+                                furthestMismatchIndex = cI
+                                furthestMismatchSlot = cL
+                                furthestMismatchExpected = [cL.name]
+                            } else if cI == furthestMismatchIndex {
+                                furthestMismatchExpected.insert(cL.name)
+                            }
+                            continue nextDescriptor
+                        }
+                    case ">:<":     // previous and current token must be adjacent
+                        if hasInterTokenGap(at: left, and: right) {
+                            failedParses += 1
+                            if cI > furthestMismatchIndex {
+                                furthestMismatchIndex = cI
+                                furthestMismatchSlot = cL
+                                furthestMismatchExpected = [cL.name]
+                            } else if cI == furthestMismatchIndex {
+                                furthestMismatchExpected.insert(cL.name)
+                            }
+                            continue nextDescriptor
+                        }
+                    case ">.<":     // previous and current token must be on the same line
+                        if lineBreakCountBetweenTokens(at: left, and: right) > 0 {
+                            failedParses += 1
+                            if cI > furthestMismatchIndex {
+                                furthestMismatchIndex = cI
+                                furthestMismatchSlot = cL
+                                furthestMismatchExpected = [cL.name]
+                            } else if cI == furthestMismatchIndex {
+                                furthestMismatchExpected.insert(cL.name)
+                            }
+                            continue nextDescriptor
+                        }
+                    default:
+                        fatalError("\(#function): unexpected B.name \(cL.name)")
+                    }
+                    addYield(L: cL, i: cU, k: cI, j: cI)
+                    cL = cL.seq!
+                case .T, .TI, .C:
                     if let next = tokenMatch() {
                         addYield(L: cL, i: cU, k: cI, j: next)
                         cI = next
@@ -332,6 +405,27 @@ class SimpleMessageParser {
             }
             current = next
         }
+    }
+
+    /// Count line breaks from the first token's START index to the second token's START index.
+    /// `\r\n` counts as one line break.
+    func lineBreakCountBetweenTokens(at first: Int, and second: Int) -> Int {
+        let span = input[tokens[first].image.startIndex..<tokens[second].image.startIndex]
+        var breaks = 0
+        var prevWasCR = false
+        for ch in span {
+            let isCR = ch == "\r"
+            let isLF = ch == "\n"
+            if isCR || (isLF && !prevWasCR) { breaks += 1 }
+            prevWasCR = isCR
+        }
+        return breaks
+    }
+
+    /// True when there are source characters between the first token END and the second token START.
+    /// This backs <:> and >:< so synthetic layout tokens can still observe source spacing.
+    func hasInterTokenGap(at first: Int, and second: Int) -> Bool {
+        tokens[first].image.endIndex < tokens[second].image.startIndex
     }
 
 }

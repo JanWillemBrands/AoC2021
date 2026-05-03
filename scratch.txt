@@ -4,7 +4,6 @@
 //func f(dispatched: Set<String>?, _ node: GrammarNode ) {}
 
 ^^^#ApusParser.swift
-^^^#ApusParserBuilder.swift
 ^^^#ApusTerminals.swift
 ^^^#BinarySubtreeRepresentation.swift
 ^^^#CallReturnForest.swift
@@ -14,14 +13,15 @@
 ^^^#GenerateParser.swift
 ^^^#Grammar.swift
 ^^^#GrammarNode.swift
-^^^#GrammarStore.swift
 ^^^#Loggers.swift
 ^^^#ManualOutput.swift
 ^^^#MessageParser.swift
-^^^#NewScanner.swift
 ^^^#OutputTools.swift
 ^^^#SPPF.swift
 ^^^#Scanner.swift
 ^^^#StringExtensions.swift
 ^^^#main.swift
+
+^^^#AllSources.swift
+
 

@@ -13,6 +13,19 @@ When something goes wrong: stop, think, diagnose. Don't patch symptoms. Don't ad
 - **wiki-search** / **wiki-build** — project wiki tools in `tools/wiki/`. `wiki-search` queries the local SQLite index. `wiki-build` rebuilds from markdown notes in `wiki/notes/`
 - **BuildProject** — always build before running. Never trust stale DerivedData. Debug binary: `/Users/janwillem/Library/Developer/Xcode/DerivedData/Advent-ctnlmtxiyxptaedefnxgsxptokfx/Build/Products/Debug/Advent`
 
+## Repository Structure (Thread Learnings)
+
+- Keep `Advent/` as the canonical subtree for project content.
+- Preferred placement:
+  - source: `Advent/*.swift`
+  - tests: `Advent/AdventTests/`
+  - grammars: `Advent/*.apus` and `Advent/grammars/`
+  - research: `Advent/articles/` and `Advent/articles/raw/`
+  - generated parser outputs: `Advent/GeneratedParser/`
+  - docs: `Advent/*.md`
+- Avoid maintaining duplicate active copies at repository root and under `Advent/`.
+- For structure-only changes, use dedicated reorganization commits separate from parser behavior changes.
+
 ## Overview
 This project implements a GLL (Generalized LL) parser following ART (Abstract Recognition Tree) concepts. GLL is a generalized parsing algorithm that can handle all context-free grammars, including ambiguous and left-recursive grammars that traditional LL parsers cannot handle.
 
@@ -166,6 +179,29 @@ The scanner (`Scanner.swift`) partitions token patterns into two groups at init 
 
 This avoids running the regex engine for simple keyword tokens.
 
+### Scanner Modes (Gated Transitions)
+Token patterns can have **gated transitions** — `(gate, pops, push)` triples stored as `GatedTransition` on `TokenPattern.transitions`. These implement a stack-based mode system (like ANTLR lexer modes).
+- **Pre-filter**: patterns whose gate doesn't match the current mode are skipped entirely — their regex never runs. Guard: `transitions.isEmpty || transitions.contains(where: { $0.gate == mode })`
+- **Post-action**: after longest-match wins, the winning transition's pop/push executes unconditionally
+- APUS syntax: `=== "gate"`, `=== "gate" >>> "push"`, `=== "gate" <<<`, `=== "gate" <<< >>> "push"`
+- Multiple transitions per terminal allowed (more expressive than ANTLR which requires rule duplication per mode)
+- `=== ""` gates on empty stack (default mode)
+- Design doc: `Scanner Mode Design.md`
+
+### Scanner Performance: Regex Overhead
+Profiling (`sample` tool) on AllSources.swift (228KB) with the Swift grammar showed:
+- 100% of wall time in `Scanner.scanAllTokens()` — the scanner, not the GLL parser, is the bottleneck for large inputs
+- 58% of scanner time in `Regex.prefixMatch` calls; 21% of that in `loweredProgram.getter` (regex program re-loading overhead per call)
+- The problem is scale, not catastrophic backtracking: ~30 regex patterns x ~40K positions = 1.2M regex calls
+- **Proposed fix**: first-byte dispatch table — precompute which ASCII first bytes each regex pattern can match; skip patterns at O(1) cost per position. Would eliminate ~90% of regex calls
+
+Regex correctness/performance note for identifier-like tokens:
+- Regex alternation is first-successful-branch, not longest-branch.
+- Longest-token resolution in `Scanner.swift` applies across token patterns, not between alternatives inside one regex pattern.
+- For mixed ASCII/Unicode identifier rules, an ASCII-first alternation can incorrectly capture a shorter prefix when a later Unicode-continue character exists.
+- Safe regex pattern shape: `(?:[A-Za-z_][A-Za-z0-9_]*(?!\p{XID_Continue})|[\p{XID_Start}_]\p{XID_Continue}*)`.
+- Preferred optimization direction: scanner-level ASCII fast path with Unicode fallback, so common ASCII identifiers avoid expensive Unicode-property regex calls without changing correctness.
+
 ### Integer Symbol Table & BitSet Hot Path
 The parsing hot path (`testSelect`, `tokenMatch`) uses integer IDs and BitSets instead of strings:
 - Each terminal gets a sequential integer ID following ART numbering: 0=$, 1..T=terminals, T+1=ε
@@ -182,13 +218,16 @@ The character `ε` is used as a sentinel in first sets to signal nullability. It
 The implementation tracks:
 - `descriptorCount`: Total descriptors created
 - `duplicateDescriptorCount`: Duplicate descriptors detected (optimization metric)
+- `suppressedDescriptorCount`: Descriptors pruned by continuation viability checks
+- `yieldCount`: Count of unique distributed yields inserted during parse
 - CPU time for parsing
 - CRF size
 
 ### APUS Gotchas
 - **Comments use `//`**, NOT `#`. The `#` character is not an APUS token and will cause scan errors
 - **Messages (`^^^` blocks)** capture everything between markers including any interstitial text. Don't put comments between `^^^` blocks — they become part of the message content
-- **Named terminals** (e.g. `shift - />>/.`) cannot be referenced by name in production rules — use the string literal `">>"` instead
+- **Named regex terminals** (e.g. `shift - />>/.`) can be referenced by name in production rules — the name `shift` resolves to the terminal
+- **Named literal terminals** (e.g. `fBrace - "{" .`) can also be referenced by name in production rules — `ApusParser.literalAliases` resolves `fBrace` to `{` at parse time. The terminal is still keyed by literal content in `grammar.terminals`
 
 ### Test Organization
 Tests live in `AdventTests/` with this structure:
@@ -225,9 +264,8 @@ Various test cases are available:
 - **Schrödinger tokens**: Ambiguous scanner matches of equal length, linked via `Token.dual`
 - **First/Follow sets**: Prediction sets used by the GLL algorithm to decide which alternatives to explore
 - **ε (epsilon)**: Sentinel in first sets signalling that a grammar position is nullable
-- **Frankenstein token `≋`**: Partial token match sentinel in FIRST sets — allows the parser to split a fused token (e.g. `>>` → `>` `>`) via the `=>>` annotation
+- **Frankenstein token `≋`**: Partial token match sentinel in FIRST sets — allows the parser to split a fused token (e.g. `>>` → `>` `>`) via the `~~~` annotation
 - **Exclusion sets `---()`**: Annotation on a nonterminal that suppresses specific Schrödinger duals, e.g. `safeId = id ---("if" "end")` blocks keyword duals from matching as identifiers
-- **GapChannel**: Lazy spatial relationship channel between adjacent tokens (empty, lineBreaks, column) — foundation for layout-sensitive parsing
 - **`>>|` / `|<<`**: Synthetic indent/dedent tokens injected pre-parse by `injectLayoutTokens()`
 
 ## Design Decisions
@@ -237,6 +275,10 @@ GLL handles all context-free grammars (including ambiguous and left-recursive) w
 
 ### BSR vs SPPF
 SPPF is the original shared packed parse forest from the GLL papers. BSR is a more compact variant. This implementation supports both CRF-based recognition and SPPF-based derivation extraction.
+
+Implementation note from this thread:
+- SPPF and Derivation builders consume distributed `GrammarNode.yield` evidence.
+- The old global BSR yield set was removed; parser statistics now use `yieldCount`.
 
 ### APUS Language Design
 APUS is a self-describing EBNF-style notation (`apus.apus` defines itself). It supports regex-based terminal definitions, semantic actions, and standard EBNF brackets (grouping, option, Kleene closure, positive closure).
@@ -251,18 +293,21 @@ APUS is a self-describing EBNF-style notation (`apus.apus` defines itself). It s
   - `containingNonterminal`, `toplevelAlternate`, `dottedSlot`, `dottedEBNF` — used by `ebnfDot()` for diagram labels. Would produce garbled output under concurrent access.
 - **Rule of thumb**: never use `GrammarNode` statics for values that vary per grammar instance. Prefer local variables in `parse()`, instance properties on `Grammar`, or return values.
 
-### Descriptor Deduplication: Global Set Only
-- An alternative distributed-packed-by-slot dedup mode was implemented and benchmarked. It used per-slot `Set<UInt64>` keyed by `GrammarNode.number` with packed `(k, i)` keys.
-- Benchmarking on the Swift grammar (both individual files and a 227KB concatenated source) showed identical descriptor/CRF/yield counts and no meaningful wall-clock difference (~2% faster at best).
-- The added complexity (enum, switch in hot path, extra array) was not justified. Removed in favour of the single global `Set<Descriptor>`.
+### Descriptor Deduplication: A/B Mode In Tree
+- `MessageParser` now supports two descriptor dedup modes:
+  - `globalDescriptorSet` (single `Set<Descriptor>`)
+  - `distributedPackedBySlot` (parser-owned per-slot `Set<UInt64>` keyed by `GrammarNode.number`, packing `(k, i)` into one 64-bit key)
+- The performance suite (`AdventTests/PerformanceTests.swift`) runs both modes for the same grammars in one pass and prints per-mode summaries.
+- Current small-sample benchmark output in this thread showed a slight win for distributed packed mode on `silent` and `apus`; this remains provisional pending larger-source stress runs.
 
-### Layout-Sensitive Parsing (GapChannel + Indent Injection)
-Three-layer architecture for handling Python-style INDENT/DEDENT and similar layout rules:
-- **Layer 1: GapChannel** (`Scanner.swift`) — lazy struct computing spatial relationships (empty, lineBreaks, column) between adjacent tokens from Substring positions in the original input
-- **Layer 2: Indent injection** (`LayoutTokenInjection.swift`) — free function `injectLayoutTokens()` reads GapChannel, injects synthetic `>>|`/`|<<` tokens pre-parse. Called from `main.swift` between scanning and parsing, only when the grammar defines `>>|`
-- **Layer 3: Constraint checking** (future) — `>:<` `<:>` `>.<` `<.>` post-parse spatial constraints
+### Layout-Sensitive Parsing
+Two-layer architecture for handling Python-style INDENT/DEDENT and similar layout rules:
+- **Layer 1: Indent injection** (`LayoutTokenInjection.swift`) — free function `injectLayoutTokens()` computes line breaks and column positions lazily from token `image.startIndex` positions in the original input string. Injects synthetic `>>|`/`|<<` tokens pre-parse. Called from `main.swift` between scanning and parsing, only when the grammar uses layout tokens. Column computation uses `String.columnOf(_:tabWidth:)` from `StringExtensions.swift`. Line break counting uses the `prevWasCR` guard so `\r\n` counts as one break.
+- **Layer 2: Constraint checking** (future) — `>:<` `<:>` `>.<` `<.>` spatial constraints, modeled as `GrammarNodeKind` pass-through nodes checked during parsing
 
-Key detail: visible NEWLINE tokens (image is only `\n`/`\r`) are skipped by indent injection to avoid false dedents on blank lines. Bracket pairs (configurable) suppress indent tracking inside them.
+Key detail: visible NEWLINE tokens (image is only `\n`/`\r`) are skipped by indent injection to avoid false dedents on blank lines. Bracket pairs (configurable) suppress indent tracking inside them. Line breaks are detected by scanning from the previous token's START (not END) to the current token's start, so that newlines inside visible NEWLINE tokens are caught.
+
+The original `GapChannel` struct was removed — all spatial facts are computed inline from token Substring positions. No auxiliary data structures needed.
 
 Design doc: `Layout Sensitive Parsing.md`
 
@@ -285,14 +330,21 @@ Design doc: `Layout Sensitive Parsing.md`
 - Stripped all `public` annotations — single-module app uses `internal` (default) throughout
 - Retained `private` where it documents intent (scanner internals, helper methods)
 
+### Scanner Modes: Gated Transitions
+- Replaced ad-hoc `>>>` / `<<<` / `===` annotations with structured `GatedTransition` triples
+- Pre-filter/post-action separation eliminates try/rollback — a pattern either participates or it doesn't
+- Swift.apus multiline comments, Python.apus bracket-mode newline suppression both migrated
+- Design doc: `Scanner Mode Design.md`
+
+### Literal Alias Resolution
+- `ApusParser.literalAliases` maps named literal terminal definitions to their literal content
+- `fBrace - "{" .` registers as `grammar.terminals["{"]` but can now be referenced as `fBrace` in production rules
+- Resolves at grammar-parse time — no changes to Scanner, TokenPattern, or Grammar
+
 ## Future Work & TODOs
 
-### Output
-- **TODO: output a simple parse tree from the BSR set, looking like the one in https://github.com/palle-k/Covfefe/blob/master/README.md
-
-### Performance Optimizations
-- **TODO: profile the performance on tortureART and decide on priority of speed and memory
-- **TODO: scanner regex speed** — `rawIdentifier` (`\p{XID_Start}`) and `plainOperator` (`\p{Sm}`, `\p{So}`) are the slowest regex patterns (~68ms and ~63ms over 40K calls on 227KB input). Options: (1) ASCII first-byte guard to skip regex when first byte can't match, (2) replace Unicode property classes with explicit ranges, (3) two-pass scanning with fast ASCII pass first
+- Canonical TODO list moved to `Advent/TODO.md`.
+- Keep this section as a pointer to avoid duplicated TODO lists across assistant notes.
 
 ## References
 - Scott, E. and Johnstone, A. "GLL parse-tree generation"

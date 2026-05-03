@@ -7,9 +7,8 @@
 
 // Layer 2 of the layout-sensitive parsing architecture (see "Layout Sensitive Parsing.md").
 //
-// Reads spatial facts from a GapChannel and injects synthetic >>| (INDENT) and |<< (DEDENT)
-// tokens into the token stream before parsing. The GLL parser sees these as ordinary terminals
-// — no parser modifications required.
+// Injects synthetic >>| (INDENT) and |<< (DEDENT) tokens into the token stream before parsing.
+// The GLL parser sees these as ordinary terminals — no parser modifications required.
 //
 // Bracket suppression: indent tracking is suspended inside matched bracket pairs (e.g. Python's
 // implicit line continuation inside (), [], {}).
@@ -23,7 +22,8 @@ import OSLog
 func injectLayoutTokens(
     tokens: inout [Token],
     trivia: inout [[Token]],
-    gaps: GapChannel,
+    input: String,
+    tabWidth: Int = 8,
     bracketPairs: [(open: String, close: String)] = []
 ) {
 
@@ -53,7 +53,7 @@ func injectLayoutTokens(
             }
             while indentStack.count > 1 {
                 indentStack.removeLast()
-                let marker = gaps.input[tok.image.startIndex..<tok.image.startIndex]
+                let marker = input[tok.image.startIndex..<tok.image.startIndex]
                 newTokens.append(Token(image: marker, kind: "|<<"))
                 newTrivia.append([])
             }
@@ -73,19 +73,37 @@ func injectLayoutTokens(
             continue
         }
 
-        let gap = gaps[i]
+        // Count line breaks from previous token's START (not END) so that
+        // newlines inside visible NEWLINE tokens are detected.
+        // \r\n counts as one line break (the prevWasCR guard).
+        let lineBreaks: Int
+        if i == 0 {
+            lineBreaks = 1
+        } else {
+            let span = input[tokens[i - 1].image.startIndex..<tok.image.startIndex]
+            var breaks = 0
+            var prevWasCR = false
+            for ch in span {
+                let isCR = ch == "\r"
+                let isLF = ch == "\n"
+                if isCR || (isLF && !prevWasCR) { breaks += 1 }
+                prevWasCR = isCR
+            }
+            lineBreaks = breaks
+        }
 
-        if gap.lineBreaks > 0 && bracketDepth == 0 {
+        if lineBreaks > 0 && bracketDepth == 0 {
+            let col = input.columnOf(tok.image.startIndex, tabWidth: tabWidth)
             let insertionPoint = tok.image.startIndex
-            if gap.column > indentStack.last! {
-                indentStack.append(gap.column)
-                let marker = gaps.input[insertionPoint..<insertionPoint]
+            if col > indentStack.last! {
+                indentStack.append(col)
+                let marker = input[insertionPoint..<insertionPoint]
                 newTokens.append(Token(image: marker, kind: ">>|"))
                 newTrivia.append([])
             } else {
-                while indentStack.count > 1 && gap.column < indentStack.last! {
+                while indentStack.count > 1 && col < indentStack.last! {
                     indentStack.removeLast()
-                    let marker = gaps.input[insertionPoint..<insertionPoint]
+                    let marker = input[insertionPoint..<insertionPoint]
                     newTokens.append(Token(image: marker, kind: "|<<"))
                     newTrivia.append([])
                 }

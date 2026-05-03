@@ -77,3 +77,12 @@ Both parser-level mechanisms.
 - Do not move this mechanism to oracle.
 
 See also: `Trivia Oracle.md` section "Exhaustive Swift Trivia Inventory (For This Project)".
+
+## Implemented Learnings (April 2026)
+
+- **Not every keyword/identifier issue is a Schrödinger-token problem.**  
+  Example: `.public` failing in Swift grammar was mainly a use-site grammar context issue.
+- **Use-site and declaration-site identifier rules must stay separate.**  
+  Declaration names (for example `enumCaseName`) stay strict (`identifier`), while member/use sites can allow `softIdentifier`.
+- **`implicitMemberExpression` should accept soft identifiers.**  
+  This enables context-sensitive member references such as `.public` without weakening declaration grammar globally.

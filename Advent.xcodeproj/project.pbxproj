@@ -7,52 +7,58 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4E11B2A62DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */; };
-		4E11B2A82DC0C25D00555BB8 /* CallReturnForest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2A72DC0C25D00555BB8 /* CallReturnForest.swift */; };
-		4E11B2AA2DC10F0600555BB8 /* Descriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2A92DC10F0600555BB8 /* Descriptor.swift */; };
 		4E2C80812F729E88004365DD /* BitCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 4E2C80802F729E88004365DD /* BitCollections */; };
 		4E2C808A2F74D3DE004365DD /* AdventMacros in Frameworks */ = {isa = PBXBuildFile; productRef = 4E2C80892F74D3DE004365DD /* AdventMacros */; };
 		4E2C808C2F74D3EC004365DD /* BitCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 4E2C808B2F74D3EC004365DD /* BitCollections */; };
-		4E2DC6A82F7B777F00DA97F2 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE2FCD82F79066B00105588 /* Loggers.swift */; };
-		4E2DC6A92F7B777F00DA97F2 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE2FCD82F79066B00105588 /* Loggers.swift */; };
 		4E2DC6AB2F7B822700DA97F2 /* BitCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 4E2DC6AA2F7B822700DA97F2 /* BitCollections */; };
-		4E333D712629D60000640821 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D632629D5E400640821 /* main.swift */; };
-		4E333D752629D60A00640821 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D672629D5E400640821 /* StringExtensions.swift */; };
-		4E33E9222CAEDCDD004BD82C /* GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */; };
-		4E34DF7D2C0354E400B2881E /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE422A22BFB319500D99368 /* GrammarNode.swift */; };
-		4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138D2D1C572D00CE6493 /* OutputTools.swift */; };
-		4E4213902D1DC15000CE6493 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138F2D1DC15000CE6493 /* GenerateParser.swift */; };
-		4E5754B22F5893360067165C /* SPPF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5754B12F5893240067165C /* SPPF.swift */; };
-		4E5754B32F5893360067165C /* SPPF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5754B12F5893240067165C /* SPPF.swift */; };
-		4E7709C42F3787E100972246 /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE422A22BFB319500D99368 /* GrammarNode.swift */; };
-		4E7709C52F3787FF00972246 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */; };
-		4E7709CA2F37883300972246 /* CallReturnForest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2A72DC0C25D00555BB8 /* CallReturnForest.swift */; };
-		4E7709CE2F37883300972246 /* GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */; };
-		4E7709CF2F37883300972246 /* OutputTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138D2D1C572D00CE6493 /* OutputTools.swift */; };
-		4E7709D12F37883300972246 /* Descriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2A92DC10F0600555BB8 /* Descriptor.swift */; };
-		4E7709D32F37883300972246 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E333D672629D5E400640821 /* StringExtensions.swift */; };
-		4E7709D42F37883300972246 /* BinarySubtreeRepresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */; };
-		4E7709D72F37883300972246 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E42138F2D1DC15000CE6493 /* GenerateParser.swift */; };
-		4E8D057E2F6453C00081C6D2 /* ApusTerminals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D057D2F6453C00081C6D2 /* ApusTerminals.swift */; };
-		4E8D057F2F6453C00081C6D2 /* ApusTerminals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D057D2F6453C00081C6D2 /* ApusTerminals.swift */; };
-		4E8D05812F6453D90081C6D2 /* ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D05802F6453D90081C6D2 /* ApusParser.swift */; };
-		4E8D05822F6453D90081C6D2 /* ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D05802F6453D90081C6D2 /* ApusParser.swift */; };
-		4E8D05842F64D45B0081C6D2 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D05832F6496C40081C6D2 /* Grammar.swift */; };
-		4E8D05852F64D45B0081C6D2 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D05832F6496C40081C6D2 /* Grammar.swift */; };
-		4E8D05892F662A4F0081C6D2 /* MessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D05882F6628960081C6D2 /* MessageParser.swift */; };
-		4E8D058A2F662A4F0081C6D2 /* MessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D05882F6628960081C6D2 /* MessageParser.swift */; };
+		4E4E48CA2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */; };
+		4E4E48CB2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */; };
+		4E4E48CC2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */; };
 		4E8D058D2F6718310081C6D2 /* AdventMacros in Frameworks */ = {isa = PBXBuildFile; productRef = 4E8D058C2F6718310081C6D2 /* AdventMacros */; };
 		4E8D05902F67204C0081C6D2 /* AdventMacros in Frameworks */ = {isa = PBXBuildFile; productRef = 4E8D058F2F67204C0081C6D2 /* AdventMacros */; };
-		4E8D05A72F701BFE0081C6D2 /* GenerateDerivationDiagram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D05A62F701B630081C6D2 /* GenerateDerivationDiagram.swift */; };
-		4E9BB4DD2F99B72B0015410B /* SimpleMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9BB4DC2F99B6DF0015410B /* SimpleMessageParser.swift */; };
-		4EA3726C2F9CFEA70035A545 /* LayoutTokenInjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA3726B2F9CFEA70035A545 /* LayoutTokenInjection.swift */; };
-		4EA372772F9D9C780035A545 /* LayoutTokenInjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA3726B2F9CFEA70035A545 /* LayoutTokenInjection.swift */; };
-		4EA725442F975A6600D36A84 /* GrammarDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF4F3CD2F8B1E2B005F0E90 /* GrammarDiagnostics.swift */; };
-		4EA725452F975A7E00D36A84 /* GenerateDerivationDiagram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8D05A62F701B630081C6D2 /* GenerateDerivationDiagram.swift */; };
 		4EBA33552F7CFC6F007FB853 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 4EBA33542F7CFC6F007FB853 /* ArgumentParser */; };
-		4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */; };
-		4EE2FCD92F79070A00105588 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE2FCD82F79066B00105588 /* Loggers.swift */; };
-		4EF4F3CE2F8B1E5B005F0E90 /* GrammarDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF4F3CD2F8B1E2B005F0E90 /* GrammarDiagnostics.swift */; };
+		4EEBC98D2F9DECF000E838A7 /* GrammarDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9812F9DECF000E838A7 /* GrammarDiagnostics.swift */; };
+		4EEBC98E2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */; };
+		4EEBC98F2F9DECF000E838A7 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC98C2F9DECF000E838A7 /* StringExtensions.swift */; };
+		4EEBC9902F9DECF000E838A7 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9842F9DECF000E838A7 /* Loggers.swift */; };
+		4EEBC9912F9DECF000E838A7 /* MessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9872F9DECF000E838A7 /* MessageParser.swift */; };
+		4EEBC9922F9DECF000E838A7 /* GenerateDerivationDiagram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97D2F9DECF000E838A7 /* GenerateDerivationDiagram.swift */; };
+		4EEBC9932F9DECF000E838A7 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9892F9DECF000E838A7 /* Scanner.swift */; };
+		4EEBC9942F9DECF000E838A7 /* CallReturnForest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97B2F9DECF000E838A7 /* CallReturnForest.swift */; };
+		4EEBC9952F9DECF000E838A7 /* SimpleMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC98A2F9DECF000E838A7 /* SimpleMessageParser.swift */; };
+		4EEBC9962F9DECF000E838A7 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9802F9DECF000E838A7 /* Grammar.swift */; };
+		4EEBC9972F9DECF000E838A7 /* ApusTerminals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */; };
+		4EEBC9982F9DECF000E838A7 /* GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97E2F9DECF000E838A7 /* GenerateDiagrams.swift */; };
+		4EEBC9992F9DECF000E838A7 /* ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9782F9DECF000E838A7 /* ApusParser.swift */; };
+		4EEBC99A2F9DECF000E838A7 /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9822F9DECF000E838A7 /* GrammarNode.swift */; };
+		4EEBC99B2F9DECF000E838A7 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9852F9DECF000E838A7 /* main.swift */; };
+		4EEBC99C2F9DECF000E838A7 /* ManualOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9862F9DECF000E838A7 /* ManualOutput.swift */; };
+		4EEBC99D2F9DECF000E838A7 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97F2F9DECF000E838A7 /* GenerateParser.swift */; };
+		4EEBC99E2F9DECF000E838A7 /* OutputTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9882F9DECF000E838A7 /* OutputTools.swift */; };
+		4EEBC99F2F9DECF000E838A7 /* Descriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97C2F9DECF000E838A7 /* Descriptor.swift */; };
+		4EEBC9A02F9DECF000E838A7 /* LayoutTokenInjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9832F9DECF000E838A7 /* LayoutTokenInjection.swift */; };
+		4EEBC9A12F9DECF000E838A7 /* SPPF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC98B2F9DECF000E838A7 /* SPPF.swift */; };
+		4EEBC9A22F9DECF000E838A7 /* GrammarDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9812F9DECF000E838A7 /* GrammarDiagnostics.swift */; };
+		4EEBC9A32F9DECF000E838A7 /* BinarySubtreeRepresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */; };
+		4EEBC9A42F9DECF000E838A7 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC98C2F9DECF000E838A7 /* StringExtensions.swift */; };
+		4EEBC9A52F9DECF000E838A7 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9842F9DECF000E838A7 /* Loggers.swift */; };
+		4EEBC9A62F9DECF000E838A7 /* MessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9872F9DECF000E838A7 /* MessageParser.swift */; };
+		4EEBC9A72F9DECF000E838A7 /* GenerateDerivationDiagram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97D2F9DECF000E838A7 /* GenerateDerivationDiagram.swift */; };
+		4EEBC9A82F9DECF000E838A7 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9892F9DECF000E838A7 /* Scanner.swift */; };
+		4EEBC9A92F9DECF000E838A7 /* CallReturnForest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97B2F9DECF000E838A7 /* CallReturnForest.swift */; };
+		4EEBC9AA2F9DECF000E838A7 /* SimpleMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC98A2F9DECF000E838A7 /* SimpleMessageParser.swift */; };
+		4EEBC9AB2F9DECF000E838A7 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9802F9DECF000E838A7 /* Grammar.swift */; };
+		4EEBC9AC2F9DECF000E838A7 /* ApusTerminals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */; };
+		4EEBC9AD2F9DECF000E838A7 /* GenerateDiagrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97E2F9DECF000E838A7 /* GenerateDiagrams.swift */; };
+		4EEBC9AE2F9DECF000E838A7 /* ApusParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9782F9DECF000E838A7 /* ApusParser.swift */; };
+		4EEBC9AF2F9DECF000E838A7 /* GrammarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9822F9DECF000E838A7 /* GrammarNode.swift */; };
+		4EEBC9B02F9DECF000E838A7 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9852F9DECF000E838A7 /* main.swift */; };
+		4EEBC9B12F9DECF000E838A7 /* ManualOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9862F9DECF000E838A7 /* ManualOutput.swift */; };
+		4EEBC9B22F9DECF000E838A7 /* GenerateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97F2F9DECF000E838A7 /* GenerateParser.swift */; };
+		4EEBC9B32F9DECF000E838A7 /* OutputTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9882F9DECF000E838A7 /* OutputTools.swift */; };
+		4EEBC9B42F9DECF000E838A7 /* Descriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97C2F9DECF000E838A7 /* Descriptor.swift */; };
+		4EEBC9B52F9DECF000E838A7 /* LayoutTokenInjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9832F9DECF000E838A7 /* LayoutTokenInjection.swift */; };
+		4EEBC9B62F9DECF000E838A7 /* SPPF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC98B2F9DECF000E838A7 /* SPPF.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -78,66 +84,149 @@
 
 /* Begin PBXFileReference section */
 		4E11B2A42DA274B200555BB8 /* scratch.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = scratch.txt; sourceTree = "<group>"; };
-		4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinarySubtreeRepresentation.swift; sourceTree = "<group>"; };
-		4E11B2A72DC0C25D00555BB8 /* CallReturnForest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallReturnForest.swift; sourceTree = "<group>"; };
-		4E11B2A92DC10F0600555BB8 /* Descriptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Descriptor.swift; sourceTree = "<group>"; };
+		4E16D4762FA7A126008E2C1A /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TODO.md; sourceTree = "<group>"; };
 		4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = AfroozehHunt.apus; sourceTree = "<group>"; };
 		4E333D622629D5E400640821 /* apusWithAction.apus */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = apusWithAction.apus; sourceTree = "<group>"; };
-		4E333D632629D5E400640821 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		4E333D672629D5E400640821 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
 		4E333D692629D5E500640821 /* TortureSyntax.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = TortureSyntax.apus; sourceTree = "<group>"; };
 		4E333D6A2629D5E500640821 /* test.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = test.apus; sourceTree = "<group>"; };
-		4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateDiagrams.swift; sourceTree = "<group>"; };
-		4E34DF7E2C08042C00B2881E /* apus.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apus.apus; sourceTree = "<group>"; };
+		4E34DF7E2C08042C00B2881E /* apus.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.javascript; fileEncoding = 4; path = apus.apus; sourceTree = "<group>"; };
 		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
-		4E42138D2D1C572D00CE6493 /* OutputTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputTools.swift; sourceTree = "<group>"; };
-		4E42138F2D1DC15000CE6493 /* GenerateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateParser.swift; sourceTree = "<group>"; };
-		4E5754B12F5893240067165C /* SPPF.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SPPF.swift; sourceTree = "<group>"; };
+		4E4E48A12FA219220094DFC6 /* A reference GLL implementation.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "A reference GLL implementation.txt"; sourceTree = "<group>"; };
+		4E4E48A22FA219220094DFC6 /* Derivation representation using binary subtree sets.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Derivation representation using binary subtree sets.txt"; sourceTree = "<group>"; };
+		4E4E48A32FA219220094DFC6 /* Exploring and visualizing GLL parsing.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Exploring and visualizing GLL parsing.txt"; sourceTree = "<group>"; };
+		4E4E48A42FA219220094DFC6 /* Faster, Practical GLL Parsing.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Faster, Practical GLL Parsing.txt"; sourceTree = "<group>"; };
+		4E4E48A52FA219220094DFC6 /* First Follow LL set construction.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "First Follow LL set construction.txt"; sourceTree = "<group>"; };
+		4E4E48A62FA219220094DFC6 /* GLL parse-tree generation.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "GLL parse-tree generation.txt"; sourceTree = "<group>"; };
+		4E4E48A72FA219220094DFC6 /* GLL Syntax Analysers For EBNF Grammars.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "GLL Syntax Analysers For EBNF Grammars.txt"; sourceTree = "<group>"; };
+		4E4E48A82FA219220094DFC6 /* Graph-structured Stack and Natural Language Parsing.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Graph-structured Stack and Natural Language Parsing.txt"; sourceTree = "<group>"; };
+		4E4E48A92FA219220094DFC6 /* Multiple Lexicalisation - A Java Based Study.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Multiple Lexicalisation - A Java Based Study.txt"; sourceTree = "<group>"; };
+		4E4E48AA2FA219220094DFC6 /* Practical general top-down parsers.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Practical general top-down parsers.txt"; sourceTree = "<group>"; };
+		4E4E48AB2FA219220094DFC6 /* Principled Parsing for Indentation-Sensitive Languages.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Principled Parsing for Indentation-Sensitive Languages.txt"; sourceTree = "<group>"; };
+		4E4E48AC2FA219220094DFC6 /* referenceImplementationSlides.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = referenceImplementationSlides.txt; sourceTree = "<group>"; };
+		4E4E48AD2FA219220094DFC6 /* Schrodinger’s token.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Schrodinger’s token.txt"; sourceTree = "<group>"; };
+		4E4E48AE2FA219220094DFC6 /* Structuring the GLL parsing algorithm for performance.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Structuring the GLL parsing algorithm for performance.txt"; sourceTree = "<group>"; };
+		4E4E48B02FA219220094DFC6 /* A reference GLL implementation.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "A reference GLL implementation.pdf"; sourceTree = "<group>"; };
+		4E4E48B12FA219220094DFC6 /* Derivation representation using binary subtree sets.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Derivation representation using binary subtree sets.pdf"; sourceTree = "<group>"; };
+		4E4E48B22FA219220094DFC6 /* Exploring and visualizing GLL parsing.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Exploring and visualizing GLL parsing.pdf"; sourceTree = "<group>"; };
+		4E4E48B32FA219220094DFC6 /* Faster, Practical GLL Parsing.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Faster, Practical GLL Parsing.pdf"; sourceTree = "<group>"; };
+		4E4E48B42FA219220094DFC6 /* First Follow LL set construction.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "First Follow LL set construction.pdf"; sourceTree = "<group>"; };
+		4E4E48B52FA219220094DFC6 /* GLL parse-tree generation.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "GLL parse-tree generation.pdf"; sourceTree = "<group>"; };
+		4E4E48B62FA219220094DFC6 /* GLL Syntax Analysers For EBNF Grammars.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "GLL Syntax Analysers For EBNF Grammars.pdf"; sourceTree = "<group>"; };
+		4E4E48B72FA219220094DFC6 /* Graph-structured Stack and Natural Language Parsing.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Graph-structured Stack and Natural Language Parsing.pdf"; sourceTree = "<group>"; };
+		4E4E48B82FA219220094DFC6 /* Multiple Lexicalisation - A Java Based Study.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Multiple Lexicalisation - A Java Based Study.pdf"; sourceTree = "<group>"; };
+		4E4E48B92FA219220094DFC6 /* Practical general top-down parsers.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Practical general top-down parsers.pdf"; sourceTree = "<group>"; };
+		4E4E48BA2FA219220094DFC6 /* Principled Parsing for Indentation-Sensitive Languages.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Principled Parsing for Indentation-Sensitive Languages.pdf"; sourceTree = "<group>"; };
+		4E4E48BB2FA219220094DFC6 /* referenceImplementationSlides.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = referenceImplementationSlides.pdf; sourceTree = "<group>"; };
+		4E4E48BC2FA219220094DFC6 /* Schrodinger’s token.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Schrodinger’s token.pdf"; sourceTree = "<group>"; };
+		4E4E48BD2FA219220094DFC6 /* Structuring the GLL parsing algorithm for performance.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Structuring the GLL parsing algorithm for performance.pdf"; sourceTree = "<group>"; };
+		4E4E48BF2FA219ED0094DFC6 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		4E4E48C22FA219ED0094DFC6 /* codex.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = codex.md; sourceTree = "<group>"; };
+		4E4E48C32FA219ED0094DFC6 /* Frankenstein Tokens.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Frankenstein Tokens.md"; sourceTree = "<group>"; };
+		4E4E48C42FA219ED0094DFC6 /* Layout Sensitive Parsing.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Layout Sensitive Parsing.md"; sourceTree = "<group>"; };
+		4E4E48C52FA219ED0094DFC6 /* Scanner Mode Design.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Scanner Mode Design.md"; sourceTree = "<group>"; };
+		4E4E48C62FA219ED0094DFC6 /* Schrodinger Tokens.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Schrodinger Tokens.md"; sourceTree = "<group>"; };
+		4E4E48C72FA219ED0094DFC6 /* Trivia Oracle.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Trivia Oracle.md"; sourceTree = "<group>"; };
+		4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerTelemetry.swift; sourceTree = "<group>"; };
 		4E5754B42F5894BB0067165C /* SPPF.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = SPPF.svg; sourceTree = "<group>"; };
 		4E7709B32F37870300972246 /* AdventTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AdventTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E7B09942FA735CC00E44E20 /* layout.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.javascript; path = layout.apus; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = apusAmbiguous.apus; sourceTree = "<group>"; };
 		4E89AAED2D6DF2EE006A0BBA /* ART.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
 		4E89AAF32D7667C3006A0BBA /* tortureART.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = tortureART.apus; sourceTree = "<group>"; };
-		4E8D057D2F6453C00081C6D2 /* ApusTerminals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusTerminals.swift; sourceTree = "<group>"; };
-		4E8D05802F6453D90081C6D2 /* ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParser.swift; sourceTree = "<group>"; };
-		4E8D05832F6496C40081C6D2 /* Grammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grammar.swift; sourceTree = "<group>"; };
 		4E8D05872F65845F0081C6D2 /* postRunActions.log */ = {isa = PBXFileReference; lastKnownFileType = text; path = postRunActions.log; sourceTree = "<group>"; };
-		4E8D05882F6628960081C6D2 /* MessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageParser.swift; sourceTree = "<group>"; };
 		4E8D05952F6A183C0081C6D2 /* GeneratedParser */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = GeneratedParser; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E8D05A02F6EC70A0081C6D2 /* tortureEBNF.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = tortureEBNF.apus; sourceTree = "<group>"; };
 		4E8D05A32F6FEE810081C6D2 /* SPPF.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = SPPF.gv; sourceTree = "<group>"; };
-		4E8D05A62F701B630081C6D2 /* GenerateDerivationDiagram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateDerivationDiagram.swift; sourceTree = "<group>"; };
 		4E8D05A82F701CDD0081C6D2 /* Derivations.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = Derivations.gv; sourceTree = "<group>"; };
 		4E8D05A92F701D560081C6D2 /* Derivations.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Derivations.svg; sourceTree = "<group>"; };
-		4E951C132D8874BD008B1012 /* Swift.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = Swift.apus; sourceTree = "<group>"; };
-		4E9BB4DC2F99B6DF0015410B /* SimpleMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleMessageParser.swift; sourceTree = "<group>"; };
-		4EA3726B2F9CFEA70035A545 /* LayoutTokenInjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutTokenInjection.swift; sourceTree = "<group>"; };
-		4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
+		4E951C132D8874BD008B1012 /* Swift.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.javascript; path = Swift.apus; sourceTree = "<group>"; };
 		4EBB87102F7DED4D00037029 /* attributeHunt.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = attributeHunt.apus; sourceTree = "<group>"; };
 		4EBB87132F7F4EC100037029 /* Swift EBNF.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Swift EBNF.apus"; sourceTree = "<group>"; };
 		4EBB87142F80FC6C00037029 /* ScanModeTest.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = ScanModeTest.apus; sourceTree = "<group>"; };
 		4EBB87152F81103800037029 /* CommentTest.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = CommentTest.apus; sourceTree = "<group>"; };
 		4EC5CE942BBC111E0045F751 /* apusUnicode.apus */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = apusUnicode.apus; sourceTree = "<group>"; };
-		4ECD589F2F9AEB2000317F71 /* A reference GLL implementation.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "A reference GLL implementation.pdf"; sourceTree = "<group>"; };
-		4ECD58A02F9AEB2000317F71 /* Derivation representation using binary subtree sets.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Derivation representation using binary subtree sets.pdf"; sourceTree = "<group>"; };
-		4ECD58A12F9AEB2000317F71 /* Exploring and visualizing GLL parsing.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Exploring and visualizing GLL parsing.pdf"; sourceTree = "<group>"; };
-		4ECD58A22F9AEB2000317F71 /* Faster, Practical GLL Parsing.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Faster, Practical GLL Parsing.pdf"; sourceTree = "<group>"; };
-		4ECD58A32F9AEB2000317F71 /* First Follow LL set construction.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "First Follow LL set construction.pdf"; sourceTree = "<group>"; };
-		4ECD58A42F9AEB2000317F71 /* Frankenstein Tokens.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Frankenstein Tokens.md"; sourceTree = "<group>"; };
-		4ECD58A52F9AEB2000317F71 /* GLL parse-tree generation.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "GLL parse-tree generation.pdf"; sourceTree = "<group>"; };
-		4ECD58A62F9AEB2000317F71 /* GLL Syntax Analysers For EBNF Grammars.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "GLL Syntax Analysers For EBNF Grammars.pdf"; sourceTree = "<group>"; };
-		4ECD58A72F9AEB2000317F71 /* Graph-structured Stack and Natural Language Parsing.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Graph-structured Stack and Natural Language Parsing.pdf"; sourceTree = "<group>"; };
-		4ECD58A82F9AEB2000317F71 /* Multiple Lexicalisation - A Java Based Study.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Multiple Lexicalisation - A Java Based Study.pdf"; sourceTree = "<group>"; };
-		4ECD58A92F9AEB2000317F71 /* Practical general top-down parsers.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Practical general top-down parsers.pdf"; sourceTree = "<group>"; };
-		4ECD58AA2F9AEB2000317F71 /* referenceImplementationSlides.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = referenceImplementationSlides.pdf; sourceTree = "<group>"; };
-		4ECD58AB2F9AEB2000317F71 /* Schrodinger’s token.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Schrodinger’s token.pdf"; sourceTree = "<group>"; };
-		4ECD58AC2F9AEB2000317F71 /* Structuring the GLL parsing algorithm for performance.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Structuring the GLL parsing algorithm for performance.pdf"; sourceTree = "<group>"; };
 		4ECF5BE62F3748DB008E692B /* claude.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = claude.md; sourceTree = "<group>"; };
-		4EE2FCD32F76263A00105588 /* ApusParserBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParserBuilder.swift; sourceTree = "<group>"; };
 		4EE2FCD72F77C38400105588 /* silent.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = silent.apus; sourceTree = "<group>"; };
-		4EE2FCD82F79066B00105588 /* Loggers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Loggers.swift; sourceTree = "<group>"; };
-		4EE422A22BFB319500D99368 /* GrammarNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
-		4EF4F3CD2F8B1E2B005F0E90 /* GrammarDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarDiagnostics.swift; sourceTree = "<group>"; };
+		4EEBC9782F9DECF000E838A7 /* ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParser.swift; sourceTree = "<group>"; };
+		4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusTerminals.swift; sourceTree = "<group>"; };
+		4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinarySubtreeRepresentation.swift; sourceTree = "<group>"; };
+		4EEBC97B2F9DECF000E838A7 /* CallReturnForest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallReturnForest.swift; sourceTree = "<group>"; };
+		4EEBC97C2F9DECF000E838A7 /* Descriptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Descriptor.swift; sourceTree = "<group>"; };
+		4EEBC97D2F9DECF000E838A7 /* GenerateDerivationDiagram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateDerivationDiagram.swift; sourceTree = "<group>"; };
+		4EEBC97E2F9DECF000E838A7 /* GenerateDiagrams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateDiagrams.swift; sourceTree = "<group>"; };
+		4EEBC97F2F9DECF000E838A7 /* GenerateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateParser.swift; sourceTree = "<group>"; };
+		4EEBC9802F9DECF000E838A7 /* Grammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grammar.swift; sourceTree = "<group>"; };
+		4EEBC9812F9DECF000E838A7 /* GrammarDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarDiagnostics.swift; sourceTree = "<group>"; };
+		4EEBC9822F9DECF000E838A7 /* GrammarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarNode.swift; sourceTree = "<group>"; };
+		4EEBC9832F9DECF000E838A7 /* LayoutTokenInjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutTokenInjection.swift; sourceTree = "<group>"; };
+		4EEBC9842F9DECF000E838A7 /* Loggers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Loggers.swift; sourceTree = "<group>"; };
+		4EEBC9852F9DECF000E838A7 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		4EEBC9862F9DECF000E838A7 /* ManualOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualOutput.swift; sourceTree = "<group>"; };
+		4EEBC9872F9DECF000E838A7 /* MessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageParser.swift; sourceTree = "<group>"; };
+		4EEBC9882F9DECF000E838A7 /* OutputTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputTools.swift; sourceTree = "<group>"; };
+		4EEBC9892F9DECF000E838A7 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
+		4EEBC98A2F9DECF000E838A7 /* SimpleMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleMessageParser.swift; sourceTree = "<group>"; };
+		4EEBC98B2F9DECF000E838A7 /* SPPF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPPF.swift; sourceTree = "<group>"; };
+		4EEBC98C2F9DECF000E838A7 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
+		4EEBC9BC2F9EF35000E838A7 /* 00readme.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = 00readme.txt; sourceTree = "<group>"; };
+		4EEBC9BD2F9EF35000E838A7 /* cpp2017Draft.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = cpp2017Draft.pdf; sourceTree = "<group>"; };
+		4EEBC9BE2F9EF35000E838A7 /* cpp2017Draft.raw */ = {isa = PBXFileReference; lastKnownFileType = text; path = cpp2017Draft.raw; sourceTree = "<group>"; };
+		4EEBC9BF2F9EF35000E838A7 /* cpp2017DraftFromPDF.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = cpp2017DraftFromPDF.txt; sourceTree = "<group>"; };
+		4EEBC9C12F9EF35000E838A7 /* 00README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = 00README.txt; sourceTree = "<group>"; };
+		4EEBC9C22F9EF35000E838A7 /* extractJLS18.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = extractJLS18.bat; sourceTree = "<group>"; };
+		4EEBC9C32F9EF35000E838A7 /* jls18.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18.art; sourceTree = "<group>"; };
+		4EEBC9C42F9EF35000E838A7 /* jls18.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = jls18.pdf; sourceTree = "<group>"; };
+		4EEBC9C52F9EF35000E838A7 /* jls18_sec3_FromHTML.raw */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18_sec3_FromHTML.raw; sourceTree = "<group>"; };
+		4EEBC9C62F9EF35000E838A7 /* jls18_sec19_FromHTML.raw */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18_sec19_FromHTML.raw; sourceTree = "<group>"; };
+		4EEBC9C72F9EF35000E838A7 /* jls18_sec19_FromPDF.raw */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18_sec19_FromPDF.raw; sourceTree = "<group>"; };
+		4EEBC9C82F9EF35000E838A7 /* jls18Base.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18Base.art; sourceTree = "<group>"; };
+		4EEBC9C92F9EF35000E838A7 /* jls18Candidate.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18Candidate.art; sourceTree = "<group>"; };
+		4EEBC9CA2F9EF35000E838A7 /* JLS18CharacterClassRules.raw */ = {isa = PBXFileReference; lastKnownFileType = text; path = JLS18CharacterClassRules.raw; sourceTree = "<group>"; };
+		4EEBC9CB2F9EF35000E838A7 /* jls18LexCharacters.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18LexCharacters.art; sourceTree = "<group>"; };
+		4EEBC9CD2F9EF35000E838A7 /* javaCharGLL.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = javaCharGLL.art; sourceTree = "<group>"; };
+		4EEBC9CE2F9EF35000E838A7 /* jls18bnfV3.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18bnfV3.art; sourceTree = "<group>"; };
+		4EEBC9D02F9EF35000E838A7 /* easTable.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = easTable.bat; sourceTree = "<group>"; };
+		4EEBC9D12F9EF35000E838A7 /* easTable.bt */ = {isa = PBXFileReference; lastKnownFileType = text; path = easTable.bt; sourceTree = "<group>"; };
+		4EEBC9D22F9EF35000E838A7 /* easTable.xlsx */ = {isa = PBXFileReference; lastKnownFileType = file; path = easTable.xlsx; sourceTree = "<group>"; };
+		4EEBC9D32F9EF35000E838A7 /* jls18bnfV3.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18bnfV3.art; sourceTree = "<group>"; };
+		4EEBC9D42F9EF35000E838A7 /* jls18bnfV3iden.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18bnfV3iden.art; sourceTree = "<group>"; };
+		4EEBC9D52F9EF35000E838A7 /* jls18bnfV3IdenLA.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = jls18bnfV3IdenLA.art; sourceTree = "<group>"; };
+		4EEBC9D62F9EF35000E838A7 /* lexDFA.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = lexDFA.bat; sourceTree = "<group>"; };
+		4EEBC9D72F9EF35000E838A7 /* ListViewTest.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = ListViewTest.java; sourceTree = "<group>"; };
+		4EEBC9D82F9EF35000E838A7 /* ListViewTestGTfix.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = ListViewTestGTfix.java; sourceTree = "<group>"; };
+		4EEBC9DA2F9EF35000E838A7 /* cs1801trimStrFix.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = cs1801trimStrFix.java; sourceTree = "<group>"; };
+		4EEBC9DB2F9EF35000E838A7 /* CssParser.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = CssParser.java; sourceTree = "<group>"; };
+		4EEBC9DC2F9EF35000E838A7 /* Ex2.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = Ex2.java; sourceTree = "<group>"; };
+		4EEBC9DD2F9EF35000E838A7 /* LifeStrFix.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = LifeStrFix.java; sourceTree = "<group>"; };
+		4EEBC9DE2F9EF35000E838A7 /* LindenMayer.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = LindenMayer.java; sourceTree = "<group>"; };
+		4EEBC9DF2F9EF35000E838A7 /* ListViewTest.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = ListViewTest.java; sourceTree = "<group>"; };
+		4EEBC9E02F9EF35000E838A7 /* MultipleGradientPaintContext.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = MultipleGradientPaintContext.java; sourceTree = "<group>"; };
+		4EEBC9E12F9EF35000E838A7 /* Sandbox.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = Sandbox.java; sourceTree = "<group>"; };
+		4EEBC9E22F9EF35000E838A7 /* TreeTableViewTest.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = TreeTableViewTest.java; sourceTree = "<group>"; };
+		4EEBC9E42F9EF35000E838A7 /* 00README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = 00README.txt; sourceTree = "<group>"; };
+		4EEBC9E52F9EF35000E838A7 /* dataOne.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = dataOne.bat; sourceTree = "<group>"; };
+		4EEBC9E62F9EF35000E838A7 /* dataRun.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = dataRun.bat; sourceTree = "<group>"; };
+		4EEBC9E72F9EF35000E838A7 /* lexDFA.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = lexDFA.bat; sourceTree = "<group>"; };
+		4EEBC9E82F9EF35000E838A7 /* parseBNF.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = parseBNF.bat; sourceTree = "<group>"; };
+		4EEBC9E92F9EF35000E838A7 /* parsejfxSourceFlatCompressed.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = parsejfxSourceFlatCompressed.bat; sourceTree = "<group>"; };
+		4EEBC9EA2F9EF35000E838A7 /* parseSLETestSet.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = parseSLETestSet.bat; sourceTree = "<group>"; };
+		4EEBC9EB2F9EF35000E838A7 /* parseTwo.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = parseTwo.bat; sourceTree = "<group>"; };
+		4EEBC9ED2F9EF35000E838A7 /* 00readme.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = 00readme.txt; sourceTree = "<group>"; };
+		4EEBC9EE2F9EF35000E838A7 /* Python.apus */ = {isa = PBXFileReference; lastKnownFileType = text; path = Python.apus; sourceTree = "<group>"; };
+		4EEBC9EF2F9EF35000E838A7 /* Python3.14.4.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Python3.14.4.txt; sourceTree = "<group>"; };
+		4EEBC9F12F9EF35000E838A7 /* AJsmlFullBNF.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = AJsmlFullBNF.art; sourceTree = "<group>"; };
+		4EEBC9F22F9EF35000E838A7 /* sml97-defn.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "sml97-defn.pdf"; sourceTree = "<group>"; };
+		4EEBC9F32F9EF35000E838A7 /* smlFullBNFeas.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = smlFullBNFeas.art; sourceTree = "<group>"; };
+		4EEBC9F42F9EF35000E838A7 /* smlSpec.art */ = {isa = PBXFileReference; lastKnownFileType = text; path = smlSpec.art; sourceTree = "<group>"; };
+		4EEBC9F62F9EF35000E838A7 /* 00readme.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = 00readme.txt; sourceTree = "<group>"; };
+		4EEBC9F72F9EF35000E838A7 /* Grammar of whitespace.docx */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Grammar of whitespace.docx"; sourceTree = "<group>"; };
+		4EEBC9F82F9EF35000E838A7 /* Keywords versus Identifiers.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "Keywords versus Identifiers.html"; sourceTree = "<group>"; };
+		4EEBC9F92F9EF35000E838A7 /* Swift6.3Grammar.docx */ = {isa = PBXFileReference; lastKnownFileType = file; path = Swift6.3Grammar.docx; sourceTree = "<group>"; };
+		4EEBC9FA2F9EF35000E838A7 /* Swift6Grammar.docx */ = {isa = PBXFileReference; lastKnownFileType = file; path = Swift6Grammar.docx; sourceTree = "<group>"; };
+		4EEBC9FB2F9EF35000E838A7 /* Swift6GrammarDraft.docx */ = {isa = PBXFileReference; lastKnownFileType = file; path = Swift6GrammarDraft.docx; sourceTree = "<group>"; };
+		4EEBC9FC2F9EF35000E838A7 /* Swift6GrammarDraft.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Swift6GrammarDraft.txt; sourceTree = "<group>"; };
+		4EEBC9FF2F9F69E500E838A7 /* BUILD.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = BUILD.md; sourceTree = "<group>"; };
+		4EEBCA032FA03A2C00E838A7 /* PEG-GLL-Oracle-Pruning.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "PEG-GLL-Oracle-Pruning.md"; sourceTree = "<group>"; };
 		CB6B7315257EA9F400B929C6 /* Advent */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Advent; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -178,6 +267,49 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4E4E48AF2FA219220094DFC6 /* raw */ = {
+			isa = PBXGroup;
+			children = (
+				4E4E48A12FA219220094DFC6 /* A reference GLL implementation.txt */,
+				4E4E48A22FA219220094DFC6 /* Derivation representation using binary subtree sets.txt */,
+				4E4E48A32FA219220094DFC6 /* Exploring and visualizing GLL parsing.txt */,
+				4E4E48A42FA219220094DFC6 /* Faster, Practical GLL Parsing.txt */,
+				4E4E48A52FA219220094DFC6 /* First Follow LL set construction.txt */,
+				4E4E48A62FA219220094DFC6 /* GLL parse-tree generation.txt */,
+				4E4E48A72FA219220094DFC6 /* GLL Syntax Analysers For EBNF Grammars.txt */,
+				4E4E48A82FA219220094DFC6 /* Graph-structured Stack and Natural Language Parsing.txt */,
+				4E4E48A92FA219220094DFC6 /* Multiple Lexicalisation - A Java Based Study.txt */,
+				4E4E48AA2FA219220094DFC6 /* Practical general top-down parsers.txt */,
+				4E4E48AB2FA219220094DFC6 /* Principled Parsing for Indentation-Sensitive Languages.txt */,
+				4E4E48AC2FA219220094DFC6 /* referenceImplementationSlides.txt */,
+				4E4E48AD2FA219220094DFC6 /* Schrodinger’s token.txt */,
+				4E4E48AE2FA219220094DFC6 /* Structuring the GLL parsing algorithm for performance.txt */,
+			);
+			path = raw;
+			sourceTree = "<group>";
+		};
+		4E4E48BE2FA219220094DFC6 /* articles */ = {
+			isa = PBXGroup;
+			children = (
+				4E4E48AF2FA219220094DFC6 /* raw */,
+				4E4E48B02FA219220094DFC6 /* A reference GLL implementation.pdf */,
+				4E4E48B12FA219220094DFC6 /* Derivation representation using binary subtree sets.pdf */,
+				4E4E48B22FA219220094DFC6 /* Exploring and visualizing GLL parsing.pdf */,
+				4E4E48B32FA219220094DFC6 /* Faster, Practical GLL Parsing.pdf */,
+				4E4E48B42FA219220094DFC6 /* First Follow LL set construction.pdf */,
+				4E4E48B52FA219220094DFC6 /* GLL parse-tree generation.pdf */,
+				4E4E48B62FA219220094DFC6 /* GLL Syntax Analysers For EBNF Grammars.pdf */,
+				4E4E48B72FA219220094DFC6 /* Graph-structured Stack and Natural Language Parsing.pdf */,
+				4E4E48B82FA219220094DFC6 /* Multiple Lexicalisation - A Java Based Study.pdf */,
+				4E4E48B92FA219220094DFC6 /* Practical general top-down parsers.pdf */,
+				4E4E48BA2FA219220094DFC6 /* Principled Parsing for Indentation-Sensitive Languages.pdf */,
+				4E4E48BB2FA219220094DFC6 /* referenceImplementationSlides.pdf */,
+				4E4E48BC2FA219220094DFC6 /* Schrodinger’s token.pdf */,
+				4E4E48BD2FA219220094DFC6 /* Structuring the GLL parsing algorithm for performance.pdf */,
+			);
+			path = articles;
+			sourceTree = "<group>";
+		};
 		4E8D058E2F67204C0081C6D2 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -185,24 +317,141 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		4ECD58AD2F9AEB2000317F71 /* articles */ = {
+		4EEBC9C02F9EF35000E838A7 /* cpp2017Draft */ = {
 			isa = PBXGroup;
 			children = (
-				4ECD589F2F9AEB2000317F71 /* A reference GLL implementation.pdf */,
-				4ECD58A02F9AEB2000317F71 /* Derivation representation using binary subtree sets.pdf */,
-				4ECD58A12F9AEB2000317F71 /* Exploring and visualizing GLL parsing.pdf */,
-				4ECD58A22F9AEB2000317F71 /* Faster, Practical GLL Parsing.pdf */,
-				4ECD58A32F9AEB2000317F71 /* First Follow LL set construction.pdf */,
-				4ECD58A52F9AEB2000317F71 /* GLL parse-tree generation.pdf */,
-				4ECD58A62F9AEB2000317F71 /* GLL Syntax Analysers For EBNF Grammars.pdf */,
-				4ECD58A72F9AEB2000317F71 /* Graph-structured Stack and Natural Language Parsing.pdf */,
-				4ECD58A82F9AEB2000317F71 /* Multiple Lexicalisation - A Java Based Study.pdf */,
-				4ECD58A92F9AEB2000317F71 /* Practical general top-down parsers.pdf */,
-				4ECD58AA2F9AEB2000317F71 /* referenceImplementationSlides.pdf */,
-				4ECD58AB2F9AEB2000317F71 /* Schrodinger’s token.pdf */,
-				4ECD58AC2F9AEB2000317F71 /* Structuring the GLL parsing algorithm for performance.pdf */,
+				4EEBC9BC2F9EF35000E838A7 /* 00readme.txt */,
+				4EEBC9BD2F9EF35000E838A7 /* cpp2017Draft.pdf */,
+				4EEBC9BE2F9EF35000E838A7 /* cpp2017Draft.raw */,
+				4EEBC9BF2F9EF35000E838A7 /* cpp2017DraftFromPDF.txt */,
 			);
-			path = articles;
+			path = cpp2017Draft;
+			sourceTree = "<group>";
+		};
+		4EEBC9CC2F9EF35000E838A7 /* buildJLS18 */ = {
+			isa = PBXGroup;
+			children = (
+				4EEBC9C12F9EF35000E838A7 /* 00README.txt */,
+				4EEBC9C22F9EF35000E838A7 /* extractJLS18.bat */,
+				4EEBC9C32F9EF35000E838A7 /* jls18.art */,
+				4EEBC9C42F9EF35000E838A7 /* jls18.pdf */,
+				4EEBC9C52F9EF35000E838A7 /* jls18_sec3_FromHTML.raw */,
+				4EEBC9C62F9EF35000E838A7 /* jls18_sec19_FromHTML.raw */,
+				4EEBC9C72F9EF35000E838A7 /* jls18_sec19_FromPDF.raw */,
+				4EEBC9C82F9EF35000E838A7 /* jls18Base.art */,
+				4EEBC9C92F9EF35000E838A7 /* jls18Candidate.art */,
+				4EEBC9CA2F9EF35000E838A7 /* JLS18CharacterClassRules.raw */,
+				4EEBC9CB2F9EF35000E838A7 /* jls18LexCharacters.art */,
+			);
+			path = buildJLS18;
+			sourceTree = "<group>";
+		};
+		4EEBC9CF2F9EF35000E838A7 /* otherGrammars */ = {
+			isa = PBXGroup;
+			children = (
+				4EEBC9CD2F9EF35000E838A7 /* javaCharGLL.art */,
+				4EEBC9CE2F9EF35000E838A7 /* jls18bnfV3.art */,
+			);
+			path = otherGrammars;
+			sourceTree = "<group>";
+		};
+		4EEBC9D92F9EF35000E838A7 /* table2 */ = {
+			isa = PBXGroup;
+			children = (
+				4EEBC9D02F9EF35000E838A7 /* easTable.bat */,
+				4EEBC9D12F9EF35000E838A7 /* easTable.bt */,
+				4EEBC9D22F9EF35000E838A7 /* easTable.xlsx */,
+				4EEBC9D32F9EF35000E838A7 /* jls18bnfV3.art */,
+				4EEBC9D42F9EF35000E838A7 /* jls18bnfV3iden.art */,
+				4EEBC9D52F9EF35000E838A7 /* jls18bnfV3IdenLA.art */,
+				4EEBC9D62F9EF35000E838A7 /* lexDFA.bat */,
+				4EEBC9D72F9EF35000E838A7 /* ListViewTest.java */,
+				4EEBC9D82F9EF35000E838A7 /* ListViewTestGTfix.java */,
+			);
+			path = table2;
+			sourceTree = "<group>";
+		};
+		4EEBC9E32F9EF35000E838A7 /* testSet */ = {
+			isa = PBXGroup;
+			children = (
+				4EEBC9DA2F9EF35000E838A7 /* cs1801trimStrFix.java */,
+				4EEBC9DB2F9EF35000E838A7 /* CssParser.java */,
+				4EEBC9DC2F9EF35000E838A7 /* Ex2.java */,
+				4EEBC9DD2F9EF35000E838A7 /* LifeStrFix.java */,
+				4EEBC9DE2F9EF35000E838A7 /* LindenMayer.java */,
+				4EEBC9DF2F9EF35000E838A7 /* ListViewTest.java */,
+				4EEBC9E02F9EF35000E838A7 /* MultipleGradientPaintContext.java */,
+				4EEBC9E12F9EF35000E838A7 /* Sandbox.java */,
+				4EEBC9E22F9EF35000E838A7 /* TreeTableViewTest.java */,
+			);
+			path = testSet;
+			sourceTree = "<group>";
+		};
+		4EEBC9EC2F9EF35000E838A7 /* jls18 */ = {
+			isa = PBXGroup;
+			children = (
+				4EEBC9CC2F9EF35000E838A7 /* buildJLS18 */,
+				4EEBC9CF2F9EF35000E838A7 /* otherGrammars */,
+				4EEBC9D92F9EF35000E838A7 /* table2 */,
+				4EEBC9E32F9EF35000E838A7 /* testSet */,
+				4EEBC9E42F9EF35000E838A7 /* 00README.txt */,
+				4EEBC9E52F9EF35000E838A7 /* dataOne.bat */,
+				4EEBC9E62F9EF35000E838A7 /* dataRun.bat */,
+				4EEBC9E72F9EF35000E838A7 /* lexDFA.bat */,
+				4EEBC9E82F9EF35000E838A7 /* parseBNF.bat */,
+				4EEBC9E92F9EF35000E838A7 /* parsejfxSourceFlatCompressed.bat */,
+				4EEBC9EA2F9EF35000E838A7 /* parseSLETestSet.bat */,
+				4EEBC9EB2F9EF35000E838A7 /* parseTwo.bat */,
+			);
+			path = jls18;
+			sourceTree = "<group>";
+		};
+		4EEBC9F02F9EF35000E838A7 /* Python */ = {
+			isa = PBXGroup;
+			children = (
+				4EEBC9ED2F9EF35000E838A7 /* 00readme.txt */,
+				4EEBC9EE2F9EF35000E838A7 /* Python.apus */,
+				4EEBC9EF2F9EF35000E838A7 /* Python3.14.4.txt */,
+				4EEBCA032FA03A2C00E838A7 /* PEG-GLL-Oracle-Pruning.md */,
+			);
+			path = Python;
+			sourceTree = "<group>";
+		};
+		4EEBC9F52F9EF35000E838A7 /* sml97 */ = {
+			isa = PBXGroup;
+			children = (
+				4EEBC9F12F9EF35000E838A7 /* AJsmlFullBNF.art */,
+				4EEBC9F22F9EF35000E838A7 /* sml97-defn.pdf */,
+				4EEBC9F32F9EF35000E838A7 /* smlFullBNFeas.art */,
+				4EEBC9F42F9EF35000E838A7 /* smlSpec.art */,
+			);
+			path = sml97;
+			sourceTree = "<group>";
+		};
+		4EEBC9FD2F9EF35000E838A7 /* Swift6 */ = {
+			isa = PBXGroup;
+			children = (
+				4EEBC9F62F9EF35000E838A7 /* 00readme.txt */,
+				4EEBC9F72F9EF35000E838A7 /* Grammar of whitespace.docx */,
+				4EEBC9F82F9EF35000E838A7 /* Keywords versus Identifiers.html */,
+				4EEBC9F92F9EF35000E838A7 /* Swift6.3Grammar.docx */,
+				4EEBC9FA2F9EF35000E838A7 /* Swift6Grammar.docx */,
+				4EEBC9FB2F9EF35000E838A7 /* Swift6GrammarDraft.docx */,
+				4EEBC9FC2F9EF35000E838A7 /* Swift6GrammarDraft.txt */,
+			);
+			path = Swift6;
+			sourceTree = "<group>";
+		};
+		4EEBC9FE2F9EF35000E838A7 /* grammars */ = {
+			isa = PBXGroup;
+			children = (
+				4EEBC9C02F9EF35000E838A7 /* cpp2017Draft */,
+				4EEBC9EC2F9EF35000E838A7 /* jls18 */,
+				4EEBC9F02F9EF35000E838A7 /* Python */,
+				4EEBC9F52F9EF35000E838A7 /* sml97 */,
+				4EEBC9FD2F9EF35000E838A7 /* Swift6 */,
+			);
+			path = grammars;
 			sourceTree = "<group>";
 		};
 		CB6B730C257EA9F400B929C6 = {
@@ -210,6 +459,7 @@
 			children = (
 				4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */,
 				4E34DF7E2C08042C00B2881E /* apus.apus */,
+				4E7B09942FA735CC00E44E20 /* layout.apus */,
 				4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */,
 				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
 				4E333D622629D5E400640821 /* apusWithAction.apus */,
@@ -227,38 +477,48 @@
 				4E8D05A82F701CDD0081C6D2 /* Derivations.gv */,
 				4E8D05A32F6FEE810081C6D2 /* SPPF.gv */,
 				4E8D05872F65845F0081C6D2 /* postRunActions.log */,
+				4E4E48BF2FA219ED0094DFC6 /* AGENTS.md */,
+				4EEBC9FF2F9F69E500E838A7 /* BUILD.md */,
 				4ECF5BE62F3748DB008E692B /* claude.md */,
-				4ECD58A42F9AEB2000317F71 /* Frankenstein Tokens.md */,
+				4E4E48C22FA219ED0094DFC6 /* codex.md */,
+				4E4E48C32FA219ED0094DFC6 /* Frankenstein Tokens.md */,
+				4E4E48C42FA219ED0094DFC6 /* Layout Sensitive Parsing.md */,
+				4E4E48C52FA219ED0094DFC6 /* Scanner Mode Design.md */,
+				4E4E48C62FA219ED0094DFC6 /* Schrodinger Tokens.md */,
+				4E4E48C72FA219ED0094DFC6 /* Trivia Oracle.md */,
 				4E34DF802C08A71000B2881E /* ART.svg */,
 				4E8D05A92F701D560081C6D2 /* Derivations.svg */,
 				4E5754B42F5894BB0067165C /* SPPF.svg */,
-				4E8D05802F6453D90081C6D2 /* ApusParser.swift */,
-				4EE2FCD32F76263A00105588 /* ApusParserBuilder.swift */,
-				4E8D057D2F6453C00081C6D2 /* ApusTerminals.swift */,
-				4E11B2A52DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift */,
-				4E11B2A72DC0C25D00555BB8 /* CallReturnForest.swift */,
-				4E11B2A92DC10F0600555BB8 /* Descriptor.swift */,
-				4E8D05A62F701B630081C6D2 /* GenerateDerivationDiagram.swift */,
-				4E33E9212CAEDCDD004BD82C /* GenerateDiagrams.swift */,
-				4E42138F2D1DC15000CE6493 /* GenerateParser.swift */,
-				4E8D05832F6496C40081C6D2 /* Grammar.swift */,
-				4EF4F3CD2F8B1E2B005F0E90 /* GrammarDiagnostics.swift */,
-				4EE422A22BFB319500D99368 /* GrammarNode.swift */,
-				4EA3726B2F9CFEA70035A545 /* LayoutTokenInjection.swift */,
-				4EE2FCD82F79066B00105588 /* Loggers.swift */,
-				4E333D632629D5E400640821 /* main.swift */,
-				4E8D05882F6628960081C6D2 /* MessageParser.swift */,
-				4E42138D2D1C572D00CE6493 /* OutputTools.swift */,
-				4EB4DE432B91D2FB00BA9A88 /* Scanner.swift */,
-				4E9BB4DC2F99B6DF0015410B /* SimpleMessageParser.swift */,
-				4E5754B12F5893240067165C /* SPPF.swift */,
-				4E333D672629D5E400640821 /* StringExtensions.swift */,
+				4EEBC9782F9DECF000E838A7 /* ApusParser.swift */,
+				4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */,
+				4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */,
+				4EEBC97B2F9DECF000E838A7 /* CallReturnForest.swift */,
+				4EEBC97C2F9DECF000E838A7 /* Descriptor.swift */,
+				4EEBC97D2F9DECF000E838A7 /* GenerateDerivationDiagram.swift */,
+				4EEBC97E2F9DECF000E838A7 /* GenerateDiagrams.swift */,
+				4EEBC97F2F9DECF000E838A7 /* GenerateParser.swift */,
+				4EEBC9802F9DECF000E838A7 /* Grammar.swift */,
+				4EEBC9812F9DECF000E838A7 /* GrammarDiagnostics.swift */,
+				4EEBC9822F9DECF000E838A7 /* GrammarNode.swift */,
+				4EEBC9832F9DECF000E838A7 /* LayoutTokenInjection.swift */,
+				4EEBC9842F9DECF000E838A7 /* Loggers.swift */,
+				4EEBC9852F9DECF000E838A7 /* main.swift */,
+				4EEBC9862F9DECF000E838A7 /* ManualOutput.swift */,
+				4EEBC9872F9DECF000E838A7 /* MessageParser.swift */,
+				4EEBC9882F9DECF000E838A7 /* OutputTools.swift */,
+				4EEBC9892F9DECF000E838A7 /* Scanner.swift */,
+				4EEBC98A2F9DECF000E838A7 /* SimpleMessageParser.swift */,
+				4EEBC98B2F9DECF000E838A7 /* SPPF.swift */,
+				4EEBC98C2F9DECF000E838A7 /* StringExtensions.swift */,
 				4E11B2A42DA274B200555BB8 /* scratch.txt */,
 				4E7709B42F37870300972246 /* AdventTests */,
-				4ECD58AD2F9AEB2000317F71 /* articles */,
+				4E4E48BE2FA219220094DFC6 /* articles */,
 				4E8D058E2F67204C0081C6D2 /* Frameworks */,
 				4E8D05962F6A183C0081C6D2 /* GeneratedParser */,
+				4EEBC9FE2F9EF35000E838A7 /* grammars */,
 				CB6B7316257EA9F400B929C6 /* Products */,
+				4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */,
+				4E16D4762FA7A126008E2C1A /* TODO.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -363,6 +623,7 @@
 					};
 					CB6B7314257EA9F400B929C6 = {
 						CreatedOnToolsVersion = 12.2;
+						LastSwiftMigration = 2640;
 					};
 				};
 			};
@@ -406,24 +667,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4E8D058A2F662A4F0081C6D2 /* MessageParser.swift in Sources */,
-				4E7709C42F3787E100972246 /* GrammarNode.swift in Sources */,
-				4EA725452F975A7E00D36A84 /* GenerateDerivationDiagram.swift in Sources */,
-				4E8D05822F6453D90081C6D2 /* ApusParser.swift in Sources */,
-				4E7709CA2F37883300972246 /* CallReturnForest.swift in Sources */,
-				4E7709CE2F37883300972246 /* GenerateDiagrams.swift in Sources */,
-				4E7709CF2F37883300972246 /* OutputTools.swift in Sources */,
-				4EA372772F9D9C780035A545 /* LayoutTokenInjection.swift in Sources */,
-				4E7709D12F37883300972246 /* Descriptor.swift in Sources */,
-				4E7709D32F37883300972246 /* StringExtensions.swift in Sources */,
-				4E7709D42F37883300972246 /* BinarySubtreeRepresentation.swift in Sources */,
-				4E7709D72F37883300972246 /* GenerateParser.swift in Sources */,
-				4E8D057F2F6453C00081C6D2 /* ApusTerminals.swift in Sources */,
-				4E2DC6A82F7B777F00DA97F2 /* Loggers.swift in Sources */,
-				4E5754B32F5893360067165C /* SPPF.swift in Sources */,
-				4E7709C52F3787FF00972246 /* Scanner.swift in Sources */,
-				4EA725442F975A6600D36A84 /* GrammarDiagnostics.swift in Sources */,
-				4E8D05852F64D45B0081C6D2 /* Grammar.swift in Sources */,
+				4E4E48CB2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */,
+				4EEBC98D2F9DECF000E838A7 /* GrammarDiagnostics.swift in Sources */,
+				4EEBC98E2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift in Sources */,
+				4EEBC98F2F9DECF000E838A7 /* StringExtensions.swift in Sources */,
+				4EEBC9902F9DECF000E838A7 /* Loggers.swift in Sources */,
+				4EEBC9912F9DECF000E838A7 /* MessageParser.swift in Sources */,
+				4EEBC9922F9DECF000E838A7 /* GenerateDerivationDiagram.swift in Sources */,
+				4EEBC9932F9DECF000E838A7 /* Scanner.swift in Sources */,
+				4EEBC9942F9DECF000E838A7 /* CallReturnForest.swift in Sources */,
+				4EEBC9952F9DECF000E838A7 /* SimpleMessageParser.swift in Sources */,
+				4EEBC9962F9DECF000E838A7 /* Grammar.swift in Sources */,
+				4EEBC9972F9DECF000E838A7 /* ApusTerminals.swift in Sources */,
+				4EEBC9982F9DECF000E838A7 /* GenerateDiagrams.swift in Sources */,
+				4EEBC9992F9DECF000E838A7 /* ApusParser.swift in Sources */,
+				4EEBC99A2F9DECF000E838A7 /* GrammarNode.swift in Sources */,
+				4EEBC99B2F9DECF000E838A7 /* main.swift in Sources */,
+				4EEBC99C2F9DECF000E838A7 /* ManualOutput.swift in Sources */,
+				4EEBC99D2F9DECF000E838A7 /* GenerateParser.swift in Sources */,
+				4EEBC99E2F9DECF000E838A7 /* OutputTools.swift in Sources */,
+				4EEBC99F2F9DECF000E838A7 /* Descriptor.swift in Sources */,
+				4EEBC9A02F9DECF000E838A7 /* LayoutTokenInjection.swift in Sources */,
+				4EEBC9A12F9DECF000E838A7 /* SPPF.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -431,7 +696,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4E2DC6A92F7B777F00DA97F2 /* Loggers.swift in Sources */,
+				4E4E48CC2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -439,26 +704,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4E34DF7D2C0354E400B2881E /* GrammarNode.swift in Sources */,
-				4E8D05812F6453D90081C6D2 /* ApusParser.swift in Sources */,
-				4E11B2AA2DC10F0600555BB8 /* Descriptor.swift in Sources */,
-				4EA3726C2F9CFEA70035A545 /* LayoutTokenInjection.swift in Sources */,
-				4E11B2A62DBE0DF800555BB8 /* BinarySubtreeRepresentation.swift in Sources */,
-				4E8D057E2F6453C00081C6D2 /* ApusTerminals.swift in Sources */,
-				4E5754B22F5893360067165C /* SPPF.swift in Sources */,
-				4E333D752629D60A00640821 /* StringExtensions.swift in Sources */,
-				4E8D05842F64D45B0081C6D2 /* Grammar.swift in Sources */,
-				4E8D05892F662A4F0081C6D2 /* MessageParser.swift in Sources */,
-				4E42138E2D1C572D00CE6493 /* OutputTools.swift in Sources */,
-				4E33E9222CAEDCDD004BD82C /* GenerateDiagrams.swift in Sources */,
-				4E4213902D1DC15000CE6493 /* GenerateParser.swift in Sources */,
-				4E333D712629D60000640821 /* main.swift in Sources */,
-				4EE2FCD92F79070A00105588 /* Loggers.swift in Sources */,
-				4E9BB4DD2F99B72B0015410B /* SimpleMessageParser.swift in Sources */,
-				4EC5CE952BBC46900045F751 /* Scanner.swift in Sources */,
-				4E11B2A82DC0C25D00555BB8 /* CallReturnForest.swift in Sources */,
-				4EF4F3CE2F8B1E5B005F0E90 /* GrammarDiagnostics.swift in Sources */,
-				4E8D05A72F701BFE0081C6D2 /* GenerateDerivationDiagram.swift in Sources */,
+				4EEBC9A22F9DECF000E838A7 /* GrammarDiagnostics.swift in Sources */,
+				4EEBC9A32F9DECF000E838A7 /* BinarySubtreeRepresentation.swift in Sources */,
+				4EEBC9A42F9DECF000E838A7 /* StringExtensions.swift in Sources */,
+				4EEBC9A52F9DECF000E838A7 /* Loggers.swift in Sources */,
+				4EEBC9A62F9DECF000E838A7 /* MessageParser.swift in Sources */,
+				4EEBC9A72F9DECF000E838A7 /* GenerateDerivationDiagram.swift in Sources */,
+				4EEBC9A82F9DECF000E838A7 /* Scanner.swift in Sources */,
+				4EEBC9A92F9DECF000E838A7 /* CallReturnForest.swift in Sources */,
+				4EEBC9AA2F9DECF000E838A7 /* SimpleMessageParser.swift in Sources */,
+				4EEBC9AB2F9DECF000E838A7 /* Grammar.swift in Sources */,
+				4EEBC9AC2F9DECF000E838A7 /* ApusTerminals.swift in Sources */,
+				4EEBC9AD2F9DECF000E838A7 /* GenerateDiagrams.swift in Sources */,
+				4E4E48CA2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */,
+				4EEBC9AE2F9DECF000E838A7 /* ApusParser.swift in Sources */,
+				4EEBC9AF2F9DECF000E838A7 /* GrammarNode.swift in Sources */,
+				4EEBC9B02F9DECF000E838A7 /* main.swift in Sources */,
+				4EEBC9B12F9DECF000E838A7 /* ManualOutput.swift in Sources */,
+				4EEBC9B22F9DECF000E838A7 /* GenerateParser.swift in Sources */,
+				4EEBC9B32F9DECF000E838A7 /* OutputTools.swift in Sources */,
+				4EEBC9B42F9DECF000E838A7 /* Descriptor.swift in Sources */,
+				4EEBC9B52F9DECF000E838A7 /* LayoutTokenInjection.swift in Sources */,
+				4EEBC9B62F9DECF000E838A7 /* SPPF.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -673,12 +940,15 @@
 		CB6B731D257EA9F400B929C6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
+				ENABLE_DEBUG_DYLIB = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				bl = "";
 			};
@@ -687,9 +957,11 @@
 		CB6B731E257EA9F400B929C6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
+				ENABLE_DEBUG_DYLIB = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -82,53 +82,53 @@ struct SpecialTokenTests {
     struct FrankensteinTokens {
         static let cases: [TestCase] = [
             TestCase(
-                grammar: #"shift - ">>". S = ">" =>> ">" =>> | ">>"."#,
+                grammar: #"shift - ">>". S = ">" ~~~ ">" ~~~ | ">>"."#,
                 pass: [">>", "> >"],
                 label: "basic Frankenstein split or direct match"
             ),
             TestCase(
-                grammar: #"shift - ">>". S = ">" =>> ">" =>> ."#,
+                grammar: #"shift - ">>". S = ">" ~~~ ">" ~~~ ."#,
                 pass: [">>", "> >"],
                 fail: [">"],
                 label: "Frankenstein-only split"
             ),
             TestCase(
-                grammar: #"tripleShift - ">>>". shift - ">>". S = ">" =>> ">" =>> ">" =>> ."#,
+                grammar: #"tripleShift - ">>>". shift - ">>". S = ">" ~~~ ">" ~~~ ">" ~~~ ."#,
                 pass: [">>>", ">> >", "> >>", "> > >"],
                 fail: [">>", ">", ">> >>"],
                 label: "three-way Frankenstein split"
             ),
             TestCase(
-                grammar: #"shift - ">>". S = "a" ">" =>> ">" =>> "b"."#,
+                grammar: #"shift - ">>". S = "a" ">" ~~~ ">" ~~~ "b"."#,
                 pass: ["a >> b", "a > > b"],
                 fail: ["a > b", "a b"],
                 label: "Frankenstein mid-sequence"
             ),
             TestCase(
-                grammar: #"shift - ">>". S = ">" =>> ">" =>> "a" | ">>" "b"."#,
+                grammar: #"shift - ">>". S = ">" ~~~ ">" ~~~ "a" | ">>" "b"."#,
                 pass: [">> a", ">> b", "> > a"],
                 fail: ["> > b"],
                 label: "Frankenstein vs direct in alternation"
             ),
             TestCase(
-                grammar: #"shift - ">>". S = A B. A = ">" =>> . B = ">" =>> ."#,
+                grammar: #"shift - ">>". S = A B. A = ">" ~~~ . B = ">" ~~~ ."#,
                 pass: [">>", "> >"],
                 fail: [">"],
                 label: "Frankenstein across nonterminals"
             ),
             TestCase(
-                grammar: #"shift - ">>". id - /[a-z]+/. S = id ["<" tlist ">" =>>]. tlist = S {"," S}."#,
+                grammar: #"shift - ">>". id - /[a-z]+/. S = id ["<" tlist ">" ~~~]. tlist = S {"," S}."#,
                 pass: ["foo", "foo < bar >", "foo < bar < baz > >", "foo < bar < baz >>"],
                 label: "nested generics Frankenstein"
             ),
             TestCase(
-                grammar: #"shift - ">>". S = "<" "x" ">" =>> [">" =>>]."#,
+                grammar: #"shift - ">>". S = "<" "x" ">" ~~~ [">" ~~~]."#,
                 pass: ["< x >", "< x >>"],
                 fail: ["< x"],
                 label: "Frankenstein in optional"
             ),
             TestCase(
-                grammar: #"doubleeq - "==". S = "x" "=" =>> "=" =>> "y"."#,
+                grammar: #"doubleeq - "==". S = "x" "=" ~~~ "=" ~~~ "y"."#,
                 pass: ["x == y", "x = = y"],
                 fail: ["x = y"],
                 label: "Frankenstein non-angle-bracket"
@@ -163,7 +163,7 @@ struct SpecialTokenTests {
                 return (false, 0)
             }
             let messageParser = MessageParser(grammar: grammar)
-            messageParser.parse(tokens: messageScanner.tokens)
+            messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
 
             let extent = TokenPosition(token: messageParser.tokens.count - 1)
             let matched = messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }

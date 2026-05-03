@@ -785,7 +785,7 @@ func generateSPPFDiagram(outputFile file: URL, root: SPPFNode) throws {
     // Emit nodes
     for node in allReachable {
         let id = nodeID(node)
-        let escapedLabel = node.label.graphvizHTML
+        let escapedLabel = node.label.withLayoutGlyphs.graphvizHTML
         
         switch node.kind {
         case .symbol:

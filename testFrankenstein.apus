@@ -2,13 +2,13 @@
 //  testFrankenstein.apus
 //  Advent
 //
-//  Test grammar for Frankenstein (partial token match) via =>> annotation.
+//  Test grammar for Frankenstein (partial token match) via ~~~ annotation.
 //
-//  The =>> on a literal means it can match a PREFIX of a longer token.
+//  The ~~~ on a literal means it can match a PREFIX of a longer token.
 //  This is needed for languages where e.g. ">>" is scanned as one token
 //  but the grammar needs two separate ">" symbols (nested generics).
 //
-//  The scanner produces ">>" as a single token. The parser, seeing ">" =>>
+//  The scanner produces ">>" as a single token. The parser, seeing ">" ~~~
 //  in the grammar, matches the first character and creates a sub-position
 //  (charOffset) for the remainder.
 //
@@ -19,12 +19,12 @@ whitespace  : /\s+/ .
 name        - /[a-z]+/ .
 
 // A generic-bracket language where >> must be split.
-// type = name | name "<" typeList ">" =>>
+// type = name | name "<" typeList ">" ~~~
 // This mirrors Swift/Java/C++ nested generics.
 
 program = { type } .
 
-type = name [ "<" typeList ">" =>> ] .
+type = name [ "<" typeList ">" ~~~ ] .
 
 typeList = type { "," type } .
 

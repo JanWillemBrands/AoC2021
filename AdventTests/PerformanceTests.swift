@@ -106,7 +106,7 @@ struct PerformanceTests {
             if warmupRuns > 0 {
                 for _ in 0..<warmupRuns {
                     for scanner in scanners {
-                        parser.parse(tokens: scanner.tokens)
+                        parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
                     }
                 }
             }
@@ -120,7 +120,7 @@ struct PerformanceTests {
 
                 var totals = Totals()
                 for scanner in scanners {
-                    parser.parse(tokens: scanner.tokens)
+                    parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
                     totals.add(from: parser)
                 }
 

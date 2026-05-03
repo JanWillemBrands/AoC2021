@@ -776,7 +776,6 @@ genericArgument = type .
 ^^^#GenerateParser.swift
 ^^^#Grammar.swift
 ^^^#GrammarNode.swift
-^^^#GrammarStore.swift
 ^^^#Loggers.swift
 ^^^#ManualOutput.swift
 ^^^#MessageParser.swift

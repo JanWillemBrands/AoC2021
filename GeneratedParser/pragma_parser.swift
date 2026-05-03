@@ -16,55 +16,51 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)+\\\"/",	/\"(?:[^\"\\]|\\.)+\"/,	false,	false),
+	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
 	"identifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"pragma":	("/\'(?:[^\\\'\\n])*\'/",	/'(?:[^\'\n])*'/,	false,	false),
+	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)*\\\"/",	/\"(?:[^\"\\]|\\.)*\"/,	false,	false),
+	"L9P14":	("/\'(?:[^\\\'\\n])*\'/",	/'(?:[^\'\n])*'/,	false,	false),
 	"action":	("/@(?:[^@\\\\]|\\\\.)+@/",	/@(?:[^@\\]|\\.)+@/,	false,	true),
-	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
-	"=":	("=",	Regex { "=" },	true,	false),
-	"ε":	("ε",	Regex { "ε" },	true,	false),
-	"{":	("{",	Regex { "{" },	true,	false),
-	"<":	("<",	Regex { "<" },	true,	false),
+	"]":	("]",	Regex { "]" },	true,	false),
 	"-":	("-",	Regex { "-" },	true,	false),
-	">>|":	(">>|",	Regex { ">>|" },	true,	false),
-	"|<<":	("|<<",	Regex { "|<<" },	true,	false),
-	"<.>":	("<.>",	Regex { "<.>" },	true,	false),
+	"(":	("(",	Regex { "(" },	true,	false),
 	"[":	("[",	Regex { "[" },	true,	false),
-	">:<":	(">:<",	Regex { ">:<" },	true,	false),
+	"---":	("---",	Regex { "---" },	true,	false),
 	"===":	("===",	Regex { "===" },	true,	false),
-	")":	(")",	Regex { ")" },	true,	false),
-	"*":	("*",	Regex { "*" },	true,	false),
-	"~~~":	("~~~",	Regex { "~~~" },	true,	false),
 	"\"\"":	("\"\"",	Regex { "\"\"" },	true,	false),
-	">":	(">",	Regex { ">" },	true,	false),
+	"=":	("=",	Regex { "=" },	true,	false),
 	"<<<":	("<<<",	Regex { "<<<" },	true,	false),
 	"|":	("|",	Regex { "|" },	true,	false),
-	"]":	("]",	Regex { "]" },	true,	false),
+	")":	(")",	Regex { ")" },	true,	false),
 	"}":	("}",	Regex { "}" },	true,	false),
-	":":	(":",	Regex { ":" },	true,	false),
-	"+":	("+",	Regex { "+" },	true,	false),
-	">>>":	(">>>",	Regex { ">>>" },	true,	false),
-	"---":	("---",	Regex { "---" },	true,	false),
-	"(":	("(",	Regex { "(" },	true,	false),
-	">.<":	(">.<",	Regex { ">.<" },	true,	false),
-	"<:>":	("<:>",	Regex { "<:>" },	true,	false),
+	"{":	("{",	Regex { "{" },	true,	false),
 	"?":	("?",	Regex { "?" },	true,	false),
+	"<":	("<",	Regex { "<" },	true,	false),
+	">>>":	(">>>",	Regex { ">>>" },	true,	false),
+	">":	(">",	Regex { ">" },	true,	false),
+	"*":	("*",	Regex { "*" },	true,	false),
+	"~~~":	("~~~",	Regex { "~~~" },	true,	false),
+	"+":	("+",	Regex { "+" },	true,	false),
+	"ε":	("ε",	Regex { "ε" },	true,	false),
+	":":	(":",	Regex { ":" },	true,	false),
 	".":	(".",	Regex { "." },	true,	false),
 ]
-func empty() throws {
-	expect("\\\"\\\"")
-	cI += 1
-}
 func epsilon() throws {
-	expect("ε")
-	cI += 1
+	switch token.kind {
+	case "ε":
+		cI += 1
+	case "\\\"\\\"":
+		cI += 1
+	default:
+		expect("\\\"\\\"", "ε")
+	}
 }
 func factor() throws {
 	switch token.kind {
-	case "\\\"\\\"", "identifier", "literal", "pragma", "regex", "ε":
+	case "\\\"\\\"", "identifier", "literal", "regex", "ε":
 		try terminal()
 	case "[":
 		cI += 1
@@ -87,7 +83,7 @@ func factor() throws {
 		expect(")")
 		cI += 1
 	default:
-		expect("(", "<", "[", "\\\"\\\"", "identifier", "literal", "pragma", "regex", "{", "ε")
+		expect("(", "<", "[", "\\\"\\\"", "identifier", "literal", "regex", "{", "ε")
 	}
 }
 func grammar() throws {
@@ -98,46 +94,9 @@ func grammar() throws {
 		cI += 1
 	}
 }
-func layout() throws {
-	switch token.kind {
-	case ">>|":
-		cI += 1
-	case "|<<":
-		cI += 1
-	case "<.>":
-		cI += 1
-	case "<:>":
-		cI += 1
-	case ">.<":
-		cI += 1
-	case ">:<":
-		cI += 1
-	default:
-		break
-	}
-}
-func mode() throws {
-	while ["==="].contains(token.kind) {
-		cI += 1
-		try name()
-		if ["<<<"].contains(token.kind) {
-			cI += 1
-		}
-		if [">>>"].contains(token.kind) {
-			cI += 1
-			try name()
-		}
-	}
-}
-func name() throws {
-	switch token.kind {
-	case "literal":
-		cI += 1
-	case "identifier":
-		cI += 1
-	default:
-		expect("identifier", "literal")
-	}
+func pragma() throws {
+	expect("L9P14")
+	cI += 1
 }
 func production() throws {
 	expect("identifier")
@@ -155,7 +114,7 @@ func production() throws {
 		}
 		expect(".")
 		cI += 1
-		try mode()
+		try scanmode()
 	case "-":
 		cI += 1
 		switch token.kind {
@@ -168,7 +127,7 @@ func production() throws {
 		}
 		expect(".")
 		cI += 1
-		try mode()
+		try scanmode()
 	case "=":
 		cI += 1
 		try selection()
@@ -176,6 +135,24 @@ func production() throws {
 		cI += 1
 	default:
 		expect("-", ":", "=")
+	}
+}
+func scanmode() throws {
+	switch token.kind {
+	case "===":
+		cI += 1
+		expect("literal")
+		cI += 1
+	case ">>>":
+		cI += 1
+		expect("literal")
+		cI += 1
+	case "<<<":
+		cI += 1
+		expect("literal")
+		cI += 1
+	default:
+		break
 	}
 }
 func selection() throws {
@@ -198,8 +175,7 @@ func sequence() throws {
 		default:
 			break
 		}
-		try layout()
-	} while ["(", "<", "[", "\\\"\\\"", "identifier", "literal", "pragma", "regex", "{", "ε"].contains(token.kind)
+	} while ["(", "<", "[", "\\\"\\\"", "identifier", "literal", "regex", "{", "ε"].contains(token.kind)
 }
 func terminal() throws {
 	switch token.kind {
@@ -223,17 +199,13 @@ func terminal() throws {
 		}
 	case "regex":
 		cI += 1
-	case "ε":
+	case "\\\"\\\"", "ε":
 		try epsilon()
-	case "\\\"\\\"":
-		try empty()
-	case "pragma":
-		cI += 1
 	default:
-		expect("\\\"\\\"", "identifier", "literal", "pragma", "regex", "ε")
+		expect("\\\"\\\"", "identifier", "literal", "regex", "ε")
 	}
 }
 func parse() throws {
-	try grammar()
+	try pragma()
 	expect("$")
 }

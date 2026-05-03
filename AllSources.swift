@@ -429,7 +429,7 @@ class ApusParser {
         case "literal":
             node = literal()
             
-            if token.kind == "=>>" {
+            if token.kind == "~~~" {
                 node.first.insert("≋")      // insert a partial-token sentinel, which then gets propagated through FIRST/FOLLOW
                 cI += 1
             }
@@ -544,7 +544,7 @@ let apusTerminals: [String:TokenPattern] = [
     "===":          ("===",                     Regex { "===" },                    true,  false, Mode()),
     ">>>":          (">>>",                     Regex { ">>>" },                    true,  false, Mode()),
     "<<<":          ("<<<",                     Regex { "<<<" },                    true,  false, Mode()),
-    "=>>":          ("=>>",                     Regex { "=>>" },                    true,  false, Mode()),
+    "~~~":          ("~~~",                     Regex { "~~~" },                    true,  false, Mode()),
     "---":          ("---",                     Regex { "---" },                    true,  false, Mode()),
 //    "nonASCII":     (#"[^\p{ASCII}]"#,          /[^\p{ASCII}]/,                     false,  false),
 //    ")?":           (")?",                      Regex { ")?" },                     true,  false),

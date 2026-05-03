@@ -72,7 +72,7 @@ class ASTDiagramGenerator {
         var returnPositions: Set<ParsePosition> = []
         for (key, cluster) in (messageParser?.crf ?? [:]).sorted(by: { $0.key < $1.key }) {
             let poppedIndexes = cluster.pops.sorted().description.dropFirst().dropLast()
-            content.append("\n    \(key) [label = <\(cluster.slot.ebnfDot().graphvizHTML),\(cluster.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
+            content.append("\n    \(key) [label = <\(cluster.slot.ebnfDot().withLayoutGlyphs.graphvizHTML),\(cluster.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
             for edge in cluster.returns {
                 let edgePos = ParsePosition(slot: edge.slot, index: edge.index)
                 content.append("\n    \(key) -> \(edgePos)")
@@ -81,7 +81,7 @@ class ASTDiagramGenerator {
         }
         // render return nodes with dotted EBNF labels
         for rtn in returnPositions.sorted() {
-            content.append("\n    \(rtn) [label = <\(rtn.slot.ebnfDot().graphvizHTML),\(rtn.index)>]")
+            content.append("\n    \(rtn) [label = <\(rtn.slot.ebnfDot().withLayoutGlyphs.graphvizHTML),\(rtn.index)>]")
         }
         content.append("\n  }")
 
@@ -91,7 +91,7 @@ class ASTDiagramGenerator {
             content.append("\n  subgraph cluster\(name) {")
             //        d.append("\n    cluster = true")
             content.append("\n    node [shape = box]")
-            content.append("\n    label = <\(node.ebnf().graphvizHTML)>")
+            content.append("\n    label = <\(node.ebnf().withLayoutGlyphs.graphvizHTML)>")
             content.append("\n    labeljust = l")
             
             maxRow = 0
@@ -130,8 +130,8 @@ class ASTDiagramGenerator {
         node.cell = Cell(name: name, r: row, c: col)
         grid[node.cell] = true
         
-        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.yield.sorted().description.graphvizHTML)>]")
-//        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>am [\(node.ambiguous.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.actions.joined(separator: "<br/>"))>]")
+//        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").graphvizHTML)]<br/>\(node.yield.sorted().description.graphvizHTML)>]")
+        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.withLayoutGlyphs.graphvizHTML)<br/>fi [\(node.first.sorted().joined(separator: ", ").withLayoutGlyphs.graphvizHTML)]<br/>fo [\(node.follow.sorted().joined(separator: ", ").withLayoutGlyphs.graphvizHTML)]<br/>am [\(node.ambiguous.sorted().joined(separator: ", ").withLayoutGlyphs.graphvizHTML)] >]")
 //        content.append("\n    \(node.cell) [label = <\(node)<br/>\(node.kind) \(str.graphvizHTML)>]")
 
         if let seq = node.seq {

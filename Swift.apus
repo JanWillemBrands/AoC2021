@@ -21,24 +21,23 @@ whitespace : /\s+/.                                                     // simpl
 //inlineSpace = U+0009 or U+0020                                        // HORIZONTAL TAB or \t or \u{0009}, SPACE or \u{0020}
 
 comment : /\/\/.*\r?\n?/ .
+//comment = "//" commentText lineBreak .
+//commentText = commentTextItem commentText? .
+//commentTextItem = Any Unicode scalar value except U+000A or U+000D
 
 // SCANNER MODE ANNOTATIONS TO HANDLE NESTED COMMENTS
 
 multilineCommentHead    : "/*" .
-                        >>> "multiline-comment"
-                        
-multilineCommentText    : /(?s).*?(?=\/\*|\*\/)/ .                      // any character upto and not including */ or /*
+                        === "" >>> "multiline-comment"
+                        === "multiline-comment" >>> "multiline-comment"
+
+multilineCommentText    : /(?s).*?(?=\/\*|\*\/)/ .                      // any character upto but not including */ or /*
                         === "multiline-comment"
-                        
+
 multilineCommentTail    : "*/" .
-                        <<< "multiline-comment"
+                        === "multiline-comment" <<<
 
-//comment = "//" commentText lineBreak .
 //multilineComment = "/*" multilineCommentText "*/" .
-
-//commentText = commentTextItem commentText? .
-//commentTextItem = Any Unicode scalar value except U+000A or U+000D
-
 //multilineCommentText = multilineCommentTextItem multilineCommentText? .
 //multilineCommentTextItem = multilineComment .
 //multilineCommentTextItem = commentTextItem .
@@ -65,12 +64,12 @@ propertyWrapperProjection   - /\$\p{XID_Continue}+/ .           // TODO: overlap
 //  "#" "#available" "#colorLiteral" "#else" "#elseif" "#endif" "#error" "#fileLiteral" "#if" "#imageLiteral" "#keyPath" "#selector" "#sourceLocation" "#unavailable" "#warning"
 
 // all remaining Swift 6.3 literals (punctuation and operators)
-//  "!" "%" "&" "&&" "(" ")" "*" "*/" "+" "," "-" "->" "." "..." "//" "/*" ":" ";" "<" "=" "==" ">" ">=" "?" "[" "\\" "\\." "]" "^" "_" "{" "|" "||" "}" "~"
+//  "!" "%" "&" "&&" "(" ")" "*" "*/" "+" "," "-" "->" "." "..." "//" "/*" ":" ";" "<" "=" "==" ">" ">=" "?" "[" "\\" "]" "^" "_" "{" "|" "||" "}" "~"
 
-// all Swift 'hard' keywords that cannot be used as identifiers, except as augumentName
+// all Swift 'hard' keywords that CANNOT be used as identifiers, except as augumentName
 //  "Any" "actor" "as" "associatedtype" "await" "borrowing" "break" "case" "catch" "class" "consuming" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "nonisolated" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while"
 
-// all Swift contextual keywords that can be used as identifiers, except in specific locations
+// all Swift contextual keywords that CAN be used as identifiers, except in specific locations
 // "associativity" "async" "assignment" "convenience" "didSet" "dynamic" "final" "get" "higherThan" "indirect" "infix" "isolated" "lazy" "left" "lowerThan" "mutating" "none" "nonmutating" "optional" "override" "package" "postfix" "prefix" "Protocol" "required" "right" "set" "some" "Type" "unowned" "weak" "willSet" "yield"
 
 // Most Swift identifiers exclude the hard reserved keywords
@@ -80,8 +79,8 @@ identifier  = rawIdentifier
             | implicitParameterName
             | propertyWrapperProjection .
 
-// Swift allows keywords as argument labels, a few are excluded
-argumentIdentifier  = rawIdentifier
+// Swift allows keywords as argument labels and as member names, a few are excluded
+softIdentifier  = rawIdentifier
                     ---("let" "var" "inout")
                     | escapedIdentifier .
 
@@ -154,17 +153,18 @@ staticStringLiteral             = singleLineStringLiteral
 // SCANNER MODE ANNOTATIONS TO HANDLE INTERPOLATED STRING EXPRESSIONS
 
 interpolatedStringLiteralHead   - /"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .                // start with " end with \(
-                                >>> "string-interpolation"
-                                
+                                === "" >>> "string-interpolation"
+                                === "inside-parentheses" >>> "string-interpolation"
+
 interpolatedStringLiteralPart   - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .               // start with ) end with \(
                                 === "string-interpolation"
-               
+
 interpolatedStringLiteralTail   - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ .        // start with ) end with " and not containing any \(
 //interpolatedStringLiteralTail   - /(?!.*\\\()\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?"/ .        // start with ) end with " and not containing any \(
-                                <<< "string-interpolation"
+                                === "string-interpolation" <<<
                                 
 interpolatedStringLiteral       = interpolatedStringLiteralHead
-                                  expression { interpolatedStringLiteralPart expression }
+                                  functionCallArgumentList { interpolatedStringLiteralPart functionCallArgumentList }
                                   interpolatedStringLiteralTail .
 
 
@@ -382,7 +382,7 @@ functionTypeArgumentClause = "(" functionTypeArgumentList "..."? ")" .
 
 functionTypeArgumentList = functionTypeArgument | functionTypeArgument "," functionTypeArgumentList .
 functionTypeArgument = attributes? parameterModifier? type | argumentLabel typeAnnotation .
-argumentLabel = argumentIdentifier .
+argumentLabel = softIdentifier .
 
 throwsClause = "throws" | "throws" "(" type ")" .
 
@@ -515,24 +515,24 @@ captureListItem = captureSpecifier? identifier "=" expression .
 captureListItem = captureSpecifier? selfExpression .
 captureSpecifier = "weak" | "unowned" | "unowned" "(" "safe" ")" | "unowned" "(" "unsafe" ")" . // TODO: no space allowed before "(" here
 
-implicitMemberExpression = "." identifier .
-implicitMemberExpression = "." identifier "." postfixExpression .
+implicitMemberExpression = "." softIdentifier .                         // allows e.g. '.public'
+implicitMemberExpression = "." softIdentifier "." postfixExpression .
 
 // SCANNER MODE ANNOTATIONS TO HANDLE NESTED PARENTHESES
 
 leftParenthesis     - "(" .
-                    >>> "inside-parentheses"
-                    
-rightParenthesis    - ")" .
-                    <<< "inside-parentheses"
-                    
-//parenthesizedExpression = leftParenthesis expression rightParenthesis .  // TODO: is this better ?
+                    === "" >>> "inside-parentheses"
+                    === "inside-parentheses" >>> "inside-parentheses"
+                    === "string-interpolation" >>> "inside-parentheses"
 
+rightParenthesis    - ")" .
+                    === "inside-parentheses" <<<
+                    
 parenthesizedExpression = "(" expression ")" .
 
 tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ","? ")" .
 tupleElementList = tupleElement | tupleElement "," tupleElementList .
-tupleElement = expression | argumentIdentifier ":" expression .
+tupleElement = expression | softIdentifier ":" expression .
 
 wildcardExpression = "_" .
 
@@ -540,20 +540,14 @@ wildcardExpression = "_" .
 macroIdentifier             - /#\p{XID_Start}\p{XID_Continue}*/ .
 macroExpansionExpression    = macroIdentifier genericArgumentClause? functionCallArgumentClause? trailingClosures? .
 
-
-/////////////
-keyPathExpression = "\\." keyPathComponents .      // WTFFFF    dummy
-////////////
-
-
-keyPathExpression = "\\" type? "." keyPathComponents .      // escape needed for apus literals, which copy Swift string syntax
+keyPathExpression = "\\" type? "." keyPathComponents .      // escape needed for apus literals, which use Swift string syntax
 //keyPathExpression = "\" type? "." keyPathComponents .
 
 keyPathComponents = keyPathComponent | keyPathComponent "." keyPathComponents .
 keyPathComponent = identifier keyPathPostfixes? | keyPathPostfixes .
 
 keyPathPostfixes = keyPathPostfix keyPathPostfixes? .
-keyPathPostfix = "?" | "!" | "self" | "[" functionCallArgumentList "]" .    // TODO: remove spaces before "?" and "!"
+keyPathPostfix = "?" | "!" | "self" | "[" functionCallArgumentList "]" .    // TODO: remove spaces before "?" and "!"   >:<
 
 selectorExpression = "#selector" "(" expression ")" .
 selectorExpression = "#selector" "(" "getter" ":" expression ")" .
@@ -576,12 +570,12 @@ functionCallExpression = postfixExpression functionCallArgumentClause? trailingC
 
 functionCallArgumentClause = "(" ")" | "(" functionCallArgumentList ","? ")" .
 functionCallArgumentList = functionCallArgument | functionCallArgument "," functionCallArgumentList .
-functionCallArgument = expression | argumentIdentifier ":" expression .
-functionCallArgument = Operator | argumentIdentifier ":" Operator .
+functionCallArgument = expression | softIdentifier ":" expression .
+functionCallArgument = Operator | softIdentifier ":" Operator .
 
 trailingClosures = closureExpression labeledTrailingClosures? .
 labeledTrailingClosures = labeledTrailingClosure labeledTrailingClosures? .
-labeledTrailingClosure = argumentIdentifier ":" closureExpression .
+labeledTrailingClosure = softIdentifier ":" closureExpression .
 
 initializerExpression = postfixExpression "." "init" .
 initializerExpression = postfixExpression "." "init" "(" argumentNames ")" .
@@ -592,7 +586,7 @@ explicitMemberExpression = postfixExpression "." identifier "(" argumentNames ")
 explicitMemberExpression = postfixExpression conditionalCompilationBlock .
 
 argumentNames = argumentName argumentNames? .
-argumentName = argumentIdentifier ":" .
+argumentName = softIdentifier ":" .
 
 postfixSelfExpression = postfixExpression "." "self" .
 
@@ -841,7 +835,7 @@ parameter = attributes? externalParameterName? localParameterName parameterTypeA
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation .
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation "..." .
 
-externalParameterName = argumentIdentifier .        // accept all keywords except let, var, inout
+externalParameterName = softIdentifier .        // accept all keywords except let, var, inout
 localParameterName = identifier .                   // keywords not accepted
 
 parameterTypeAnnotation = ":" attributes? parameterModifier? type .
@@ -1035,7 +1029,7 @@ valueBindingPattern = "var" pattern | "let" pattern .               // WTF  'let
 
 tuplePattern = "(" tuplePatternElementList? ")" .
 tuplePatternElementList = tuplePatternElement | tuplePatternElement "," tuplePatternElementList .
-tuplePatternElement = pattern | argumentIdentifier ":" pattern .
+tuplePatternElement = pattern | softIdentifier ":" pattern .
 
 enumCasePattern = typeIdentifier? "." enumCaseName tuplePattern? .
 
@@ -1053,7 +1047,7 @@ expressionPattern = expression .
 // ANNOTATION FOR PARTIAL TOKEN MATCH A.K.A. FRANKENSTEIN
 genericParameterClause  = "<"
                            genericParameterList ","?
-                          ">" =>> .
+                          ">" ~~~ .
 
 genericParameterList = genericParameter | genericParameter "," genericParameterList .
 genericParameter = typeName .
@@ -1073,14 +1067,13 @@ sameTypeRequirement = typeIdentifier "==" signedIntegerLiteral .
 // ANNOTATION FOR PARTIAL TOKEN MATCH A.K.A. FRANKENSTEIN
 genericArgumentClause   = "<"
                            genericArgumentList ","?
-                          ">" =>> .
+                          ">" ~~~ .
 
 genericArgumentList = genericArgument | genericArgument "," genericArgumentList .
 genericArgument = type | signedIntegerLiteral .
 
 ^^^#AllSources.swift
 ^^^#ApusParser.swift
-^^^#ApusParserBuilder.swift
 ^^^#ApusTerminals.swift
 ^^^#BinarySubtreeRepresentation.swift
 ^^^#CallReturnForest.swift
@@ -1090,11 +1083,9 @@ genericArgument = type | signedIntegerLiteral .
 ^^^#GenerateParser.swift
 ^^^#Grammar.swift
 ^^^#GrammarNode.swift
-^^^#GrammarStore.swift
 ^^^#Loggers.swift
 ^^^#ManualOutput.swift
 ^^^#MessageParser.swift
-^^^#NewScanner.swift
 ^^^#OutputTools.swift
 ^^^#SPPF.swift
 ^^^#Scanner.swift

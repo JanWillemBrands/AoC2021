@@ -172,3 +172,9 @@ Aycock & Horspool's "Schrödinger's Token" (2001) handle the case where the same
 ## Summary
 
 Scanner make monster. Parser need to cut monster into pieces. Pieces span different nonterminals, different descriptors, different execution paths. Position encoding must keep pieces distinct, ordered, and compact. Bit-packing in Int32 do all three. Hot path not care. Monster only appear when grammar say so. Everybody happy.
+
+## Annotation Update (May 2026)
+
+- Frankenstein literal annotation is now `~~~`.
+- Previous marker `=>>` was replaced across source, grammars, tests, and docs.
+- Semantics are unchanged: annotation still means "allow prefix split of a longer scanned token at this literal site."

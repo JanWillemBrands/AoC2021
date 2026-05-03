@@ -37,6 +37,12 @@ extension Character {
 
 extension String {
     
+    var withLayoutGlyphs: String {
+        self
+            .replacingOccurrences(of: ">>|", with: "⇥")
+            .replacingOccurrences(of: "|<<", with: "⇤")
+    }
+    
     var escapesAdded: String {
         self.unicodeScalars
             .reduce("") { $0 + $1.escaped(asASCII: false)}
@@ -78,12 +84,44 @@ extension String {
     func linePosition(of index: String.Index) -> String {
         var line = 0
         var lineStart = self.startIndex
-        while let match = self[lineStart ..< index].firstIndex(of: "\n") {
-            line += 1
-            lineStart = self.index(match, offsetBy: 1)
+        var i = self.startIndex
+        while i < index {
+            let ch = self[i]
+            let next = self.index(after: i)
+            if ch == "\r" {
+                line += 1
+                if next < index && self[next] == "\n" {
+                    i = self.index(after: next)
+                } else {
+                    i = next
+                }
+                lineStart = i
+            } else if ch == "\n" {
+                line += 1
+                lineStart = next
+                i = next
+            } else {
+                i = next
+            }
         }
         let position = self.distance(from: lineStart, to: index)
         return "L\(line)P\(position)"
+    }
+
+    func columnOf(_ index: String.Index, tabWidth: Int = 8) -> Int {
+        var lineStart = index
+        while lineStart > self.startIndex {
+            let prev = self.index(before: lineStart)
+            if self[prev] == "\n" || self[prev] == "\r" { break }
+            lineStart = prev
+        }
+        var col = 0
+        var i = lineStart
+        while i < index {
+            col += self[i] == "\t" ? (tabWidth - col % tabWidth) : 1
+            i = self.index(after: i)
+        }
+        return col
     }
 }
 

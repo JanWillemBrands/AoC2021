@@ -49,7 +49,7 @@ func parseMatches(grammar grammarString: String, message: String) throws -> Bool
         return false
     }
     let messageParser = MessageParser(grammar: grammar)
-    messageParser.parse(tokens: messageScanner.tokens)
+    messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
 
     let extent = TokenPosition(token: messageParser.tokens.count - 1)
     return messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
@@ -118,7 +118,7 @@ func loadLanguageFixture(_ path: String) -> LanguageFixture {
 
     let apusParser = try! ApusParser(fromFile: grammarFileURL)
     let grammar = try! apusParser.parse(explicitStartSymbol: "")
-    let needsLayout = grammar.symbolToID[">>|"] != nil
+    let needsLayout = grammar.usesInjectedLayoutTokens
 
     let cases = grammar.messages.enumerated().map { (i, msg) in
         LanguageTestCase(index: i + 1, message: String(msg))
@@ -142,13 +142,13 @@ func parseLanguageMessage(_ fixture: LanguageFixture, message: String) throws ->
         injectLayoutTokens(
             tokens: &messageScanner.tokens,
             trivia: &messageScanner.trivia,
-            gaps: messageScanner.gaps,
+            input: messageScanner.input,
             bracketPairs: [("(", ")"), ("[", "]"), ("{", "}")]
         )
     }
 
     let parser = MessageParser(grammar: fixture.grammar)
-    parser.parse(tokens: messageScanner.tokens)
+    parser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
 
     let extent = TokenPosition(token: parser.tokens.count - 1)
     return parser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }

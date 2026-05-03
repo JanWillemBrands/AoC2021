@@ -26,6 +26,8 @@ class Grammar {
     var epilogue: [String] = []
     var root: GrammarNode = GrammarNode(kind: .EOS, name: "○")
     var isLL1: Bool = true
+    /// True when unquoted synthetic layout terminals (>>| / |<<) are used in productions.
+    var usesInjectedLayoutTokens: Bool = false
     
     // MARK: - Integer Symbol Table
     //
@@ -45,7 +47,7 @@ class Grammar {
     // Strings are retained for diagnostics, error messages, and diagram generation.
     
     // the representation of the BNF empty production are:
-    // in apus grammar specifications: the empty string "" or any of the many unicode epsilon character variants "ε" "ϵ" "Ԑ" "ԑ" "𝛆" "𝛜" "𝜀" "𝜖" "𝜺" "𝝐" "𝝴" "𝞊" "𝞮" "𝟄"
+    // in apus grammar specifications: the empty string "" or the epsilon character 'ε'
     // in canonical ebnf() or ebnfDot() output: 'ε' GREEK SMALL LETTER EPSILON U+03B5
     // internally in FIRST and FOLLOW sets: "" (empty string)
 
@@ -96,7 +98,7 @@ class Grammar {
             assignNameIDsRecursive(node)
         }
     }
-    
+
     private func assignNameIDsRecursive(_ node: GrammarNode) {
         switch node.kind {
         case .EOS:
@@ -121,7 +123,7 @@ class Grammar {
             if let alt = node.alt { assignNameIDsRecursive(alt) }
         }
     }
-    
+
     // MARK: - Schrödinger Exclusion Set Propagation
     //
     // Background: the scanner produces Schrödinger tokens when multiple patterns
@@ -341,10 +343,15 @@ extension Grammar {
             try populateFirstFollowSets(for: node.seq!)
             node.first = node.seq!.first
             updateFollow(for: node)
-        case .EOS, .T, .TI, .C, .B:
+        case .EOS, .T, .TI, .C:
             try populateFirstFollowSets(for: node.seq!)
 //            node.first = [node.name]
             node.first.insert(node.name)    // there may already be a frankenstein sentinel
+            updateFollow(for: node)
+        case .B:
+            // Boundary/trivia constraints are not part of FIRST/FOLLOW token prediction.
+            try populateFirstFollowSets(for: node.seq!)
+            node.first = node.seq!.first
             updateFollow(for: node)
         case .N:
             try handleNonTerminal(node)

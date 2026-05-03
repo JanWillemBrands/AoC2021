@@ -4,22 +4,23 @@ comment     : /\/\/.*/ .
 action      : /@(?:[^@\\]|\\.)+@/ .
 
 identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
-literal     - /\"(?:[^\"\\]|\\.)*\"/ .
-epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
+pragma      - /'(?:[^\'\n])*'/ .
+
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
 production  = identifier
-                ( ":" ( regex | literal ) "." scanmode          // skip token
-                | "-" ( regex | literal ) "." scanmode          // regular token
-                | "=" selection "."                             // grammar production
+                ( ":" ( regex | literal ) "." mode
+                | "-" ( regex | literal ) "." mode
+                | "=" selection "."
                 ) .
-                
+
 selection   = sequence { "|" sequence } .
 
-sequence    = < factor [ "?" | "*" | "+" ] > .
+sequence    = < layout | factor [ "?" | "*" | "+" ] > .
 
 factor      = terminal
             | "[" selection "]"
@@ -28,19 +29,21 @@ factor      = terminal
             | "(" selection ")"
             .
             
-terminal    = identifier    [ "---" "(" <literal> ")" ]     // exclude literal tokens (aka keywords) from any Schrödinger match
-            | literal       ["=>>"]                         // Frankenstein terminal, allow partial prefix token match TODO: replace with "~~~"
+terminal    = identifier    [ "---" "(" < literal > ")" ]
+            | literal       [ "~~~" ]
             | regex
-            | "ε" | ""                                      // epsilon
+            | epsilon | empty
+            | pragma
             .
+            
+epsilon     = "ε" .
+empty       = "\"\"" .
 
-scanmode    = [ "===" literal                                 // enable scanning of this terminal only in this mode
-              | ">>>" literal                                 // push new mode
-              | "<<<" literal                                 // pop
-              ] .
-              
-// TODO: use #__ "whitespace"  and __# "whitespace" to disallow leading or trailing white space.
-// TODO: How to connect "whitespace" literal to whitespace terminal name?
+layout      = [ ">>|" | "|<<" | "<.>" | "<:>" | ">.<" | ">:<" ] .
+
+mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
+name        = literal | identifier .
+
 
 ^^^
 whitespace  : /\s+/ .
@@ -49,22 +52,23 @@ comment     : /\/\/.*/ .
 action      : /@(?:[^@\\]|\\.)+@/ .
 
 identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
-literal     - /\"(?:[^\"\\]|\\.)*\"/ .
-epsilon     - /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ .
+literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
+pragma      - /'(?:[^\'\n])*'/ .
+
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
 production  = identifier
-                ( ":" ( regex | literal ) "." scanmode          // skip token
-                | "-" ( regex | literal ) "." scanmode          // regular token
-                | "=" selection "."                             // grammar production
+                ( ":" ( regex | literal ) "." mode
+                | "-" ( regex | literal ) "." mode
+                | "=" selection "."
                 ) .
-                
+
 selection   = sequence { "|" sequence } .
 
-sequence    = < factor [ "?" | "*" | "+" ] > .
+sequence    = [ layout ] < factor [ "?" | "*" | "+" ] [ layout ] > .
 
 factor      = terminal
             | "[" selection "]"
@@ -73,17 +77,17 @@ factor      = terminal
             | "(" selection ")"
             .
             
-terminal    = identifier    [ "---" "(" <literal> ")" ]     // exclude literal tokens (aka keywords) from any Schrödinger match
-            | literal       ["=>>"]                         // Frankenstein terminal, allow partial prefix token match TODO: replace with "~~~"
+terminal    = identifier    [ "---" "(" < literal > ")" ]
+            | literal       [ "~~~" ]
             | regex
-            | epsilon
+            | epsilon | empty
+            | pragma
             .
+            
+epsilon     = "ε" .
+empty       = "\"\"" .
 
-scanmode    = [ "===" literal                                 // enable scanning of this terminal only in this mode
-              | ">>>" literal                                 // push new mode
-              | "<<<" literal                                 // pop
-              ] .
-              
-// TODO: use #__ "whitespace"  and __# "whitespace" to disallow leading or trailing white space.
-// TODO: How to connect "whitespace" literal to whitespace terminal name?
+layout      = [ ">>|" | "|<<" | "<.>" | "<:>" | ">.<" | ">:<" ] .
 
+mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
+name        = literal | identifier .

@@ -31,7 +31,8 @@ python3 tools/wiki/query_wiki.py "SPPF binarized node"
 1. Pull facts from papers into short notes in `wiki/notes/`.
 2. Keep design decisions and tradeoffs there (with date + rationale).
 3. Query the index before making parser changes.
-4. Rebuild index after major edits:
+4. After any material code/design change, update the relevant `wiki/notes/*.md` page in the same change pass.
+5. Rebuild index after major edits:
 
 ```bash
 python3 tools/wiki/build_wiki.py --root . --db wiki/index.db
@@ -56,6 +57,10 @@ Then query:
 ./wiki-search "Swift trivia inventory infix prefix postfix whitespace" 5
 ./wiki-search "annotation >:< >.< >+< >#< <?>" 5
 ```
+
+Also read the consolidated task list:
+
+8. `Advent/TODO.md` (canonical markdown TODOs)
 
 ## Notes
 

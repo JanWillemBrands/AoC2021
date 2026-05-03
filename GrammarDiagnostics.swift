@@ -118,8 +118,8 @@ extension GrammarNode {
     
     func possibleIdentifier(_ element: String) -> Bool {
         let startsWithLetter = element.first?.isLetter ?? false
-        let isKeyword = GrammarNode.grammar?.terminals[element]?.isKeyword == true
-        return startsWithLetter && isKeyword
+        let isLiteral = GrammarNode.grammar?.terminals[element]?.isLiteral == true
+        return startsWithLetter && isLiteral
     }
     
     func identifierKeywordConflict() {

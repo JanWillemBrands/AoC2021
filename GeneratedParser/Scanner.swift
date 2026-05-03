@@ -10,7 +10,7 @@ enum ScannerFailure: Error {
     case charactersDoNotMatchAnySymbol(position: String.Index, input: String)
 }
 
-typealias TokenPattern = (source: String, regex: Regex<Substring>, isKeyword: Bool, isSkip: Bool)
+typealias TokenPattern = (source: String, regex: Regex<Substring>, isLiteral: Bool, isSkip: Bool)
 
 final class Token: CustomStringConvertible {
     var image: Substring
@@ -75,7 +75,7 @@ final class Scanner {
                         tailMatch = headMatch
                         skip = pattern.isSkip
                     } else if match.0.endIndex == matchEnd {
-                        if pattern.isKeyword {
+                        if pattern.isLiteral {
                             let oldHead = headMatch
                             headMatch = Token(image: match.0, kind: kind)
                             headMatch?.dual = oldHead
@@ -95,7 +95,8 @@ final class Scanner {
                 try scanError(position: matchStart)
             }
         }
-        tokens.append(Token(image: "$", kind: "$"))
+        let end = input.endIndex
+        tokens.append(Token(image: input[end..<end], kind: "$"))
     }
 
     private func scanError(position: String.Index) throws -> Never {

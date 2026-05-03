@@ -25,8 +25,55 @@ class ParserGenerator {
         import RegexBuilder
         
         var tokens: [Token] = []
+        var trivia: [[Token]] = []
         var cI = 0
         var token: Token { tokens[cI] }
+
+        func lineBreakCountBetweenTokens(at first: Int, and second: Int) -> Int {
+            guard let input = tokens[first].image.base else { return 0 }
+            let span = input[tokens[first].image.startIndex..<tokens[second].image.startIndex]
+            var breaks = 0
+            var prevWasCR = false
+            for ch in span {
+                let isCR = ch == "\r"
+                let isLF = ch == "\n"
+                if isCR || (isLF && !prevWasCR) { breaks += 1 }
+                prevWasCR = isCR
+            }
+            return breaks
+        }
+
+        func hasInterTokenGap(at first: Int, and second: Int) -> Bool {
+            tokens[first].image.endIndex < tokens[second].image.startIndex
+        }
+
+        func boundary(_ kind: String) {
+            guard cI > 0 && cI < tokens.count else {
+                fatalError("boundary '\(kind)' cannot be evaluated at token index \(cI)")
+            }
+            let left = cI - 1
+            let right = cI
+            switch kind {
+            case "<:>":
+                if !hasInterTokenGap(at: left, and: right) {
+                    fatalError("expected spacing between tokens around '\(kind)'")
+                }
+            case "<.>":
+                if lineBreakCountBetweenTokens(at: left, and: right) == 0 {
+                    fatalError("expected line break between tokens around '\(kind)'")
+                }
+            case ">:<":
+                if hasInterTokenGap(at: left, and: right) {
+                    fatalError("expected adjacency between tokens around '\(kind)'")
+                }
+            case ">.<":
+                if lineBreakCountBetweenTokens(at: left, and: right) > 0 {
+                    fatalError("expected same line between tokens around '\(kind)'")
+                }
+            default:
+                fatalError("unknown boundary token '\(kind)'")
+            }
+        }
         
         func expect(_ expected: String...) {
             if !expected.contains(token.kind) {
@@ -46,11 +93,11 @@ class ParserGenerator {
         
         // TODO: check escapes etc.
         emit(dent: .NR, "let tokenPatterns: [String:TokenPattern] = [")
-        for (kind, pattern) in grammar.terminals.sorted(by: { !$0.value.isKeyword && $1.value.isKeyword } ) {
-            if pattern.isKeyword {
-                emit("\"", kind, "\":\t(", pattern.source, ",\tRegex { ", pattern.source, " },\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
+        for (kind, pattern) in grammar.terminals.sorted(by: { !$0.value.isLiteral && $1.value.isLiteral } ) {
+            if pattern.isLiteral {
+                emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, "\",\tRegex { \"", pattern.source.escapesAdded, "\" },\t", pattern.isLiteral, ",\t", pattern.isSkip, "),")
             } else {
-                emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, "\",\t", pattern.source, ",\t", pattern.isKeyword, ",\t", pattern.isSkip, "),")
+                emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, "\",\t", pattern.source, ",\t", pattern.isLiteral, ",\t", pattern.isSkip, "),")
             }
         }
         emit(dent: .LN, "]")
@@ -134,7 +181,7 @@ class ParserGenerator {
         var pendingPrefix = pendingPrefix
         while let n = current {
             switch n.kind {
-            case .T, .TI, .C, .B:
+            case .T, .TI, .C:
                 if let tokens = dispatched, tokens.contains(n.name) {
                     dispatched = nil
                 } else {
@@ -145,6 +192,13 @@ class ParserGenerator {
                     pendingPrefix = nil
                 }
                 emit("cI += 1")
+            case .B:
+                dispatched = nil
+                if let prefix = pendingPrefix {
+                    emit(prefix, " token")
+                    pendingPrefix = nil
+                }
+                emit("boundary(\"\(n.name.escapesAdded)\")")
             case .EPS:
                 dispatched = nil
                 pendingPrefix = nil

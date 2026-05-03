@@ -25,47 +25,41 @@ A standalone pass that reads raw characters, tracks indentation, and emits a tra
 
 **Rejected because**: Operates below the token level, complicating error recovery and position tracking. The transformation must understand enough about tokenization to avoid injecting delimiters inside strings, comments, or multi-line tokens — essentially reimplementing parts of the scanner.
 
-### Option C: GapChannel + token injection (chosen)
+### Option C: Lazy spatial computation + token injection (chosen)
 
-A three-layer architecture where spatial facts are computed lazily from token positions, synthetic tokens are injected pre-parse, and constraint annotations are checked post-parse. The parser runs unchanged on an augmented token stream.
+A two-layer architecture where spatial facts are computed lazily from token positions, and synthetic tokens are injected pre-parse. The parser runs unchanged on an augmented token stream.
 
 **Chosen because**: Clean separation of concerns. Each layer is independently testable. The parser sees `>>|`/`|<<` as ordinary terminals — no special cases. GLL's ambiguity handling naturally accommodates the additional tokens. Position recovery works because synthetic tokens use zero-length Substrings anchored in the original input.
 
 ## Architecture
 
 ```
-Layer 1:  GapChannel          — computes spatial facts from token positions
-Layer 2:  injectLayoutTokens  — injects >>| / |<< tokens pre-parse
-Layer 3:  (future)            — checks >:< <:> >.< <.> constraints post-parse
+Layer 1:  injectLayoutTokens  — injects >>| / |<< tokens pre-parse
+Layer 2:  (future)            — checks >:< <:> >.< <.> constraints during parse
 ```
 
-### Layer 1: GapChannel
+### Spatial computation
 
-A lazy struct that answers three spatial questions about adjacent tokens:
+All spatial facts are computed lazily from token `image.startIndex`/`endIndex` positions in the original input string — no auxiliary data structures needed.
 
-| Field | Type | Question |
-|-------|------|----------|
-| `empty` | `Bool` | Are the tokens touching (zero characters between)? |
-| `lineBreaks` | `Int` | How many line breaks separate them? |
-| `column` | `Int` | What column does the next token start at? |
+**Adjacency**: Two tokens are touching when `prevToken.image.endIndex == currToken.image.startIndex`.
 
-**Computation**: For `gaps[i]`, examine the input string between the previous token's start and the current token's start. The span starts at the previous token's *start* (not end) so that newlines consumed by visible tokens (e.g. Python's NEWLINE) are still detected.
+**Line breaks**: Count newlines in the span from the previous token's *start* (not end) to the current token's start. Scanning from the previous token's start ensures newlines consumed by visible tokens (e.g. Python's NEWLINE) are still detected. The sequence `\r\n` counts as one line break, not two (the `prevWasCR` guard).
 
-**Column counting**: Walk backwards from the token's start index to the preceding line break, counting Characters (grapheme clusters) with tab expansion. This matches what language specifications mean by "column."
+**Column**: `String.columnOf(_:tabWidth:)` in `StringExtensions.swift`. Scans forward from the line start to the target index, counting Characters (grapheme clusters) with tab expansion. This matches what language specifications mean by "column."
 
-**`\r\n` handling**: The sequence `\r\n` counts as one line break, not two.
+**`linePosition(of:)`**: Also in `StringExtensions.swift`. Returns `"L{line}P{position}"` for diagnostics. Handles `\n`, `\r`, and `\r\n` as line endings.
 
-**Lives in**: `Scanner.swift`, alongside `tokens` and `trivia`. Accessed via `scanner.gaps`.
+### Layer 1: Token injection
 
-### Layer 2: Token injection
-
-A free function that reads the GapChannel and modifies the token/trivia arrays in place:
+A free function that computes spatial facts inline and modifies the token/trivia arrays in place:
 
 ```swift
 func injectLayoutTokens(
     tokens: inout [Token],
     trivia: inout [[Token]],
-    gaps: GapChannel,
+    input: String,
+    tabWidth: Int = 8,
     bracketPairs: [(open: String, close: String)]
 )
 ```
@@ -82,40 +76,60 @@ func injectLayoutTokens(
 
 **Bracket suppression**: Languages specify which token pairs suspend indent tracking. Python uses `[("(", ")"), ("[", "]"), ("{", "}")]`. A language without bracket exemption passes `[]`.
 
-**Lives in**: `LayoutTokenInjection.swift`. Called from `main.swift` between scanning and parsing, gated on `grammar.symbolToID[">>|"] != nil`.
+**Lives in**: `LayoutTokenInjection.swift`. Called from `main.swift` between scanning and parsing, gated on `grammar.usesInjectedLayoutTokens`.
 
-### Layer 3: Constraint annotations (future)
+### Layer 2: Constraint annotations (future)
 
 Four spatial constraint annotations for grammar rules:
 
-| Annotation | Meaning | Gap field |
-|------------|---------|-----------|
-| `>:<` | Tokens must be adjacent (no gap) | `empty` |
-| `<:>` | Tokens must not be adjacent | `!empty` |
-| `>.<` | Tokens must be on the same line | `lineBreaks == 0` |
-| `<.>` | Tokens must be on different lines | `lineBreaks > 0` |
+| Annotation | Meaning | Check |
+|------------|---------|-------|
+| `>:<` | Tokens must be adjacent (no gap) | `prevToken.image.endIndex == currToken.image.startIndex` |
+| `<:>` | Tokens must not be adjacent | `prevToken.image.endIndex != currToken.image.startIndex` |
+| `>.<` | Tokens must be on the same line | no `\n`/`\r` in gap between tokens |
+| `<.>` | Tokens must be on different lines | has `\n`/`\r` in gap between tokens |
 
-These would be checked post-parse by filtering the derivation forest. The GLL parser produces all candidate parses; derivations violating spatial constraints are discarded. This is natural for GLL — layout constraints are just another disambiguation mechanism, like Schrodinger exclusion sets.
+Not yet implemented. Design direction: model constraints as a new `GrammarNodeKind` (a pass-through node in the grammar graph, like `.EPS`). The parser checks the constraint when it reaches the node and either advances or abandons the descriptor. This is during-parse checking, analogous to how exclusion sets are checked in `testSelect`/`tokenMatch`.
 
-Not yet implemented. The GapChannel foundation supports it when ready.
+## Implementation Learnings (May 2026)
+
+1. `>>|` and `|<<` are synthetic layout tokens and should be handled as normal `.T` terminals in grammar matching.
+2. Boundary operators (`<:>`, `>:<`, `<.>`, `>.<`) are semantic boundary predicates (`.B`), not scanner tokens.
+3. Boundary predicates are evaluated between the previous and current parser token position.
+   Example: in `a <:> b`, the check is on the boundary between `a` and `b`.
+4. `<:>` and `>:<` must use source span geometry, not trivia buckets:
+   - `<:>`: `leftToken.endIndex < rightToken.startIndex`
+   - `>:<`: `leftToken.endIndex == rightToken.startIndex`
+   This is required because synthetic layout tokens intentionally carry empty trivia.
+5. `<.>` and `>.<` continue to use line-break counting over the source span between token starts.
+6. `.B` nodes should be excluded from FIRST/FOLLOW and LL(1) diagnostics because they are predicates and do not consume input.
+7. EOS should be represented as a zero-width token at end-of-input (not a detached `"$"` literal image), otherwise span-based boundary checks can hit invalid ranges.
+8. Diagram rendering should map `>>|` / `|<<` to `⇥` / `⇤` for readability; this is presentation only and must not change parser semantics.
+
+## Implementation Learnings (June 2026)
+
+1. Injection activation must be based on **grammar use**, not **terminal declaration**.
+2. `grammar.symbolToID[">>|"] != nil` is insufficient because grammars like `apus.apus` may define layout token terminals as literals but never use layout-sensitive constructs.
+3. APUS parsing now sets `grammar.usesInjectedLayoutTokens = true` only when unquoted layout operators are parsed in grammar structure (for example in sequence/layout positions), and injection is gated on that flag.
+4. Practical rule: quoted literals such as `">>|"` in grammar meta-syntax do not imply layout-sensitive parsing is enabled for that grammar.
 
 ## Language Coverage
 
-| Language | Mechanism | GapChannel fields used |
-|----------|-----------|------------------------|
-| Python | INDENT/DEDENT | `lineBreaks` + `column` |
-| Haskell | Offside rule | `lineBreaks` + `column` |
-| F#, Nim | Indent blocks | `lineBreaks` + `column` |
-| Swift | Operator adjacency | `empty` |
-| Go, JS | Automatic semicolons | `lineBreaks` |
-| YAML | Block styles | `lineBreaks` + `column` |
-| Markdown | Blank-line paragraphs | `lineBreaks` (count > 1) |
+| Language | Mechanism | Spatial facts used |
+|----------|-----------|-------------------|
+| Python | INDENT/DEDENT | line breaks + column |
+| Haskell | Offside rule | line breaks + column |
+| F#, Nim | Indent blocks | line breaks + column |
+| Swift | Operator adjacency | adjacency |
+| Go, JS | Automatic semicolons | line breaks |
+| YAML | Block styles | line breaks + column |
+| Markdown | Blank-line paragraphs | line break count > 1 |
 
 ## Files
 
 | File | Role |
 |------|------|
-| `Scanner.swift` | Gap, GapChannel structs; `scanner.gaps` computed property |
+| `StringExtensions.swift` | `columnOf(_:tabWidth:)`, `linePosition(of:)` |
 | `LayoutTokenInjection.swift` | `injectLayoutTokens()` free function |
 | `main.swift` | Wiring: calls injection between scan and parse |
 | `*.apus` grammar files | Use `>>|` / `|<<` terminals to define indented blocks |

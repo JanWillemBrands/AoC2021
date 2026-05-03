@@ -224,6 +224,19 @@ https://raw.githubusercontent.com/swiftlang/swift-book/main/TSPL.docc/ReferenceM
 - no grammar explosion
 - no unproven parser hard-prune
 
+## Boundary Operator Semantics (Implementation Note)
+
+For APUS boundary operators used as `.B` grammar nodes:
+
+1. The predicate is evaluated at the current parser boundary: between token `cI-1` and token `cI`.
+2. In `a <:> b`, the check happens when parser is at `b`, and measures the gap between `a` and `b`.
+3. For robust behavior with synthetic layout tokens (`>>|`, `|<<`), use source indices, not `trivia[right]`:
+   - `<:>` means there is an inter-token source gap (`left.end < right.start`).
+   - `>:<` means strict adjacency (`left.end == right.start`).
+4. `<.>` / `>.<` should continue to use line-break counting over the source span.
+
+This keeps layout injection and boundary predicates composable: synthetic layout tokens can appear in the stream without corrupting spacing predicates.
+
 ## Bottom Line
 
 - Keep Frankenstein/Schrodinger/scanner modes where they are.
