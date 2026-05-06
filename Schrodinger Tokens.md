@@ -31,7 +31,6 @@ So parser sees all lexical possibilities at same position.
 `Token` has:
 
 - `kind`
-- `kindID`
 - `dual`
 
 Parser functions walk duals:
@@ -49,7 +48,7 @@ Goal:
 - keep completeness globally
 - prune obvious bad branch locally
 
-This becomes `exclude` / `excludeBS` on grammar nodes.
+This becomes `exclude` on grammar nodes.
 
 ## Why Not Oracle
 

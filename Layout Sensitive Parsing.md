@@ -2,12 +2,12 @@
 
 ## Problem
 
-Many languages encode syntactic structure through whitespace: Python uses indentation for blocks, Haskell has the offside rule, Go and JavaScript have automatic semicolon insertion, Swift distinguishes prefix/postfix operators by adjacency. A general parser framework needs to handle these without language-specific hacks in the parser core.
+Some languages encode syntactic structure through whitespace: Python uses indentation for blocks, Haskell has the offside rule, Go and JavaScript have automatic semicolon insertion, Swift distinguishes prefix/postfix operators by adjacency. A general parser framework needs to handle these without language-specific hacks in the parser core.
 
 ## Design Criteria
 
 1. **Parser-agnostic** — The GLL algorithm and its data structures (descriptors, CRF, BSR) must not change. Layout sensitivity is handled entirely outside the parser.
-2. **Grammar-driven** — Whether and how layout applies is determined by the grammar file (presence of `>>|`/`|<<` terminals, future annotation syntax), not by code changes.
+2. **Grammar-driven** — Whether and how layout applies is determined by the grammar file (presence of `>>|` or `|<<` terminals, future annotation syntax), not by code changes.
 3. **Lazy and lightweight** — Spatial facts are computed on demand from existing data (token positions in the input string). No additional scanning pass, no auxiliary arrays.
 4. **General** — The same mechanism should cover indentation (Python, Haskell), adjacency (Swift operators), and line-break sensitivity (ASI in Go/JS). Language-specific details are parameters, not code.
 
@@ -21,7 +21,7 @@ Embed column constraints directly into grammar symbols and check them during par
 
 ### Option B: TeX-style preprocessing
 
-A standalone pass that reads raw characters, tracks indentation, and emits a transformed character stream with explicit block delimiters (like TeX's `\begin`/`\end`). The scanner then tokenizes the transformed stream.
+A standalone pass that reads raw characters, tracks indentation, and emits a transformed character stream with explicit block delimiters (like TeX's `\begin` and `\end`). The scanner then tokenizes the transformed stream.
 
 **Rejected because**: Operates below the token level, complicating error recovery and position tracking. The transformation must understand enough about tokenization to avoid injecting delimiters inside strings, comments, or multi-line tokens — essentially reimplementing parts of the scanner.
 
@@ -29,18 +29,18 @@ A standalone pass that reads raw characters, tracks indentation, and emits a tra
 
 A two-layer architecture where spatial facts are computed lazily from token positions, and synthetic tokens are injected pre-parse. The parser runs unchanged on an augmented token stream.
 
-**Chosen because**: Clean separation of concerns. Each layer is independently testable. The parser sees `>>|`/`|<<` as ordinary terminals — no special cases. GLL's ambiguity handling naturally accommodates the additional tokens. Position recovery works because synthetic tokens use zero-length Substrings anchored in the original input.
+**Chosen because**: Clean separation of concerns. Each layer is independently testable. The parser sees `>>|` and `|<<` as ordinary terminals — no special cases. GLL's ambiguity handling naturally accommodates the additional tokens. Position recovery works because synthetic tokens use zero-length Substrings anchored in the original input.
 
 ## Architecture
 
 ```
-Layer 1:  injectLayoutTokens  — injects >>| / |<< tokens pre-parse
-Layer 2:  (future)            — checks >:< <:> >.< <.> constraints during parse
+Layer 1:  injectLayoutTokens  — injects >>| and |<< tokens pre-parse
+Layer 2:  (future)            — checks >s< <s> >n< <n> constraints during parse
 ```
 
 ### Spatial computation
 
-All spatial facts are computed lazily from token `image.startIndex`/`endIndex` positions in the original input string — no auxiliary data structures needed.
+All spatial facts are computed lazily from token `image.startIndex` and `endIndex` positions in the original input string — no auxiliary data structures needed.
 
 **Adjacency**: Two tokens are touching when `prevToken.image.endIndex == currToken.image.startIndex`.
 
@@ -84,27 +84,27 @@ Four spatial constraint annotations for grammar rules:
 
 | Annotation | Meaning | Check |
 |------------|---------|-------|
-| `>:<` | Tokens must be adjacent (no gap) | `prevToken.image.endIndex == currToken.image.startIndex` |
-| `<:>` | Tokens must not be adjacent | `prevToken.image.endIndex != currToken.image.startIndex` |
-| `>.<` | Tokens must be on the same line | no `\n`/`\r` in gap between tokens |
-| `<.>` | Tokens must be on different lines | has `\n`/`\r` in gap between tokens |
+| `>s<` | Tokens must be adjacent (no gap) | `prevToken.image.endIndex == currToken.image.startIndex` |
+| `<s>` | Tokens must not be adjacent | `prevToken.image.endIndex != currToken.image.startIndex` |
+| `>n<` | Tokens must be on the same line | no `\n`/`\r` in gap between tokens |
+| `<n>` | Tokens must be on different lines | has `\n`/`\r` in gap between tokens |
 
 Not yet implemented. Design direction: model constraints as a new `GrammarNodeKind` (a pass-through node in the grammar graph, like `.EPS`). The parser checks the constraint when it reaches the node and either advances or abandons the descriptor. This is during-parse checking, analogous to how exclusion sets are checked in `testSelect`/`tokenMatch`.
 
 ## Implementation Learnings (May 2026)
 
 1. `>>|` and `|<<` are synthetic layout tokens and should be handled as normal `.T` terminals in grammar matching.
-2. Boundary operators (`<:>`, `>:<`, `<.>`, `>.<`) are semantic boundary predicates (`.B`), not scanner tokens.
+2. Boundary operators (`<s>`, `>s<`, `<n>`, `>n<`) are semantic boundary predicates (`.B`), not scanner tokens.
 3. Boundary predicates are evaluated between the previous and current parser token position.
-   Example: in `a <:> b`, the check is on the boundary between `a` and `b`.
-4. `<:>` and `>:<` must use source span geometry, not trivia buckets:
-   - `<:>`: `leftToken.endIndex < rightToken.startIndex`
-   - `>:<`: `leftToken.endIndex == rightToken.startIndex`
+   Example: in `a <s> b`, the check is on the boundary between `a` and `b`.
+4. `<s>` and `>s<` must use source span geometry, not trivia buckets:
+   - `<s>`: `leftToken.endIndex < rightToken.startIndex`
+   - `>s<`: `leftToken.endIndex == rightToken.startIndex`
    This is required because synthetic layout tokens intentionally carry empty trivia.
-5. `<.>` and `>.<` continue to use line-break counting over the source span between token starts.
+5. `<n>` and `>n<` continue to use line-break counting over the source span between token starts.
 6. `.B` nodes should be excluded from FIRST/FOLLOW and LL(1) diagnostics because they are predicates and do not consume input.
 7. EOS should be represented as a zero-width token at end-of-input (not a detached `"$"` literal image), otherwise span-based boundary checks can hit invalid ranges.
-8. Diagram rendering should map `>>|` / `|<<` to `⇥` / `⇤` for readability; this is presentation only and must not change parser semantics.
+8. Diagram rendering should map `>>|` and `|<<` to `⇥` and `⇤` for readability; this is presentation only and must not change parser semantics.
 
 ## Implementation Learnings (June 2026)
 
@@ -132,7 +132,7 @@ Not yet implemented. Design direction: model constraints as a new `GrammarNodeKi
 | `StringExtensions.swift` | `columnOf(_:tabWidth:)`, `linePosition(of:)` |
 | `LayoutTokenInjection.swift` | `injectLayoutTokens()` free function |
 | `main.swift` | Wiring: calls injection between scan and parse |
-| `*.apus` grammar files | Use `>>|` / `|<<` terminals to define indented blocks |
+| `*.apus` grammar files | Use `>>|` and `|<<` terminals to define indented blocks |
 
 ## References
 

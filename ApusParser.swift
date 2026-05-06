@@ -8,7 +8,7 @@
 import OSLog
 import Foundation
 import RegexBuilder
-import AdventMacros
+//import AdventMacros
 
 enum ApusParserError: Error {
     case terminalNonterminalConflict(symbols: Set<String>)
@@ -62,10 +62,10 @@ class ApusParser {
         for encoding in encodings {
             do {
                 input = try String(contentsOf: inputFileURL, encoding: encoding)
-                #Trace("Successfully read input file with \(encoding)")
+                trace("Successfully read input file with \(encoding)")
                 break
             } catch {
-                #Trace("Failed reading input file with \(encoding): \(error)")
+                trace("Failed reading input file with \(encoding): \(error)")
             }
         }
         do {
@@ -83,18 +83,18 @@ class ApusParser {
         try parseApusGrammar()
         
         trace = false
-        #Trace("terminals: \(grammar.terminals.count)")
+        trace("terminals: \(grammar.terminals.count)")
         for (name, tokenPattern) in grammar.terminals {
-            #Trace("\t", name, "\t", tokenPattern.source)
+            trace("\t", name, "\t", tokenPattern.source)
         }
-        #Trace("nonTerminals:")
+        trace("nonTerminals:")
         for (name, node) in grammar.nonTerminals {
-            #Trace("\t", name, "\t", node.kind)
+            trace("\t", name, "\t", node.kind)
         }
         
         let conflictSet = Set(grammar.terminals.keys).intersection(Set(grammar.nonTerminals.keys))
         if !conflictSet.isEmpty {
-            #Trace("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
+            trace("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
             throw ApusParserError.terminalNonterminalConflict(symbols: conflictSet)
         }
         
@@ -104,7 +104,7 @@ class ApusParser {
         grammar.root = root
         
         for (name, node) in grammar.nonTerminals.sorted(by: { $0.key > $1.key }) {      // a fixed ordering with 'S' appearing first in small test grammars
-            #Trace("Processing END nodes for:", name)
+            trace("Processing END nodes for:", name)
             node.resolveGrammarNodeLinks(parent: node, alternate: node.alt)
         }
         
@@ -112,7 +112,7 @@ class ApusParser {
         grammar.finalizeSymbolTable()
         grammar.assignNameIDs()
         trace = false
-        #Trace("start symbol '\(grammar.startSymbol)' first:", grammar.root.first, "follow:", grammar.root.follow)
+        trace("start symbol '\(grammar.startSymbol)' first:", grammar.root.first, "follow:", grammar.root.follow)
         
         var oldSize = 0
         var newSize = 0
@@ -120,12 +120,12 @@ class ApusParser {
             oldSize = newSize
             newSize = 0
             for (_, node) in grammar.nonTerminals {
-                #Trace("nonterminalcount", grammar.nonTerminals.count)
+                trace("nonterminalcount", grammar.nonTerminals.count)
                 GrammarNode.sizeofSets = 0
                 try grammar.populateFirstFollowSets(for: node)
                 newSize += GrammarNode.sizeofSets
             }
-            #Trace("first & follow", newSize)
+            trace("first & follow", newSize)
         } while newSize != oldSize
         // store the cumulative set size
         GrammarNode.sizeofSets = newSize
@@ -147,7 +147,7 @@ class ApusParser {
         
         var isLL1 = true
         for (name, node) in grammar.nonTerminals {
-            #Trace("Detecting ambiguity for:", name)
+            trace("Detecting ambiguity for:", name)
             if !node.verifyLL1() { isLL1 = false }
             node.detectSchrödingerConflict()
         }
@@ -163,7 +163,7 @@ class ApusParser {
     private var literalAliases: [String: String] = [:]
     
     func parseApusGrammar() throws {
-        #Trace("parseApusGrammar", token)
+        trace("parseApusGrammar", token)
         
         // Collect preamble actions (before first production)
         grammar.preamble = collectActions(at: 0)
@@ -185,7 +185,7 @@ class ApusParser {
     }
     
     func production() throws {
-        #Trace("production", token)
+        trace("production", token)
         let nonTerminalName = String(token.image)
         cI += 1
         
@@ -249,6 +249,11 @@ class ApusParser {
             if grammar.startSymbol == "" {
                 grammar.startSymbol = nonTerminalName
             }
+            var disambiguationAnnotation: Disambiguation?
+            if token.kind == "pragma", let d = Disambiguation(rawValue: token.stripped) {
+                disambiguationAnnotation = d
+                cI += 1
+            }
             let node = try selection()
             let lhsNode: GrammarNode
             if let existing = grammar.nonTerminals[nonTerminalName] {
@@ -262,9 +267,11 @@ class ApusParser {
                 lhsNode = GrammarNode(kind: .N, name: nonTerminalName, alt: node)
                 grammar.nonTerminals[nonTerminalName] = lhsNode
             }
-            // Store signature on the LHS .N node
             if let sig = signatureActions.first {
                 lhsNode.signature = sig
+            }
+            if let d = disambiguationAnnotation {
+                lhsNode.disambiguation = d
             }
             try expect(["."])
             cI += 1
@@ -272,13 +279,13 @@ class ApusParser {
     }
     
     func message() {
-        #Trace("message", token)
+        trace("message", token)
         grammar.messages.append(token.stripped)
         cI += 1
     }
     
     func selection() throws -> GrammarNode {
-        #Trace("selection", token)
+        trace("selection", token)
         let startOfAlternates = try sequence()
         var tmp = startOfAlternates
         while token.kind == "|" {
@@ -299,9 +306,9 @@ class ApusParser {
     }
     
     func sequence() throws -> GrammarNode {
-        // sequence = [ layout ] < factor [ "?" | "*" | "+" ] [ layout ] > .
+        // sequence = < layout | factor [ "?" | "*" | "+" ] > .
         // Actions are collected from skippedTokens at each position.
-        #Trace("sequence", token)
+        trace("sequence", token)
         let startOfSequence = GrammarNode(kind: .ALT, name: "")
         var termNode = startOfSequence
         
@@ -366,7 +373,7 @@ class ApusParser {
             grammar.registerTerminal(name)
             cI += 1
             return GrammarNode(kind: .T, name: name)
-        case "<.>", "<:>", ">.<", ">:<":
+        case "<n>", "<s>", ">n<", ">s<":
             let name = token.kind
             grammar.registerTerminal(name)
             cI += 1
@@ -377,7 +384,7 @@ class ApusParser {
     }
     
     func regex() throws -> GrammarNode {
-        #Trace("regex", token)
+        trace("regex", token)
         // the name of the regex is either the LHS identifier of the production rule, or the lineposition
         let name = terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex)
         
@@ -391,7 +398,7 @@ class ApusParser {
             let regex = try Regex<Substring>(String(token.stripped))
             grammar.terminals[name] = TokenPattern(String(token.image), regex, false, skip)
             grammar.registerTerminal(name)
-            #Trace("regex name:", name, "image:", token.image)
+            trace("regex name:", name, "image:", token.image)
         } catch {
             Logger.parse.error("grammar parse error: \(self.token.image, privacy: .public) is not a valid literal Regex \(error, privacy: .public)")
             throw ApusParserError.invalidRegex(image: String(token.image), error: error)
@@ -402,11 +409,11 @@ class ApusParser {
     }
     
     func literal() -> GrammarNode {
-        #Trace("literal", token, token.stripped)
+        trace("literal", token, token.stripped)
         
         // epsilon has two representations in apus grammars, either the greek letter ε, or the empty string literal ""
 //        if token.stripped == "" {
-//            #Trace("epsilon", token, token.stripped)
+//            trace("epsilon", token, token.stripped)
 //            cI += 1
 //            return GrammarNode(kind: .EPS, name: "ε")
 //        }
@@ -416,7 +423,7 @@ class ApusParser {
         let name = token.stripped
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
-                #Trace("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
+                trace("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
             }
         }
         // the token is a string literal, use a regex builder to create a Regex
@@ -440,13 +447,13 @@ class ApusParser {
     }
     
     func epsilon() -> GrammarNode {
-        #Trace("epsilon", token, token.stripped)
+        trace("epsilon", token, token.stripped)
         cI += 1
         return GrammarNode(kind: .EPS, name: "ε")
     }
     
     func factor() throws -> GrammarNode {
-        #Trace("factor", token)
+        trace("factor", token)
         let node: GrammarNode
         switch token.kind {
         case "identifier":
@@ -455,7 +462,7 @@ class ApusParser {
                 node = GrammarNode(kind: .T, name: literalName)
             } else if grammar.terminals[name] != nil {
                 if grammar.nonTerminals[name] != nil {
-                    #Trace("grammar parse error: \(token.image) is both a terminal and a nonTerminal")
+                    trace("grammar parse error: \(token.image) is both a terminal and a nonTerminal")
                 }
                 node = GrammarNode(kind: .T, name: name)
             } else {

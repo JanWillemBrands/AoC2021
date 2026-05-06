@@ -8,29 +8,6 @@
 import OSLog
 import Foundation
 
-//import RegexBuilder
-//import AdventMacros
-
-//import ArgumentParser
-//@main
-//struct Repeat: ParsableCommand {
-//  @Argument(help: "The phrase to repeat.")
-//  var phrase: String
-//
-//  @Option(help: "The number of times to repeat 'phrase'.")
-//  var count: Int? = nil
-//
-//  mutating func run() throws {
-//    let repeatCount = count ?? .max
-//
-//    for i in 1...repeatCount {
-//      print(phrase)
-//    }
-//  }
-//}
-
-//func run() {
-
 trace = false
 let enableDiagrams = true
 
@@ -116,6 +93,9 @@ for (mi, message) in grammar.messages.enumerated() {
 
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
+
+    // Oracle: post-parse disambiguation (rules from grammar annotations)
+    Oracle(grammar: grammar, tokens: messageScanner.tokens).disambiguate()
     var stats = "cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount\n"
     stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yieldCount)\n"
     stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
@@ -224,6 +204,7 @@ for (mi, message) in grammar.messages.enumerated() {
 
 //    Logger.ui.debug("first/follow set size: \(GrammarNode.sizeofSets) terminals.count: \(grammar.terminals.count) nonTerminals.count: \(grammar.nonTerminals.count)")
 
+    SwiftSyntaxASTTest()
 }
 //}
 

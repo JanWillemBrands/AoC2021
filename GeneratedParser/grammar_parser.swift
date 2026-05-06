@@ -31,9 +31,9 @@ let tokenPatterns: [String:TokenPattern] = [
 	"-":	("-",	Regex { "-" },	true,	false),
 	">>|":	(">>|",	Regex { ">>|" },	true,	false),
 	"|<<":	("|<<",	Regex { "|<<" },	true,	false),
-	"<.>":	("<.>",	Regex { "<.>" },	true,	false),
+	"<n>":	("<n>",	Regex { "<n>" },	true,	false),
 	"[":	("[",	Regex { "[" },	true,	false),
-	">:<":	(">:<",	Regex { ">:<" },	true,	false),
+	">s<":	(">s<",	Regex { ">s<" },	true,	false),
 	"===":	("===",	Regex { "===" },	true,	false),
 	")":	(")",	Regex { ")" },	true,	false),
 	"*":	("*",	Regex { "*" },	true,	false),
@@ -49,8 +49,8 @@ let tokenPatterns: [String:TokenPattern] = [
 	">>>":	(">>>",	Regex { ">>>" },	true,	false),
 	"---":	("---",	Regex { "---" },	true,	false),
 	"(":	("(",	Regex { "(" },	true,	false),
-	">.<":	(">.<",	Regex { ">.<" },	true,	false),
-	"<:>":	("<:>",	Regex { "<:>" },	true,	false),
+	">n<":	(">n<",	Regex { ">n<" },	true,	false),
+	"<s>":	("<s>",	Regex { "<s>" },	true,	false),
 	"?":	("?",	Regex { "?" },	true,	false),
 	".":	(".",	Regex { "." },	true,	false),
 ]
@@ -104,13 +104,13 @@ func layout() throws {
 		cI += 1
 	case "|<<":
 		cI += 1
-	case "<.>":
+	case "<n>":
 		cI += 1
-	case "<:>":
+	case "<s>":
 		cI += 1
-	case ">.<":
+	case ">n<":
 		cI += 1
-	case ">:<":
+	case ">s<":
 		cI += 1
 	default:
 		break

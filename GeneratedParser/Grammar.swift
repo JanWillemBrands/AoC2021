@@ -5,7 +5,7 @@
 //  Created by Johannes Brands on 2026.03.13.
 //
 
-import AdventMacros
+//import AdventMacros
 import BitCollections
 
 // Result of parsing an APUS grammar file.
@@ -183,10 +183,10 @@ extension Grammar {
                 }
                 production.follow.formUnion(node.follow)
             } else {
-                #Trace("grammar parse error: '\(node.name)' was not defined as a grammar rule")
+                trace("grammar parse error: '\(node.name)' was not defined as a grammar rule")
                 let definedAsTerminal = terminals[node.name] != nil
                 if definedAsTerminal {
-                    #Trace("but it was defined as terminal \(terminals[node.name]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
+                    trace("but it was defined as terminal \(terminals[node.name]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
                 throw GrammarNodeError.undefinedNonTerminal(name: node.name, definedAsTerminal: definedAsTerminal)
             }

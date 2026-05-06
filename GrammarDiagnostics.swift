@@ -6,7 +6,7 @@
 //
 
 import OSLog
-import AdventMacros
+//import AdventMacros
 
 extension GrammarNode {
 
@@ -44,11 +44,11 @@ extension GrammarNode {
         }
         let saved = traceIndent
         traceIndent += 2
-        #Trace(kind, number)
+        trace(kind, number)
         traceIndent += 2
-        #Trace("first    ", first.sorted())
-        #Trace("follow   ", follow.sorted())
-        #Trace("ambiguous", ambiguous.sorted())
+        trace("first    ", first.sorted())
+        trace("follow   ", follow.sorted())
+        trace("ambiguous", ambiguous.sorted())
         traceIndent = saved
 
         return subtreeIsLL1

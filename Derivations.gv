@@ -1,293 +1,141 @@
 digraph Derivations {
-  fontname = Menlo
-  fontsize = 10
-  node [fontname = Menlo, fontsize = 10]
-  edge [arrowsize = 0.5]
-  rankdir = TB
-  ordering = out
-  labelloc = t
-  label = <article = title "⇥" &lt; section &gt; "⇤" .>
-  subgraph cluster_0 {
-    label = "Derivation 1"
-    style = dashed
-  d0_n0 [shape = ellipse, width=0.0, height=0.0, label = <article>]
-  d0_n1 [shape = ellipse, width=0.0, height=0.0, label = <title>]
-  d0_n2 [shape = box, width=0.0, height=0.0, label = <Cinderella>]
-  d0_n1 -> d0_n2
-  d0_n0 -> d0_n1
-  d0_n3 [shape = box, width=0.0, height=0.0, label = <⇥>]
-  d0_n0 -> d0_n3
-  d0_n4 [shape = ellipse, width=0.0, height=0.0, label = <section>]
-  d0_n5 [shape = ellipse, width=0.0, height=0.0, label = <title>]
-  d0_n6 [shape = box, width=0.0, height=0.0, label = <Once>]
-  d0_n5 -> d0_n6
-  d0_n7 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d0_n5 -> d0_n7
-  d0_n8 [shape = box, width=0.0, height=0.0, label = <upon>]
-  d0_n5 -> d0_n8
-  d0_n9 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d0_n5 -> d0_n9
-  d0_n10 [shape = box, width=0.0, height=0.0, label = <a>]
-  d0_n5 -> d0_n10
-  d0_n11 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d0_n5 -> d0_n11
-  d0_n12 [shape = box, width=0.0, height=0.0, label = <time>]
-  d0_n5 -> d0_n12
-  d0_n4 -> d0_n5
-  d0_n13 [shape = box, width=0.0, height=0.0, label = <⇥>]
-  d0_n4 -> d0_n13
-  d0_n14 [shape = ellipse, width=0.0, height=0.0, label = <paragraph>]
-  d0_n15 [shape = ellipse, width=0.0, height=0.0, label = <sentence>]
-  d0_n16 [shape = box, width=0.0, height=0.0, label = <Something>]
-  d0_n15 -> d0_n16
-  d0_n17 [shape = box, width=0.0, height=0.0, label = <.>]
-  d0_n15 -> d0_n17
-  d0_n18 [shape = box, width=0.0, height=0.0, label = <&lt;:&gt;>]
-  d0_n15 -> d0_n18
-  d0_n14 -> d0_n15
-  d0_n19 [shape = ellipse, width=0.0, height=0.0, label = <sentence>]
-  d0_n20 [shape = box, width=0.0, height=0.0, label = <Another>]
-  d0_n19 -> d0_n20
-  d0_n21 [shape = box, width=0.0, height=0.0, label = <thing>]
-  d0_n19 -> d0_n21
-  d0_n22 [shape = box, width=0.0, height=0.0, label = <.>]
-  d0_n19 -> d0_n22
-  d0_n23 [shape = box, width=0.0, height=0.0, label = <&lt;:&gt;>]
-  d0_n19 -> d0_n23
-  d0_n14 -> d0_n19
-  d0_n24 [shape = ellipse, width=0.0, height=0.0, label = <sentence>]
-  d0_n25 [shape = box, width=0.0, height=0.0, label = <Sleep>]
-  d0_n24 -> d0_n25
-  d0_n26 [shape = box, width=0.0, height=0.0, label = <.>]
-  d0_n24 -> d0_n26
-  d0_n27 [shape = box, width=0.0, height=0.0, label = <&lt;:&gt;>]
-  d0_n24 -> d0_n27
-  d0_n14 -> d0_n24
-  d0_n28 [shape = box, width=0.0, height=0.0, label = <&lt;.&gt;>]
-  d0_n14 -> d0_n28
-  d0_n4 -> d0_n14
-  d0_n29 [shape = box, width=0.0, height=0.0, label = <⇤>]
-  d0_n4 -> d0_n29
-  d0_n0 -> d0_n4
-  d0_n30 [shape = ellipse, width=0.0, height=0.0, label = <section>]
-  d0_n31 [shape = ellipse, width=0.0, height=0.0, label = <title>]
-  d0_n32 [shape = box, width=0.0, height=0.0, label = <The>]
-  d0_n31 -> d0_n32
-  d0_n33 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d0_n31 -> d0_n33
-  d0_n34 [shape = box, width=0.0, height=0.0, label = <Prince>]
-  d0_n31 -> d0_n34
-  d0_n35 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d0_n31 -> d0_n35
-  d0_n36 [shape = box, width=0.0, height=0.0, label = <kisses>]
-  d0_n31 -> d0_n36
-  d0_n37 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d0_n31 -> d0_n37
-  d0_n38 [shape = box, width=0.0, height=0.0, label = <her>]
-  d0_n31 -> d0_n38
-  d0_n30 -> d0_n31
-  d0_n39 [shape = box, width=0.0, height=0.0, label = <⇥>]
-  d0_n30 -> d0_n39
-  d0_n40 [shape = ellipse, width=0.0, height=0.0, label = <paragraph>]
-  d0_n41 [shape = ellipse, width=0.0, height=0.0, label = <sentence>]
-  d0_n42 [shape = box, width=0.0, height=0.0, label = <Wake>]
-  d0_n41 -> d0_n42
-  d0_n43 [shape = box, width=0.0, height=0.0, label = <up>]
-  d0_n41 -> d0_n43
-  d0_n44 [shape = box, width=0.0, height=0.0, label = <.>]
-  d0_n41 -> d0_n44
-  d0_n45 [shape = box, width=0.0, height=0.0, label = <&lt;:&gt;>]
-  d0_n41 -> d0_n45
-  d0_n40 -> d0_n41
-  d0_n46 [shape = box, width=0.0, height=0.0, label = <&lt;.&gt;>]
-  d0_n40 -> d0_n46
-  d0_n30 -> d0_n40
-  d0_n47 [shape = box, width=0.0, height=0.0, label = <⇤>]
-  d0_n30 -> d0_n47
-  d0_n0 -> d0_n30
-  d0_n48 [shape = box, width=0.0, height=0.0, label = <⇤>]
-  d0_n0 -> d0_n48
-  { rank = same; d0_n2; d0_n3; d0_n6; d0_n7; d0_n8; d0_n9; d0_n10; d0_n11; d0_n12; d0_n13; d0_n16; d0_n17; d0_n18; d0_n20; d0_n21; d0_n22; d0_n23; d0_n25; d0_n26; d0_n27; d0_n28; d0_n29; d0_n32; d0_n33; d0_n34; d0_n35; d0_n36; d0_n37; d0_n38; d0_n39; d0_n42; d0_n43; d0_n44; d0_n45; d0_n46; d0_n47; d0_n48 }
-  d0_n2 -> d0_n3 [style = invis]
-  d0_n3 -> d0_n6 [style = invis]
-  d0_n6 -> d0_n7 [style = invis]
-  d0_n7 -> d0_n8 [style = invis]
-  d0_n8 -> d0_n9 [style = invis]
-  d0_n9 -> d0_n10 [style = invis]
-  d0_n10 -> d0_n11 [style = invis]
-  d0_n11 -> d0_n12 [style = invis]
-  d0_n12 -> d0_n13 [style = invis]
-  d0_n13 -> d0_n16 [style = invis]
-  d0_n16 -> d0_n17 [style = invis]
-  d0_n17 -> d0_n18 [style = invis]
-  d0_n18 -> d0_n20 [style = invis]
-  d0_n20 -> d0_n21 [style = invis]
-  d0_n21 -> d0_n22 [style = invis]
-  d0_n22 -> d0_n23 [style = invis]
-  d0_n23 -> d0_n25 [style = invis]
-  d0_n25 -> d0_n26 [style = invis]
-  d0_n26 -> d0_n27 [style = invis]
-  d0_n27 -> d0_n28 [style = invis]
-  d0_n28 -> d0_n29 [style = invis]
-  d0_n29 -> d0_n32 [style = invis]
-  d0_n32 -> d0_n33 [style = invis]
-  d0_n33 -> d0_n34 [style = invis]
-  d0_n34 -> d0_n35 [style = invis]
-  d0_n35 -> d0_n36 [style = invis]
-  d0_n36 -> d0_n37 [style = invis]
-  d0_n37 -> d0_n38 [style = invis]
-  d0_n38 -> d0_n39 [style = invis]
-  d0_n39 -> d0_n42 [style = invis]
-  d0_n42 -> d0_n43 [style = invis]
-  d0_n43 -> d0_n44 [style = invis]
-  d0_n44 -> d0_n45 [style = invis]
-  d0_n45 -> d0_n46 [style = invis]
-  d0_n46 -> d0_n47 [style = invis]
-  d0_n47 -> d0_n48 [style = invis]
-  }
-
-  subgraph cluster_1 {
-    label = "Derivation 2"
-    style = dashed
-  d1_n0 [shape = ellipse, width=0.0, height=0.0, label = <article>]
-  d1_n1 [shape = ellipse, width=0.0, height=0.0, label = <title>]
-  d1_n2 [shape = box, width=0.0, height=0.0, label = <Cinderella>]
-  d1_n1 -> d1_n2
-  d1_n0 -> d1_n1
-  d1_n3 [shape = box, width=0.0, height=0.0, label = <⇥>]
-  d1_n0 -> d1_n3
-  d1_n4 [shape = ellipse, width=0.0, height=0.0, label = <section>]
-  d1_n5 [shape = ellipse, width=0.0, height=0.0, label = <title>]
-  d1_n6 [shape = box, width=0.0, height=0.0, label = <Once>]
-  d1_n5 -> d1_n6
-  d1_n7 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d1_n5 -> d1_n7
-  d1_n8 [shape = box, width=0.0, height=0.0, label = <upon>]
-  d1_n5 -> d1_n8
-  d1_n9 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d1_n5 -> d1_n9
-  d1_n10 [shape = box, width=0.0, height=0.0, label = <a>]
-  d1_n5 -> d1_n10
-  d1_n11 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d1_n5 -> d1_n11
-  d1_n12 [shape = box, width=0.0, height=0.0, label = <time>]
-  d1_n5 -> d1_n12
-  d1_n4 -> d1_n5
-  d1_n13 [shape = box, width=0.0, height=0.0, label = <⇥>]
-  d1_n4 -> d1_n13
-  d1_n14 [shape = ellipse, width=0.0, height=0.0, label = <paragraph>]
-  d1_n15 [shape = ellipse, width=0.0, height=0.0, label = <sentence>]
-  d1_n16 [shape = box, width=0.0, height=0.0, label = <Something>]
-  d1_n15 -> d1_n16
-  d1_n17 [shape = box, width=0.0, height=0.0, label = <.>]
-  d1_n15 -> d1_n17
-  d1_n18 [shape = box, width=0.0, height=0.0, label = <&lt;:&gt;>]
-  d1_n15 -> d1_n18
-  d1_n14 -> d1_n15
-  d1_n19 [shape = ellipse, width=0.0, height=0.0, label = <sentence>]
-  d1_n20 [shape = box, width=0.0, height=0.0, label = <Another>]
-  d1_n19 -> d1_n20
-  d1_n21 [shape = box, width=0.0, height=0.0, label = <thing>]
-  d1_n19 -> d1_n21
-  d1_n22 [shape = box, width=0.0, height=0.0, label = <.>]
-  d1_n19 -> d1_n22
-  d1_n23 [shape = box, width=0.0, height=0.0, label = <&lt;:&gt;>]
-  d1_n19 -> d1_n23
-  d1_n14 -> d1_n19
-  d1_n24 [shape = box, width=0.0, height=0.0, label = <&lt;.&gt;>]
-  d1_n14 -> d1_n24
-  d1_n4 -> d1_n14
-  d1_n25 [shape = ellipse, width=0.0, height=0.0, label = <paragraph>]
-  d1_n26 [shape = ellipse, width=0.0, height=0.0, label = <sentence>]
-  d1_n27 [shape = box, width=0.0, height=0.0, label = <Sleep>]
-  d1_n26 -> d1_n27
-  d1_n28 [shape = box, width=0.0, height=0.0, label = <.>]
-  d1_n26 -> d1_n28
-  d1_n29 [shape = box, width=0.0, height=0.0, label = <&lt;:&gt;>]
-  d1_n26 -> d1_n29
-  d1_n25 -> d1_n26
-  d1_n30 [shape = box, width=0.0, height=0.0, label = <&lt;.&gt;>]
-  d1_n25 -> d1_n30
-  d1_n4 -> d1_n25
-  d1_n31 [shape = box, width=0.0, height=0.0, label = <⇤>]
-  d1_n4 -> d1_n31
-  d1_n0 -> d1_n4
-  d1_n32 [shape = ellipse, width=0.0, height=0.0, label = <section>]
-  d1_n33 [shape = ellipse, width=0.0, height=0.0, label = <title>]
-  d1_n34 [shape = box, width=0.0, height=0.0, label = <The>]
-  d1_n33 -> d1_n34
-  d1_n35 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d1_n33 -> d1_n35
-  d1_n36 [shape = box, width=0.0, height=0.0, label = <Prince>]
-  d1_n33 -> d1_n36
-  d1_n37 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d1_n33 -> d1_n37
-  d1_n38 [shape = box, width=0.0, height=0.0, label = <kisses>]
-  d1_n33 -> d1_n38
-  d1_n39 [shape = box, width=0.0, height=0.0, label = <&gt;.&lt;>]
-  d1_n33 -> d1_n39
-  d1_n40 [shape = box, width=0.0, height=0.0, label = <her>]
-  d1_n33 -> d1_n40
-  d1_n32 -> d1_n33
-  d1_n41 [shape = box, width=0.0, height=0.0, label = <⇥>]
-  d1_n32 -> d1_n41
-  d1_n42 [shape = ellipse, width=0.0, height=0.0, label = <paragraph>]
-  d1_n43 [shape = ellipse, width=0.0, height=0.0, label = <sentence>]
-  d1_n44 [shape = box, width=0.0, height=0.0, label = <Wake>]
-  d1_n43 -> d1_n44
-  d1_n45 [shape = box, width=0.0, height=0.0, label = <up>]
-  d1_n43 -> d1_n45
-  d1_n46 [shape = box, width=0.0, height=0.0, label = <.>]
-  d1_n43 -> d1_n46
-  d1_n47 [shape = box, width=0.0, height=0.0, label = <&lt;:&gt;>]
-  d1_n43 -> d1_n47
-  d1_n42 -> d1_n43
-  d1_n48 [shape = box, width=0.0, height=0.0, label = <&lt;.&gt;>]
-  d1_n42 -> d1_n48
-  d1_n32 -> d1_n42
-  d1_n49 [shape = box, width=0.0, height=0.0, label = <⇤>]
-  d1_n32 -> d1_n49
-  d1_n0 -> d1_n32
-  d1_n50 [shape = box, width=0.0, height=0.0, label = <⇤>]
-  d1_n0 -> d1_n50
-  { rank = same; d1_n2; d1_n3; d1_n6; d1_n7; d1_n8; d1_n9; d1_n10; d1_n11; d1_n12; d1_n13; d1_n16; d1_n17; d1_n18; d1_n20; d1_n21; d1_n22; d1_n23; d1_n24; d1_n27; d1_n28; d1_n29; d1_n30; d1_n31; d1_n34; d1_n35; d1_n36; d1_n37; d1_n38; d1_n39; d1_n40; d1_n41; d1_n44; d1_n45; d1_n46; d1_n47; d1_n48; d1_n49; d1_n50 }
-  d1_n2 -> d1_n3 [style = invis]
-  d1_n3 -> d1_n6 [style = invis]
-  d1_n6 -> d1_n7 [style = invis]
-  d1_n7 -> d1_n8 [style = invis]
-  d1_n8 -> d1_n9 [style = invis]
-  d1_n9 -> d1_n10 [style = invis]
-  d1_n10 -> d1_n11 [style = invis]
-  d1_n11 -> d1_n12 [style = invis]
-  d1_n12 -> d1_n13 [style = invis]
-  d1_n13 -> d1_n16 [style = invis]
-  d1_n16 -> d1_n17 [style = invis]
-  d1_n17 -> d1_n18 [style = invis]
-  d1_n18 -> d1_n20 [style = invis]
-  d1_n20 -> d1_n21 [style = invis]
-  d1_n21 -> d1_n22 [style = invis]
-  d1_n22 -> d1_n23 [style = invis]
-  d1_n23 -> d1_n24 [style = invis]
-  d1_n24 -> d1_n27 [style = invis]
-  d1_n27 -> d1_n28 [style = invis]
-  d1_n28 -> d1_n29 [style = invis]
-  d1_n29 -> d1_n30 [style = invis]
-  d1_n30 -> d1_n31 [style = invis]
-  d1_n31 -> d1_n34 [style = invis]
-  d1_n34 -> d1_n35 [style = invis]
-  d1_n35 -> d1_n36 [style = invis]
-  d1_n36 -> d1_n37 [style = invis]
-  d1_n37 -> d1_n38 [style = invis]
-  d1_n38 -> d1_n39 [style = invis]
-  d1_n39 -> d1_n40 [style = invis]
-  d1_n40 -> d1_n41 [style = invis]
-  d1_n41 -> d1_n44 [style = invis]
-  d1_n44 -> d1_n45 [style = invis]
-  d1_n45 -> d1_n46 [style = invis]
-  d1_n46 -> d1_n47 [style = invis]
-  d1_n47 -> d1_n48 [style = invis]
-  d1_n48 -> d1_n49 [style = invis]
-  d1_n49 -> d1_n50 [style = invis]
-  }
-
+  fontname=Menlo; fontsize=10
+  node [fontname=Menlo, fontsize=10]
+  edge [arrowsize=0.5]
+  rankdir=TB; ordering=out; labelloc=t
+  label=<article = title "&gt;&gt;|" &lt; section &gt; "|&lt;&lt;" .>
+  n0 [shape=ellipse, width=0, height=0, label=<article>]
+  n1 [shape=ellipse, width=0, height=0, label=<title>]
+  n2 [shape=box, width=0, height=0, label=<Cinderella>]
+  n1 -> n2
+  n0 -> n1
+  n3 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&gt;&gt;|>]
+  n0 -> n3
+  n4 [shape=ellipse, width=0, height=0, label=<section>]
+  n5 [shape=ellipse, width=0, height=0, label=<title>]
+  n6 [shape=box, width=0, height=0, label=<Once>]
+  n5 -> n6
+  n7 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&gt;.&lt;>]
+  n5 -> n7
+  n8 [shape=box, width=0, height=0, label=<upon>]
+  n5 -> n8
+  n9 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&gt;.&lt;>]
+  n5 -> n9
+  n10 [shape=box, width=0, height=0, label=<a>]
+  n5 -> n10
+  n11 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&gt;.&lt;>]
+  n5 -> n11
+  n12 [shape=box, width=0, height=0, label=<time>]
+  n5 -> n12
+  n4 -> n5
+  n13 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&gt;&gt;|>]
+  n4 -> n13
+  n14 [shape=ellipse, width=0, height=0, label=<paragraph>]
+  n15 [shape=ellipse, width=0, height=0, label=<sentence>]
+  n16 [shape=box, width=0, height=0, label=<Something>]
+  n15 -> n16
+  n17 [shape=box, width=0, height=0, label=<.>]
+  n15 -> n17
+  n18 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&lt;:&gt;>]
+  n15 -> n18
+  n14 -> n15
+  n19 [shape=ellipse, width=0, height=0, label=<sentence>]
+  n20 [shape=box, width=0, height=0, label=<Another>]
+  n19 -> n20
+  n21 [shape=box, width=0, height=0, label=<thing>]
+  n19 -> n21
+  n22 [shape=box, width=0, height=0, label=<.>]
+  n19 -> n22
+  n23 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&lt;:&gt;>]
+  n19 -> n23
+  n14 -> n19
+  n24 [shape=ellipse, width=0, height=0, label=<sentence>]
+  n25 [shape=box, width=0, height=0, label=<Sleep>]
+  n24 -> n25
+  n26 [shape=box, width=0, height=0, label=<.>]
+  n24 -> n26
+  n27 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&lt;:&gt;>]
+  n24 -> n27
+  n14 -> n24
+  n28 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&lt;.&gt;>]
+  n14 -> n28
+  n4 -> n14
+  n29 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<|&lt;&lt;>]
+  n4 -> n29
+  n0 -> n4
+  n30 [shape=ellipse, width=0, height=0, label=<section>]
+  n31 [shape=ellipse, width=0, height=0, label=<title>]
+  n32 [shape=box, width=0, height=0, label=<The>]
+  n31 -> n32
+  n33 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&gt;.&lt;>]
+  n31 -> n33
+  n34 [shape=box, width=0, height=0, label=<Prince>]
+  n31 -> n34
+  n35 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&gt;.&lt;>]
+  n31 -> n35
+  n36 [shape=box, width=0, height=0, label=<kisses>]
+  n31 -> n36
+  n37 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&gt;.&lt;>]
+  n31 -> n37
+  n38 [shape=box, width=0, height=0, label=<her>]
+  n31 -> n38
+  n30 -> n31
+  n39 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&gt;&gt;|>]
+  n30 -> n39
+  n40 [shape=ellipse, width=0, height=0, label=<paragraph>]
+  n41 [shape=ellipse, width=0, height=0, label=<sentence>]
+  n42 [shape=box, width=0, height=0, label=<Wake>]
+  n41 -> n42
+  n43 [shape=box, width=0, height=0, label=<up>]
+  n41 -> n43
+  n44 [shape=box, width=0, height=0, label=<.>]
+  n41 -> n44
+  n45 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&lt;:&gt;>]
+  n41 -> n45
+  n40 -> n41
+  n46 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<&lt;.&gt;>]
+  n40 -> n46
+  n30 -> n40
+  n47 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<|&lt;&lt;>]
+  n30 -> n47
+  n0 -> n30
+  n48 [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<|&lt;&lt;>]
+  n0 -> n48
+  { rank=same; n2; n3; n6; n7; n8; n9; n10; n11; n12; n13; n16; n17; n18; n20; n21; n22; n23; n25; n26; n27; n28; n29; n32; n33; n34; n35; n36; n37; n38; n39; n42; n43; n44; n45; n46; n47; n48 }
+  n2 -> n3 [style=invis]
+  n3 -> n6 [style=invis]
+  n6 -> n7 [style=invis]
+  n7 -> n8 [style=invis]
+  n8 -> n9 [style=invis]
+  n9 -> n10 [style=invis]
+  n10 -> n11 [style=invis]
+  n11 -> n12 [style=invis]
+  n12 -> n13 [style=invis]
+  n13 -> n16 [style=invis]
+  n16 -> n17 [style=invis]
+  n17 -> n18 [style=invis]
+  n18 -> n20 [style=invis]
+  n20 -> n21 [style=invis]
+  n21 -> n22 [style=invis]
+  n22 -> n23 [style=invis]
+  n23 -> n25 [style=invis]
+  n25 -> n26 [style=invis]
+  n26 -> n27 [style=invis]
+  n27 -> n28 [style=invis]
+  n28 -> n29 [style=invis]
+  n29 -> n32 [style=invis]
+  n32 -> n33 [style=invis]
+  n33 -> n34 [style=invis]
+  n34 -> n35 [style=invis]
+  n35 -> n36 [style=invis]
+  n36 -> n37 [style=invis]
+  n37 -> n38 [style=invis]
+  n38 -> n39 [style=invis]
+  n39 -> n42 [style=invis]
+  n42 -> n43 [style=invis]
+  n43 -> n44 [style=invis]
+  n44 -> n45 [style=invis]
+  n45 -> n46 [style=invis]
+  n46 -> n47 [style=invis]
+  n47 -> n48 [style=invis]
 }

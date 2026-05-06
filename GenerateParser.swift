@@ -54,19 +54,19 @@ class ParserGenerator {
             let left = cI - 1
             let right = cI
             switch kind {
-            case "<:>":
+            case "<s>":
                 if !hasInterTokenGap(at: left, and: right) {
                     fatalError("expected spacing between tokens around '\(kind)'")
                 }
-            case "<.>":
+            case "<n>":
                 if lineBreakCountBetweenTokens(at: left, and: right) == 0 {
                     fatalError("expected line break between tokens around '\(kind)'")
                 }
-            case ">:<":
+            case ">s<":
                 if hasInterTokenGap(at: left, and: right) {
                     fatalError("expected adjacency between tokens around '\(kind)'")
                 }
-            case ">.<":
+            case ">n<":
                 if lineBreakCountBetweenTokens(at: left, and: right) > 0 {
                     fatalError("expected same line between tokens around '\(kind)'")
                 }

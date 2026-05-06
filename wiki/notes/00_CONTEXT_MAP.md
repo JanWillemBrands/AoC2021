@@ -39,7 +39,7 @@ Use with `./wiki-search "<query>" 5`.
 
 1. `trivia oracle parser gating equivalence proof`
 2. `Swift trivia inventory infix prefix postfix whitespace`
-3. `annotation >:< >.< >+< >#< <?>`
+3. `annotation >s< >n< >+< >#< <?>`
 4. `Frankenstein Schrodinger boundary`
 5. `minimal Swift rule patch try? as? postfix ! ?`
 6. `copy newline context sensitive keyword`
@@ -64,7 +64,7 @@ Use with `./wiki-search "<query>" 5`.
 3. Wire annotation -> constraint records.
 4. Add differential mode (oracle-only vs parser-gated).
 5. Promote only proven-local rules.
-6. Implement Layer 3 constraint checking (`>:<` `<:>` `>.<` `<.>`).
+6. Implement Layer 3 constraint checking (`>s<` `<s>` `>n<` `<n>`).
 
 ## Deferred Detection (parser/oracle, not scanner)
 

@@ -73,16 +73,14 @@ propertyWrapperProjection   - /\$\p{XID_Continue}+/ .           // TODO: overlap
 // "associativity" "async" "assignment" "convenience" "didSet" "dynamic" "final" "get" "higherThan" "indirect" "infix" "isolated" "lazy" "left" "lowerThan" "mutating" "none" "nonmutating" "optional" "override" "package" "postfix" "prefix" "Protocol" "required" "right" "set" "some" "Type" "unowned" "weak" "willSet" "yield"
 
 // Most Swift identifiers exclude the hard reserved keywords
-identifier  = rawIdentifier
-            ---("Any" "actor" "as" "associatedtype" "await" "borrowing" "break" "case" "catch" "class" "consuming" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "nonisolated" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while")
+identifier  = rawIdentifier ---("Any" "actor" "as" "associatedtype" "await" "borrowing" "break" "case" "catch" "class" "consuming" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "nonisolated" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while")
             | escapedIdentifier
             | implicitParameterName
             | propertyWrapperProjection .
 
-// Swift allows keywords as argument labels and as member names, a few are excluded
-softIdentifier  = rawIdentifier
-                    ---("let" "var" "inout")
-                    | escapedIdentifier .
+// Swift allows keywords as argument labels and as member names, just a few keyweords are excluded for legacy reasons
+softIdentifier  = rawIdentifier ---("let" "var" "inout")
+                | escapedIdentifier .
 
 //identifier = identifierHead identifierCharacters? .
 //identifier = "`" identifierHead identifierCharacters? "`" .
@@ -123,9 +121,9 @@ identifierList = identifier | identifier "," identifierList .
 // REGULAR EXPRESSIONS
 
 //plainRegularExpressionLiteral = /\/[^\s]*(?:(?:[^\/\\\s]|\\.)*[^\s])?\// .       // eliminates start or end whitespace, helps with / division sign
-plainRegularExpressionLiteral -      /\/(?:[^\/\\\n]|\\.)+\// .
-extendedRegularExpressionLiteral - /#+\/(?:[^\/\\]|\\.)+\/#+/ .                 // captures legal Swift regex already validated by the compiler
-regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpressionLiteral .
+plainRegularExpressionLiteral       - /\/(?:[^\/\\\n]|\\.)+\// .
+extendedRegularExpressionLiteral    - /#+\/(?:[^\/\\]|\\.)+\/#+/ .                 // captures legal Swift regex already validated by the compiler
+regularExpressionLiteral            = plainRegularExpressionLiteral | extendedRegularExpressionLiteral .
 
 //regularExpressionLiteral = regularExpressionLiteralOpeningDelimiter regularExpression regularExpressionLiteralClosingDelimiter .
 //regularExpression = Any regular expression
@@ -221,8 +219,7 @@ interpolatedStringLiteral       = interpolatedStringLiteralHead
 
 // LITERALS
 
-binaryLiteral - /0b[0-1][0-1_]*/ .      // removed the '-' sign
-//binaryLiteral - /-?0b[0-1][0-1_]*/ .
+binaryLiteral - /0b[0-1][0-1_]*/ .
 //binaryLiteral = "0b" binaryDigit binaryLiteralCharacters? .
 //binaryDigit = Digit 0 or 1
 //binaryLiteralCharacter = binaryDigit | "_" .
@@ -410,9 +407,6 @@ selfType = "Self" .
 typeInheritanceClause = ":" typeInheritanceList .
 typeInheritanceList = attributes? "~"? typeIdentifier | attributes? "~"? typeIdentifier "," typeInheritanceList .
 
-//typeInheritanceClause     = ":" typeInheritanceClauseItem { "," typeInheritanceClauseItem } .  // EBNF
-//typeInheritanceClauseItem = attributes? "~"? typeIdentifier .
-
 
 
 // EXPRESSIONS
@@ -436,11 +430,11 @@ infixExpressions = infixExpression infixExpressions? .
 
 assignmentOperator = "=" .
 
-conditionalOperator = "?" expression ":" .          // TODO: there must be space before and after "?" and ":"    <+>
+conditionalOperator = "?" expression ":" .          // TODO: there must be space before and after "?" and ":"    <s>
 
 typeCastingOperator = "is" type .
 typeCastingOperator = "as" type .
-typeCastingOperator = "as" "?" type .               // TODO: no space allowed between "as" and "?"              >:<
+typeCastingOperator = "as" "?" type .               // TODO: no space allowed between "as" and "?"              >s<
 typeCastingOperator = "as" "!" type .               // TODO: no space allowed between "as" and "!"
 
 primaryExpression = identifier genericArgumentClause? .
@@ -518,7 +512,7 @@ captureSpecifier = "weak" | "unowned" | "unowned" "(" "safe" ")" | "unowned" "("
 implicitMemberExpression = "." softIdentifier .                         // allows e.g. '.public'
 implicitMemberExpression = "." softIdentifier "." postfixExpression .
 
-// SCANNER MODE ANNOTATIONS TO HANDLE NESTED PARENTHESES
+// SCANNER MODE ANNOTATIONS TO HANDLE NESTED PARENTHESES INSIDE STRING INTERPOLATION
 
 leftParenthesis     - "(" .
                     === "" >>> "inside-parentheses"
@@ -547,7 +541,7 @@ keyPathComponents = keyPathComponent | keyPathComponent "." keyPathComponents .
 keyPathComponent = identifier keyPathPostfixes? | keyPathPostfixes .
 
 keyPathPostfixes = keyPathPostfix keyPathPostfixes? .
-keyPathPostfix = "?" | "!" | "self" | "[" functionCallArgumentList "]" .    // TODO: remove spaces before "?" and "!"   >:<
+keyPathPostfix = "?" | "!" | "self" | "[" functionCallArgumentList "]" .    // TODO: remove spaces before "?" and "!"   >s<
 
 selectorExpression = "#selector" "(" expression ")" .
 selectorExpression = "#selector" "(" "getter" ":" expression ")" .
@@ -726,14 +720,14 @@ environment = "simulator" | "macCatalyst" .
 lineNumber = decimalDigits .        // replace 'greater than zero' with parser post check'
 //lineNumber = /0*[1-9][0-9]*/ .
 //lineControlStatement = "#sourceLocation" "(" "file:" filePath "," "line:" lineNumber ")" .
-lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .  // WFT??? compiler allows whitespace between file/line and :
+lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .  // TODO: compiler allows whitespace between file/line and :
 lineControlStatement = "#sourceLocation" "(" ")" .
 
 //lineNumber = A decimal integer greater than zero .
 
 filePath = staticStringLiteral .
 
-diagnosticStatement = "#warning" "(" stringLiteral ")" | "#error" "(" stringLiteral ")" . // WTF missing, added as per Grok suggestion
+diagnosticStatement = "#warning" "(" stringLiteral ")" | "#error" "(" stringLiteral ")" . // TODO: missing, added as per Grok suggestion
 
 availabilityCondition = "#available" "(" availabilityArguments ")" .
 availabilityCondition = "#unavailable" "(" availabilityArguments ")" .
@@ -771,7 +765,7 @@ declaration = extensionDeclaration .
 declaration = subscriptDeclaration .
 declaration = macroDeclaration .
 declaration = operatorDeclaration .
-declaration = precedenceGroupDeclaration . // WTF is \ doing here ???
+declaration = precedenceGroupDeclaration .
 
 codeBlock = "{" statements? "}" .
 
@@ -830,7 +824,7 @@ functionBody = codeBlock .
 parameterClause = "(" ")" | "(" parameterList ","? ")" .
 parameterList = parameter | parameter "," parameterList .
 
-// WTF???  grammar error   https://github.com/swiftlang/swift-book/issues/294
+// TODO:  grammar error   https://github.com/swiftlang/swift-book/issues/294
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation defaultArgumentClause? .
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation .
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation "..." .
@@ -851,7 +845,7 @@ unionStyleEnumMember = declaration | unionStyleEnumCaseClause | compilerControlS
 unionStyleEnumCaseClause = attributes? "indirect"? "case" unionStyleEnumCaseList .
 unionStyleEnumCaseList = unionStyleEnumCase | unionStyleEnumCase "," unionStyleEnumCaseList .
 
-//unionStyleEnumCase = enumCaseName tupleType? . WTF???  Error in Swift Syntax: https://github.com/swiftlang/swift-book/issues/265
+//unionStyleEnumCase = enumCaseName tupleType? . TODO:  Error in Swift Syntax: https://github.com/swiftlang/swift-book/issues/265
 unionStyleEnumCase = enumCaseName associatedValues? .
 associatedValues = "(" tupleTypeElementList ")" .
 
@@ -865,7 +859,7 @@ rawValueStyleEnumCaseClause = attributes? "case" rawValueStyleEnumCaseList .
 rawValueStyleEnumCaseList = rawValueStyleEnumCase | rawValueStyleEnumCase "," rawValueStyleEnumCaseList .
 rawValueStyleEnumCase = enumCaseName rawValueAssignment? .
 rawValueAssignment = "=" rawValueLiteral .
-//rawValueLiteral = numericLiteral | staticStringLiteral | booleanLiteral . WTF???  Error in Swift Syntax: https://github.com/swiftlang/swift-book/issues/265
+//rawValueLiteral = numericLiteral | staticStringLiteral | booleanLiteral . TODO:  Error in Swift Syntax: https://github.com/swiftlang/swift-book/issues/265
 rawValueLiteral = numericLiteral | staticStringLiteral .
 
 structDeclaration = attributes? accessLevelModifier? "struct" structName genericParameterClause? typeInheritanceClause? genericWhereClause? structBody .
@@ -1025,7 +1019,7 @@ wildcardPattern = "_" .
 
 identifierPattern = identifier .
 
-valueBindingPattern = "var" pattern | "let" pattern .               // WTF  'let let' pattern is not allowed by compiler
+valueBindingPattern = "var" pattern | "let" pattern .               // TODO:  'let let' pattern is not allowed by compiler
 
 tuplePattern = "(" tuplePatternElementList? ")" .
 tuplePatternElementList = tuplePatternElement | tuplePatternElement "," tuplePatternElementList .

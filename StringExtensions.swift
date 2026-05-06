@@ -37,12 +37,6 @@ extension Character {
 
 extension String {
     
-    var withLayoutGlyphs: String {
-        self
-            .replacingOccurrences(of: ">>|", with: "⇥")
-            .replacingOccurrences(of: "|<<", with: "⇤")
-    }
-    
     var escapesAdded: String {
         self.unicodeScalars
             .reduce("") { $0 + $1.escaped(asASCII: false)}

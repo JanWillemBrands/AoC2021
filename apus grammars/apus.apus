@@ -1,13 +1,12 @@
 whitespace  : /\s+/ .
 comment     : /\/\/.*/ .
 
-action      : /@(?:[^@\\]|\\.)+@/ .
-
 identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
 literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
-pragma      - /'(?:[^\'\n])*'/ .
 
+action      : /'(?:[^'\\]|\\.)*'/ .
+pragma      - /@\p{XID_Start}\p{XID_Continue}*/ .
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
@@ -39,7 +38,7 @@ terminal    = identifier    [ "---" "(" < literal > ")" ]
 epsilon     = "ε" .
 empty       = "\"\"" .
 
-layout      = [ ">>|" | "|<<" | "<.>" | "<:>" | ">.<" | ">:<" ] .
+layout      = [ ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" ] .
 
 mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
 name        = literal | identifier .
@@ -87,7 +86,7 @@ terminal    = identifier    [ "---" "(" < literal > ")" ]
 epsilon     = "ε" .
 empty       = "\"\"" .
 
-layout      = [ ">>|" | "|<<" | "<.>" | "<:>" | ">.<" | ">:<" ] .
+layout      = [ ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" ] .
 
 mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
 name        = literal | identifier .

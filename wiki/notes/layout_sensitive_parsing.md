@@ -31,7 +31,7 @@ Visible NEWLINE tokens (image is only `\n`/`\r`) are skipped — they sit at col
 
 ### Layer 2: Constraint Checking (future)
 
-`>:<` `<:>` `>.<` `<.>` — spatial constraints between adjacent symbols in a grammar sequence. Design direction: model as a new `GrammarNodeKind` (pass-through node in the grammar graph). Checked during parsing, not post-parse.
+`>s<` `<s>` `>n<` `<n>` — spatial constraints between adjacent symbols in a grammar sequence. Design direction: model as a new `GrammarNodeKind` (pass-through node in the grammar graph). Checked during parsing, not post-parse.
 
 ## Why This Design
 

@@ -6,7 +6,7 @@
 //
 
 import OSLog
-import AdventMacros
+//import AdventMacros
 import BitCollections
 
 // Internal sentinel strings for FIRST/FOLLOW sets and the symbol table:
@@ -393,13 +393,13 @@ extension Grammar {
                 production.follow.formUnion(node.follow)
             } else {
                 var error = "grammar parse error: '\(node.name)' was not defined as a grammar rule\n"
-//                #Trace("grammar parse error: '\(node.name)' was not defined as a grammar rule")
+//                trace("grammar parse error: '\(node.name)' was not defined as a grammar rule")
                 let definedAsTerminal = terminals[node.name] != nil
                 if definedAsTerminal {
                     error += "instead it was defined as terminal \(terminals[node.name]!.source)\n"
                     error += "if this was intended please define the terminal before using it in the grammar"
                     Logger.grammar.error("\(error, privacy: .public)")
-//                    #Trace("but it was defined as terminal \(terminals[node.name]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
+//                    trace("but it was defined as terminal \(terminals[node.name]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
                 throw GrammarNodeError.undefinedNonTerminal(name: node.name, definedAsTerminal: definedAsTerminal)
             }

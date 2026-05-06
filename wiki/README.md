@@ -55,7 +55,7 @@ Then query:
 ```bash
 ./wiki-search "trivia oracle parser gating equivalence proof" 5
 ./wiki-search "Swift trivia inventory infix prefix postfix whitespace" 5
-./wiki-search "annotation >:< >.< >+< >#< <?>" 5
+./wiki-search "annotation >s< >n< >+< >#< <?>" 5
 ```
 
 Also read the consolidated task list:

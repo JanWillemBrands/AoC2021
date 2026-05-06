@@ -54,7 +54,7 @@ func extractSPPF (Υ, Γ) {
 
 import OSLog
 import Foundation
-import AdventMacros
+//import AdventMacros
 
 // MARK: - SPPF Node Types
 
@@ -330,7 +330,7 @@ class SPPFExtractor {
 
         // Paper: if Υ has an element of the form (S ::= α, 0, k, n)
         guard startSymbol.yield.contains(where: { $0.i == .zero && $0.j == extent }) else {
-            #Trace("SPPF: no complete parse found for \(startSymbol.name) spanning 0..\(extent)")
+            trace("SPPF: no complete parse found for \(startSymbol.name) spanning 0..\(extent)")
             return nil
         }
 
@@ -383,7 +383,7 @@ class SPPFExtractor {
             // Paper: μ is X ::= α · δ (an intermediate node)
             let slot = w.slot
             guard let alphaLen = slotIndex[slot] else {
-                #Trace("SPPF: no slot index for \(slot) kind=\(slot.kind)")
+                trace("SPPF: no slot index for \(slot) kind=\(slot.kind)")
                 return
             }
             
@@ -785,7 +785,7 @@ func generateSPPFDiagram(outputFile file: URL, root: SPPFNode) throws {
     // Emit nodes
     for node in allReachable {
         let id = nodeID(node)
-        let escapedLabel = node.label.withLayoutGlyphs.graphvizHTML
+        let escapedLabel = node.label.graphvizHTML
         
         switch node.kind {
         case .symbol:

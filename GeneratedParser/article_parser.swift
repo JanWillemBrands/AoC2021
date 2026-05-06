@@ -33,19 +33,19 @@ func boundary(_ kind: String) {
     let left = cI - 1
     let right = cI
     switch kind {
-    case "<:>":
+    case "<s>":
         if !hasInterTokenGap(at: left, and: right) {
             fatalError("expected spacing between tokens around '\(kind)'")
         }
-    case "<.>":
+    case "<n>":
         if lineBreakCountBetweenTokens(at: left, and: right) == 0 {
             fatalError("expected line break between tokens around '\(kind)'")
         }
-    case ">:<":
+    case ">s<":
         if hasInterTokenGap(at: left, and: right) {
             fatalError("expected adjacency between tokens around '\(kind)'")
         }
-    case ">.<":
+    case ">n<":
         if lineBreakCountBetweenTokens(at: left, and: right) > 0 {
             fatalError("expected same line between tokens around '\(kind)'")
         }
@@ -81,7 +81,7 @@ func paragraph() throws {
 	repeat {
 		try sentence()
 	} while ["word"].contains(token.kind)
-	boundary("<.>")
+	boundary("<n>")
 }
 func section() throws {
 	try title()
@@ -100,13 +100,13 @@ func sentence() throws {
 	} while ["word"].contains(token.kind)
 	expect(".")
 	cI += 1
-	boundary("<:>")
+	boundary("<s>")
 }
 func title() throws {
 	expect("word")
 	cI += 1
 	while ["word"].contains(token.kind) {
-		boundary(">.<")
+		boundary(">n<")
 		expect("word")
 		cI += 1
 	}

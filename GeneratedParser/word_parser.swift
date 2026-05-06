@@ -47,7 +47,7 @@ func section() throws {
 func title() throws {
 	repeat {
 		try word()
-		expect(">.<")
+		expect(">n<")
 		cI += 1
 	} while ["L5P14"].contains(token.kind)
 }

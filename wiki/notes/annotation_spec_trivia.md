@@ -11,25 +11,25 @@ Never attach before/after token text.
 ## Base Set
 
 1. `>~<` no constraint
-2. `>:<` no trivia between A and B (adjacent)
-3. `>.<` no newline between A and B (same line)
+2. `>s<` no trivia between A and B (adjacent)
+3. `>n<` no newline between A and B (same line)
 4. `>+<` horizontal space required between A and B
 5. `>#<` newline required between A and B
 6. `<?>` symmetric horizontal spacing around operator context
 
 ## Derived Shorthand
 
-1. `<:>` both sides adjacency (expands to two `>:<` edges)
+1. `<s>` both sides adjacency (expands to two `>s<` edges)
 2. `<+>` both sides horizontal space (expands to two `>+<` edges)
-3. `<.>` both sides same line (expands to two `>.<` edges)
+3. `<n>` both sides same line (expands to two `>n<` edges)
 
 ## Examples
 
 ```apus
-tryOperator = "try" >:< "?" | "try" >:< "!" | "try" .
-typeCastingOperator = "as" >:< "?" type | "as" >:< "!" type | "as" type .
-forcedValueExpression = postfixExpression >:< "!" .
-optionalChainingExpression = postfixExpression >:< "?" .
+tryOperator = "try" >s< "?" | "try" >s< "!" | "try" .
+typeCastingOperator = "as" >s< "?" type | "as" >s< "!" type | "as" type .
+forcedValueExpression = postfixExpression >s< "!" .
+optionalChainingExpression = postfixExpression >s< "?" .
 ```
 
 ## Usage Policy

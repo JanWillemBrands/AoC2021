@@ -15,10 +15,10 @@ let apusTerminals: [String:TokenPattern] = [
     "identifier":   TokenPattern(#"\p{XID_Start}\p{XID_Continue}*"#, /\p{XID_Start}\p{XID_Continue}*/,   false, false),
     "literal":      TokenPattern(#""(?:[^"\\]|\\.)+""#,     /\"(?:[^\"\\]|\\.)+\"/,             false, false),
     "regex":        TokenPattern(#"/(?!\*)(?:[^\/\\]|\\.)+/"#,    /\/(?!\*)(?:[^\/\\]|\\.)+\//,             false, false),
-    "action":       TokenPattern(#"@(?:[^@\\]|\\.)*@"#,     /@(?:[^@\\]|\\.)*@/,                false, true),
+    "action":       TokenPattern(#"'(?:[^'\\]|\\.)*'"#,     /'(?:[^'\\]|\\.)*'/,                false, true),
     "message":      TokenPattern(#"\^\^\^(?:(?s).*?)(?=\^\^\^|$)"#,
                                                 /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,    false, false),
-    "pragma":       TokenPattern(#"'(?:[^\'\n])*'"#,        /'(?:[^\'\n])*'/,                   false, false),
+    "annotation":   TokenPattern(#"@\p{XID_Start}\p{XID_Continue}*"#, /@\p{XID_Start}\p{XID_Continue}*/, false, false),
 
     "empty":        TokenPattern("\"\"",                    Regex { "\"\"" },                   true,  false),
     "epsilon":      TokenPattern("ε",                       Regex { "ε" },                      true,  false),
@@ -46,10 +46,10 @@ let apusTerminals: [String:TokenPattern] = [
     "---":          TokenPattern("---",                     Regex { "---" },                    true,  false),
     ">>|":          TokenPattern(">>|",                     Regex { ">>|" },                    true,  false),
     "|<<":          TokenPattern("|<<",                     Regex { "|<<" },                    true,  false),
-    ">.<":          TokenPattern(">.<",                     Regex { ">.<" },                    true,  false),
-    ">:<":          TokenPattern(">:<",                     Regex { ">:<" },                    true,  false),
-    "<.>":          TokenPattern("<.>",                     Regex { "<.>" },                    true,  false),
-    "<:>":          TokenPattern("<:>",                     Regex { "<:>" },                    true,  false),
+    ">n<":          TokenPattern(">n<",                     Regex { ">n<" },                    true,  false),
+    ">s<":          TokenPattern(">s<",                     Regex { ">s<" },                    true,  false),
+    "<n>":          TokenPattern("<n>",                     Regex { "<n>" },                    true,  false),
+    "<s>":          TokenPattern("<s>",                     Regex { "<s>" },                    true,  false),
 ]
 
 

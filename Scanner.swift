@@ -9,7 +9,7 @@
 
 import OSLog
 import Foundation
-import AdventMacros
+//import AdventMacros
 
 enum ScannerFailure: Error {
     case charactersDoNotMatchAnySymbol(position: String.Index, input: String)

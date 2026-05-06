@@ -16,7 +16,7 @@
 
 import OSLog
 import Foundation
-import AdventMacros
+//import AdventMacros
 
 class MessageParser {
 
@@ -110,7 +110,7 @@ class MessageParser {
             while true {
 
                 trace = false
-                #Trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI.tokenIndex].kind) \(tokens[cI.tokenIndex].image)")
+                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI.tokenIndex].kind) \(tokens[cI.tokenIndex].image)")
 
                 switch cL.kind {
                 case .EPS:
@@ -137,11 +137,11 @@ class MessageParser {
                     call()
                     continue nextDescriptor
                 case .ALT:
-                    #Trace("ERROR: Unexpected .ALT node in cL")
-                    #Trace("  cL.number: \(cL.number)")
-                    #Trace("  cL.name: '\(cL.name)'")
-                    #Trace("  cL.seq: \(String(describing: cL.seq))")
-                    #Trace("  cL.alt: \(String(describing: cL.alt))")
+                    trace("ERROR: Unexpected .ALT node in cL")
+                    trace("  cL.number: \(cL.number)")
+                    trace("  cL.name: '\(cL.name)'")
+                    trace("  cL.seq: \(String(describing: cL.seq))")
+                    trace("  cL.alt: \(String(describing: cL.alt))")
                     fatalError(#function + ": ALT should not happen here")
                 case .DO, .POS:
                     bracketCall(bracket: cL)
@@ -236,10 +236,10 @@ class MessageParser {
         let left = position.tokenIndex - 1
         let right = position.tokenIndex
         switch boundary {
-        case "<:>": return hasInterTokenGap(at: left, and: right)
-        case "<.>": return lineBreakCountBetweenTokens(at: left, and: right) > 0
-        case ">:<": return !hasInterTokenGap(at: left, and: right)
-        case ">.<": return lineBreakCountBetweenTokens(at: left, and: right) == 0
+        case "<s>": return hasInterTokenGap(at: left, and: right)
+        case "<n>": return lineBreakCountBetweenTokens(at: left, and: right) > 0
+        case ">s<": return !hasInterTokenGap(at: left, and: right)
+        case ">n<": return lineBreakCountBetweenTokens(at: left, and: right) == 0
         default:
             fatalError("\(#function): unexpected boundary \(boundary)")
         }
@@ -386,7 +386,7 @@ class MessageParser {
     }
 
     /// True when there are source characters between the first token END and the second token START.
-    /// This backs <:> and >:< so synthetic layout tokens can still observe source spacing.
+    /// This backs <s> and >s< so synthetic layout tokens can still observe source spacing.
     func hasInterTokenGap(at first: Int, and second: Int) -> Bool {
         tokens[first].image.endIndex < tokens[second].image.startIndex
     }

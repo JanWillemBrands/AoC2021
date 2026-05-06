@@ -31,7 +31,7 @@
 
 import OSLog
 import Foundation
-import AdventMacros
+//import AdventMacros
 import BitCollections
 
 enum GrammarNodeError: Error {
@@ -39,6 +39,8 @@ enum GrammarNodeError: Error {
 }
 
 enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
+
+enum Disambiguation: String { case shortest, longest }
 
 extension GrammarNodeKind {
     var isTerminal: Bool { self == .T || self == .TI || self == .C || self == .B }
@@ -139,6 +141,7 @@ final class GrammarNode {
     }
     
     var yield: Set<BinarySpan> = []
+    var disambiguation: Disambiguation?
     
     var cell = Cell(name: "", r: 0, c: 0)
 }
@@ -154,7 +157,7 @@ extension GrammarNode {
             if first.contains("") {
                 expectedTokens.formUnion(follow)
             }
-            #Trace("expected \"\(token.kind)\" to be in", expectedTokens)
+            trace("expected \"\(token.kind)\" to be in", expectedTokens)
             return false
         }
     }

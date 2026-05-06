@@ -7,7 +7,7 @@
 
 //import Foundation
 import OSLog
-import AdventMacros
+//import AdventMacros
 
 struct BSR: Hashable, CustomStringConvertible {
     let slot: GrammarNode

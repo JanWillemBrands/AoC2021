@@ -1,0 +1,93 @@
+whitespace  : /\s+/ .
+comment     : /\/\/.*/ .
+
+action      : /@(?:[^@\\]|\\.)+@/ .
+
+identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
+literal     - /\"(?:[^\"\\]|\\.)+\"/ .
+regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
+pragma      - /'(?:[^\'\n])*'/ .
+
+message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
+
+grammar     = < production > { message } .
+              
+production  = identifier
+                ( ":" ( regex | literal ) mode
+                | "-" ( regex | literal ) mode
+                | "=" selection
+                ) .
+
+selection   = sequence { "|" sequence } .
+
+sequence    = < layout | factor [ "?" | "*" | "+" ] > .
+
+factor      = terminal
+            | "[" selection "]"
+            | "{" selection "}"
+            | "<" selection ">"
+            | "(" selection ")"
+            .
+            
+terminal    = identifier    [ "---" "(" < literal > ")" ]
+            | literal       [ "~~~" ]
+            | regex
+            | epsilon | empty
+            | pragma
+            .
+            
+epsilon     = "ε" .
+empty       = "\"\"" .
+
+layout      = [ ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" ] .
+
+mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
+name        = literal | identifier .
+
+
+^^^
+whitespace  : /\s+/
+comment     : /\/\/.*/
+
+action      : /@(?:[^@\\]|\\.)+@/
+
+identifier  - /\p{XID_Start}\p{XID_Continue}*/
+literal     - /\"(?:[^\"\\]|\\.)+\"/
+regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\//
+pragma      - /'(?:[^\'\n])*'/
+
+message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/
+
+grammar     = < production > { message }
+              
+production  = identifier
+                ( ":" ( regex | literal ) mode
+                | "-" ( regex | literal ) mode
+                | "=" selection
+                )
+
+selection   = sequence { "|" sequence }
+
+sequence    = < layout | factor [ "?" | "*" | "+" ] >
+
+factor      = terminal
+            | "[" selection "]"
+            | "{" selection "}"
+            | "<" selection ">"
+            | "(" selection ")"
+            
+            
+terminal    = identifier    [ "---" "(" < literal > ")" ]
+            | literal       [ "~~~" ]
+            | regex
+            | epsilon | empty
+            | pragma
+            
+            
+epsilon     = "ε"
+empty       = "\"\""
+
+layout      = [ ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" ]
+
+mode        = { "===" name [ "<<<" ] [ ">>>" name ] }
+name        = literal | identifier

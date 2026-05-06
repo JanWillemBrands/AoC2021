@@ -115,10 +115,10 @@ network simplex:  2 nodes 1 edges maxiter=128 balance=1
 network simplex: 2 nodes 1 edges 0 iter 0.00 sec
 network simplex:  6 nodes 5 edges maxiter=24 balance=1
 network simplex: 6 nodes 5 edges 0 iter 0.00 sec
-network simplex:  7 nodes 7 edges maxiter=30 balance=1
-network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  8 nodes 7 edges maxiter=36 balance=1
 network simplex: 8 nodes 7 edges 0 iter 0.00 sec
+network simplex:  7 nodes 7 edges maxiter=30 balance=1
+network simplex: 7 nodes 7 edges 0 iter 0.00 sec
 network simplex:  8 nodes 7 edges maxiter=36 balance=1
 network simplex: 8 nodes 7 edges 0 iter 0.00 sec
 network simplex:  7 nodes 7 edges maxiter=36 balance=1
@@ -152,9 +152,9 @@ mincross: pass 2 iter 0 trying 0 cur_cross 6 best_cross 6
 mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 2 best_cross 2
 mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
-mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 2 best_cross 2
+mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 4 best_cross 4
 mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 2 best_cross 2
 mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
@@ -163,7 +163,7 @@ mincross: pass 2 iter 1 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross G: 0 crossings, 0.00 secs.
 network simplex:  264 nodes 486 edges maxiter=290 balance=2
-network simplex: 264 nodes 486 edges 88 iter 0.00 sec
+network simplex: 264 nodes 486 edges 93 iter 0.00 sec
 routesplines: 105 edges, 315 boxes 0.00 sec
 Using render: svg:core
 Using device: svg:svg:core
@@ -311,27 +311,12 @@ pack info:
   flags  0
 network simplex:  13 nodes 23 edges maxiter=98 balance=1
 network simplex: 13 nodes 23 edges 2 iter 0.00 sec
-network simplex:  14 nodes 25 edges maxiter=102 balance=1
-network simplex: 14 nodes 25 edges 2 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=200 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
-network simplex:  1 nodes 0 edges maxiter=200 balance=0
-network simplex: 1 nodes 0 edges 0 iter 0.00 sec
 Maxrank = 4, minrank = 0
 mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
-merge2: graph Derivations, rank 1 has only 2 < 10 nodes
-merge2: graph Derivations, rank 2 has only 2 < 23 nodes
-merge2: graph Derivations, rank 3 has only 2 < 31 nodes
-merge2: graph Derivations, rank 4 has only 2 < 75 nodes
-mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross Derivations: 0 crossings, 0.00 secs.
-network simplex:  286 nodes 451 edges maxiter=200 balance=2
-network simplex: 100 
-network simplex: 286 nodes 451 edges 109 iter 0.00 sec
-routesplines: 98 edges, 376 boxes 0.00 sec
+network simplex:  137 nodes 200 edges maxiter=98 balance=2
+network simplex: 137 nodes 200 edges 49 iter 0.00 sec
+routesplines: 48 edges, 184 boxes 0.00 sec
 Using render: svg:core
 Using device: svg:svg:core
-gvRenderJobs Derivations: 0.02 secs.
+gvRenderJobs Derivations: 0.00 secs.

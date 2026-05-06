@@ -30,7 +30,7 @@
  */
 
 import Foundation
-import AdventMacros
+//import AdventMacros
 import BitCollections
 
 enum GrammarNodeError: Error {
@@ -133,7 +133,7 @@ extension GrammarNode {
             if first.contains("ε") {
                 expectedTokens.formUnion(follow)
             }
-            #Trace("expected \"\(token.kind)\" to be in", expectedTokens)
+            trace("expected \"\(token.kind)\" to be in", expectedTokens)
             return false
         }
     }
@@ -247,7 +247,7 @@ extension GrammarNode {
     // TODO: ambiguity set of KLN and POS is the intersection of follow(KLN) with the union of the pairwise intersections of all its first(ALT)'s ('duplicates')
     func detectAmbiguity() {
         if kind == .N, seq == nil {
-            #Trace("_RULE:", name)
+            trace("_RULE:", name)
         }
 
         switch kind {
@@ -280,11 +280,11 @@ extension GrammarNode {
         }
         let saved = traceIndent
         traceIndent += 2
-        #Trace(kind, number)
+        trace(kind, number)
         traceIndent += 2
-        #Trace("first    ", first.sorted())
-        #Trace("follow   ", follow.sorted())
-        #Trace("ambiguous", ambiguous.sorted())
+        trace("first    ", first.sorted())
+        trace("follow   ", follow.sorted())
+        trace("ambiguous", ambiguous.sorted())
         traceIndent = saved
 
     }

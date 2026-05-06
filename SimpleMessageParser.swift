@@ -16,7 +16,7 @@
 
 import OSLog
 import Foundation
-import AdventMacros
+//import AdventMacros
 
 class SimpleMessageParser {
 
@@ -103,7 +103,7 @@ class SimpleMessageParser {
             while true {
 
                 trace = false
-                #Trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI.tokenIndex].kind) \(tokens[cI.tokenIndex].image)")
+                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI.tokenIndex].kind) \(tokens[cI.tokenIndex].image)")
 
                 switch cL.kind {
                 case .EPS:
@@ -125,7 +125,7 @@ class SimpleMessageParser {
                     let left = cI.tokenIndex - 1
                     let right = cI.tokenIndex
                     switch cL.name {
-                    case "<:>":     // there must be spacing between previous and current token
+                    case "<s>":     // there must be spacing between previous and current token
                         if !hasInterTokenGap(at: left, and: right) {
                             failedParses += 1
                             if cI > furthestMismatchIndex {
@@ -137,7 +137,7 @@ class SimpleMessageParser {
                             }
                             continue nextDescriptor
                         }
-                    case "<.>":     // previous and current token must be on different lines
+                    case "<n>":     // previous and current token must be on different lines
                         if lineBreakCountBetweenTokens(at: left, and: right) == 0 {
                             failedParses += 1
                             if cI > furthestMismatchIndex {
@@ -149,7 +149,7 @@ class SimpleMessageParser {
                             }
                             continue nextDescriptor
                         }
-                    case ">:<":     // previous and current token must be adjacent
+                    case ">s<":     // previous and current token must be adjacent
                         if hasInterTokenGap(at: left, and: right) {
                             failedParses += 1
                             if cI > furthestMismatchIndex {
@@ -161,7 +161,7 @@ class SimpleMessageParser {
                             }
                             continue nextDescriptor
                         }
-                    case ">.<":     // previous and current token must be on the same line
+                    case ">n<":     // previous and current token must be on the same line
                         if lineBreakCountBetweenTokens(at: left, and: right) > 0 {
                             failedParses += 1
                             if cI > furthestMismatchIndex {
@@ -423,7 +423,7 @@ class SimpleMessageParser {
     }
 
     /// True when there are source characters between the first token END and the second token START.
-    /// This backs <:> and >:< so synthetic layout tokens can still observe source spacing.
+    /// This backs <s> and >s< so synthetic layout tokens can still observe source spacing.
     func hasInterTokenGap(at first: Int, and second: Int) -> Bool {
         tokens[first].image.endIndex < tokens[second].image.startIndex
     }

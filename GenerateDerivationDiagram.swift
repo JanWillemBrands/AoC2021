@@ -6,193 +6,160 @@
 //
 
 import Foundation
+import OSLog
 
 // MARK: - Parse Tree Node
 
-class ParseTreeNode {
+class ParseTreeNode: CustomStringConvertible {
     let name: String
-    let token: Token?             // non-nil for terminal leaves
+    let token: Token?
     let from: TokenPosition
     let to: TokenPosition
     var children: [ParseTreeNode] = []
+    var isAmbiguous = false
+    var isMissing = false
     var isTerminal: Bool { token != nil }
 
-    init(name: String, from: TokenPosition, to: TokenPosition, token: Token? = nil) {
+    init(_ name: String, from: TokenPosition, to: TokenPosition, token: Token? = nil) {
         self.name = name
+        self.token = token
         self.from = from
         self.to = to
-        self.token = token
+    }
+
+    var description: String {
+        if let token { return "\(name)(\"\(token.image)\")" }
+        if isMissing { return "\(name) <missing>" }
+        return "\(name)[\(children.count)]"
+    }
+
+    func dump(indent: Int = 0) -> String {
+        let pad = String(repeating: "  ", count: indent)
+        if isMissing { return "\(pad)\(name) <missing>\n" }
+        if let token {
+            let text = String(token.image)
+            if text.isEmpty { return "\(pad)\(name)\n" }
+            return "\(pad)\(name) \"\(text)\"\n"
+        }
+        var result = "\(pad)\(name)\n"
+        for child in children {
+            result += child.dump(indent: indent + 1)
+        }
+        return result
     }
 }
 
 // MARK: - Derivation Builder
 
-/// Builds concrete parse trees directly from the BSR (Binary Subtree Representation)
-/// yield set produced by the GLL parser. Each GrammarNode carries its own yield
-/// (a set of BinarySpan(i,k,j) triples recording which spans it matched).
-///
-/// The algorithm works by recursive descent over the grammar structure:
-///   1. Start from the root nonterminal spanning the full input.
-///   2. For each nonterminal, try each alternate's body symbols.
-///   3. Tile the body symbols left-to-right over the span using `endPositions`
-///      to find valid split points from the BSR evidence.
-///   4. Terminals become leaf nodes; nonterminals recurse; EBNF brackets
-///      (groups, options, closures) are transparent — their iteration content
-///      is inlined as direct children of the enclosing nonterminal.
-///
-/// For ambiguous grammars, multiple trees are returned (up to `limit`).
-
+/// Builds concrete parse trees from BSR yield evidence on GrammarNodes.
+/// EBNF brackets are transparent — their contents are inlined as direct children.
 class DerivationBuilder {
     let grammar: Grammar
     let tokens: [Token]
-    
-    /// Tracks active nonterminal expansions on the current call path to break cycles.
-    private var activeExpansions: Set<ExpansionKey> = []
-    
-    private struct ExpansionKey: Hashable {
-        let node: ObjectIdentifier
-        let from: TokenPosition
-        let to: TokenPosition
-    }
 
-    /// Memo key for end-position queries.
-    private struct EndKey: Hashable {
-        let node: ObjectIdentifier
-        let from: TokenPosition
-    }
+    private var expanding = Set<NodeSpan>()
+    private var endCache = [NodePos: Set<TokenPosition>]()
+    private var endGuard = Set<NodePos>()
 
-    /// Cache of end positions for (symbol, from) queries.
-    private var endPositionsMemo: [EndKey: Set<TokenPosition>] = [:]
-    /// Recursion guard for end-position queries to prevent cycles.
-    private var activeEndQueries: Set<EndKey> = []
-    
+    private struct NodeSpan: Hashable { let id: ObjectIdentifier; let from, to: TokenPosition }
+    private struct NodePos: Hashable  { let id: ObjectIdentifier; let from: TokenPosition }
+
     init(grammar: Grammar, tokens: [Token]) {
         self.grammar = grammar
         self.tokens = tokens
     }
-    
-    /// Entry point: build all parse trees rooted at the grammar's start symbol.
+
     func buildAllTrees(limit: Int = 10) -> [ParseTreeNode] {
         let n = TokenPosition(token: tokens.count - 1)
         guard grammar.root.yield.contains(where: { $0.i == .zero && $0.j == n }) else { return [] }
-        return buildNonterminalTrees(grammar.root, from: .zero, to: n, limit: limit)
+        return treesFor(grammar.root, from: .zero, to: n, limit: limit)
     }
-    
-    // MARK: - Tree Construction
-    
-    /// Build all parse trees for a nonterminal over [from, to].
-    /// Each tree is a ParseTreeNode whose children come from expanding one alternate.
-    private func buildNonterminalTrees(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [ParseTreeNode] {
-        let key = ExpansionKey(node: ObjectIdentifier(nt), from: from, to: to)
-        guard activeExpansions.insert(key).inserted else { return [] }
-        defer { activeExpansions.remove(key) }
-        
-        return expandAlternates(nt, from: from, to: to, limit: limit).map { children in
-            let node = ParseTreeNode(name: nt.name, from: from, to: to)
+
+    // MARK: Tree Construction
+
+    private func treesFor(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [ParseTreeNode] {
+        let key = NodeSpan(id: ObjectIdentifier(nt), from: from, to: to)
+        guard expanding.insert(key).inserted else { return [] }
+        defer { expanding.remove(key) }
+
+        let expansions = expandAlternates(nt, from: from, to: to, limit: limit)
+        let skeletons = Set(expansions.map { $0.map { "\($0.name)/\($0.from)/\($0.to)" }.joined(separator: "|") })
+        let ambiguous = skeletons.count > 1
+        return expansions.map { children in
+            let node = ParseTreeNode(nt.name, from: from, to: to)
             node.children = children
+            node.isAmbiguous = ambiguous
             return node
         }
     }
-    
-    /// Walk the alternate chain of a grammar node (nonterminal or bracket),
-    /// expanding each alternate's body over [from, to].
-    /// Returns child lists — each list is one valid way to fill the span.
+
+    /// Walk alternates of a node, tile each body over [from, to].
     private func expandAlternates(_ node: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
-        var results: [[ParseTreeNode]] = []
-        var altNode = node.alt
-        while let alt = altNode {
-            defer { altNode = alt.alt }
+        var results = [[ParseTreeNode]]()
+        var alt = node.alt
+        while let a = alt {
+            defer { alt = a.alt }
             guard results.count < limit else { break }
-            let symbols = alt.bodySymbols.filter { $0.kind != .EPS }
-            if symbols.isEmpty {
+            let body = a.bodySymbols.filter { $0.kind != .EPS }
+            if body.isEmpty {
                 if from == to { results.append([]) }
-                continue
+            } else {
+                results.append(contentsOf: tileBody(body, from: from, to: to, limit: limit - results.count))
             }
-            results.append(contentsOf: expandBody(symbols, from: from, to: to, limit: limit - results.count))
         }
         return results
     }
-    
-    /// Expand a sequence of body symbols over [from, to] by scanning left-to-right.
-    /// For each symbol, `endPositions` provides the valid split points from BSR evidence.
-    /// The cross-product of all symbol positions is computed inline through recursion.
-    private func expandBody(_ symbols: [GrammarNode], from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
-        guard let first = symbols.first else {
-            return from == to ? [[]] : []
-        }
+
+    /// Tile body symbols left-to-right using BSR end positions as split points.
+    private func tileBody(_ symbols: [GrammarNode], from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
+        guard let first = symbols.first else { return from == to ? [[]] : [] }
         let rest = Array(symbols.dropFirst())
-        var results: [[ParseTreeNode]] = []
+        var results = [[ParseTreeNode]]()
         for mid in endPositions(first, from: from) where mid <= to {
             guard results.count < limit else { break }
-            for children in buildSymbolChildren(first, from: from, to: mid, limit: limit) {
+            for head in symbolChildren(first, from: from, to: mid, limit: limit) {
                 guard results.count < limit else { break }
-                for restChildren in expandBody(rest, from: mid, to: to, limit: limit - results.count) {
+                for tail in tileBody(rest, from: mid, to: to, limit: limit - results.count) {
                     guard results.count < limit else { break }
-                    results.append(children + restChildren)
+                    results.append(head + tail)
                 }
             }
         }
         return results
     }
-    
-    /// Build child nodes for a single grammar symbol over [from, to].
-    /// Returns options of sibling-lists:
-    ///   - Terminal: one option with one leaf node
-    ///   - Nonterminal: one option per ambiguous parse, each containing one subtree
-    ///   - Bracket: one option per interpretation, each a flat list of inlined children
-    ///   - EPS: one option with zero children
-    private func buildSymbolChildren(_ sym: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
+
+    /// Build children for one symbol. Brackets are transparent (contents inlined as siblings).
+    private func symbolChildren(_ sym: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
         switch sym.kind {
         case .T, .TI, .C:
             guard tokens.indices.contains(from.tokenIndex) else { return [] }
-            return [[ParseTreeNode(name: sym.name, from: from, to: to, token: tokens[from.tokenIndex])]]
+            return [[ParseTreeNode(sym.name, from: from, to: to, token: tokens[from.tokenIndex])]]
         case .B:
-            return [[ParseTreeNode(name: sym.name, from: from, to: to, token: emptyMarkerToken(at: from, kind: sym.name))]]
+            let anchor = tokens[min(from.tokenIndex, tokens.count - 1)]
+            let idx = anchor.image.startIndex
+            return [[ParseTreeNode(sym.name, from: from, to: to, token: Token(image: anchor.image.base[idx..<idx], kind: sym.name))]]
         case .N:
             guard let lhs = sym.alt else { return [] }
-            return buildNonterminalTrees(lhs, from: from, to: to, limit: limit).map { [$0] }
+            return treesFor(lhs, from: from, to: to, limit: limit).map { [$0] }
         case .DO, .OPT, .KLN, .POS:
-            let lists = expandIterations(sym, from: from, to: to, limit: limit)
-            return lists.isEmpty && (sym.kind == .KLN || sym.kind == .OPT) ? [[]] : lists
-        case .EPS:
-            return [[]]
+            let r = expandIterations(sym, from: from, to: to, limit: limit)
+            return r.isEmpty && (sym.kind == .KLN || sym.kind == .OPT) ? [[]] : r
         default:
             return [[]]
         }
     }
 
-    /// Create a zero-width marker token anchored in the source input for display-only leaves.
-    private func emptyMarkerToken(at position: TokenPosition, kind: String) -> Token? {
-        guard !tokens.isEmpty else { return nil }
-        let clamped = max(0, min(position.tokenIndex, tokens.count - 1))
-        let anchor = tokens[clamped]
-        let base = anchor.image.base
-        let idx = anchor.image.startIndex
-        return Token(image: base[idx..<idx], kind: kind)
-    }
-    
-    /// Chain bracket iterations over [from, to], returning flat child lists.
-    /// EBNF brackets are transparent in the parse tree — no bracket node appears.
-    /// Instead, each iteration's body symbols are expanded and concatenated as siblings.
-    /// Iteration boundaries are inferred from alternate-body end positions, not directly
-    /// from `bracket.yield.k` (which may not encode user-visible iteration starts).
+    /// Chain bracket iterations over [from, to]. Closures recurse for additional iterations.
     private func expandIterations(_ bracket: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
         if from == to { return [[]] }
-        var results: [[ParseTreeNode]] = []
-        // Compute one-iteration end points from bracket alternates.
-        for end in oneIterationEndPositions(for: bracket, from: from) where end <= to {
+        var results = [[ParseTreeNode]]()
+        for end in iterationEndPositions(bracket, from: from) where end <= to && end > from {
             guard results.count < limit else { break }
-            let iterContent = expandAlternates(bracket, from: from, to: end, limit: limit - results.count)
-            if end == to {
-                // Last (or only) iteration reaches the target — done.
-                results.append(contentsOf: iterContent)
-            } else if bracket.kind.isClosure {
-                // Closure chaining must advance; nullable loop bodies can produce
-                // zero-length spans (j == from), which would recurse forever.
-                guard end > from else { continue }
-                // More iterations follow — recurse for the tail [span.j, to].
-                for head in iterContent {
-                    guard results.count < limit else { break }
+            for head in expandAlternates(bracket, from: from, to: end, limit: limit - results.count) {
+                guard results.count < limit else { break }
+                if end == to {
+                    results.append(head)
+                } else if bracket.kind.isClosure {
                     for tail in expandIterations(bracket, from: end, to: to, limit: limit - results.count) {
                         guard results.count < limit else { break }
                         results.append(head + tail)
@@ -202,52 +169,187 @@ class DerivationBuilder {
         }
         return results
     }
-    
-    // MARK: - BSR Helpers
-    
-    /// All valid end positions for a symbol starting at `from`, derived from BSR evidence.
-    /// This is the key function that connects the grammar structure to the parse evidence:
-    ///   - Terminals: span exactly one token (from → from+1) if the token kind matches.
-    ///   - Nonterminals: the LHS node's yield gives all spans starting at `from`.
-    ///   - Brackets: compute one-iteration ends from alternate bodies, then:
-    ///     DO/OPT use one step; KLN/POS take transitive closure over repeated steps.
-    ///     Nullable brackets (KLN/OPT) also include `from` itself (empty match).
-    ///   - Epsilon: matches only at `from` (empty span).
-    private func endPositions(_ symbol: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
-        let key = EndKey(node: ObjectIdentifier(symbol), from: from)
-        if let cached = endPositionsMemo[key] { return cached }
-        guard activeEndQueries.insert(key).inserted else { return [] }
-        defer { activeEndQueries.remove(key) }
+
+    // MARK: - Single Deterministic AST
+
+    struct Diagnostic: CustomStringConvertible {
+        let message: String
+        let node: String
+        let from: TokenPosition
+        let to: TokenPosition
+        let candidateCount: Int
+
+        var description: String {
+            "\(node) [\(from)..\(to)]: \(message) (\(candidateCount) candidates)"
+        }
+    }
+
+    private(set) var diagnostics: [Diagnostic] = []
+
+    func buildAST() -> ParseTreeNode? {
+        diagnostics = []
+        let n = TokenPosition(token: tokens.count - 1)
+        guard grammar.root.yield.contains(where: { $0.i == .zero && $0.j == n }) else {
+            Logger.ui.warning("AST: no complete parse found")
+            return nil
+        }
+        let root = buildASTNode(grammar.root, from: .zero, to: n)
+        if !diagnostics.isEmpty {
+            Logger.ui.warning("AST: \(self.diagnostics.count, privacy: .public) residual ambiguities")
+            for d in diagnostics {
+                Logger.ui.warning("  \(d.description, privacy: .public)")
+            }
+        }
+        return root
+    }
+
+    private func buildASTNode(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ParseTreeNode {
+        let key = NodeSpan(id: ObjectIdentifier(nt), from: from, to: to)
+        guard expanding.insert(key).inserted else {
+            let node = ParseTreeNode(nt.name, from: from, to: to)
+            node.isMissing = true
+            return node
+        }
+        defer { expanding.remove(key) }
+
+        let node = ParseTreeNode(nt.name, from: from, to: to)
+        node.children = buildASTAlternate(nt, from: from, to: to)
+        return node
+    }
+
+    private func buildASTAlternate(_ node: GrammarNode, from: TokenPosition, to: TokenPosition) -> [ParseTreeNode] {
+        var candidates: [(alt: GrammarNode, children: [ParseTreeNode])] = []
+        var alt = node.alt
+        while let a = alt {
+            defer { alt = a.alt }
+            let body = a.bodySymbols.filter { $0.kind != .EPS }
+            if body.isEmpty {
+                if from == to { candidates.append((a, [])) }
+            } else if let tiled = tileASTBody(body, from: from, to: to) {
+                candidates.append((a, tiled))
+            }
+        }
+
+        if candidates.count > 1 {
+            diagnostics.append(Diagnostic(
+                message: "ambiguous alternate",
+                node: node.name,
+                from: from, to: to,
+                candidateCount: candidates.count
+            ))
+        }
+
+        return candidates.first?.children ?? []
+    }
+
+    private func tileASTBody(_ symbols: [GrammarNode], from: TokenPosition, to: TokenPosition) -> [ParseTreeNode]? {
+        guard let first = symbols.first else { return from == to ? [] : nil }
+        let rest = Array(symbols.dropFirst())
+
+        var candidates: [ParseTreeNode]? = nil
+        var candidateCount = 0
+
+        for mid in endPositions(first, from: from) where mid <= to {
+            guard let head = buildASTSymbol(first, from: from, to: mid) else { continue }
+            guard let tail = tileASTBody(rest, from: mid, to: to) else { continue }
+            if candidateCount == 0 {
+                candidates = [head] + tail
+            }
+            candidateCount += 1
+        }
+
+        if candidateCount > 1 {
+            diagnostics.append(Diagnostic(
+                message: "ambiguous pivot",
+                node: symbols.first?.name ?? "?",
+                from: from, to: to,
+                candidateCount: candidateCount
+            ))
+        }
+
+        return candidates
+    }
+
+    private func buildASTSymbol(_ sym: GrammarNode, from: TokenPosition, to: TokenPosition) -> ParseTreeNode? {
+        switch sym.kind {
+        case .T, .TI, .C:
+            guard tokens.indices.contains(from.tokenIndex) else { return nil }
+            return ParseTreeNode(sym.name, from: from, to: to, token: tokens[from.tokenIndex])
+
+        case .B:
+            let anchor = tokens[min(from.tokenIndex, tokens.count - 1)]
+            let idx = anchor.image.startIndex
+            let syntheticToken = Token(image: anchor.image.base[idx..<idx], kind: sym.name)
+            return ParseTreeNode(sym.name, from: from, to: to, token: syntheticToken)
+
+        case .N:
+            guard let lhs = sym.alt else { return nil }
+            return buildASTNode(lhs, from: from, to: to)
+
+        case .DO, .OPT, .KLN, .POS:
+            return buildASTBracket(sym, from: from, to: to)
+
+        default:
+            return nil
+        }
+    }
+
+    private func buildASTBracket(_ bracket: GrammarNode, from: TokenPosition, to: TokenPosition) -> ParseTreeNode? {
+        let node = ParseTreeNode(bracket.name, from: from, to: to)
+        if from == to { return node }
+
+        var pos = from
+        while pos < to {
+            let ends = iterationEndPositions(bracket, from: pos).filter { $0 > pos && $0 <= to }
+            if ends.isEmpty { break }
+
+            if ends.count > 1 {
+                diagnostics.append(Diagnostic(
+                    message: "ambiguous iteration extent",
+                    node: bracket.name,
+                    from: pos, to: to,
+                    candidateCount: ends.count
+                ))
+            }
+
+            let end = ends.min()!
+            node.children.append(contentsOf: buildASTAlternate(bracket, from: pos, to: end))
+            pos = end
+        }
+        return node
+    }
+
+    // MARK: - BSR End Position Queries
+
+    private func endPositions(_ sym: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
+        let key = NodePos(id: ObjectIdentifier(sym), from: from)
+        if let cached = endCache[key] { return cached }
+        guard endGuard.insert(key).inserted else { return [] }
+        defer { endGuard.remove(key) }
 
         let result: Set<TokenPosition>
-        switch symbol.kind {
+        switch sym.kind {
         case .T, .TI, .C, .B:
-            var positions: Set<TokenPosition> = []
-            for span in symbol.yield where span.k == from { positions.insert(span.j) }
-            result = positions
+            result = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
         case .N:
-            guard let lhs = symbol.alt else { return [] }
-            var positions: Set<TokenPosition> = []
-            for span in lhs.yield where span.i == from { positions.insert(span.j) }
-            result = positions
+            guard let lhs = sym.alt else { return [] }
+            result = Set(lhs.yield.lazy.filter { $0.i == from }.map(\.j))
         case .DO, .OPT, .KLN, .POS:
-            var positions: Set<TokenPosition> = []
-            if symbol.kind == .KLN || symbol.kind == .OPT { positions.insert(from) }
-            if symbol.kind.isClosure {
-                // Closure: transitively chain one-iteration matches.
-                var visited: Set<TokenPosition> = []
+            var positions = Set<TokenPosition>()
+            if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }
+            if sym.kind.isClosure {
+                var visited = Set<TokenPosition>()
                 var queue = [from]
                 while !queue.isEmpty {
                     let pos = queue.removeFirst()
                     guard visited.insert(pos).inserted else { continue }
-                    for end in oneIterationEndPositions(for: symbol, from: pos) {
+                    for end in iterationEndPositions(sym, from: pos) where end > pos {
                         positions.insert(end)
-                        if end > pos { queue.append(end) }
+                        queue.append(end)
                     }
                 }
             } else {
-                // DO/OPT: single iteration only.
-                positions.formUnion(oneIterationEndPositions(for: symbol, from: from))
+                positions.formUnion(iterationEndPositions(sym, from: from))
             }
             result = positions
         case .EPS:
@@ -255,123 +357,107 @@ class DerivationBuilder {
         default:
             result = []
         }
-        endPositionsMemo[key] = result
+        endCache[key] = result
         return result
     }
 
-    /// End positions for exactly one bracket iteration starting at `from`.
-    /// Computed from alternate bodies using recursive end-position chaining.
-    private func oneIterationEndPositions(for bracket: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
-        var positions: Set<TokenPosition> = []
-        var altNode = bracket.alt
-        while let alt = altNode {
-            let symbols = alt.bodySymbols.filter { $0.kind != .EPS }
-            if symbols.isEmpty {
+    /// End positions after exactly one bracket iteration, computed by chaining
+    /// end positions through each alternate's body symbols.
+    private func iterationEndPositions(_ bracket: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
+        var positions = Set<TokenPosition>()
+        var alt = bracket.alt
+        while let a = alt {
+            let body = a.bodySymbols.filter { $0.kind != .EPS }
+            if body.isEmpty {
                 positions.insert(from)
             } else {
-                positions.formUnion(chainEndPositions(symbols: symbols, from: from))
+                var frontier: Set<TokenPosition> = [from]
+                for sym in body {
+                    frontier = frontier.reduce(into: Set()) { $0.formUnion(endPositions(sym, from: $1)) }
+                    if frontier.isEmpty { break }
+                }
+                positions.formUnion(frontier)
             }
-            altNode = alt.alt
+            alt = a.alt
         }
         return positions
-    }
-
-    /// All end positions after matching the symbol chain once, starting at `from`.
-    private func chainEndPositions(symbols: [GrammarNode], from start: TokenPosition) -> Set<TokenPosition> {
-        var frontier: Set<TokenPosition> = [start]
-        for symbol in symbols {
-            var next: Set<TokenPosition> = []
-            for pos in frontier {
-                next.formUnion(endPositions(symbol, from: pos))
-            }
-            if next.isEmpty { return [] }
-            frontier = next
-        }
-        return frontier
     }
 }
 
 // MARK: - Graphviz Rendering
 
-/// Generate a Graphviz dot file visualizing parse trees as a classic syntax tree diagram.
-/// Nonterminals are drawn as ellipses, terminals as boxes with the token text.
-/// For ambiguous grammars, each derivation is shown in a separate subgraph cluster.
 func generateDerivationDiagram(outputFile file: URL, grammar: Grammar, tokens: [Token]) throws {
     let trees = DerivationBuilder(grammar: grammar, tokens: tokens).buildAllTrees()
+    let title = grammar.root.ebnf().graphvizHTML
+
     guard !trees.isEmpty else {
-        let dot = """
+        try """
         digraph Derivations {
-          fontname = Menlo
-          fontsize = 10
-          node [fontname = Menlo, fontsize = 10]
-          labelloc = t
-          label = <\(grammar.root.ebnf().withLayoutGlyphs.graphvizHTML)>
-          noDerivation [shape = box, label = <No derivations for current parse>]
+          fontname=Menlo; fontsize=10; node [fontname=Menlo, fontsize=10]
+          labelloc=t; label=<\(title)>
+          n [shape=box, label=<No derivations>]
         }
-        """
-        try dot.write(to: file, atomically: true, encoding: .utf8)
+        """.write(to: file, atomically: true, encoding: .utf8)
         return
     }
-    
+
     var dot = """
     digraph Derivations {
-      fontname = Menlo
-      fontsize = 10
-      node [fontname = Menlo, fontsize = 10]
-      edge [arrowsize = 0.5]
-      rankdir = TB
-      ordering = out
-      labelloc = t
-      label = <\(grammar.root.ebnf().withLayoutGlyphs.graphvizHTML)>
-    
+      fontname=Menlo; fontsize=10
+      node [fontname=Menlo, fontsize=10]
+      edge [arrowsize=0.5]
+      rankdir=TB; ordering=out; labelloc=t
+      label=<\(title)>
+
     """
-    
+
     if trees.count > 1 {
         for (i, tree) in trees.enumerated() {
             dot += "  subgraph cluster_\(i) {\n"
-            dot += "    label = \"Derivation \(i + 1)\"\n"
-            dot += "    style = dashed\n"
-            dot += renderTreeBody(tree, prefix: "d\(i)_")
+            dot += "    label=\"Derivation \(i + 1)\"; style=dashed\n"
+            dot += renderTree(tree, prefix: "d\(i)_")
             dot += "  }\n\n"
         }
     } else {
-        dot += renderTreeBody(trees[0], prefix: "")
+        dot += renderTree(trees[0], prefix: "")
     }
-    
+
     dot += "}\n"
     try dot.write(to: file, atomically: true, encoding: .utf8)
 }
 
-/// Render a single parse tree as Graphviz node/edge declarations.
-/// Terminal leaves are forced to the same rank at the bottom with invisible
-/// ordering edges to maintain left-to-right reading order.
-private func renderTreeBody(_ tree: ParseTreeNode, prefix: String) -> String {
+/// Render a parse tree as Graphviz nodes and edges.
+/// Terminal leaves are aligned at the bottom with invisible ordering edges.
+private func renderTree(_ tree: ParseTreeNode, prefix: String) -> String {
     var dot = ""
     var n = 0
-    var terminals: [(id: String, pos: TokenPosition)] = []
-    
+    var leaves: [(id: String, pos: TokenPosition)] = []
+
     func emit(_ node: ParseTreeNode) -> String {
         let id = "\(prefix)n\(n)"; n += 1
         if node.isTerminal {
-            let text = String(node.token!.image).isEmpty ? node.name : String(node.token!.image)
-            dot += "  \(id) [shape = box, width=0.0, height=0.0, label = <\(text.withLayoutGlyphs.graphvizHTML)>]\n"
-            terminals.append((id, node.from))
+            let image = String(node.token!.image)
+            if image.isEmpty {
+                dot += "  \(id) [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<\(node.name.graphvizHTML)>]\n"
+            } else {
+                dot += "  \(id) [shape=box, width=0, height=0, label=<\(image.graphvizHTML)>]\n"
+            }
+            leaves.append((id, node.from))
         } else {
-            dot += "  \(id) [shape = ellipse, width=0.0, height=0.0, label = <\(node.name.withLayoutGlyphs.graphvizHTML)>]\n"
+            let extra = node.isAmbiguous ? ", color=red, penwidth=2.0" : ""
+            dot += "  \(id) [shape=ellipse, width=0, height=0, label=<\(node.name.graphvizHTML)>\(extra)]\n"
         }
-        for child in node.children {
-            dot += "  \(id) -> \(emit(child))\n"
-        }
+        for child in node.children { dot += "  \(id) -> \(emit(child))\n" }
         return id
     }
-    
+
     _ = emit(tree)
-    
-    let sorted = terminals.sorted { $0.pos < $1.pos }
+
+    let sorted = leaves.sorted { $0.pos < $1.pos }
     if sorted.count > 1 {
-        dot += "  { rank = same; \(sorted.map(\.id).joined(separator: "; ")) }\n"
-        for i in 0..<(sorted.count - 1) {
-            dot += "  \(sorted[i].id) -> \(sorted[i + 1].id) [style = invis]\n"
+        dot += "  { rank=same; \(sorted.map(\.id).joined(separator: "; ")) }\n"
+        for i in 0..<sorted.count - 1 {
+            dot += "  \(sorted[i].id) -> \(sorted[i + 1].id) [style=invis]\n"
         }
     }
     return dot

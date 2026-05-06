@@ -69,26 +69,18 @@ This avoids confusion.
 
 Base set:
 
-- `>~<` no constraint
-- `>:<` no trivia between A and B (touching)
-- `>.<` no newline between A and B (same line)
-- `>+<` need horizontal space between A and B
-- `>#<` need newline between A and B
-- `<?>` symmetric horizontal space around center operator token use
-
-Derived shorthand:
-
-- `<:>` both sides touching (expand to two `>:<` edges around token)
-- `<+>` both sides need horizontal space (expand to two `>+<` edges)
-- `<.>` both sides same line (expand to two `>.<` edges)
+- `>s<` no space between A and B (touching)
+- `>n<` no newline between A and B (same line)
+- `<s>` space between A and B (not touching)
+- `<n>` one or more newlines between A and B (not on same line)
 
 ## Example
 
 ```apus
-tryOperator = "try" >:< "?" | "try" >:< "!" | "try" .
+tryOperator = "try" >s< "?" | "try" >s< "!" | "try" .
 
-typeCastingOperator = "as" >:< "?" type
-                   | "as" >:< "!" type
+typeCastingOperator = "as" >s< "?" type
+                   | "as" >s< "!" type
                    | "as" type .
 ```
 
@@ -109,16 +101,22 @@ postfixOperator = Operator .
 expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 
 infixExpressions = infixExpression infixExpressions? .
-infixExpression = <?> infixOperator <?> tryOperator? awaitOperator? prefixExpression .
-infixExpression = <?> assignmentOperator <?> tryOperator? awaitOperator? prefixExpression .
-infixExpression = <?> conditionalOperator <?> tryOperator? awaitOperator? prefixExpression .
-infixExpression = <?> typeCastingOperator .
 
-prefixExpression = prefixOperator >:< postfixExpression .
+// symmetrical space on both sides of the operator
+infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
+infixExpression = >s< infixOperator >s< tryOperator? awaitOperator? prefixExpression .
+infixExpression = <s> assignmentOperator <s> tryOperator? awaitOperator? prefixExpression .
+infixExpression = >s< assignmentOperator >s< tryOperator? awaitOperator? prefixExpression .
+infixExpression = <s> conditionalOperator <s> tryOperator? awaitOperator? prefixExpression .
+infixExpression = >s< conditionalOperator >s< tryOperator? awaitOperator? prefixExpression .
+
+infixExpression = <?> typeCastingOperator .  // TODO: is this required ?
+
+prefixExpression = prefixOperator >s< postfixExpression .
 prefixExpression = inOutExpression .
 
 postfixExpression = primaryExpression .
-postfixExpression = postfixExpression >:< postfixOperator .
+postfixExpression = postfixExpression >s< postfixOperator .
 postfixExpression = functionCallExpression .
 postfixExpression = initializerExpression .
 postfixExpression = explicitMemberExpression .
@@ -128,24 +126,23 @@ postfixExpression = forcedValueExpression .
 postfixExpression = optionalChainingExpression .
 
 tryOperator = "try"
-            | "try" >:< "?"
-            | "try" >:< "!" .
+            | "try" >s< "?"
+            | "try" >s< "!" .
 
 typeCastingOperator = "is" type
                     | "as" type
-                    | "as" >:< "?" type
-                    | "as" >:< "!" type .
+                    | "as" >s< "?" type
+                    | "as" >s< "!" type .
 
-forcedValueExpression = postfixExpression >:< "!" .
-optionalChainingExpression = postfixExpression >:< "?" .
+forcedValueExpression = postfixExpression >s< "!" .
+optionalChainingExpression = postfixExpression >s< "?" .
 ```
 
 Why this is minimal:
 
 1. touches only operator-disambiguation hot spots
-2. uses `<?>` where infix symmetry matters
-3. uses `>:<` where Swift requires adjacency (`try?`, `as?`, postfix `!`/`?`)
-4. leaves rest of grammar unchanged
+2. uses `>s<` where Swift requires adjacency (`try?`, `as?`, postfix `!`/`?`)
+3. leaves rest of grammar unchanged
 
 ## Precedence Question (From Discussion)
 
@@ -198,11 +195,8 @@ These are in `Swift.apus` comments/TODOs and should be modeled in oracle policy:
 
 Use edge annotations only:
 
-1. `>:<` adjacency required
-2. `>.<` same line required (no newline)
-3. `>+<` horizontal space required
-4. `>#<` newline required
-5. `<?>` symmetric spacing around operator context
+1. `>s<` adjacency required
+2. `>n<` same line required (no newline)
 
 Rule of use:
 
@@ -229,11 +223,11 @@ https://raw.githubusercontent.com/swiftlang/swift-book/main/TSPL.docc/ReferenceM
 For APUS boundary operators used as `.B` grammar nodes:
 
 1. The predicate is evaluated at the current parser boundary: between token `cI-1` and token `cI`.
-2. In `a <:> b`, the check happens when parser is at `b`, and measures the gap between `a` and `b`.
+2. In `a <s> b`, the check happens when parser is at `b`, and measures the gap between `a` and `b`.
 3. For robust behavior with synthetic layout tokens (`>>|`, `|<<`), use source indices, not `trivia[right]`:
-   - `<:>` means there is an inter-token source gap (`left.end < right.start`).
-   - `>:<` means strict adjacency (`left.end == right.start`).
-4. `<.>` / `>.<` should continue to use line-break counting over the source span.
+   - `<s>` means there is an inter-token source gap (`left.end < right.start`).
+   - `>s<` means strict adjacency (`left.end == right.start`).
+4. `<n>` / `>n<` should continue to use line-break counting over the source span.
 
 This keeps layout injection and boundary predicates composable: synthetic layout tokens can appear in the stream without corrupting spacing predicates.
 

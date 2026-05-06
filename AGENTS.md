@@ -6,6 +6,13 @@
 - Do not run full builds or test suites unless explicitly requested.
 - If any command runs longer than 90 seconds, stop and replan with a lighter approach.
 
+## Tool Selection (Critical)
+
+- In this Xcode environment, prefer `mcp__xcode-tools__*` commands for project file reads/edits/build/diagnostics.
+- Use shell commands only when Xcode tools cannot do the task; keep shell commands short and narrowly scoped.
+- Avoid long chained shell edits; prefer small atomic edits to reduce interruption risk.
+- If a shell command is blocked/rejected, report it immediately and switch to an Xcode-tools path when possible.
+
 ## Collaboration Preferences (Learned)
 
 - Ask before exploring newly added directories or broad workspace areas (example: `grammars/`).
@@ -31,3 +38,39 @@
 
 - Treat `Advent/` as the canonical project subtree for source, tests, grammars, docs, generated output, and research assets.
 - Avoid maintaining duplicate active copies of the same content at both repository root and under `Advent/`.
+
+## Root Guard
+
+- Git repository root is `AoC2021`.
+- Canonical active work subtree is `Advent/`.
+- Unless explicitly requested otherwise, limit file discovery, edits, and verification to `Advent/`.
+- Treat day-to-day prompt paths as `Advent/`-relative when resolving user intent.
+
+## Merged From codex.md and claude.md
+
+- If a required tool is missing (example: `pdftotext`), ask the user first before installing it, and ask before switching to a fallback workflow.
+- Keep users informed during long operations with periodic status updates.
+- Prefer diagnosing root causes over patching symptoms; avoid adding flags unless required.
+- Keep structural reorganization separate from parser behavior changes.
+
+### Local Wiki Retrieval
+
+- Build or refresh index with `./wiki-build`.
+- Query with `./wiki-search "your query"` (optional second arg is top N).
+- Backing scripts: `tools/wiki/build_wiki.py`, `tools/wiki/query_wiki.py`.
+- Backing data: `wiki/index.db`, `wiki/notes/`.
+- After material parser/grammar/scanner/test/doc changes, update relevant `wiki/notes/*.md` and rebuild index.
+
+### TODO Source Of Truth
+
+- Read and update markdown TODOs in `Advent/TODO.md`.
+- Avoid duplicating TODO lists across assistant notes.
+
+### Project Context (GLL/APUS)
+
+- Project implements a GLL parser with CRF/BSR-related structures.
+- `ApusParser` parses APUS grammars into `GrammarNode` graphs.
+- `MessageParser` runs GLL descriptor processing and parse forest and BSR construction.
+- Scanner performance and correctness are critical; preserve longest-token correctness in regex/scanner work.
+- Prefer parser-owned mutable state over shared static state for reentrancy/concurrency safety.
+
