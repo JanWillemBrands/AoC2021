@@ -8,7 +8,7 @@ article     = title >>| < section > |<< .       // the sections are indented fro
 
 section     = title >>| < paragraph > |<< .     // the paragraphs are indented from the section title
 
-paragraph   = 'longest' < sentence > <n> .                // additional paragraphs must start on a new line
+@longest paragraph   = < sentence > <n> .                // additional paragraphs must start on a new line
 
 sentence    = < word > "." <s> .                // there must be whitespace after a period
 

@@ -1,18 +1,18 @@
 whitespace  : /\s+/ .
 comment     : /\/\/.*/ .
 
-action      : /@(?:[^@\\]|\\.)+@/ .
+action      : /'(?:[^'\\]|\\.)*'/ .
 
 identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
 literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
-pragma      - /'(?:[^\'\n])*'/ .
+pragma      - /@\p{XID_Start}\p{XID_Continue}*/ .
 
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
-production  = identifier
+production  = [ pragma ] identifier
                 ( ":" ( regex | literal ) mode
                 | "-" ( regex | literal ) mode
                 | "=" selection
@@ -33,7 +33,6 @@ terminal    = identifier    [ "---" "(" < literal > ")" ]
             | literal       [ "~~~" ]
             | regex
             | epsilon | empty
-            | pragma
             .
             
 epsilon     = "ε" .
@@ -49,18 +48,18 @@ name        = literal | identifier .
 whitespace  : /\s+/
 comment     : /\/\/.*/
 
-action      : /@(?:[^@\\]|\\.)+@/
+action      : /'(?:[^'\\]|\\.)*'/
 
 identifier  - /\p{XID_Start}\p{XID_Continue}*/
 literal     - /\"(?:[^\"\\]|\\.)+\"/
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\//
-pragma      - /'(?:[^\'\n])*'/
+pragma      - /@\p{XID_Start}\p{XID_Continue}*/
 
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/
 
 grammar     = < production > { message }
               
-production  = identifier
+production  = [ pragma ] identifier
                 ( ":" ( regex | literal ) mode
                 | "-" ( regex | literal ) mode
                 | "=" selection
@@ -81,9 +80,8 @@ terminal    = identifier    [ "---" "(" < literal > ")" ]
             | literal       [ "~~~" ]
             | regex
             | epsilon | empty
-            | pragma
-            
-            
+
+
 epsilon     = "ε"
 empty       = "\"\""
 

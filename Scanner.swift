@@ -68,11 +68,11 @@ final class Token: CustomStringConvertible {
             return String(image.dropFirst().dropLast())
         case "action":
             return image.dropFirst().dropLast()
-                .replacingOccurrences(of: "\\@", with: "@")
+                .replacingOccurrences(of: "\\'", with: "'")
         case "message":
             return String(image.dropFirst(3))
         case "pragma":
-            return String(image.dropFirst().dropLast())
+            return String(image.dropFirst())
         default:
             return String(image)
         }

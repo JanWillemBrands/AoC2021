@@ -8,6 +8,30 @@
 import Testing
 import Foundation
 
+private let parserIsolationLock = NSRecursiveLock()
+
+@discardableResult
+func withParserIsolation<T>(_ work: () throws -> T) rethrows -> T {
+    parserIsolationLock.lock()
+    defer { parserIsolationLock.unlock() }
+    return try work()
+}
+
+enum TestInfrastructureError: Error, CustomStringConvertible {
+    case grammarFileNotFound(name: String, candidates: [String])
+
+    var description: String {
+        switch self {
+        case .grammarFileNotFound(let name, let candidates):
+            return """
+            Could not locate grammar '\(name)'.
+            Checked:
+            \(candidates.joined(separator: "\n"))
+            """
+        }
+    }
+}
+
 struct TestCase: CustomTestStringConvertible {
     let grammar: String
     let pass: [String]
@@ -32,27 +56,70 @@ struct TestCase: CustomTestStringConvertible {
     }
 }
 
+func testProjectDirectory() -> URL {
+    let sourceFileURL = URL(fileURLWithPath: #filePath)
+    return sourceFileURL.deletingLastPathComponent().deletingLastPathComponent()
+}
+
+func resolveGrammarFileURL(named name: String) throws -> URL {
+    let projectDir = testProjectDirectory()
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    let withoutLeadingSlash = trimmed.hasPrefix("/") ? String(trimmed.dropFirst()) : trimmed
+    let pathWithExtension = withoutLeadingSlash.hasSuffix(".apus")
+        ? withoutLeadingSlash
+        : withoutLeadingSlash + ".apus"
+
+    var candidates: [URL] = []
+    if pathWithExtension.contains("/") {
+        candidates.append(projectDir.appendingPathComponent(pathWithExtension))
+        if !pathWithExtension.hasPrefix("apus grammars/") {
+            candidates.append(
+                projectDir
+                    .appendingPathComponent("apus grammars")
+                    .appendingPathComponent(pathWithExtension)
+            )
+        }
+    } else {
+        candidates.append(
+            projectDir
+                .appendingPathComponent("apus grammars")
+                .appendingPathComponent(pathWithExtension)
+        )
+        candidates.append(projectDir.appendingPathComponent(pathWithExtension))
+    }
+
+    var seen = Set<String>()
+    for candidate in candidates where seen.insert(candidate.path).inserted {
+        if FileManager.default.fileExists(atPath: candidate.path) {
+            return candidate
+        }
+    }
+
+    throw TestInfrastructureError.grammarFileNotFound(name: name, candidates: Array(seen).sorted())
+}
+
 /// Parse a grammar string, run a message through it, return whether it matched.
 func parseMatches(grammar grammarString: String, message: String) throws -> Bool {
-    GrammarNode.count = 0
-    trace = false
-    traceIndent = 0
+    try withParserIsolation {
+        trace = false
+        traceIndent = 0
 
-    let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammarString
-    let parser = try ApusParser(fromString: grammarWithWhitespace)
-    let grammar = try parser.parse(explicitStartSymbol: "")
+        let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammarString
+        let parser = try ApusParser(fromString: grammarWithWhitespace)
+        let grammar = try parser.parse(explicitStartSymbol: "")
 
-    let messageScanner: Scanner
-    do {
-        messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
-    } catch is ScannerFailure {
-        return false
+        let messageScanner: Scanner
+        do {
+            messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
+        } catch is ScannerFailure {
+            return false
+        }
+        let messageParser = MessageParser(grammar: grammar)
+        messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
+
+        let extent = TokenPosition(token: messageParser.tokens.count - 1)
+        return messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
     }
-    let messageParser = MessageParser(grammar: grammar)
-    messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
-
-    let extent = TokenPosition(token: messageParser.tokens.count - 1)
-    return messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
 }
 
 /// Run all pass/fail messages for a test case.
@@ -77,18 +144,14 @@ func runTestCase(_ tc: TestCase) throws {
 
 /// Load a .apus grammar file from the project directory.
 func loadGrammarFile(named name: String) throws -> Grammar {
-    GrammarNode.count = 0
-    trace = false
-    traceIndent = 0
+    try withParserIsolation {
+        trace = false
+        traceIndent = 0
 
-    let sourceFileURL = URL(fileURLWithPath: #filePath)
-    let projectDir = sourceFileURL.deletingLastPathComponent().deletingLastPathComponent()
-    let grammarFileURL = projectDir
-        .appendingPathComponent(name)
-        .appendingPathExtension("apus")
-
-    let parser = try ApusParser(fromFile: grammarFileURL)
-    return try parser.parse(explicitStartSymbol: "")
+        let grammarFileURL = try resolveGrammarFileURL(named: name)
+        let parser = try ApusParser(fromFile: grammarFileURL)
+        return try parser.parse(explicitStartSymbol: "")
+    }
 }
 
 // MARK: - Language Grammar Test Support
@@ -106,60 +169,106 @@ struct LanguageFixture {
     let needsLayout: Bool
 }
 
-func loadLanguageFixture(_ path: String) -> LanguageFixture {
-    GrammarNode.count = 0
-    trace = false
-    traceIndent = 0
+func loadLanguageFixture(_ path: String) throws -> LanguageFixture {
+    try withParserIsolation {
+        trace = false
+        traceIndent = 0
 
-    let sourceFileURL = URL(fileURLWithPath: #filePath)
-    let projectDir = sourceFileURL.deletingLastPathComponent().deletingLastPathComponent()
-    let grammarFileURL = projectDir.appendingPathComponent(path).appendingPathExtension("apus")
-    let grammarDir = grammarFileURL.deletingLastPathComponent()
+        let grammarFileURL = try resolveGrammarFileURL(named: path)
+        let grammarDir = grammarFileURL.deletingLastPathComponent()
 
-    let apusParser = try! ApusParser(fromFile: grammarFileURL)
-    let grammar = try! apusParser.parse(explicitStartSymbol: "")
-    let needsLayout = grammar.usesInjectedLayoutTokens
+        let apusParser = try ApusParser(fromFile: grammarFileURL)
+        let grammar = try apusParser.parse(explicitStartSymbol: "")
+        let needsLayout = grammar.usesInjectedLayoutTokens
 
-    let cases = grammar.messages.enumerated().map { (i, msg) in
-        LanguageTestCase(index: i + 1, message: String(msg))
+        let cases = grammar.messages.enumerated().map { (i, msg) in
+            LanguageTestCase(index: i + 1, message: String(msg))
+        }
+
+        return LanguageFixture(grammar: grammar, grammarDir: grammarDir, cases: cases, needsLayout: needsLayout)
     }
-
-    return LanguageFixture(grammar: grammar, grammarDir: grammarDir, cases: cases, needsLayout: needsLayout)
 }
 
 func parseLanguageMessage(_ fixture: LanguageFixture, message: String) throws -> Bool {
-    let messageScanner: Scanner
-    if message.hasPrefix("#") {
-        let fileName = message.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
-        let fileURL = fixture.grammarDir.appendingPathComponent(fileName)
-        let content = try String(contentsOf: fileURL, encoding: .utf8)
-        messageScanner = try Scanner(fromString: content, patterns: fixture.grammar.terminals)
-    } else {
-        messageScanner = try Scanner(fromString: message, patterns: fixture.grammar.terminals)
+    try withParserIsolation {
+        let messageScanner: Scanner
+        if message.hasPrefix("#") {
+            let fileName = message.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
+            let projectDir = testProjectDirectory()
+
+            let candidateURLs: [URL]
+            if fileName.hasPrefix("/") {
+                candidateURLs = [URL(fileURLWithPath: String(fileName))]
+            } else {
+                candidateURLs = [
+                    fixture.grammarDir.appendingPathComponent(fileName),
+                    projectDir.appendingPathComponent(fileName)
+                ]
+            }
+
+            guard let fileURL = candidateURLs.first(where: { FileManager.default.fileExists(atPath: $0.path) }) else {
+                throw TestInfrastructureError.grammarFileNotFound(
+                    name: "message file \(fileName)",
+                    candidates: candidateURLs.map(\.path)
+                )
+            }
+
+            let content = try String(contentsOf: fileURL, encoding: .utf8)
+            messageScanner = try Scanner(fromString: content, patterns: fixture.grammar.terminals)
+        } else {
+            messageScanner = try Scanner(fromString: message, patterns: fixture.grammar.terminals)
+        }
+
+        if fixture.needsLayout {
+            injectLayoutTokens(
+                tokens: &messageScanner.tokens,
+                trivia: &messageScanner.trivia,
+                input: messageScanner.input,
+                bracketPairs: [("(", ")"), ("[", "]"), ("{", "}")]
+            )
+        }
+
+        let parser = MessageParser(grammar: fixture.grammar)
+        parser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
+
+        let extent = TokenPosition(token: parser.tokens.count - 1)
+        return parser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
     }
-
-    if fixture.needsLayout {
-        injectLayoutTokens(
-            tokens: &messageScanner.tokens,
-            trivia: &messageScanner.trivia,
-            input: messageScanner.input,
-            bracketPairs: [("(", ")"), ("[", "]"), ("{", "}")]
-        )
-    }
-
-    let parser = MessageParser(grammar: fixture.grammar)
-    parser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
-
-    let extent = TokenPosition(token: parser.tokens.count - 1)
-    return parser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
 }
 
 /// Parse a grammar string and return the Grammar object for inspection.
 func parseGrammar(_ grammarString: String) throws -> Grammar {
-    GrammarNode.count = 0
-    trace = false
-    traceIndent = 0
-    let full = "whitespace : /\\s+/.\n" + grammarString
-    let parser = try ApusParser(fromString: full)
-    return try parser.parse(explicitStartSymbol: "")
+    try withParserIsolation {
+        trace = false
+        traceIndent = 0
+        let full = "whitespace : /\\s+/.\n" + grammarString
+        let parser = try ApusParser(fromString: full)
+        return try parser.parse(explicitStartSymbol: "")
+    }
+}
+
+/// Parse a grammar string, run a message through it, run the Oracle, return match status and prune count.
+func parseAndDisambiguate(grammar grammarString: String, message: String) throws -> (matches: Bool, oraclePruned: Int) {
+    try withParserIsolation {
+        trace = false
+        traceIndent = 0
+
+        let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammarString
+        let parser = try ApusParser(fromString: grammarWithWhitespace)
+        let grammar = try parser.parse(explicitStartSymbol: "")
+
+        let messageScanner: Scanner
+        do {
+            messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
+        } catch is ScannerFailure {
+            return (false, 0)
+        }
+        let messageParser = MessageParser(grammar: grammar)
+        messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
+
+        let extent = TokenPosition(token: messageParser.tokens.count - 1)
+        let matches = messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
+        let pruned = Oracle(grammar: grammar, tokens: messageScanner.tokens).disambiguate()
+        return (matches, pruned)
+    }
 }

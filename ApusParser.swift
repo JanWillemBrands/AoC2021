@@ -168,10 +168,10 @@ class ApusParser {
         // Collect preamble actions (before first production)
         grammar.preamble = collectActions(at: 0)
         
-        try expect(["identifier"])
+        try expect(["identifier", "pragma"])
         repeat {
             try production()
-        } while token.kind == "identifier"
+        } while token.kind == "identifier" || token.kind == "pragma"
         
         // Collect epilogue actions (after last production, before messages/$)
         grammar.epilogue = collectActions(at: cI)
@@ -186,6 +186,12 @@ class ApusParser {
     
     func production() throws {
         trace("production", token)
+        var disambiguationAnnotation: Disambiguation?
+        if token.kind == "pragma", let d = Disambiguation(rawValue: token.stripped) {
+            disambiguationAnnotation = d
+            cI += 1
+        }
+        try expect(["identifier"])
         let nonTerminalName = String(token.image)
         cI += 1
         
@@ -249,11 +255,6 @@ class ApusParser {
             if grammar.startSymbol == "" {
                 grammar.startSymbol = nonTerminalName
             }
-            var disambiguationAnnotation: Disambiguation?
-            if token.kind == "pragma", let d = Disambiguation(rawValue: token.stripped) {
-                disambiguationAnnotation = d
-                cI += 1
-            }
             let node = try selection()
             let lhsNode: GrammarNode
             if let existing = grammar.nonTerminals[nonTerminalName] {
@@ -314,75 +315,142 @@ class ApusParser {
         
         // leading actions (before first factor)
         termNode.actions = collectActions(at: cI)
-        var sawFactor = false
-        while true {
-            // Allow layout operators before a factor.
-            while let layoutNode = try layout() {
+        
+        repeat {
+            switch token.kind {
+            case "<n>", "<s>", ">>|", ">n<", ">s<", "|<<":
+                let layoutNode = layout()
                 termNode.seq = layoutNode
                 termNode = layoutNode
                 termNode.actions = collectActions(at: cI)
-            }
-
-            guard ["literal", "identifier", "epsilon", "empty", "regex", "(", "[", "{", "<"].contains(token.kind) else {
-                if !sawFactor {
-                    try expect(["identifier", "literal", "epsilon", "empty", "regex", "(", "[", "{", "<"])
-                }
-                break
-            }
-
-            sawFactor = true
-            var itemNode = try factor()
-
-            switch token.kind {
-            case "?", "*", "+":
-                let miniSeq = GrammarNode(kind: .ALT, name: "")
-                miniSeq.seq = itemNode
-                miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
-
+            case "(", "<", "[", "epsilon", "empty", "identifier", "literal", "regex", "{":
+                var factorNode = try factor()
                 switch token.kind {
-                case "?":
-                    itemNode = GrammarNode(kind: .OPT, name: "", alt: miniSeq)
-                case "*":
-                    itemNode = GrammarNode(kind: .KLN, name: "", alt: miniSeq)
-                case "+":
-                    itemNode = GrammarNode(kind: .POS, name: "", alt: miniSeq)
+                case "?", "*", "+":
+                    let miniSeq = GrammarNode(kind: .ALT, name: "")
+                    miniSeq.seq = factorNode
+                    miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+                    
+                    switch token.kind {
+                    case "?":
+                        factorNode = GrammarNode(kind: .OPT, name: "", alt: miniSeq)
+                    case "*":
+                        factorNode = GrammarNode(kind: .KLN, name: "", alt: miniSeq)
+                    case "+":
+                        factorNode = GrammarNode(kind: .POS, name: "", alt: miniSeq)
+                    default:
+                        break
+                    }
+                    factorNode.alt = miniSeq
+                    cI += 1
                 default:
                     break
                 }
-                itemNode.alt = miniSeq
-                cI += 1
+                
+                termNode.seq = factorNode
+                termNode = factorNode
+                termNode.actions = collectActions(at: cI)
             default:
-                break
+                try expect(["(", "<", "<n>", "<s>", ">>|", ">n<", ">s<", "[", "identifier", "literal", "regex", "epsilon", "empty", "{", "|<<"])
             }
-
-            termNode.seq = itemNode
-            termNode = itemNode
-            termNode.actions = collectActions(at: cI)
-        }
+            
+        } while ["(", "<", "<n>", "<s>", ">>|", ">n<", ">s<", "[", "epsilon", "empty", "identifier", "literal", "regex", "{", "|<<"].contains(token.kind)
         
         termNode.seq = GrammarNode(kind: .END, name: "")
         // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
         return startOfSequence
     }
-
-    func layout() throws -> GrammarNode? {
-        switch token.kind {
-        case ">>|", "|<<":
-            let name = token.kind
-            grammar.usesInjectedLayoutTokens = true
-            grammar.registerTerminal(name)
-            cI += 1
-            return GrammarNode(kind: .T, name: name)
-        case "<n>", "<s>", ">n<", ">s<":
-            let name = token.kind
-            grammar.registerTerminal(name)
-            cI += 1
+    
+//    func sequence() throws -> GrammarNode {
+//        // sequence = < layout | factor [ "?" | "*" | "+" ] > .
+//        // Actions are collected from skippedTokens at each position.
+//        trace("sequence", token)
+//        let startOfSequence = GrammarNode(kind: .ALT, name: "")
+//        var termNode = startOfSequence
+//        
+//        // leading actions (before first factor)
+//        termNode.actions = collectActions(at: cI)
+//        var sawFactor = false
+//        while true {
+//            // Allow layout operators before a factor.
+//            while let layoutNode = try layout() {
+//                termNode.seq = layoutNode
+//                termNode = layoutNode
+//                termNode.actions = collectActions(at: cI)
+//            }
+//            
+//            guard ["literal", "identifier", "epsilon", "empty", "regex", "(", "[", "{", "<"].contains(token.kind) else {
+//                if !sawFactor {
+//                    try expect(["identifier", "literal", "epsilon", "empty", "regex", "(", "[", "{", "<"])
+//                }
+//                break
+//            }
+//            
+//            sawFactor = true
+//            var itemNode = try factor()
+//            
+//            switch token.kind {
+//            case "?", "*", "+":
+//                let miniSeq = GrammarNode(kind: .ALT, name: "")
+//                miniSeq.seq = itemNode
+//                miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
+//                
+//                switch token.kind {
+//                case "?":
+//                    itemNode = GrammarNode(kind: .OPT, name: "", alt: miniSeq)
+//                case "*":
+//                    itemNode = GrammarNode(kind: .KLN, name: "", alt: miniSeq)
+//                case "+":
+//                    itemNode = GrammarNode(kind: .POS, name: "", alt: miniSeq)
+//                default:
+//                    break
+//                }
+//                itemNode.alt = miniSeq
+//                cI += 1
+//            default:
+//                break
+//            }
+//            
+//            termNode.seq = itemNode
+//            termNode = itemNode
+//            termNode.actions = collectActions(at: cI)
+//        }
+//        
+//        termNode.seq = GrammarNode(kind: .END, name: "")
+//        // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
+//        return startOfSequence
+//    }
+    
+    func layout() -> GrammarNode {
+        let name = token.kind
+        grammar.registerTerminal(name)
+        cI += 1
+        if ["<n>", "<s>", ">n<", ">s<"].contains(name) {
             return GrammarNode(kind: .B, name: name)
-        default:
-            return nil
+        } else {    // ">>|", "|<<"
+            grammar.usesInjectedLayoutTokens = true
+            return GrammarNode(kind: .T, name: name)
         }
     }
     
+//    func layout() throws -> GrammarNode? {
+//        switch token.kind {
+//        case ">>|", "|<<":
+//            let name = token.kind
+//            grammar.usesInjectedLayoutTokens = true
+//            grammar.registerTerminal(name)
+//            cI += 1
+//            return GrammarNode(kind: .T, name: name)
+//        case "<n>", "<s>", ">n<", ">s<":
+//            let name = token.kind
+//            grammar.registerTerminal(name)
+//            cI += 1
+//            return GrammarNode(kind: .B, name: name)
+//        default:
+//            return nil
+//        }
+//    }
+
     func regex() throws -> GrammarNode {
         trace("regex", token)
         // the name of the regex is either the LHS identifier of the production rule, or the lineposition
@@ -412,11 +480,11 @@ class ApusParser {
         trace("literal", token, token.stripped)
         
         // epsilon has two representations in apus grammars, either the greek letter ε, or the empty string literal ""
-//        if token.stripped == "" {
-//            trace("epsilon", token, token.stripped)
-//            cI += 1
-//            return GrammarNode(kind: .EPS, name: "ε")
-//        }
+        //        if token.stripped == "" {
+        //            trace("epsilon", token, token.stripped)
+        //            cI += 1
+        //            return GrammarNode(kind: .EPS, name: "ε")
+        //        }
         
         //        let name = terminalAlias ?? token.stripped
         //        print("literal terminalAlias: \(terminalAlias ?? "nil") token.stripped: \(token.stripped)")
@@ -543,4 +611,5 @@ class ApusParser {
             throw ApusParserError.unexpectedToken(explanation: "Failed to parse grammar from symbol \(grammar.startSymbol)")
         }
     }
+    
 }

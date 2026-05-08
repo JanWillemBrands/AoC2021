@@ -11,7 +11,7 @@ message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
-production  = identifier
+production  = [ pragma ] identifier
                 ( ":" ( regex | literal ) "." mode
                 | "-" ( regex | literal ) "." mode
                 | "=" selection "."
@@ -27,18 +27,17 @@ factor      = terminal
             | "<" selection ">"
             | "(" selection ")"
             .
-            
+
 terminal    = identifier    [ "---" "(" < literal > ")" ]
             | literal       [ "~~~" ]
             | regex
             | epsilon | empty
-            | pragma
             .
-            
+
 epsilon     = "ε" .
 empty       = "\"\"" .
 
-layout      = [ ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" ] .
+layout      = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
 
 mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
 name        = literal | identifier .
@@ -48,18 +47,17 @@ name        = literal | identifier .
 whitespace  : /\s+/ .
 comment     : /\/\/.*/ .
 
-action      : /@(?:[^@\\]|\\.)+@/ .
-
 identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
 literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
-pragma      - /'(?:[^\'\n])*'/ .
 
+action      : /'(?:[^'\\]|\\.)*'/ .
+pragma      - /@\p{XID_Start}\p{XID_Continue}*/ .
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
               
-production  = identifier
+production  = [ pragma ] identifier
                 ( ":" ( regex | literal ) "." mode
                 | "-" ( regex | literal ) "." mode
                 | "=" selection "."
@@ -67,7 +65,7 @@ production  = identifier
 
 selection   = sequence { "|" sequence } .
 
-sequence    = [ layout ] < factor [ "?" | "*" | "+" ] [ layout ] > .
+sequence    = < layout | factor [ "?" | "*" | "+" ] > .
 
 factor      = terminal
             | "[" selection "]"
@@ -75,18 +73,17 @@ factor      = terminal
             | "<" selection ">"
             | "(" selection ")"
             .
-            
+
 terminal    = identifier    [ "---" "(" < literal > ")" ]
             | literal       [ "~~~" ]
             | regex
             | epsilon | empty
-            | pragma
             .
-            
+
 epsilon     = "ε" .
 empty       = "\"\"" .
 
-layout      = [ ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" ] .
+layout      = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
 
 mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
 name        = literal | identifier .

@@ -298,6 +298,11 @@ class DerivationBuilder {
         let node = ParseTreeNode(bracket.name, from: from, to: to)
         if from == to { return node }
 
+        if !bracket.kind.isClosure {
+            node.children.append(contentsOf: buildASTAlternate(bracket, from: from, to: to))
+            return node
+        }
+
         var pos = from
         while pos < to {
             let ends = iterationEndPositions(bracket, from: pos).filter { $0 > pos && $0 <= to }

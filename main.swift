@@ -18,21 +18,21 @@ let enableDiagrams = true
 
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-//    .appendingPathComponent("Swift")
-    .appendingPathComponent("layout")
-//    .appendingPathComponent("apus")
+    .appendingPathComponent("apus grammars/Swift")
+//    .appendingPathComponent("apus grammars/layout")
+//    .appendingPathComponent("apus grammars/apus")
 //    .appendingPathComponent("grammars/Python/Python")
-//    .appendingPathComponent("ScanModeTest")
-//    .appendingPathComponent("CommentTest")
-//    .appendingPathComponent("attributeHunt")
-//    .appendingPathComponent("AfroozehHunt")
-//    .appendingPathComponent("apusWithAction")
-//    .appendingPathComponent("TortureSyntax")
-//    .appendingPathComponent("test")
-//    .appendingPathComponent("silent")
-//    .appendingPathComponent("tortureART")
-//    .appendingPathComponent("tortureEBNF")
-//    .appendingPathComponent("apusAmbiguous")
+//    .appendingPathComponent("apus grammars/ScanModeTest")
+//    .appendingPathComponent("apus grammars/CommentTest")
+//    .appendingPathComponent("apus grammars/attributeHunt")
+//    .appendingPathComponent("apus grammars/AfroozehHunt")
+//    .appendingPathComponent("apus grammars/apusWithAction")
+//    .appendingPathComponent("apus grammars/TortureSyntax")
+//    .appendingPathComponent("apus grammars/test")
+//    .appendingPathComponent("apus grammars/silent")
+//    .appendingPathComponent("apus grammars/tortureART")
+//    .appendingPathComponent("apus grammars/tortureEBNF")
+//    .appendingPathComponent("apus grammars/apusAmbiguous")
     .appendingPathExtension("apus")
 
 let grammar: Grammar
@@ -204,7 +204,7 @@ for (mi, message) in grammar.messages.enumerated() {
 
 //    Logger.ui.debug("first/follow set size: \(GrammarNode.sizeofSets) terminals.count: \(grammar.terminals.count) nonTerminals.count: \(grammar.nonTerminals.count)")
 
-    SwiftSyntaxASTTest()
+//    SwiftSyntaxASTTest()
 }
 //}
 

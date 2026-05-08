@@ -16,6 +16,9 @@ Source: thread implementation + `Advent/AdventTests/PerformanceTests.swift`.
 3. Scanner optimization: add first-byte guard (`[Bool]` ASCII lookup table per `Pattern`) to cut failed regex attempts.
 Source: `Advent/claude.md` (previously in "Future Work & TODOs").
 
+4. Symmetric spacing boundary annotation: Swift requires balanced whitespace (both sides or neither) for infix operators. The ternary `?` needs this — `a? b : c` is postfix `a?` (not ternary), but our grammar currently accepts it as ternary since we only have `>s<` (no left space) and `<s>` (left space). Add a new boundary annotation (e.g. `<=>`) that checks for symmetric spacing to properly gate the ternary `? :` and potentially other infix operators.
+Source: Swift Language Reference §Lexical Structure operator whitespace rules; `Swift.apus` conditionalOperator rule.
+
 ## TODO References Found In Markdown
 
 These are TODO references, not standalone tasks, but included for completeness.

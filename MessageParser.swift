@@ -390,5 +390,4 @@ class MessageParser {
     func hasInterTokenGap(at first: Int, and second: Int) -> Bool {
         tokens[first].image.endIndex < tokens[second].image.startIndex
     }
-
 }

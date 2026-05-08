@@ -18,7 +18,7 @@ let apusTerminals: [String:TokenPattern] = [
     "action":       TokenPattern(#"'(?:[^'\\]|\\.)*'"#,     /'(?:[^'\\]|\\.)*'/,                false, true),
     "message":      TokenPattern(#"\^\^\^(?:(?s).*?)(?=\^\^\^|$)"#,
                                                 /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,    false, false),
-    "annotation":   TokenPattern(#"@\p{XID_Start}\p{XID_Continue}*"#, /@\p{XID_Start}\p{XID_Continue}*/, false, false),
+    "pragma":       TokenPattern(#"@\p{XID_Start}\p{XID_Continue}*"#, /@\p{XID_Start}\p{XID_Continue}*/, false, false),
 
     "empty":        TokenPattern("\"\"",                    Regex { "\"\"" },                   true,  false),
     "epsilon":      TokenPattern("ε",                       Regex { "ε" },                      true,  false),

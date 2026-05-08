@@ -92,19 +92,31 @@ struct AdventParseResult {
 
 /// Parse with the Advent GLL parser using Swift.apus and return the parse tree.
 func adventParse(_ source: String) throws -> AdventParseResult? {
-    let grammar = try loadGrammarFile(named: "Swift")
-    let scanner = try Scanner(fromString: source, patterns: grammar.terminals)
-    let parser = MessageParser(grammar: grammar)
-    parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
+    try withParserIsolation {
+        let grammar = try loadGrammarFile(named: "Swift")
+        let scanner = try Scanner(fromString: source, patterns: grammar.terminals)
+        let parser = MessageParser(grammar: grammar)
+        parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
 
-    let extent = TokenPosition(token: parser.tokens.count - 1)
-    let matched = parser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
-    guard matched else { return nil }
+        let extent = TokenPosition(token: parser.tokens.count - 1)
+        let matched = parser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
+        guard matched else { return nil }
 
-    let builder = DerivationBuilder(grammar: grammar, tokens: parser.tokens)
-    guard let tree = builder.buildAST() else { return nil }
-    return AdventParseResult(tree: tree, builder: builder)
+        let builder = DerivationBuilder(grammar: grammar, tokens: parser.tokens)
+        guard let tree = builder.buildAST() else { return nil }
+        return AdventParseResult(tree: tree, builder: builder)
+    }
 }
+
+// Phase 2: binary expressions & operator folding
+let phase2Snippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "simple addition",         source: "let x = 1 + 2"),
+    SwiftSnippet(label: "operator precedence",     source: "let x = 1 + 2 * 3"),
+    SwiftSnippet(label: "ternary conditional",     source: "let x = true ? 1 : 2"),
+    SwiftSnippet(label: "prefix negation",         source: "let x = !true"),
+    SwiftSnippet(label: "nil coalescing",          source: "let x = a ?? b"),
+    SwiftSnippet(label: "type cast as",            source: "let x = 42 as Int"),
+]
 
 // MARK: - Test Suites
 
@@ -165,6 +177,91 @@ struct SwiftSyntaxTests {
                 print("--- Ambiguity diagnostics ---")
                 for d in result.builder.diagnostics { print("  \(d)") }
             }
+        }
+    }
+
+    @Suite("Phase 2 — SwiftSyntax reference")
+    struct SwiftSyntaxAcceptanceP2 {
+
+        @Test("SwiftSyntax accepts snippet", arguments: phase2Snippets)
+        func swiftSyntaxAccepts(_ snippet: SwiftSnippet) throws {
+            let parsed = Parser.parse(source: snippet.source)
+            #expect(!parsed.hasError, "SwiftSyntax parse error for: \(snippet.source)")
+        }
+    }
+
+    @Suite("Phase 2 — Advent acceptance")
+    struct AdventAcceptanceP2 {
+
+        @Test("Advent accepts snippet", arguments: phase2Snippets)
+        func adventAccepts(_ snippet: SwiftSnippet) throws {
+            let result = try adventParse(snippet.source)
+            #expect(result != nil, "Advent failed to parse: \(snippet.source)")
+        }
+    }
+
+    @Suite("Phase 2 — Unambiguous parse")
+    struct AmbiguityCheckP2 {
+
+        @Test("no residual ambiguity", arguments: phase2Snippets)
+        func unambiguous(_ snippet: SwiftSnippet) throws {
+            guard let result = try adventParse(snippet.source) else {
+                Issue.record("Advent failed to parse: \(snippet.source)")
+                return
+            }
+            #expect(result.isUnambiguous,
+                    "Residual ambiguity in '\(snippet.source)': \(result.builder.diagnostics)")
+        }
+    }
+
+    @Suite("Phase 2 — Tree structure comparison")
+    struct StructuralComparisonP2 {
+
+        @Test("dump both trees", arguments: phase2Snippets)
+        func dumpBothTrees(_ snippet: SwiftSnippet) throws {
+            let refTree = swiftSyntaxTree(snippet.source)
+            guard let result = try adventParse(snippet.source) else {
+                Issue.record("Advent failed to parse: \(snippet.source)")
+                return
+            }
+
+            print("=== \(snippet.label) ===")
+            print("--- SwiftSyntax ---")
+            print(refTree)
+            print("--- Advent ---")
+            print(result.tree.dump())
+            if !result.isUnambiguous {
+                print("--- Ambiguity diagnostics ---")
+                for d in result.builder.diagnostics { print("  \(d)") }
+            }
+        }
+    }
+
+    @Suite("SwiftSyntax parser probe")
+    struct ParserProbe {
+
+        @Test("pattern node shape differs between declaration and switch case")
+        func patternNodeShapeProbe() {
+            let illegal = Parser.parse(source: "let let x = 1")
+            #expect(!illegal.hasError)
+
+            let tupleDecl = Parser.parse(source: "let (x, y) = (1, 2)")
+            let tupleDeclTree = dumpSwiftSyntaxNode(Syntax(tupleDecl), indent: 0)
+            #expect(tupleDeclTree.contains("TuplePattern"))
+            #expect(!tupleDeclTree.contains("ValueBindingPattern"))
+
+            let switchCase = Parser.parse(source: """
+            switch (1, 2) {
+            case let (x, y):
+                break
+            default:
+                break
+            }
+            """)
+            let switchCaseTree = dumpSwiftSyntaxNode(Syntax(switchCase), indent: 0)
+            #expect(switchCaseTree.contains("ValueBindingPattern"))
+            #expect(switchCaseTree.contains("ExpressionPattern"))
+            #expect(switchCaseTree.contains("PatternExpr"))
         }
     }
 }

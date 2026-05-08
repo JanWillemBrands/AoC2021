@@ -148,26 +148,27 @@ struct SpecialTokenTests {
 
         /// Parse a grammar and run a message, returning (matched, descriptorCount).
         private static func parseWithStats(grammar grammarString: String, message: String) throws -> (matched: Bool, descriptors: Int) {
-            GrammarNode.count = 0
-            trace = false
-            traceIndent = 0
+            try withParserIsolation {
+                trace = false
+                traceIndent = 0
 
-            let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammarString
-            let parser = try ApusParser(fromString: grammarWithWhitespace)
-            let grammar = try parser.parse(explicitStartSymbol: "")
+                let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammarString
+                let parser = try ApusParser(fromString: grammarWithWhitespace)
+                let grammar = try parser.parse(explicitStartSymbol: "")
 
-            let messageScanner: Scanner
-            do {
-                messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
-            } catch is ScannerFailure {
-                return (false, 0)
+                let messageScanner: Scanner
+                do {
+                    messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
+                } catch is ScannerFailure {
+                    return (false, 0)
+                }
+                let messageParser = MessageParser(grammar: grammar)
+                messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
+
+                let extent = TokenPosition(token: messageParser.tokens.count - 1)
+                let matched = messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
+                return (matched, messageParser.descriptorCount)
             }
-            let messageParser = MessageParser(grammar: grammar)
-            messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
-
-            let extent = TokenPosition(token: messageParser.tokens.count - 1)
-            let matched = messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
-            return (matched, messageParser.descriptorCount)
         }
 
         static let cases: [TestCase] = [

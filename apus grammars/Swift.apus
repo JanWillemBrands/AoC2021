@@ -293,12 +293,19 @@ integerLiteral = hexadecimalLiteral .
 
 //simpleOperator = "/" | "=" | "-" | "+" | "!" | "*" | "%" | "<" | ">" | "&" | "|" | "^" | "~" | "?" .      // captured as literals used elsewhere ("/")
 //compoundOperator = /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                // overlaps with simpleOperator, and literals win
-rawOperator - /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                     // overlaps with literals like '/' and '='
+// "=" is the only single-char operator that is never a general operator in Swift —
+// it is exclusively the assignment operator. Splitting single-char from multi-char
+// operators eliminates Schrödinger tokens for all single-char operators and prevents
+// "=" from being parsed as a prefix/infix/postfix operator via the rawOperator regex.
+rawOperator - /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .   // 2+ char operators only
+singleCharOperator = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "~" | "<" | ">" .
+// "?" and "!" excluded: they are predefined syntax in Swift, never general operators.
+// All uses have dedicated grammar rules with >s< / <s> spacing annotations.
 
 dotOperator   - /\.[\.\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .           // captures legal Swift operators already validated by the compiler
 
 //rawOperator = simpleOperator | compoundOperator .
-Operator = rawOperator | dotOperator .                                // capitalized to 'Operator' to avoid conflict with "operator" literal
+Operator = rawOperator | dotOperator | singleCharOperator .           // capitalized to 'Operator' to avoid conflict with "operator" literal
 
 //operator = operatorHead operatorCharacters? .
 //operator = dotOperatorHead dotOperatorCharacters .
@@ -387,9 +394,9 @@ arrayType = "[" type "]" .
 
 dictionaryType = "[" type ":" type "]" .
 
-optionalType = type "?" .       // TODO: no space allowed between type and "?"
+optionalType = type >s< "?" .
 
-implicitlyUnwrappedOptionalType = type "!" .
+implicitlyUnwrappedOptionalType = type >s< "!" .
 
 protocolCompositionType = typeIdentifier "&" protocolCompositionContinuation .
 protocolCompositionContinuation = typeIdentifier | protocolCompositionType .
@@ -414,11 +421,12 @@ typeInheritanceList = attributes? "~"? typeIdentifier | attributes? "~"? typeIde
 expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 
 prefixExpression = prefixOperator? postfixExpression .
+prefixExpression = "!" postfixExpression .
 prefixExpression = inOutExpression .
 
 inOutExpression = "&" primaryExpression .
 
-tryOperator = "try" | "try" "?" | "try" "!" .       // TODO: no space allowed between "try" and "?" or "!"
+tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .
 
 awaitOperator = "await" .
 
@@ -430,12 +438,12 @@ infixExpressions = infixExpression infixExpressions? .
 
 assignmentOperator = "=" .
 
-conditionalOperator = "?" expression ":" .          // TODO: there must be space before and after "?" and ":"    <s>
+conditionalOperator = "?" expression ":" .
 
 typeCastingOperator = "is" type .
 typeCastingOperator = "as" type .
-typeCastingOperator = "as" "?" type .               // TODO: no space allowed between "as" and "?"              >s<
-typeCastingOperator = "as" "!" type .               // TODO: no space allowed between "as" and "!"
+typeCastingOperator = "as" >s< "?" type .
+typeCastingOperator = "as" >s< "!" type .
 
 primaryExpression = identifier genericArgumentClause? .
 primaryExpression = literalExpression .
@@ -541,7 +549,7 @@ keyPathComponents = keyPathComponent | keyPathComponent "." keyPathComponents .
 keyPathComponent = identifier keyPathPostfixes? | keyPathPostfixes .
 
 keyPathPostfixes = keyPathPostfix keyPathPostfixes? .
-keyPathPostfix = "?" | "!" | "self" | "[" functionCallArgumentList "]" .    // TODO: remove spaces before "?" and "!"   >s<
+keyPathPostfix = >s< "?" | >s< "!" | "self" | "[" functionCallArgumentList "]" .
 
 selectorExpression = "#selector" "(" expression ")" .
 selectorExpression = "#selector" "(" "getter" ":" expression ")" .
@@ -586,38 +594,43 @@ postfixSelfExpression = postfixExpression "." "self" .
 
 subscriptExpression = postfixExpression "[" functionCallArgumentList "]" .
 
-forcedValueExpression = postfixExpression "!" .           // TODO: remove spaces before "!"
+forcedValueExpression = postfixExpression >s< "!" .
 
-optionalChainingExpression = postfixExpression "?" .            // TODO: remove spaces before "?"
+optionalChainingExpression = postfixExpression >s< "?" .
 
 
 
 // STATEMENTS
 
-statement = expression ";"? .
-statement = declaration ";"? .
-statement = loopStatement ";"? .
-statement = branchStatement ";"? .
-statement = labeledStatement ";"? .
-statement = controlTransferStatement ";"? .
-statement = deferStatement ";"? .
-statement = doStatement ";"? .
+statement = expression .
+statement = declaration .
+statement = loopStatement .
+statement = branchStatement .
+statement = labeledStatement .
+statement = controlTransferStatement .
+statement = deferStatement .
+statement = doStatement .
 statement = compilerControlStatement .
-statements = statement statements? .
+
+//statements = statement statements? .
+statements = statement ";"? .
+statements = statement statementSeparator statements .
+statementSeparator = <n> | ";" .
 
 loopStatement = forInStatement .
 loopStatement = whileStatement .
 loopStatement = repeatWhileStatement .
 
-forInStatement = "for" "case"? pattern "in" expression whereClause? codeBlock .
+forInStatement = "for" "case" matchPattern "in" expression whereClause? codeBlock .
+forInStatement = "for" bindingPattern "in" expression whereClause? codeBlock .
 
 whileStatement = "while" conditionList codeBlock .
 
 conditionList = condition | condition "," conditionList .
 condition = expression | availabilityCondition | caseCondition | optionalBindingCondition .
 
-caseCondition = "case" pattern initializer .
-optionalBindingCondition = "let" pattern initializer? | "var" pattern initializer? .
+caseCondition = "case" matchPattern initializer .
+optionalBindingCondition = "let" bindingPattern initializer? | "var" bindingPattern initializer? .
 
 repeatWhileStatement = "repeat" codeBlock "while" expression .
 
@@ -637,7 +650,7 @@ switchCase = defaultLabel statements .
 switchCase = conditionalSwitchCase .
 
 caseLabel = attributes? "case" caseItemList ":" .
-caseItemList = pattern whereClause? | pattern whereClause? "," caseItemList .
+caseItemList = matchPattern whereClause? | matchPattern whereClause? "," caseItemList .
 defaultLabel = attributes? "default" ":" .
 
 whereClause = "where" whereExpression .
@@ -679,7 +692,7 @@ doStatement = "do" throwsClause? codeBlock catchClauses? .
 catchClauses = catchClause catchClauses? .
 catchClause = "catch" catchPatternList? codeBlock .
 catchPatternList = catchPattern | catchPattern "," catchPatternList .
-catchPattern = pattern whereClause? .
+catchPattern = matchPattern whereClause? .
 
 compilerControlStatement = conditionalCompilationBlock .
 compilerControlStatement = lineControlStatement .
@@ -687,14 +700,15 @@ compilerControlStatement = diagnosticStatement .
 
 conditionalCompilationBlock = ifDirectiveClause elseifDirectiveClauses? elseDirectiveClause? endifDirective .
 
-ifDirectiveClause = ifDirective compilationCondition statements? .
+ifDirectiveClause = ifDirective compilationCondition <n> statements? .
 elseifDirectiveClauses = elseifDirectiveClause elseifDirectiveClauses? .
-elseifDirectiveClause = elseifDirective compilationCondition statements? .
+elseifDirectiveClause = elseifDirective compilationCondition <n> statements? .
 elseDirectiveClause = elseDirective statements? .
+// no code on the same line after #if, #elseif, #else, #endif
 ifDirective = "#if" .
 elseifDirective = "#elseif" .
-elseDirective = "#else" .
-endifDirective = "#endif" .
+elseDirective = "#else" <n> .
+endifDirective = "#endif" <n> .
 
 compilationCondition = platformCondition .
 compilationCondition = identifier .
@@ -717,10 +731,9 @@ swiftVersion = decimalDigits swiftVersionContinuation? .
 swiftVersionContinuation = "." decimalDigits swiftVersionContinuation? .
 environment = "simulator" | "macCatalyst" .
 
-lineNumber = decimalDigits .        // replace 'greater than zero' with parser post check'
 //lineNumber = /0*[1-9][0-9]*/ .
-//lineControlStatement = "#sourceLocation" "(" "file:" filePath "," "line:" lineNumber ")" .
-lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .  // TODO: compiler allows whitespace between file/line and :
+lineNumber = decimalDigits .        // replace 'greater than zero' with parser post check'
+lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .
 lineControlStatement = "#sourceLocation" "(" ")" .
 
 //lineNumber = A decimal integer greater than zero .
@@ -777,7 +790,7 @@ importPath = identifier | identifier "." importPath .
 constantDeclaration = attributes? declarationModifiers? "let" patternInitializerList .
 
 patternInitializerList = patternInitializer | patternInitializer "," patternInitializerList .
-patternInitializer = pattern initializer? .
+patternInitializer = bindingPattern initializer? .
 initializer = "=" expression .
 
 variableDeclaration = variableDeclarationHead patternInitializerList .
@@ -841,7 +854,8 @@ enumDeclaration = attributes? accessLevelModifier? rawValueStyleEnum .
 
 unionStyleEnum = "indirect"? "enum" enumName genericParameterClause? typeInheritanceClause? genericWhereClause? "{" unionStyleEnumMembers? "}" .
 unionStyleEnumMembers = unionStyleEnumMember unionStyleEnumMembers? .
-unionStyleEnumMember = declaration | unionStyleEnumCaseClause | compilerControlStatement .
+unionStyleEnumMember = declaration ";"? | unionStyleEnumCaseClause ";"? | compilerControlStatement .
+// Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 unionStyleEnumCaseClause = attributes? "indirect"? "case" unionStyleEnumCaseList .
 unionStyleEnumCaseList = unionStyleEnumCase | unionStyleEnumCase "," unionStyleEnumCaseList .
 
@@ -854,7 +868,8 @@ enumCaseName = identifier .
 
 rawValueStyleEnum = "enum" enumName genericParameterClause? typeInheritanceClause genericWhereClause? "{" rawValueStyleEnumMembers "}" .
 rawValueStyleEnumMembers = rawValueStyleEnumMember rawValueStyleEnumMembers? .
-rawValueStyleEnumMember = declaration | rawValueStyleEnumCaseClause | compilerControlStatement .
+rawValueStyleEnumMember = declaration ";"? | rawValueStyleEnumCaseClause ";"? | compilerControlStatement .
+// Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 rawValueStyleEnumCaseClause = attributes? "case" rawValueStyleEnumCaseList .
 rawValueStyleEnumCaseList = rawValueStyleEnumCase | rawValueStyleEnumCase "," rawValueStyleEnumCaseList .
 rawValueStyleEnumCase = enumCaseName rawValueAssignment? .
@@ -867,7 +882,8 @@ structName = identifier .
 structBody = "{" structMembers? "}" .
 
 structMembers = structMember structMembers? .
-structMember = declaration | compilerControlStatement .
+structMember = declaration ";"? | compilerControlStatement .
+// Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
 classDeclaration = attributes? accessLevelModifier? "final"? "class" className genericParameterClause? typeInheritanceClause? genericWhereClause? classBody .
 classDeclaration = attributes? "final" accessLevelModifier? "class" className genericParameterClause? typeInheritanceClause? genericWhereClause? classBody .
@@ -875,21 +891,24 @@ className = identifier .
 classBody = "{" classMembers? "}" .
 
 classMembers = classMember classMembers? .
-classMember = declaration | compilerControlStatement .
+classMember = declaration ";"? | compilerControlStatement .
+// Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
 actorDeclaration = attributes? accessLevelModifier? "actor" actorName genericParameterClause? typeInheritanceClause? genericWhereClause? actorBody .
 actorName = identifier .
 actorBody = "{" actorMembers? "}" .
 
 actorMembers = actorMember actorMembers? .
-actorMember = declaration | compilerControlStatement .
+actorMember = declaration ";"? | compilerControlStatement .
+// Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
 protocolDeclaration = attributes? accessLevelModifier? "protocol" protocolName typeInheritanceClause? genericWhereClause? protocolBody .
 protocolName = identifier .
 protocolBody = "{" protocolMembers? "}" .
 
 protocolMembers = protocolMember protocolMembers? .
-protocolMember = protocolMemberDeclaration | compilerControlStatement .
+protocolMember = protocolMemberDeclaration ";"? | compilerControlStatement .
+// Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
 protocolMemberDeclaration = protocolPropertyDeclaration .
 protocolMemberDeclaration = protocolMethodDeclaration .
@@ -912,8 +931,8 @@ protocolAssociatedTypeDeclaration = attributes? accessLevelModifier? "associated
 initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? throwsClause? genericWhereClause? initializerBody .
 initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? "rethrows" genericWhereClause? initializerBody .
 initializerHead = attributes? declarationModifiers? "init" .
-initializerHead = attributes? declarationModifiers? "init" "?" .
-initializerHead = attributes? declarationModifiers? "init" "!" .
+initializerHead = attributes? declarationModifiers? "init" >s< "?" .
+initializerHead = attributes? declarationModifiers? "init" >s< "!" .
 initializerBody = codeBlock .
 
 deinitializerDeclaration = attributes? "deinit" codeBlock .
@@ -922,7 +941,8 @@ extensionDeclaration = attributes? accessLevelModifier? "extension" typeIdentifi
 extensionBody = "{" extensionMembers? "}" .
 
 extensionMembers = extensionMember extensionMembers? .
-extensionMember = declaration | compilerControlStatement .
+extensionMember = declaration ";"? | compilerControlStatement .
+// Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
 subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? codeBlock .
 subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterBlock .
@@ -984,10 +1004,8 @@ actorIsolationModifier = "nonisolated" .
 
 // ATTRIBUTES
 
-//attribute = "@" attributeName attributeArgumentClause? .
-//attributeName = identifier .
-attributeMarker - /@[\p{XID_Start}_]\p{XID_Continue}*/ .        // Swift 6 does not allow whitespace between @ and the attribute-name
-attribute = attributeMarker attributeArgumentClause? .
+attribute = "@" >s< attributeName attributeArgumentClause? .        // Swift does not allow space between @ and the attribute-name
+attributeName = rawIdentifier .
 attributeArgumentClause = "(" balancedTokens? ")" .
 attributes = attribute attributes? .
 
@@ -1004,34 +1022,64 @@ balancedToken = "[" balancedTokens? "]" .
 balancedToken = "{" balancedTokens? "}" .
 
 
-// PATTERNS
+// PATTERNS — bindingPattern / matchPattern split, see https://raw.githubusercontent.com/swiftlang/swift-book/main/TSPL.docc/ReferenceManual/Patterns.md
 
-pattern = wildcardPattern typeAnnotation? .
-pattern = identifierPattern typeAnnotation? .
-pattern = valueBindingPattern .
-pattern = tuplePattern typeAnnotation? .
-pattern = enumCasePattern .
-pattern = optionalPattern .
-pattern = typeCastingPattern .
-pattern = expressionPattern .
+//pattern = wildcardPattern typeAnnotation? .
+//pattern = identifierPattern typeAnnotation? .
+//pattern = valueBindingPattern .
+//pattern = tuplePattern typeAnnotation? .
+//pattern = enumCasePattern .
+//pattern = optionalPattern .
+//pattern = typeCastingPattern .
+//pattern = expressionPattern .
 
+// Binding patterns — let/var declarations, optional binding conditions (if let, guard let)
+bindingPattern = wildcardPattern typeAnnotation? .
+bindingPattern = identifierPattern typeAnnotation? .
+bindingPattern = tupleBindingPattern typeAnnotation? .
+
+tupleBindingPattern = "(" tupleBindingElementList? ")" .
+tupleBindingElementList = tupleBindingElement | tupleBindingElement "," tupleBindingElementList .
+tupleBindingElement = bindingPattern | softIdentifier ":" bindingPattern .
+
+// Match patterns — case labels, if/guard/for case, catch clauses
+matchPattern = wildcardPattern typeAnnotation? .
+matchPattern = identifierPattern typeAnnotation? .
+matchPattern = valueBindingPattern .
+matchPattern = tupleMatchPattern typeAnnotation? .
+matchPattern = enumCasePattern .
+matchPattern = optionalPattern .
+matchPattern = typeCastingPattern .
+matchPattern = expressionPattern .
+
+tupleMatchPattern = "(" tupleMatchElementList? ")" .
+tupleMatchElementList = tupleMatchElement | tupleMatchElement "," tupleMatchElementList .
+tupleMatchElement = matchPattern | softIdentifier ":" matchPattern .
+
+// Shared leaf patterns
 wildcardPattern = "_" .
 
 identifierPattern = identifier .
 
-valueBindingPattern = "var" pattern | "let" pattern .               // TODO:  'let let' pattern is not allowed by compiler
+//valueBindingPattern = "var" pattern | "let" pattern .
 
-tuplePattern = "(" tuplePatternElementList? ")" .
-tuplePatternElementList = tuplePatternElement | tuplePatternElement "," tuplePatternElementList .
-tuplePatternElement = pattern | softIdentifier ":" pattern .
+//tuplePattern = "(" tuplePatternElementList? ")" .
+//tuplePatternElementList = tuplePatternElement | tuplePatternElement "," tuplePatternElementList .
+//tuplePatternElement = pattern | softIdentifier ":" pattern .
 
-enumCasePattern = typeIdentifier? "." enumCaseName tuplePattern? .
+//enumCasePattern = typeIdentifier? "." enumCaseName tuplePattern? .
 
-optionalPattern = identifierPattern "?" .
+//optionalPattern = identifierPattern "?" .
+optionalPattern = identifierPattern >s< "?" .
+
+// Match-only patterns
+valueBindingPattern = "var" matchPattern | "let" matchPattern .
+
+enumCasePattern = typeIdentifier? "." enumCaseName tupleMatchPattern? .
 
 typeCastingPattern = isPattern | asPattern .
 isPattern = "is" type .
-asPattern = pattern "as" type .
+asPattern = matchPattern "as" type .
 
 expressionPattern = expression .
 
@@ -1066,22 +1114,5 @@ genericArgumentClause   = "<"
 genericArgumentList = genericArgument | genericArgument "," genericArgumentList .
 genericArgument = type | signedIntegerLiteral .
 
-^^^#AllSources.swift
-^^^#ApusParser.swift
-^^^#ApusTerminals.swift
-^^^#BinarySubtreeRepresentation.swift
-^^^#CallReturnForest.swift
-^^^#Descriptor.swift
-^^^#GenerateDerivationDiagram.swift
-^^^#GenerateDiagrams.swift
-^^^#GenerateParser.swift
-^^^#Grammar.swift
-^^^#GrammarNode.swift
-^^^#Loggers.swift
-^^^#ManualOutput.swift
-^^^#MessageParser.swift
-^^^#OutputTools.swift
-^^^#SPPF.swift
-^^^#Scanner.swift
-^^^#StringExtensions.swift
-^^^#main.swift
+^^^
+let x = 1

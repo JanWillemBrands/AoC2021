@@ -431,6 +431,72 @@ struct CoreGrammarTests {
         }
     }
 
+    // MARK: - Oracle Disambiguation
+
+    @Suite("Oracle Disambiguation", .serialized)
+    struct OracleDisambiguation {
+
+        @Test("@left prunes ambiguous expression")
+        func leftAssocPrunes() throws {
+            let (matches, pruned) = try parseAndDisambiguate(
+                grammar: #"number - /[0-9]+/ . @left E = E "+" E | number ."#,
+                message: "1 + 2 + 3"
+            )
+            #expect(matches, "1 + 2 + 3 should parse")
+            #expect(pruned > 0, "Oracle should prune right-associative derivation")
+        }
+
+        @Test("@right prunes ambiguous expression")
+        func rightAssocPrunes() throws {
+            let (matches, pruned) = try parseAndDisambiguate(
+                grammar: #"number - /[0-9]+/ . @right E = E "+" E | number ."#,
+                message: "1 + 2 + 3"
+            )
+            #expect(matches, "1 + 2 + 3 should parse")
+            #expect(pruned > 0, "Oracle should prune left-associative derivation")
+        }
+
+        @Test("no annotation means no pivot pruning")
+        func noAnnotationNoPrune() throws {
+            let (matches, pruned) = try parseAndDisambiguate(
+                grammar: #"number - /[0-9]+/ . E = E "+" E | number ."#,
+                message: "1 + 2 + 3"
+            )
+            #expect(matches, "1 + 2 + 3 should parse")
+            #expect(pruned == 0, "Oracle should not prune without annotation")
+        }
+
+        @Test("unambiguous input needs no pruning")
+        func unambiguousNoPrune() throws {
+            let (matches, pruned) = try parseAndDisambiguate(
+                grammar: #"number - /[0-9]+/ . @left E = E "+" E | number ."#,
+                message: "1 + 2"
+            )
+            #expect(matches, "1 + 2 should parse")
+            #expect(pruned == 0, "Unambiguous input should not need pruning")
+        }
+
+        @Test("@left with four operands")
+        func leftAssocFourOperands() throws {
+            let (matches, pruned) = try parseAndDisambiguate(
+                grammar: #"number - /[0-9]+/ . @left E = E "+" E | number ."#,
+                message: "1 + 2 + 3 + 4"
+            )
+            #expect(matches, "1 + 2 + 3 + 4 should parse")
+            #expect(pruned > 0, "Oracle should prune non-left-associative derivations")
+        }
+
+        @Test("@longest still works (extent disambiguation)")
+        func longestExtent() throws {
+            let (matches, pruned) = try parseAndDisambiguate(
+                grammar: #"word - /[a-z]+/ . @longest S = < word > ."#,
+                message: "hello world foo"
+            )
+            #expect(matches)
+            // Longest keeps only the maximum extent for each start position
+        }
+    }
+
     // MARK: - Self-parsing (APUS grammar)
 
     @Suite("Self-parsing", .serialized)

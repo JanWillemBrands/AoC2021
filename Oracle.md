@@ -26,7 +26,7 @@ Same start position `i`, different end position `j`. The nonterminal can
 parse different lengths from the same starting point.
 
 ```
-paragraph = 'longest' < sentence > <n> .
+@longest paragraph = < sentence > <n> .
 
 Input:
     Something. Another thing.
@@ -40,7 +40,7 @@ The `paragraph` nonterminal starting at "Something" has two productive yields:
 
 For LHS nonterminals, `k` always equals `i`, so the only variation is in `j`.
 
-**Resolved by**: `'shortest'` / `'longest'` match annotations. These select
+**Resolved by**: `@shortest` / `@longest` match annotations. These select
 the minimum or maximum `j` per start position `i`.
 
 ### Flavor 2: Different Pivot
@@ -125,19 +125,19 @@ All other forms of ambiguity reduce to compositions of these:
 Disambiguation strategies are declared in the grammar using pragma syntax:
 
 ```apus
-paragraph = 'shortest' < sentence > <n> .
-block     = 'longest' "{" < statement > "}" .
+@shortest paragraph = < sentence > <n> .
+@longest block     = "{" < statement > "}" .
 ```
 
-The pragma appears after `=` and before the rule body. The oracle reads
+The pragma appears before the production identifier. The oracle reads
 `GrammarNode.disambiguation` and auto-creates the corresponding rule.
 
 Currently implemented:
 
 | Pragma       | Rule            | Flavor | Effect                        |
 |-------------|-----------------|--------|-------------------------------|
-| `'shortest'` | ShortestMatchRule | 1      | Keep minimum `j` per start `i` |
-| `'longest'`  | LongestMatchRule  | 1      | Keep maximum `j` per start `i` |
+| `@shortest` | ShortestMatchRule | 1      | Keep minimum `j` per start `i` |
+| `@longest`  | LongestMatchRule  | 1      | Keep maximum `j` per start `i` |
 
 Future annotations for flavors 2 and 3:
 

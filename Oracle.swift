@@ -37,6 +37,18 @@ struct ShortestMatchRule: DisambiguationRule {
     }
 }
 
+struct LeftAssocRule: DisambiguationRule {
+    func prune(_ yields: inout Set<BinarySpan>) -> Int {
+        pruneByPivot(yields: &yields, keep: { $0.max()! })
+    }
+}
+
+struct RightAssocRule: DisambiguationRule {
+    func prune(_ yields: inout Set<BinarySpan>) -> Int {
+        pruneByPivot(yields: &yields, keep: { $0.min()! })
+    }
+}
+
 private func pruneByExtent(
     yields: inout Set<BinarySpan>,
     keep: ([TokenPosition]) -> TokenPosition
@@ -48,6 +60,29 @@ private func pruneByExtent(
         guard Set(js).count > 1 else { continue }
         let target = keep(js)
         for span in spans where span.j != target {
+            yields.remove(span)
+            pruned += 1
+        }
+    }
+    return pruned
+}
+
+private struct SpanKey: Hashable {
+    let i: TokenPosition
+    let j: TokenPosition
+}
+
+private func pruneByPivot(
+    yields: inout Set<BinarySpan>,
+    keep: ([TokenPosition]) -> TokenPosition
+) -> Int {
+    let grouped = Dictionary(grouping: yields) { SpanKey(i: $0.i, j: $0.j) }
+    var pruned = 0
+    for (_, spans) in grouped where spans.count > 1 {
+        let ks = spans.map(\.k)
+        guard Set(ks).count > 1 else { continue }
+        let target = keep(ks)
+        for span in spans where span.k != target {
             yields.remove(span)
             pruned += 1
         }
@@ -73,6 +108,15 @@ class Oracle {
             switch d {
             case .shortest: rules.append((nt, ShortestMatchRule()))
             case .longest:  rules.append((nt, LongestMatchRule()))
+            case .left, .right:
+                let rule: DisambiguationRule = d == .left ? LeftAssocRule() : RightAssocRule()
+                var alt = nt.alt
+                while let a = alt {
+                    for sym in a.bodySymbols {
+                        rules.append((sym, rule))
+                    }
+                    alt = a.alt
+                }
             }
         }
     }

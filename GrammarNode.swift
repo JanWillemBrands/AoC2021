@@ -40,7 +40,7 @@ enum GrammarNodeError: Error {
 
 enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
 
-enum Disambiguation: String { case shortest, longest }
+enum Disambiguation: String { case shortest, longest, left, right }
 
 extension GrammarNodeKind {
     var isTerminal: Bool { self == .T || self == .TI || self == .C || self == .B }

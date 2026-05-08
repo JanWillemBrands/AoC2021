@@ -46,26 +46,24 @@ struct PerformanceTests {
         }
     }
 
-    private static func grammarURL(named name: String) -> URL {
-        let sourceFileURL = URL(fileURLWithPath: #filePath)
-        let projectDir = sourceFileURL.deletingLastPathComponent().deletingLastPathComponent()
-        return projectDir
-            .appendingPathComponent(name)
-            .appendingPathExtension("apus")
+    private static func grammarURL(named name: String) throws -> URL {
+        try resolveGrammarFileURL(named: name)
     }
 
     private static func loadGrammar(named name: String) throws -> Grammar {
-        GrammarNode.count = 0
-        trace = false
-        traceIndent = 0
+        try withParserIsolation {
+            trace = false
+            traceIndent = 0
 
-        let url = grammarURL(named: name)
-        let parser = try ApusParser(fromFile: url)
-        return try parser.parse(explicitStartSymbol: "")
+            let url = try grammarURL(named: name)
+            let parser = try ApusParser(fromFile: url)
+            return try parser.parse(explicitStartSymbol: "")
+        }
     }
 
     private static func buildScanners(grammar: Grammar, grammarName: String, limit: Int) throws -> [Scanner] {
-        let grammarDir = grammarURL(named: grammarName).deletingLastPathComponent()
+        let grammarDir = try grammarURL(named: grammarName).deletingLastPathComponent()
+        let projectDir = testProjectDirectory()
         var scanners: [Scanner] = []
 
         for message in grammar.messages {
@@ -73,7 +71,16 @@ struct PerformanceTests {
             let scanner: Scanner
             if message.hasPrefix("#") {
                 let fileName = message.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
-                let messageFileURL = grammarDir.appendingPathComponent(fileName)
+                let candidateURLs: [URL] = [
+                    grammarDir.appendingPathComponent(fileName),
+                    projectDir.appendingPathComponent(fileName)
+                ]
+                guard let messageFileURL = candidateURLs.first(where: { FileManager.default.fileExists(atPath: $0.path) }) else {
+                    throw TestInfrastructureError.grammarFileNotFound(
+                        name: "message file \(fileName)",
+                        candidates: candidateURLs.map(\.path)
+                    )
+                }
                 let fileMessage = try String(contentsOf: messageFileURL, encoding: .utf8)
                 scanner = try Scanner(fromString: fileMessage, patterns: grammar.terminals)
             } else {
@@ -106,7 +113,9 @@ struct PerformanceTests {
             if warmupRuns > 0 {
                 for _ in 0..<warmupRuns {
                     for scanner in scanners {
-                        parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
+                        withParserIsolation {
+                            parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
+                        }
                     }
                 }
             }
@@ -120,7 +129,9 @@ struct PerformanceTests {
 
                 var totals = Totals()
                 for scanner in scanners {
-                    parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
+                    withParserIsolation {
+                        parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
+                    }
                     totals.add(from: parser)
                 }
 
