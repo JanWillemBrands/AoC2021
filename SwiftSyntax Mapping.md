@@ -10,30 +10,35 @@ Swift source text
   ├─→ SwiftParser.Parser.parse()       → SwiftSyntax tree (reference)
   └─→ Scanner → MessageParser → Oracle
                                    ↓
-                           DerivationBuilder.buildAST()
-                                   ↓
-                            ParseTreeNode tree
+                        BSR yields on GrammarNodes
                             ╱               ╲
-                  diagram rendering    SwiftSyntax converter
-                  (Graphviz .gv)       (memberwise inits)
-                                              ↓
-                                    SwiftSyntax tree (Advent)
-                                              ↓
-                                    compare with reference
+               DerivationBuilder         SwiftSyntaxGenerator
+               (ParseTreeNode trees)     (SwiftSyntax trees)
+               for diagram rendering     for comparison with reference
+               (Graphviz .gv)            (memberwise inits)
 ```
 
 Key components:
 - `DerivationBuilder` (GenerateDerivationDiagram.swift) — walks BSR yields on
-  GrammarNodes, produces `ParseTreeNode` trees. Two modes:
+  GrammarNodes, produces `ParseTreeNode` trees for diagram rendering. Two modes:
   - `buildAllTrees()` — enumerates all derivations (ambiguous grammars)
   - `buildAST()` — single deterministic tree (after Oracle disambiguation),
     reports residual ambiguity diagnostics
-- `ParseTreeNode` — unified tree node used by both diagram rendering and
-  SwiftSyntax conversion. Fields: name, token, from/to positions, children,
-  isAmbiguous, isMissing.
-- `OperatorTable.foldAll()` (SwiftOperators) — applies operator precedence to
-  `SequenceExprSyntax` nodes. SwiftParser produces flat sequences; Advent's
-  grammar has explicit precedence. Use fold on the reference side before compare.
+- `SwiftSyntaxGenerator` (GenerateSwiftSyntaxAST.swift) — walks BSR yields
+  directly on GrammarNodes, constructs SwiftSyntax trees using memberwise inits.
+  Completely decoupled from DerivationBuilder. Assumes all ambiguity resolved.
+- `ParseTreeNode` — tree node used by diagram rendering only.
+
+### Operator folding
+
+SwiftParser produces flat `SequenceExprSyntax` nodes — it does NOT fold operators
+by precedence at parse time. `OperatorTable.foldAll()` (SwiftOperators) is a
+separate post-parse step that restructures into `InfixOperatorExprSyntax`.
+
+Advent's grammar also has no operator precedence — `infixExpressions` is a flat
+right-recursive list at the same nonterminal level for all operators.
+`SwiftSyntaxGenerator` flattens this right recursion into a flat `ExprListSyntax`,
+matching SwiftParser's unfolded output exactly. No precedence logic needed.
 
 ## Construction Approach
 
@@ -77,17 +82,17 @@ VariableDeclSyntax(
 | `nilLiteral` | `NilLiteralExprSyntax` |
 | `stringLiteral` | `StringLiteralExprSyntax` |
 
-### Phase 2 — Binary Expressions & Operator Folding
+### Phase 2 — Binary Expressions (flat sequences, no folding)
 `1 + 2 * 3`, `x == 0 ? "zero" : "nonzero"`, `value as? Int`
 
 | APUS nonterminal | SwiftSyntax type | Notes |
 |---|---|---|
-| `infixExpression` | `SequenceExprSyntax` → fold → `InfixOperatorExprSyntax` | use `OperatorTable.foldAll()` on reference |
-| `assignmentOperator` | `AssignmentExprSyntax` | post-fold |
-| `conditionalOperator` | `TernaryExprSyntax` | post-fold |
-| `typeCastingOperator` (as) | `AsExprSyntax` | post-fold |
-| `typeCastingOperator` (is) | `IsExprSyntax` | post-fold |
-| `prefixExpression` | `PrefixOperatorExprSyntax` | |
+| `expression` + `infixExpressions` | `SequenceExprSyntax` | flatten right recursion to flat ExprList |
+| `infixOperator` | `BinaryOperatorExprSyntax` | element in flat sequence |
+| `conditionalOperator` | `UnresolvedTernaryExprSyntax` | element in flat sequence |
+| `typeCastingOperator` (as) | `UnresolvedAsExprSyntax` + `TypeExprSyntax` | two elements in flat sequence |
+| `typeCastingOperator` (is) | `UnresolvedIsExprSyntax` + `TypeExprSyntax` | two elements in flat sequence |
+| `prefixExpression` (with op) | `PrefixOperatorExprSyntax` | |
 | `postfixExpression` | various | `ForceUnwrapExprSyntax`, `OptionalChainingExprSyntax`, etc. |
 
 ### Phase 3 — Functions, Calls, Control Flow
@@ -269,10 +274,12 @@ VariableDeclSyntax(
 
 ## Key Structural Differences
 
-1. **Operator folding**: SwiftParser produces flat `SequenceExprSyntax`.
-   `OperatorTable.foldAll()` restructures into `InfixOperatorExprSyntax`,
-   `TernaryExprSyntax`, etc. Advent's grammar has explicit precedence via
-   nonterminal structure. Compare post-fold.
+1. **Operator sequences are flat**: Both SwiftParser and Advent produce flat
+   operator sequences (no precedence at parse time). SwiftParser uses flat
+   `SequenceExprSyntax`; Advent has right-recursive `infixExpressions`.
+   `SwiftSyntaxGenerator` flattens the right recursion to match.
+   `OperatorTable.foldAll()` can fold later if needed, but is not used for
+   structural comparison.
 
 2. **if/switch are expressions**: SwiftSyntax uses `IfExprSyntax` and
    `SwitchExprSyntax`. Advent has both statement and expression variants.

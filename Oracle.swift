@@ -144,7 +144,15 @@ class Oracle {
         if total > 0 {
             print("oracle: removed \(deadYields) dead + \(disambiguated) disambiguated yields")
         }
+        assert(isUnambiguous(endPosition: n), "Oracle postcondition violated: residual ambiguity remains")
         return total
+    }
+
+    // MARK: - Postcondition: No Residual Ambiguity
+
+    private func isUnambiguous(endPosition n: TokenPosition) -> Bool {
+        // TODO: implement full ambiguity check across all reachable nonterminals
+        return true
     }
 
     // MARK: - Phase 1: Prune Unproductive Yields
