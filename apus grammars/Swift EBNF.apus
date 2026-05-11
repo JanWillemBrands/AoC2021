@@ -682,12 +682,7 @@ declarationModifier = mutationModifier .
 declarationModifier = actorIsolationModifier .
 declarationModifiers = declarationModifier declarationModifiers? .
 
-accessLevelModifier = "private" | "private" "(" "set" ")" .
-accessLevelModifier = "fileprivate" | "fileprivate" "(" "set" ")" .
-accessLevelModifier = "internal" | "internal" "(" "set" ")" .
-accessLevelModifier = "package" | "package" "(" "set" ")" .
-accessLevelModifier = "public" | "public" "(" "set" ")" .
-accessLevelModifier = "open" | "open" "(" "set" ")" .
+accessLevelModifier = ( "private" | "fileprivate" | "internal" | "package" | "public" | "open" ) [ "(" "set" ")" ] .
 
 mutationModifier = "mutating" | "nonmutating" .
 

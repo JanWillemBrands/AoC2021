@@ -497,7 +497,6 @@
 		CB6B730C257EA9F400B929C6 = {
 			isa = PBXGroup;
 			children = (
-				4ED1187E2FAAF9810055DAC7 /* apus grammars */,
 				4E89AAED2D6DF2EE006A0BBA /* ART.gv */,
 				4E8D05A82F701CDD0081C6D2 /* Derivations.gv */,
 				4E8D05A32F6FEE810081C6D2 /* SPPF.gv */,
@@ -543,6 +542,7 @@
 				4EEBC98C2F9DECF000E838A7 /* StringExtensions.swift */,
 				4E11B2A42DA274B200555BB8 /* scratch.txt */,
 				4E7709B42F37870300972246 /* AdventTests */,
+				4ED1187E2FAAF9810055DAC7 /* apus grammars */,
 				4E4E48BE2FA219220094DFC6 /* articles */,
 				4E8D058E2F67204C0081C6D2 /* Frameworks */,
 				4E8D05962F6A183C0081C6D2 /* GeneratedParser */,

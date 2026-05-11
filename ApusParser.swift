@@ -611,5 +611,4 @@ class ApusParser {
             throw ApusParserError.unexpectedToken(explanation: "Failed to parse grammar from symbol \(grammar.startSymbol)")
         }
     }
-    
 }

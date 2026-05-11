@@ -78,7 +78,7 @@ identifier  = rawIdentifier ---("Any" "actor" "as" "associatedtype" "await" "bor
             | implicitParameterName
             | propertyWrapperProjection .
 
-// Swift allows keywords as argument labels and as member names, just a few keyweords are excluded for legacy reasons
+// Swift allows keywords as argument labels and as member names, just a few keywords are excluded for legacy reasons
 softIdentifier  = rawIdentifier ---("let" "var" "inout")
                 | escapedIdentifier .
 
@@ -88,7 +88,6 @@ softIdentifier  = rawIdentifier ---("let" "var" "inout")
 //identifier = propertyWrapperProjection .
 
 identifierList = identifier | identifier "," identifierList .
-//identifierList = identifier { "," identifier } .                      // EBNF
 
 // these are included in XID_Start
 //identifierHead = Upper or lowercase letter A through Z
@@ -120,9 +119,17 @@ identifierList = identifier | identifier "," identifierList .
 
 // REGULAR EXPRESSIONS
 
-//plainRegularExpressionLiteral = /\/[^\s]*(?:(?:[^\/\\\s]|\\.)*[^\s])?\// .       // eliminates start or end whitespace, helps with / division sign
+//plainRegularExpressionLiteral = /\/[^\s]*(?:(?:[^\/\\\s]|\\.)*[^\s])?\// .       // Swift 6 eliminates start or end whitespace, helps with / division sign
+
+// Basic (regular) Swift regex literal for /…/ literals
+// #//(?![ \t])(?:[^/\r\n\\]|\\[^\r\n])+/#
+
+// Extended Swift regex literal for #+/…/#+ literals (any number of #, multiline OK)
+// ##/#+/(?:(?!/#+)[\s\S])*/#+/##
+
+
 plainRegularExpressionLiteral       - /\/(?:[^\/\\\n]|\\.)+\// .
-extendedRegularExpressionLiteral    - /#+\/(?:[^\/\\]|\\.)+\/#+/ .                 // captures legal Swift regex already validated by the compiler
+extendedRegularExpressionLiteral    - /#+\/(?:[^\/\\]|\\.)+\/#+/ .   // captures legal Swift regex already validated by the compiler
 regularExpressionLiteral            = plainRegularExpressionLiteral | extendedRegularExpressionLiteral .
 
 //regularExpressionLiteral = regularExpressionLiteralOpeningDelimiter regularExpression regularExpressionLiteralClosingDelimiter .
@@ -394,9 +401,9 @@ arrayType = "[" type "]" .
 
 dictionaryType = "[" type ":" type "]" .
 
-optionalType = type >s< "?" .
+optionalType = type >s< "?" .                          // disallow space before '?'
 
-implicitlyUnwrappedOptionalType = type >s< "!" .
+implicitlyUnwrappedOptionalType = type >s< "!" .       // disallow space before '!'
 
 protocolCompositionType = typeIdentifier "&" protocolCompositionContinuation .
 protocolCompositionContinuation = typeIdentifier | protocolCompositionType .
@@ -421,12 +428,12 @@ typeInheritanceList = attributes? "~"? typeIdentifier | attributes? "~"? typeIde
 expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 
 prefixExpression = prefixOperator? postfixExpression .
-prefixExpression = "!" postfixExpression .
+prefixExpression = "!" >s< postfixExpression .                  // disallow space after '!'
 prefixExpression = inOutExpression .
 
 inOutExpression = "&" primaryExpression .
 
-tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .
+tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .           // disallow space before '?' and '!'
 
 awaitOperator = "await" .
 
@@ -438,12 +445,12 @@ infixExpressions = infixExpression infixExpressions? .
 
 assignmentOperator = "=" .
 
-conditionalOperator = "?" expression ":" .
+conditionalOperator = <s> "?" <s> expression ":" .      // the '?' in ternary expressions must have space on both sides
 
 typeCastingOperator = "is" type .
 typeCastingOperator = "as" type .
-typeCastingOperator = "as" >s< "?" type .
-typeCastingOperator = "as" >s< "!" type .
+typeCastingOperator = "as" >s< "?" type .                       // disallow space before '?'
+typeCastingOperator = "as" >s< "!" type .                       // disallow space before '!'
 
 primaryExpression = identifier genericArgumentClause? .
 primaryExpression = literalExpression .
@@ -549,7 +556,7 @@ keyPathComponents = keyPathComponent | keyPathComponent "." keyPathComponents .
 keyPathComponent = identifier keyPathPostfixes? | keyPathPostfixes .
 
 keyPathPostfixes = keyPathPostfix keyPathPostfixes? .
-keyPathPostfix = >s< "?" | >s< "!" | "self" | "[" functionCallArgumentList "]" .
+keyPathPostfix = >s< "?" | >s< "!" | "self" | "[" functionCallArgumentList "]" .            // disallow space before '?' and '!'
 
 selectorExpression = "#selector" "(" expression ")" .
 selectorExpression = "#selector" "(" "getter" ":" expression ")" .
@@ -594,9 +601,9 @@ postfixSelfExpression = postfixExpression "." "self" .
 
 subscriptExpression = postfixExpression "[" functionCallArgumentList "]" .
 
-forcedValueExpression = postfixExpression >s< "!" .
+forcedValueExpression = postfixExpression >s< "!" .                         // disallow space before '!'
 
-optionalChainingExpression = postfixExpression >s< "?" .
+optionalChainingExpression = postfixExpression >s< "?" .                    // disallow space before '?'
 
 
 
@@ -700,11 +707,11 @@ compilerControlStatement = diagnosticStatement .
 
 conditionalCompilationBlock = ifDirectiveClause elseifDirectiveClauses? elseDirectiveClause? endifDirective .
 
+// no code on the same line after #if, #elseif, #else, #endif
 ifDirectiveClause = ifDirective compilationCondition <n> statements? .
 elseifDirectiveClauses = elseifDirectiveClause elseifDirectiveClauses? .
 elseifDirectiveClause = elseifDirective compilationCondition <n> statements? .
 elseDirectiveClause = elseDirective statements? .
-// no code on the same line after #if, #elseif, #else, #endif
 ifDirective = "#if" .
 elseifDirective = "#elseif" .
 elseDirective = "#else" <n> .
@@ -714,7 +721,7 @@ compilationCondition = platformCondition .
 compilationCondition = identifier .
 compilationCondition = booleanLiteral .
 compilationCondition = "(" compilationCondition ")" .
-compilationCondition = "!" compilationCondition .
+compilationCondition = "!" >s< compilationCondition .                       // disallow space after the '!'
 compilationCondition = compilationCondition "&&" compilationCondition .
 compilationCondition = compilationCondition "||" compilationCondition .
 
@@ -931,8 +938,8 @@ protocolAssociatedTypeDeclaration = attributes? accessLevelModifier? "associated
 initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? throwsClause? genericWhereClause? initializerBody .
 initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? "rethrows" genericWhereClause? initializerBody .
 initializerHead = attributes? declarationModifiers? "init" .
-initializerHead = attributes? declarationModifiers? "init" >s< "?" .
-initializerHead = attributes? declarationModifiers? "init" >s< "!" .
+initializerHead = attributes? declarationModifiers? "init" >s< "?" .                       // disallow space before '?'
+initializerHead = attributes? declarationModifiers? "init" >s< "!" .                       // disallow space before '!'
 initializerBody = codeBlock .
 
 deinitializerDeclaration = attributes? "deinit" codeBlock .
@@ -1069,8 +1076,7 @@ identifierPattern = identifier .
 
 //enumCasePattern = typeIdentifier? "." enumCaseName tuplePattern? .
 
-//optionalPattern = identifierPattern "?" .
-optionalPattern = identifierPattern >s< "?" .
+optionalPattern = identifierPattern >s< "?" .                       // disallow space before '?'
 
 // Match-only patterns
 valueBindingPattern = "var" matchPattern | "let" matchPattern .
@@ -1086,10 +1092,7 @@ expressionPattern = expression .
 
 // GENERIC PARAMETERS AND ARGUMENTS
 
-// ANNOTATION FOR PARTIAL TOKEN MATCH A.K.A. FRANKENSTEIN
-genericParameterClause  = "<"
-                           genericParameterList ","?
-                          ">" ~~~ .
+genericParameterClause  = "<" genericParameterList ","? ">" ~~~ .     // allow partial match of '>' in '>>' a.k.a. Frankenstein
 
 genericParameterList = genericParameter | genericParameter "," genericParameterList .
 genericParameter = typeName .
@@ -1106,13 +1109,17 @@ conformanceRequirement = typeIdentifier ":" protocolCompositionType .
 sameTypeRequirement = typeIdentifier "==" type .
 sameTypeRequirement = typeIdentifier "==" signedIntegerLiteral .
 
-// ANNOTATION FOR PARTIAL TOKEN MATCH A.K.A. FRANKENSTEIN
-genericArgumentClause   = "<"
-                           genericArgumentList ","?
-                          ">" ~~~ .
+genericArgumentClause   = "<" genericArgumentList ","? ">" ~~~ .     // allow partial match of '>' in '>>' a.k.a. Frankenstein
 
 genericArgumentList = genericArgument | genericArgument "," genericArgumentList .
 genericArgument = type | signedIntegerLiteral .
 
 ^^^
-let x = 1
+let r1 = b ? /1/ : /2/
+let r2 = b?/1/:/2/
+
+//let match = try? /^ x/.wholeMatch(in: "hello")
+
+//let x = 1 / 2 ; let y = 3 / 4
+
+//func /^ () -> Int { 1 / 2 }

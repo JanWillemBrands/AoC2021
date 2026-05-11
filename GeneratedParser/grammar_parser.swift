@@ -63,43 +63,43 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"action":	("/\'(?:[^\'\\\\]|\\\\.)*\'/",	/'(?:[^'\\]|\\.)*'/,	false,	true),
-	"identifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
-	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
-	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
+	"action":	("/\'(?:[^\'\\\\]|\\\\.)*\'/",	/'(?:[^'\\]|\\.)*'/,	false,	true),
 	"pragma":	("/@\\p{XID_Start}\\p{XID_Continue}*/",	/@\p{XID_Start}\p{XID_Continue}*/,	false,	false),
+	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)+\\\"/",	/\"(?:[^\"\\]|\\.)+\"/,	false,	false),
-	":":	(":",	Regex { ":" },	true,	false),
-	".":	(".",	Regex { "." },	true,	false),
-	"---":	("---",	Regex { "---" },	true,	false),
-	"<n>":	("<n>",	Regex { "<n>" },	true,	false),
-	"?":	("?",	Regex { "?" },	true,	false),
-	"\"\"":	("\"\"",	Regex { "\"\"" },	true,	false),
-	">n<":	(">n<",	Regex { ">n<" },	true,	false),
-	"[":	("[",	Regex { "[" },	true,	false),
-	">s<":	(">s<",	Regex { ">s<" },	true,	false),
-	"ε":	("ε",	Regex { "ε" },	true,	false),
-	"=":	("=",	Regex { "=" },	true,	false),
-	")":	(")",	Regex { ")" },	true,	false),
-	"-":	("-",	Regex { "-" },	true,	false),
-	">>>":	(">>>",	Regex { ">>>" },	true,	false),
-	"*":	("*",	Regex { "*" },	true,	false),
-	"<s>":	("<s>",	Regex { "<s>" },	true,	false),
-	">>|":	(">>|",	Regex { ">>|" },	true,	false),
-	"{":	("{",	Regex { "{" },	true,	false),
-	"<<<":	("<<<",	Regex { "<<<" },	true,	false),
-	"+":	("+",	Regex { "+" },	true,	false),
-	"~~~":	("~~~",	Regex { "~~~" },	true,	false),
-	"|":	("|",	Regex { "|" },	true,	false),
-	"}":	("}",	Regex { "}" },	true,	false),
-	">":	(">",	Regex { ">" },	true,	false),
-	"===":	("===",	Regex { "===" },	true,	false),
-	"|<<":	("|<<",	Regex { "|<<" },	true,	false),
-	"<":	("<",	Regex { "<" },	true,	false),
+	"identifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
+	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
 	"]":	("]",	Regex { "]" },	true,	false),
+	"---":	("---",	Regex { "---" },	true,	false),
+	"{":	("{",	Regex { "{" },	true,	false),
+	"~~~":	("~~~",	Regex { "~~~" },	true,	false),
+	"[":	("[",	Regex { "[" },	true,	false),
+	"\"\"":	("\"\"",	Regex { "\"\"" },	true,	false),
+	"===":	("===",	Regex { "===" },	true,	false),
+	":":	(":",	Regex { ":" },	true,	false),
+	">n<":	(">n<",	Regex { ">n<" },	true,	false),
+	"=":	("=",	Regex { "=" },	true,	false),
+	">":	(">",	Regex { ">" },	true,	false),
+	"+":	("+",	Regex { "+" },	true,	false),
+	"*":	("*",	Regex { "*" },	true,	false),
+	">>>":	(">>>",	Regex { ">>>" },	true,	false),
+	"<s>":	("<s>",	Regex { "<s>" },	true,	false),
 	"(":	("(",	Regex { "(" },	true,	false),
+	">s<":	(">s<",	Regex { ">s<" },	true,	false),
+	"<":	("<",	Regex { "<" },	true,	false),
+	"<<<":	("<<<",	Regex { "<<<" },	true,	false),
+	".":	(".",	Regex { "." },	true,	false),
+	"?":	("?",	Regex { "?" },	true,	false),
+	"|<<":	("|<<",	Regex { "|<<" },	true,	false),
+	"}":	("}",	Regex { "}" },	true,	false),
+	">>|":	(">>|",	Regex { ">>|" },	true,	false),
+	")":	(")",	Regex { ")" },	true,	false),
+	"ε":	("ε",	Regex { "ε" },	true,	false),
+	"-":	("-",	Regex { "-" },	true,	false),
+	"|":	("|",	Regex { "|" },	true,	false),
+	"<n>":	("<n>",	Regex { "<n>" },	true,	false),
 ]
 func empty() throws {
 	expect("\\\"\\\"")
@@ -182,8 +182,10 @@ func name() throws {
 		cI += 1
 	case "identifier":
 		cI += 1
+	case "\\\"\\\"":
+		try empty()
 	default:
-		expect("identifier", "literal")
+		expect("\\\"\\\"", "identifier", "literal")
 	}
 }
 func production() throws {
