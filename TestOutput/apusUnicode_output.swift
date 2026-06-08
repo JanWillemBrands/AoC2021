@@ -63,29 +63,29 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"multiLine":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
-	"message":	("/\\^^^(?:[^\\^^^\\\\]|\\\\.)*/",	/\^^^(?:[^\^^^\\]|\\.)*/,	false,	false),
-	"आक्षरिक":	("/\\\"(?:[^\\\"\\\\]|\\\\.)*\\\"/",	/\"(?:[^\"\\]|\\.)*\"/,	false,	false),
-	"action":	("/@(?:[^@\\\\]|\\\\.)*@/",	/@(?:[^@\\]|\\.)*@/,	false,	false),
 	"正規表現":	("/\\/(?:[^\\/\\\\]|\\\\.)*\\//",	/\/(?:[^\/\\]|\\.)*\//,	false,	false),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"ідентифікатор":	("/[\\p{L}\\p{N}\\p{Pc}]+/",	/[\p{L}\p{N}\p{Pc}]+/,	false,	false),
+	"आक्षरिक":	("/\\\"(?:[^\\\"\\\\]|\\\\.)*\\\"/",	/\"(?:[^\"\\]|\\.)*\"/,	false,	false),
+	"action":	("/@(?:[^@\\\\]|\\\\.)*@/",	/@(?:[^@\\]|\\.)*@/,	false,	false),
+	"message":	("/\\^^^(?:[^\\^^^\\\\]|\\\\.)*/",	/\^^^(?:[^\^^^\\]|\\.)*/,	false,	false),
+	"multiLine":	("/\\/\\*(?s).*?\\*\\//",	/\/\*(?s).*?\*\//,	false,	true),
 	"singleLine":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	">":	(">",	Regex { ">" },	true,	false),
-	")":	(")",	Regex { ")" },	true,	false),
-	")*":	(")*",	Regex { ")*" },	true,	false),
-	")?":	(")?",	Regex { ")?" },	true,	false),
-	":":	(":",	Regex { ":" },	true,	false),
-	"[":	("[",	Regex { "[" },	true,	false),
-	".":	(".",	Regex { "." },	true,	false),
-	"=":	("=",	Regex { "=" },	true,	false),
-	"{":	("{",	Regex { "{" },	true,	false),
-	"}":	("}",	Regex { "}" },	true,	false),
-	"<":	("<",	Regex { "<" },	true,	false),
-	")+":	(")+",	Regex { ")+" },	true,	false),
-	"]":	("]",	Regex { "]" },	true,	false),
-	"|":	("|",	Regex { "|" },	true,	false),
-	"(":	("(",	Regex { "(" },	true,	false),
+	"")+"":	(")+",	Regex { ")+" },	true,	false),
+	""."":	(".",	Regex { "." },	true,	false),
+	""<"":	("<",	Regex { "<" },	true,	false),
+	"")?"":	(")?",	Regex { ")?" },	true,	false),
+	""["":	("[",	Regex { "[" },	true,	false),
+	""("":	("(",	Regex { "(" },	true,	false),
+	""}"":	("}",	Regex { "}" },	true,	false),
+	"">"":	(">",	Regex { ">" },	true,	false),
+	""|"":	("|",	Regex { "|" },	true,	false),
+	""="":	("=",	Regex { "=" },	true,	false),
+	""]"":	("]",	Regex { "]" },	true,	false),
+	"":"":	(":",	Regex { ":" },	true,	false),
+	"")"":	(")",	Regex { ")" },	true,	false),
+	""{"":	("{",	Regex { "{" },	true,	false),
+	"")*"":	(")*",	Regex { ")*" },	true,	false),
 ]
 func S() throws {
 	while ["ідентифікатор"].contains(token.kind) {
@@ -99,65 +99,65 @@ func factor() throws {
 	switch token.kind {
 	case "action", "ідентифікатор", "आक्षरिक", "正規表現":
 		try terminal()
-	case "[":
+	case "\"[\"":
 		cI += 1
 		try selection()
-		expect("]")
+		expect("\"]\"")
 		cI += 1
-	case "{":
-		cI += 1
-		try selection()
-		expect("}")
-		cI += 1
-	case "<":
+	case "\"{\"":
 		cI += 1
 		try selection()
-		expect(">")
+		expect("\"}\"")
 		cI += 1
-	case "(":
+	case "\"<\"":
+		cI += 1
+		try selection()
+		expect("\">\"")
+		cI += 1
+	case "\"(\"":
 		cI += 1
 		try selection()
 		switch token.kind {
-		case ")":
+		case "\")\"":
 			cI += 1
-		case ")?":
+		case "\")?\"":
 			cI += 1
-		case ")*":
+		case "\")*\"":
 			cI += 1
-		case ")+":
+		case "\")+\"":
 			cI += 1
 		default:
-			expect(")", ")*", ")+", ")?")
+			expect("\")\"", "\")*\"", "\")+\"", "\")?\"")
 		}
 	default:
-		expect("(", "<", "[", "action", "{", "ідентифікатор", "आक्षरिक", "正規表現")
+		expect("\"(\"", "\"<\"", "\"[\"", "\"{\"", "action", "ідентифікатор", "आक्षरिक", "正規表現")
 	}
 }
 func production() throws {
 	expect("ідентифікатор")
 	cI += 1
 	switch token.kind {
-	case ":":
+	case "\":\"":
 		cI += 1
-	case "=":
+	case "\"=\"":
 		cI += 1
 	default:
-		expect(":", "=")
+		expect("\":\"", "\"=\"")
 	}
 	try selection()
-	expect(".")
+	expect("\".\"")
 	cI += 1
 }
 func selection() throws {
 	try sequence()
-	while ["|"].contains(token.kind) {
+	while ["\"|\""].contains(token.kind) {
 		cI += 1
 		try sequence()
 	}
 }
 func sequence() throws {
 	try factor()
-	while ["(", "<", "[", "action", "{", "ідентифікатор", "आक्षरिक", "正規表現"].contains(token.kind) {
+	while ["\"(\"", "\"<\"", "\"[\"", "\"{\"", "action", "ідентифікатор", "आक्षरिक", "正規表現"].contains(token.kind) {
 		try factor()
 	}
 }

@@ -293,12 +293,15 @@ class MessageParser {
         let charOff  = cI.charOffset
 
         if charOff != 0 {
-            // RARE: Frankenstein sub-position — match against remainder of token image
+            // RARE: Frankenstein sub-position — match against remainder of token image.
+            // `cL.content` is the unescaped literal value, stored once by `ApusParser.literal()`.
+            // Only `.T` literal terminals can reach this path (since `~~~` is literal-only),
+            // so `content` is guaranteed populated here.
             let image = tokens[tokenIdx].stripped
             let remainder = image.dropFirst(charOff)
-//            Logger.parse.debug("frankenstein remainder \(remainder) index \(self.cI) image \(image)")
-            if remainder.hasPrefix(cL.name) {
-                let newOff = charOff + cL.name.count
+            let needle = cL.content
+            if remainder.hasPrefix(needle) {
+                let newOff = charOff + needle.count
                 if newOff >= image.count {
                     return cI.nextToken()           // token fully consumed
                 }
@@ -315,19 +318,40 @@ class MessageParser {
             if current !== headToken && cL.excludeBS.contains(headToken.kindID) {
                 // This dual is suppressed; the primary token is in the exclusion set
             } else if cL.nameID == current.kindID {
+                // Positive forward-1-token lookahead: when the slot has a `>>1(...)`
+                // approved-follow set, the NEXT token must be in it (or be the EOS
+                // sentinel, which is always approved). Walks the next token's
+                // Schrödinger duals — any matching dual approves.
+                if !cL.followAheadBS.isEmpty {
+                    let nextIdx = tokenIdx + 1
+                    var ok = false
+                    if nextIdx < tokens.count {
+                        var probe: Token? = tokens[nextIdx]
+                        while let p = probe {
+                            if p.kindID == grammar.eosID || cL.followAheadBS.contains(p.kindID) {
+                                ok = true
+                                break
+                            }
+                            probe = p.dual
+                        }
+                    } else {
+                        ok = true   // off the end of the array → treat as EOS
+                    }
+                    if !ok { return nil }
+                }
                 return cI.nextToken()
             }
             guard let next = current.dual else { break }
             current = next
         }
 
-        
-        // RARE: Frankenstein prefix split
+
+        // RARE: Frankenstein prefix split — see comment above for needle derivation.
         if cL.firstBS.contains(grammar.frankensteinID) {
             let image = tokens[tokenIdx].stripped
-//            Logger.parse.debug("frankenstein allowed \(self.cL.name) at \(self.cL.ebnfDot()) prefix matching image \(image)")
-            if image.hasPrefix(cL.name) && image.count > cL.name.count {
-                return cI.at(charOffset: cL.name.count)
+            let needle = cL.content
+            if image.hasPrefix(needle) && image.count > needle.count {
+                return cI.at(charOffset: needle.count)
             }
         }
         return nil

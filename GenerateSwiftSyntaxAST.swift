@@ -52,8 +52,14 @@ struct SwiftSyntaxGenerator {
         case .T, .TI, .C, .B:
             result = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
         case .N:
-            guard let lhs = sym.alt else { return [] }
-            result = Set(lhs.yield.lazy.filter { $0.i == from }.map(\.j))
+            if sym.isRHS {
+                guard let lhs = sym.alt else { return [] }
+                let occurrenceEnds = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
+                let lhsEnds = Set(lhs.yield.lazy.filter { $0.i == from }.map(\.j))
+                result = occurrenceEnds.intersection(lhsEnds)
+            } else {
+                result = Set(sym.yield.lazy.filter { $0.i == from }.map(\.j))
+            }
         case .DO, .OPT, .KLN, .POS:
             var positions = Set<TokenPosition>()
             if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }

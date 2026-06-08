@@ -12,6 +12,7 @@
 		4E12037F2FA8B07C0061BD96 /* Oracle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E12037C2FA8B07C0061BD96 /* Oracle.swift */; };
 		4E2C80812F729E88004365DD /* BitCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 4E2C80802F729E88004365DD /* BitCollections */; };
 		4E2C808C2F74D3EC004365DD /* BitCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 4E2C808B2F74D3EC004365DD /* BitCollections */; };
+		4E2CC1412FD4AC2200719D65 /* Regex CFG Discussion.md in Resources */ = {isa = PBXBuildFile; fileRef = 4E2CC1402FD4AC2200719D65 /* Regex CFG Discussion.md */; };
 		4E2DC6AB2F7B822700DA97F2 /* BitCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 4E2DC6AA2F7B822700DA97F2 /* BitCollections */; };
 		4E4E48CA2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */; };
 		4E4E48CB2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */; };
@@ -98,6 +99,9 @@
 		4E1203802FA978B70061BD96 /* Oracle.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Oracle.md; sourceTree = "<group>"; };
 		4E16D4762FA7A126008E2C1A /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TODO.md; sourceTree = "<group>"; };
 		4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = AfroozehHunt.apus; sourceTree = "<group>"; };
+		4E2CC13E2FC8C9F100719D65 /* Regex Lookbehind Design.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Regex Lookbehind Design.md"; sourceTree = "<group>"; };
+		4E2CC13F2FD46F3400719D65 /* Structured Lookahead Design.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Structured Lookahead Design.md"; sourceTree = "<group>"; };
+		4E2CC1402FD4AC2200719D65 /* Regex CFG Discussion.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Regex CFG Discussion.md"; sourceTree = "<group>"; };
 		4E333D622629D5E400640821 /* apusWithAction.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = apusWithAction.apus; sourceTree = "<group>"; };
 		4E333D692629D5E500640821 /* TortureSyntax.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = TortureSyntax.apus; sourceTree = "<group>"; };
 		4E333D6A2629D5E500640821 /* test.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = test.apus; sourceTree = "<group>"; };
@@ -143,6 +147,7 @@
 		4E6933472FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateSwiftSyntaxAST.swift; sourceTree = "<group>"; };
 		4E7709B32F37870300972246 /* AdventTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AdventTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E7B09942FA735CC00E44E20 /* layout.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = layout.apus; sourceTree = "<group>"; };
+		4E7CA9A22FD61AB400A5A906 /* Multi-Lex Adoption Design.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Multi-Lex Adoption Design.md"; sourceTree = "<group>"; };
 		4E87B7E72BA8745E009CBFB8 /* apusAmbiguous.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = apusAmbiguous.apus; sourceTree = "<group>"; };
 		4E89AAED2D6DF2EE006A0BBA /* ART.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
 		4E89AAF32D7667C3006A0BBA /* tortureART.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = tortureART.apus; sourceTree = "<group>"; };
@@ -160,7 +165,7 @@
 		4EC5CE942BBC111E0045F751 /* apusUnicode.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; fileEncoding = 4; path = apusUnicode.apus; sourceTree = "<group>"; };
 		4ECF5BE62F3748DB008E692B /* claude.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = claude.md; sourceTree = "<group>"; };
 		4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "SwiftSyntax Mapping.md"; sourceTree = "<group>"; };
-		4EE2FCD72F77C38400105588 /* silent.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = silent.apus; sourceTree = "<group>"; };
+		4EE2FCD72F77C38400105588 /* regex-operator.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = "regex-operator.apus"; sourceTree = "<group>"; };
 		4EEBC9782F9DECF000E838A7 /* ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParser.swift; sourceTree = "<group>"; };
 		4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusTerminals.swift; sourceTree = "<group>"; };
 		4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinarySubtreeRepresentation.swift; sourceTree = "<group>"; };
@@ -318,6 +323,7 @@
 				4E4E48B62FA219220094DFC6 /* GLL Syntax Analysers For EBNF Grammars.pdf */,
 				4E4E48B72FA219220094DFC6 /* Graph-structured Stack and Natural Language Parsing.pdf */,
 				4E4E48B82FA219220094DFC6 /* Multiple Lexicalisation - A Java Based Study.pdf */,
+				4E7CA9A22FD61AB400A5A906 /* Multi-Lex Adoption Design.md */,
 				4E4E48B92FA219220094DFC6 /* Practical general top-down parsers.pdf */,
 				4E4E48BA2FA219220094DFC6 /* Principled Parsing for Indentation-Sensitive Languages.pdf */,
 				4E4E48BB2FA219220094DFC6 /* referenceImplementationSlides.pdf */,
@@ -346,7 +352,7 @@
 				4EBB87152F81103800037029 /* CommentTest.apus */,
 				4E7B09942FA735CC00E44E20 /* layout.apus */,
 				4EBB87142F80FC6C00037029 /* ScanModeTest.apus */,
-				4EE2FCD72F77C38400105588 /* silent.apus */,
+				4EE2FCD72F77C38400105588 /* regex-operator.apus */,
 				4EBB87132F7F4EC100037029 /* Swift EBNF.apus */,
 				4E951C132D8874BD008B1012 /* Swift.apus */,
 				4E333D6A2629D5E500640821 /* test.apus */,
@@ -509,6 +515,8 @@
 				4E4E48C42FA219ED0094DFC6 /* Layout Sensitive Parsing.md */,
 				4E1203802FA978B70061BD96 /* Oracle.md */,
 				4E4E48C52FA219ED0094DFC6 /* Scanner Mode Design.md */,
+				4E2CC13E2FC8C9F100719D65 /* Regex Lookbehind Design.md */,
+				4E2CC13F2FD46F3400719D65 /* Structured Lookahead Design.md */,
 				4E4E48C62FA219ED0094DFC6 /* Schrodinger Tokens.md */,
 				4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */,
 				4E16D4762FA7A126008E2C1A /* TODO.md */,
@@ -548,6 +556,7 @@
 				4E8D05962F6A183C0081C6D2 /* GeneratedParser */,
 				4EEBC9FE2F9EF35000E838A7 /* grammars */,
 				CB6B7316257EA9F400B929C6 /* Products */,
+				4E2CC1402FD4AC2200719D65 /* Regex CFG Discussion.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -689,6 +698,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4E2CC1412FD4AC2200719D65 /* Regex CFG Discussion.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

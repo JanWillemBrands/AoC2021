@@ -119,7 +119,6 @@ identifierList = identifier | identifier "," identifierList .
 
 // REGULAR EXPRESSIONS
 
-//plainRegularExpressionLiteral = /\/[^\s]*(?:(?:[^\/\\\s]|\\.)*[^\s])?\// .       // Swift 6 eliminates start or end whitespace, helps with / division sign
 
 // Basic (regular) Swift regex literal for /…/ literals
 // #//(?![ \t])(?:[^/\r\n\\]|\\[^\r\n])+/#
@@ -128,8 +127,66 @@ identifierList = identifier | identifier "," identifierList .
 // ##/#+/(?:(?!/#+)[\s\S])*/#+/##
 
 
-plainRegularExpressionLiteral       - /\/(?:[^\/\\\n]|\\.)+\// .
+// ──────────────────────────────────────────────────────────────────────────
+// Plain slash-regex literal — parser-level CFG.
+//
+// Replaces the older scanner-level terminal (kept commented below for reference).
+// The CFG enforces delimiter balance inside the body, so over-claim cases like
+// `(/E.e).foo(/0)` fail at parse time — the stray `)` is not a regexAtom and
+// can only appear inside a balanced regexGroup. The `>s<` annotations forbid
+// whitespace adjacent to either `/`, which subsumes the empty-regex and
+// leading/trailing-space rejections the old scanner regex performed inline.
+//
+// Operator overlap: atom characters like `^`, `*`, `+`, etc. reach the regex
+// body via the existing operator terminals (`operatorHead`, `operatorSpecial`)
+// rather than via a competing anonymous regex terminal, so `/^/` parses cleanly.
+//
+// See `Regex CFG Discussion.md` for the design rationale.
+// ──────────────────────────────────────────────────────────────────────────
+
+// Terminals first — APUS requires terminal definitions before their use.
+regexEscape          - /\\[^\r\n]/ .
+regexNonOperatorAtom - /[^\/\\\[\]\(\)\r\n\+\-\*%&\|\^~<>=!\?\.#;:,]/ .
+regexClassAtom       - /[^\\\]\r\n]/ .
+
+plainRegularExpressionLiteral = "/" >s< regexBody >s< "/" .
+
+regexBody       = regexItem | regexItem regexBody .
+regexItem       = regexEscape | regexCharacterClass | regexGroup | regexAtom .
+regexGroup      = "(" regexBody ")" .
+regexCharacterClass = "[" regexClassBody "]" .
+regexClassBody  = regexClassItem | regexClassItem regexClassBody .   // Swift forbids []
+regexClassItem  = regexEscape | regexClassAtom .
+
+// Operator-overlap-safe atom reachable through existing terminals.
+regexAtom       = regexNonOperatorAtom
+                | operatorHead | operatorSpecial
+                | "." | "#" | ":" | ";" | "," | "=" | "?" .
+
+// ── Previous scanner-level terminal (kept for quick revert if needed) ──
+//plainRegularExpressionLiteral       - /\/(?![\s*])(?:[^\/\\\n]|\\.)*(?:[^\/\\\n\s]|\\.)\// .
+//    --1( "true" "false" "nil" "self" "Self" "super" "Any"
+//         "func" "operator"
+//         rawIdentifier escapedIdentifier implicitParameterName propertyWrapperProjection
+//         binaryLiteral octalLiteral decimalNumber hexadecimalLiteral
+//         decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
+//         plainRegularExpressionLiteral extendedRegularExpressionLiteral
+//         ")" "]" "}" ">"
+//         "!"
+//         "->" "..." "." "@" )
+//    ++2("try"), ++1("!")
+
 extendedRegularExpressionLiteral    - /#+\/(?:[^\/\\]|\\.)+\/#+/ .   // captures legal Swift regex already validated by the compiler
+    --1( "true" "false" "nil" "self" "Self" "super" "Any"
+         "func" "operator"
+         rawIdentifier escapedIdentifier implicitParameterName propertyWrapperProjection
+         binaryLiteral octalLiteral decimalNumber hexadecimalLiteral
+         decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
+         plainRegularExpressionLiteral extendedRegularExpressionLiteral
+         ")" "]" "}" ">"
+         "!"
+         "->" "..." "." "@" )
+
 regularExpressionLiteral            = plainRegularExpressionLiteral | extendedRegularExpressionLiteral .
 
 //regularExpressionLiteral = regularExpressionLiteralOpeningDelimiter regularExpression regularExpressionLiteralClosingDelimiter .
@@ -300,19 +357,50 @@ integerLiteral = hexadecimalLiteral .
 
 //simpleOperator = "/" | "=" | "-" | "+" | "!" | "*" | "%" | "<" | ">" | "&" | "|" | "^" | "~" | "?" .      // captured as literals used elsewhere ("/")
 //compoundOperator = /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]*/ .                // overlaps with simpleOperator, and literals win
+
 // "=" is the only single-char operator that is never a general operator in Swift —
 // it is exclusively the assignment operator. Splitting single-char from multi-char
 // operators eliminates Schrödinger tokens for all single-char operators and prevents
 // "=" from being parsed as a prefix/infix/postfix operator via the rawOperator regex.
-rawOperator - /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .   // 2+ char operators only
-singleCharOperator = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "~" | "<" | ">" .
+
+//rawOperator - /[\/=+\-*%!&|^~?<>\p{Sm}\p{So}][\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .   // 2+ char operators only
+//singleCharOperator = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "~" | "<" | ">" .
+
 // "?" and "!" excluded: they are predefined syntax in Swift, never general operators.
 // All uses have dedicated grammar rules with >s< / <s> spacing annotations.
 
-dotOperator   - /\.[\.\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .           // captures legal Swift operators already validated by the compiler
+//dotOperator   - /\.[\.\/=+\-*%!&|^~?<>\p{Sm}\p{So}\p{Mn}]+/ .           // captures legal Swift operators already validated by the compiler
 
 //rawOperator = simpleOperator | compoundOperator .
-Operator = rawOperator | dotOperator | singleCharOperator .           // capitalized to 'Operator' to avoid conflict with "operator" literal
+//operator = rawOperator | dotOperator | singleCharOperator .
+
+
+// ──────────────────────────────────────────────────────────────────────────
+// Character-level operator assembly (NEW — sits alongside the rawOperator
+// approach above).  Each operator character is its own token; multi-character
+// operators are assembled at parse time by the GLL parser via `>s<` (no
+// inter-token whitespace).  Lets `>>` be either one 2-char operator OR two
+// `>` tokens (closing nested generic args) — the surrounding context picks.
+// Goals:
+//   - Replace Frankenstein `~~~` on `>` in generic-close clauses
+//   - Close Bucket B (operator-trailing-`/` + regex), e.g. `^^/regex/`
+// ASCII only for now; Unicode operator ranges (TSPL Sm/So/Mn) to be added
+// in a follow-up.  The old rules above are kept as comment until this design is proven,
+// then pruned.
+//
+// Two alternatives for `operator`:
+//   alt 1 — head is a general operator char (1+ char operator)
+//   alt 2 — head is `!`, `?`, or `=` (must be 2+ char so standalone `!`/`?`/`=`
+//           are NOT misclassified as operators — they have dedicated grammar)
+
+operator = operatorHead { >s< operatorCharacter } .
+operator = operatorSpecial >s< operatorCharacter { >s< operatorCharacter } .
+//operator = dotOperatorHead dotOperatorCharacters .
+operator = dotOperator .
+
+operatorHead      = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "~" | "<" | ">" .
+operatorSpecial   = "!" | "?" | "=" .
+operatorCharacter = operatorHead | operatorSpecial .
 
 //operator = operatorHead operatorCharacters? .
 //operator = dotOperatorHead dotOperatorCharacters .
@@ -347,13 +435,19 @@ Operator = rawOperator | dotOperator | singleCharOperator .           // capital
 //operatorCharacter = U+E0100–U+E01EF
 //operatorCharacters = operatorCharacter operatorCharacters? .
 
+// Character-level dotOperator: `.` followed by 1+ operatorCharacters, no whitespace.
+// Coexists with the regex-defined `dotOperator` terminal above; alternatives are
+// explored by GLL.
+dotOperator = "." >s< operatorCharacter { >s< operatorCharacter } .
+dotOperatorCharacter = "." | operatorCharacter .
+
 //dotOperatorHead = "." .
 //dotOperatorCharacter = "." | operatorCharacter .
 //dotOperatorCharacters = dotOperatorCharacter dotOperatorCharacters? .
 
-infixOperator = Operator .
-prefixOperator = Operator .
-postfixOperator = Operator .
+infixOperator = operator .
+prefixOperator = operator .
+postfixOperator = operator .
 
 
 
@@ -452,7 +546,8 @@ typeCastingOperator = "as" type .
 typeCastingOperator = "as" >s< "?" type .                       // disallow space before '?'
 typeCastingOperator = "as" >s< "!" type .                       // disallow space before '!'
 
-primaryExpression = identifier genericArgumentClause? .
+primaryExpression = identifier .                          @unless(genericArgumentClause)
+primaryExpression = identifier genericArgumentClause .
 primaryExpression = literalExpression .
 primaryExpression = selfExpression .
 primaryExpression = superclassExpression .
@@ -467,6 +562,7 @@ primaryExpression = keyPathExpression .
 primaryExpression = selectorExpression .
 primaryExpression = keyPathStringExpression .
 primaryExpression = selfType .                          // TODO: quick fix similar to https://github.com/swiftlang/swift-book/issues/293
+primaryExpression = "(" operator ")" .                  // TODO: verify: operator-as-value reference, e.g. (/), (+), (==), (/^); see e.g. `let fn: (Int,Int) -> Int = (/)` and `baz((/), /)`
 
 literalExpression = literal .
 literalExpression = arrayLiteral | dictionaryLiteral | playgroundLiteral .
@@ -553,10 +649,12 @@ keyPathExpression = "\\" type? "." keyPathComponents .      // escape needed for
 //keyPathExpression = "\" type? "." keyPathComponents .
 
 keyPathComponents = keyPathComponent | keyPathComponent "." keyPathComponents .
-keyPathComponent = identifier keyPathPostfixes? | keyPathPostfixes .
+//keyPathComponent = identifier keyPathPostfixes? | keyPathPostfixes .
+keyPathComponent = identifier keyPathPostfixes? | "self" keyPathPostfixes? | keyPathPostfixes .     // self is mislocated https://github.com/swiftlang/swift-book/issues/254
 
 keyPathPostfixes = keyPathPostfix keyPathPostfixes? .
-keyPathPostfix = >s< "?" | >s< "!" | "self" | "[" functionCallArgumentList "]" .            // disallow space before '?' and '!'
+//keyPathPostfix = >s< "?" | >s< "!" | "self" | "[" functionCallArgumentList "]" .            // disallow space before '?' and '!'
+keyPathPostfix = >s< "?" | >s< "!" | "[" functionCallArgumentList "]" .            // disallow space before '?' and '!'
 
 selectorExpression = "#selector" "(" expression ")" .
 selectorExpression = "#selector" "(" "getter" ":" expression ")" .
@@ -580,7 +678,7 @@ functionCallExpression = postfixExpression functionCallArgumentClause? trailingC
 functionCallArgumentClause = "(" ")" | "(" functionCallArgumentList ","? ")" .
 functionCallArgumentList = functionCallArgument | functionCallArgument "," functionCallArgumentList .
 functionCallArgument = expression | softIdentifier ":" expression .
-functionCallArgument = Operator | softIdentifier ":" Operator .
+functionCallArgument = operator | softIdentifier ":" operator .
 
 trailingClosures = closureExpression labeledTrailingClosures? .
 labeledTrailingClosures = labeledTrailingClosure labeledTrailingClosures? .
@@ -590,7 +688,8 @@ initializerExpression = postfixExpression "." "init" .
 initializerExpression = postfixExpression "." "init" "(" argumentNames ")" .
 
 explicitMemberExpression = postfixExpression "." decimalDigits .
-explicitMemberExpression = postfixExpression "." identifier genericArgumentClause? .
+explicitMemberExpression = postfixExpression "." identifier .                          @unless(genericArgumentClause)
+explicitMemberExpression = postfixExpression "." identifier genericArgumentClause .
 explicitMemberExpression = postfixExpression "." identifier "(" argumentNames ")" .
 explicitMemberExpression = postfixExpression conditionalCompilationBlock .
 
@@ -794,7 +893,7 @@ importDeclaration = attributes? "import" importKind? importPath .
 importKind = "typealias" | "struct" | "class" | "enum" | "protocol" | "let" | "var" | "func" .
 importPath = identifier | identifier "." importPath .
 
-constantDeclaration = attributes? declarationModifiers? "let" patternInitializerList .
+constantDeclaration = attributes? declarationModifiers? "async"? "let" patternInitializerList .  // Swift grammar error https://github.com/swiftlang/swift-book/issues/425
 
 patternInitializerList = patternInitializer | patternInitializer "," patternInitializerList .
 patternInitializer = bindingPattern initializer? .
@@ -834,7 +933,7 @@ typealiasAssignment = "=" type .
 functionDeclaration = functionHead functionName genericParameterClause? functionSignature genericWhereClause? functionBody? .
 
 functionHead = attributes? declarationModifiers? "func" .
-functionName = identifier | Operator .
+functionName = identifier | operator .
 
 functionSignature = parameterClause "async"? throwsClause? functionResult? .
 functionSignature = parameterClause "async"? "rethrows" functionResult? .
@@ -850,7 +949,7 @@ parameter = attributes? externalParameterName? localParameterName parameterTypeA
 parameter = attributes? externalParameterName? localParameterName parameterTypeAnnotation "..." .
 
 externalParameterName = softIdentifier .        // accept all keywords except let, var, inout
-localParameterName = identifier .                   // keywords not accepted
+localParameterName = softIdentifier .           // but references to the parameter in the function body must use backticks
 
 parameterTypeAnnotation = ":" attributes? parameterModifier? type .
 parameterModifier = "inout" | "borrowing" | "consuming" .
@@ -931,7 +1030,7 @@ protocolMethodDeclaration = functionHead functionName genericParameterClause? fu
 protocolInitializerDeclaration = initializerHead genericParameterClause? parameterClause throwsClause? genericWhereClause? .
 protocolInitializerDeclaration = initializerHead genericParameterClause? parameterClause "rethrows" genericWhereClause? .
 
-protocolSubscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterKeywordBlock .
+protocolSubscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterKeywordBlock? .  // TODO: error in Swift grammar, optional getterSetterKeywordBlock ???
 
 protocolAssociatedTypeDeclaration = attributes? accessLevelModifier? "associatedtype" typealiasName typeInheritanceClause? typealiasAssignment? genericWhereClause? .
 
@@ -965,9 +1064,9 @@ macroDefinition = "=" expression .
 
 operatorDeclaration = prefixOperatorDeclaration | postfixOperatorDeclaration | infixOperatorDeclaration .
 
-prefixOperatorDeclaration = "prefix" "operator" Operator .
-postfixOperatorDeclaration = "postfix" "operator" Operator .
-infixOperatorDeclaration = "infix" "operator" Operator infixOperatorGroup? .
+prefixOperatorDeclaration = "prefix" "operator" operator .
+postfixOperatorDeclaration = "postfix" "operator" operator .
+infixOperatorDeclaration = "infix" "operator" operator infixOperatorGroup? .
 
 infixOperatorGroup = ":" precedenceGroupName .
 
@@ -1018,7 +1117,7 @@ attributes = attribute attributes? .
 
 keywordMinusBrackets = "actor" | "associatedtype" | "class" | "deinit" | "enum" | "extension" | "fileprivate" | "func" | "import" | "init" | "inout" | "internal" | "let" | "open" | "operator" | "private" | "precedencegroup" | "protocol" | "public" | "rethrows" | "static" | "struct" | "subscript" | "typealias" | "var" | "break" | "case" | "catch" | "continue" | "default" | "defer" | "do" | "else" | "fallthrough" | "for" | "guard" | "if" | "in" | "repeat" | "return" | "switch" | "throw" | "try" | "where" | "while" | "Any" | "as" | "borrowing" | "consuming" | "discard" | "false" | "is" | "move" | "nil" | "self" | "Self" | "super" | "throws" | "true" | "_" | "each" | "associativity" | "convenience" | "didSet" | "dynamic" | "final" | "get" | "higherThan" | "indirect" | "lazy" | "left" | "lowerThan" | "mutating" | "nonmutating" | "none" | "optional" | "override" | "postfix" | "prefix" | "required" | "right" | "set" | "some" | "unowned" | "weak" | "willSet" | "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "#" | "&" | "?" | "!" | "<" | ">" | "|" | "^" | "~" | "%" | "*" | "+" | "-" | "/" | "isolated" | "nonisolated" | "async" | "await" | "yield" | "package" .   // removed @ since that is not a valid standalone keyword
 
-balancedToken = identifier | keywordMinusBrackets | literal | Operator .
+balancedToken = identifier | keywordMinusBrackets | literal | operator .
 //balancedToken = Any identifier, keyword, literal, or operator .
 //balancedToken = Any punctuation except (, ), [, ], {, or } .
 
@@ -1066,7 +1165,8 @@ tupleMatchElement = matchPattern | softIdentifier ":" matchPattern .
 // Shared leaf patterns
 wildcardPattern = "_" .
 
-identifierPattern = identifier .
+//identifierPattern = identifier .
+identifierPattern = identifier | "self" .       // Swift syntax error, 'self' is allowed as an identifier in optional-binding-condition  TODO: WTF???
 
 //valueBindingPattern = "var" pattern | "let" pattern .
 
@@ -1092,7 +1192,10 @@ expressionPattern = expression .
 
 // GENERIC PARAMETERS AND ARGUMENTS
 
-genericParameterClause  = "<" genericParameterList ","? ">" ~~~ .     // allow partial match of '>' in '>>' a.k.a. Frankenstein
+// Closing '>' commits only when followed by a Swift-approved disambiguation token —
+// mirrors swift-syntax canParseAsGenericArgumentList. EOS is approved by default.
+genericParameterClause  = "<" attributes? genericParameterList ","? ">" >>1("(" ")" "[" "]" "{" "}" "," ";" ":" "." "?" "!" ">") .
+// TODO: verify: attributes? added - error in Swift syntax
 
 genericParameterList = genericParameter | genericParameter "," genericParameterList .
 genericParameter = typeName .
@@ -1109,17 +1212,225 @@ conformanceRequirement = typeIdentifier ":" protocolCompositionType .
 sameTypeRequirement = typeIdentifier "==" type .
 sameTypeRequirement = typeIdentifier "==" signedIntegerLiteral .
 
-genericArgumentClause   = "<" genericArgumentList ","? ">" ~~~ .     // allow partial match of '>' in '>>' a.k.a. Frankenstein
+genericArgumentClause   = "<" genericArgumentList ","? ">" >>1("(" ")" "[" "]" "{" "}" "," ";" ":" "." "?" "!" ">") .
 
 genericArgumentList = genericArgument | genericArgument "," genericArgumentList .
 genericArgument = type | signedIntegerLiteral .
 
 ^^^
+// regex in ternary branches (both sides regex literals)
 let r1 = b ? /1/ : /2/
-let r2 = b?/1/:/2/
 
-//let match = try? /^ x/.wholeMatch(in: "hello")
+^^^
+// try? prefix overrides postfix-? deny so the slash is regex
+let match = try? /^ x/.wholeMatch(in: "hello")
 
-//let x = 1 / 2 ; let y = 3 / 4
+^^^
+// chained division — no regex possible because of leading space inside the would-be regex
+let x = 1 / 2 ; let y = 3 / 4
 
-//func /^ () -> Int { 1 / 2 }
+^^^
+// /^/ as operator name in a function declaration; body has division
+func /^/ () -> Int { 1 / 2 }
+
+^^^
+// bare operator value (/) and back-off pattern ^^/, used as arguments
+baz(^^/, /)
+
+^^^
+// canonical over-claim bug: with the old scanner-level regex, this was
+// misparsed because `/E.e).foo(/` was claimed as one regex span. The
+// parser-level CFG rejects it because `)` isn't a regexAtom and the
+// `regexGroup` opening `(` is unbalanced.
+(/E.e).foo(/0)
+
+
+// ──────────────────────────────────────────────────────────────────────────
+// Known-failing slash / regex disambiguation cases from SwiftSyntax tests.
+// Categories:
+//   A — bare operator as primary/argument expression — grammar gap (primaryExpression)
+//   B — operator-trailing-`/` followed by regex literal — scanner needs Swift-style
+//       speculative back-off (split operator at internal `/` if a regex parses there)
+//   C — `/keypath.expr` shorthand — grammar gap (KeyPath literal)
+//   D — regex on a line after a value-producing token — lookbehind needs to be
+//       newline-aware
+//   E — regex content with placeholders / embedded quotes — scanner needs richer
+//       regex content tolerance once the category-B split lands
+// ──────────────────────────────────────────────────────────────────────────
+
+^^^
+// C-1: testPrefixSlash4 — keypath shorthand
+_ = /E.e
+
+^^^
+// C-2: testPrefixSlash6 — keypath shorthand in argument positions
+foo(/E.e, /E.e)
+
+^^^
+// C-3: testPrefixSlash6 — parenthesised keypath shorthand
+foo((/E.e), /E.e)
+
+^^^
+// C-4: testPrefixSlash6 — bare slash operator + keypath
+foo((/)(E.e), /E.e)
+
+^^^
+// A-1: testForwardSlashRegex109 — bare (/) operator reference in argument
+baz((/), /)
+
+^^^
+// A-2: testForwardSlashRegex111 — bare (/^) operator reference in argument
+baz((/^), /)
+
+^^^
+// A-3: testForwardSlashRegex112b — back-off pattern, no space
+baz(^^/,/)
+
+^^^
+// A-4: testForwardSlashRegex112c — parenthesised back-off
+baz((^^/), /)
+
+^^^
+// A-5: testForwardSlashRegex117 — bare (/) mixed with division
+_ = qux((/), "(") / 2
+
+^^^
+// A-6: testForwardSlashRegex131 — parenthesised prefix-op then /
+_ = (/x)/
+
+^^^
+// A-7: testForwardSlashRegex132 — parenthesised prefix-op with subscript content
+_ = (/[(0)])/
+
+^^^
+// A-8: testForwardSlashRegex141 — / operator value in annotated assignment
+let fn: (Int, Int) -> Int = (/)
+
+^^^
+// A-9: testForwardSlashRegex152 — (^/) as function applied to a string
+_ = (^/)("/")
+
+^^^
+// B-1: testForwardSlashRegexSkipping10 — ^^/regex/ in function body
+func d() { _ = ^^/x}}*/ }
+
+^^^
+// B-2: testForwardSlashRegexSkipping11 — (^^/regex/) with surrounding parens
+func e() { _ = (^^/x}}*/) }
+
+^^^
+// B-3: testForwardSlashRegexSkipping12 — leading ^ inside regex body
+func fa() { _ = ^^/^x}}*/ }
+
+^^^
+// B-4: testForwardSlashRegexSkipping14 — ^^/regex/ inside string interpolation
+func h() { _ = "\(^^/x}}*/)" }
+
+^^^
+// B-5: testForwardSlashRegexSkipping48 — invalid-hex regex body
+func err6() { _ = ^^/0xG/ }
+
+^^^
+// B-6: testForwardSlashRegexSkipping49 — invalid-octal regex body
+func err7() { _ = ^^/0oG/ }
+
+^^^
+// B-7: testForwardSlashRegexSkipping53 — parenthesised invalid-hex
+func err11() { _ = (^^/0xG/) }
+
+^^^
+// B-8: testForwardSlashRegexSkipping54 — parenthesised invalid-octal
+func err12() { _ = (^^/0oG/) }
+
+^^^
+// B-9: testForwardSlashRegex180 — top-level ^^/0xG/
+_ = ^^/0xG/
+
+^^^
+// B-10: testForwardSlashRegex181 — top-level ^^/0oG/
+_ = ^^/0oG/
+
+^^^
+// B-11: testForwardSlashRegex185 — top-level (^^/0xG/)
+_ = (^^/0xG/)
+
+^^^
+// B-12: testForwardSlashRegex186 — top-level (^^/0oG/)
+_ = (^^/0oG/)
+
+^^^
+// D-1: testForwardSlashRegexSkipping16 — regex on next line in closure
+func j() {
+  _ = {
+    0
+    /x}}}/
+    2
+  }
+}
+
+^^^
+// D-2: testForwardSlashRegexSkipping18 — regex on next line + .self
+func l() {
+  _ = 2
+  /x}*/ .self
+}
+
+^^^
+// D-3: testForwardSlashRegexSkipping21 — regex on next line + .bitWidth
+func n() {
+  _ = 2
+  /x}/
+    .bitWidth
+}
+
+^^^
+// E-1: testForwardSlashRegexSkipping50 — embedded double-quote in regex
+func err8() { _ = ^^/"/ }
+
+^^^
+// E-2: testForwardSlashRegexSkipping51 — embedded apostrophe in regex
+func err9() { _ = ^^/'/ }
+
+^^^
+// E-3: testForwardSlashRegexSkipping52 — editor placeholder in regex
+func err10() { _ = ^^/<#placeholder#>/ }
+
+^^^
+// E-4: testForwardSlashRegexSkipping55 — parenthesised embedded quote
+func err13() { _ = (^^/"/) }
+
+^^^
+// E-5: testForwardSlashRegexSkipping56 — parenthesised embedded apostrophe
+func err14() { _ = (^^/'/) }
+
+^^^
+// E-6: testForwardSlashRegexSkipping57 — parenthesised placeholder
+func err15() { _ = (^^/<#placeholder#>/) }
+
+^^^
+// E-7: testForwardSlashRegex182 — top-level embedded quote
+_ = ^^/"/
+
+^^^
+// E-8: testForwardSlashRegex183 — top-level embedded apostrophe
+_ = ^^/'/
+
+^^^
+// E-9: testForwardSlashRegex184 — top-level placeholder
+_ = ^^/<#placeholder#>/
+
+^^^
+// E-10: testForwardSlashRegex187 — parenthesised top-level quote
+_ = (^^/"/)
+
+^^^
+// E-11: testForwardSlashRegex188 — parenthesised top-level apostrophe
+_ = (^^/'/)
+
+^^^
+// E-12: testForwardSlashRegex189 — parenthesised top-level placeholder
+_ = (^^/<#placeholder#>/)
+
+^^^
+Array<Array<Int>>
+

@@ -94,7 +94,14 @@ final class GrammarNode {
         self.alt = alt
         self.seq = seq
     }
-    
+
+    /// Unescaped literal CONTENT for `.T` literal-terminal nodes (e.g. `>` for a node named `"\">\""`).
+    /// Set once by `ApusParser.literal()` at grammar-parse time. Read on the Frankenstein hot path
+    /// in `tokenMatch()` as a plain field load — no decoding, no allocation, no dict round-trip.
+    /// Empty for all other nodes (regex terminals, nonterminals, ε, etc.); those never reach the
+    /// Frankenstein paths because `~~~` can only be attached to a literal.
+    var content: String = ""
+
     var actions: [String] = []  // stores semantic actions
     var signature: String?      // function signature text (params, throws, return) for .N nodes
     var locals: [String] = []   // local declarations for generated function  TODO: can this be removed ???
@@ -115,13 +122,31 @@ final class GrammarNode {
     /// Populated by `---("if" "let" ...)` annotations in APUS grammar rules.
     var exclude:    Set<String> = []
 
-    /// BitSet mirrors of first/follow/ambiguous/exclude, populated by `Grammar.populateBitSets()`.
+    /// Positive forward-1-token lookahead set for this grammar slot.
+    /// When non-empty, this terminal only matches if the token AFTER the
+    /// matched one has a kindID in `followAheadBS` (or is the EOS sentinel,
+    /// which is always treated as approved).
+    /// Populated by `>>1("(" ")" ...)` annotations in APUS grammar rules.
+    /// Mirrors Swift's `canParseAsGenericArgumentList` follow-set commit:
+    /// generic-clause `>` only matches when the next token closes an expression.
+    var followAhead: Set<String> = []
+
+    /// BitSet mirrors of first/follow/ambiguous/exclude/followAhead, populated by `Grammar.populateBitSets()`.
     /// Used by `testSelect()` and the follow check on the hot path for O(1) membership tests.
-    var firstBS:      BitSet = []
-    var followBS:     BitSet = []
-    var ambiguousBS:  BitSet = []
-    var excludeBS:    BitSet = []
-    
+    var firstBS:        BitSet = []
+    var followBS:       BitSet = []
+    var ambiguousBS:    BitSet = []
+    var excludeBS:      BitSet = []
+    var followAheadBS:  BitSet = []
+
+    /// Alternate-level `@unless(X)` predicate annotation.
+    /// Captured at parse time on the `.ALT` node that heads the alternate;
+    /// resolved to a `GrammarNode` pointer by `Grammar.resolveUnlessTargets()`.
+    /// At Oracle phase 2, this alternate's yield is pruned when `unlessTarget`
+    /// has a yield starting at the same end position.
+    var unlessTargetName: String?
+    var unlessTarget:     GrammarNode?
+
     static var sizeofSets = 0
     
     /// Per-node LL(1) flag: true when this nonterminal or bracket has disjoint
@@ -275,17 +300,22 @@ extension GrammarNode {
 }
 
 extension GrammarNode {
+    /// Reset per-parse state on this node and every node transitively reachable
+    /// via `.seq` and `.alt`, with cycle detection so we don't loop on the
+    /// known back-pointers (END.seq → bracket, RHS-N.alt → LHS-N, END.alt → ALT).
+    /// Called from `MessageParser.parse()` to reset BSR yields between message
+    /// parses; without this, yields accumulate across messages and Oracle's
+    /// post-parse mutations leak from one parse into the next.
     func clearNodes() {
+        var visited = Set<ObjectIdentifier>()
+        clearNodesRecursive(visited: &visited)
+    }
+
+    private func clearNodesRecursive(visited: inout Set<ObjectIdentifier>) {
+        guard visited.insert(ObjectIdentifier(self)).inserted else { return }
         yield = []
-        // recursively clear child nodes but avoid loops from END node .seq and .alt links
-        if kind != .END {
-//            alt?.clearNodes()
-            seq?.clearNodes()
-        }
-        // TODO: check if this treatment of .N is correct
-        if kind != .END && kind != .N {
-            alt?.clearNodes()
-        }
+        seq?.clearNodesRecursive(visited: &visited)
+        alt?.clearNodesRecursive(visited: &visited)
     }
 }
 

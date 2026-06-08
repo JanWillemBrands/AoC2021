@@ -92,11 +92,12 @@ class ApusParser {
             trace("\t", name, "\t", node.kind)
         }
         
-        let conflictSet = Set(grammar.terminals.keys).intersection(Set(grammar.nonTerminals.keys))
-        if !conflictSet.isEmpty {
-            trace("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
-            throw ApusParserError.terminalNonterminalConflict(symbols: conflictSet)
-        }
+        // TODO: can we really remove this?
+//        let conflictSet = Set(grammar.terminals.keys).intersection(Set(grammar.nonTerminals.keys))
+//        if !conflictSet.isEmpty {
+//            trace("grammar parser error: the following symbols have been defined as both terminal and nontermimal:", conflictSet)
+//            throw ApusParserError.terminalNonterminalConflict(symbols: conflictSet)
+//        }
         
         guard let root = grammar.nonTerminals[grammar.startSymbol] else {
             throw ApusParserError.startSymbolNotFound(name: grammar.startSymbol)
@@ -130,18 +131,6 @@ class ApusParser {
         // store the cumulative set size
         GrammarNode.sizeofSets = newSize
         
-        //        for frank in grammar.frankensteinTerminals {
-        //            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
-        //        }
-        //
-        //        for frank in grammar.frankensteinTerminals {
-        //            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
-        //        }
-        //
-        //        for frank in grammar.frankensteinTerminals {
-        //            grammar.backpropagatePartialTokenMatchAllowed(from: frank)
-        //        }
-        
         // this is to a give GrammarNodes access to their own grammar
         GrammarNode.grammar = grammar
         
@@ -155,6 +144,8 @@ class ApusParser {
         grammar.propagateExcludeSets()
         grammar.populateBitSets()
         
+        try grammar.resolveUnlessTargets()
+
         return grammar
     }
     
@@ -243,7 +234,64 @@ class ApusParser {
                 }
                 grammar.terminals[terminal.name]?.transitions.append(GatedTransition(gate: gate, pops: pops, push: push))
             }
-            
+
+            // handle scanner-level lookbehind: ++N(...) / --N(...)
+            // Each line is a comma-separated chain of rules (AND); polarity must be uniform within a line.
+            // Multiple lines on the same terminal accumulate (OR).
+            let lookbehindHeads: Set<String> = ["++1", "++2", "--1", "--2"]
+            while lookbehindHeads.contains(token.kind) {
+                var rules: [LookbehindRule] = []
+                var linePolarity: LookbehindPolarity?
+                repeat {
+                    let head = token.kind
+                    let polarity: LookbehindPolarity = head.hasPrefix("+") ? .positive : .negative
+                    let distance = head.hasSuffix("1") ? 1 : 2
+                    if let lp = linePolarity, lp != polarity {
+                        Logger.parse.error("lookbehind line mixes polarities: \(head, privacy: .public) cannot follow opposite polarity in the same comma chain")
+                        throw ApusParserError.unexpectedToken(explanation: "mixed-polarity lookbehind chain")
+                    }
+                    linePolarity = polarity
+                    cI += 1
+                    try expect(["("])
+                    cI += 1
+                    var kinds: [String] = []
+                    while token.kind == "literal" || token.kind == "identifier" {
+                        // Operand must resolve to a Token.kind value (matched against tokens at scan time).
+                        //   quoted "X"     → kind is the full quoted form `"X"` (matches literal terminals)
+                        //   alias name     → look up in literalAliases (already quoted form)
+                        //   bare identifier (regex terminal name) → use as-is
+                        let kind: String
+                        if token.kind == "literal" {
+                            kind = String(token.image)
+                        } else {
+                            let id = token.stripped
+                            kind = literalAliases[id] ?? id
+                        }
+                        kinds.append(kind)
+                        cI += 1
+                    }
+                    try expect([")"])
+                    cI += 1
+                    rules.append(LookbehindRule(polarity: polarity, distance: distance, kinds: kinds))
+                    if token.kind == "," {
+                        cI += 1
+                    } else {
+                        break
+                    }
+                } while lookbehindHeads.contains(token.kind)
+
+                guard grammar.terminals[terminal.name] != nil else {
+                    Logger.parse.warning("WARNING: terminal \(terminal.name, privacy: .public) not found when parsing lookbehind")
+                    continue
+                }
+                let line = LookbehindLine(rules: rules)
+                if linePolarity == .positive {
+                    grammar.terminals[terminal.name]?.lookbehind.positiveLines.append(line)
+                } else {
+                    grammar.terminals[terminal.name]?.lookbehind.negativeLines.append(line)
+                }
+            }
+
         } else {
             // production rule
             try expect(["="])
@@ -276,6 +324,20 @@ class ApusParser {
             }
             try expect(["."])
             cI += 1
+
+            // Trailing @unless(X) annotation on this alternate.
+            // Attached to the `.ALT` node returned by `selection()` for this production line.
+            // Resolved to a GrammarNode pointer by Grammar.resolveUnlessTargets().
+            if token.kind == "pragma" && token.stripped == "unless" {
+                cI += 1
+                try expect(["("])
+                cI += 1
+                try expect(["identifier"])
+                node.unlessTargetName = String(token.image)
+                cI += 1
+                try expect([")"])
+                cI += 1
+            }
         }
     }
     
@@ -478,40 +540,30 @@ class ApusParser {
     
     func literal() -> GrammarNode {
         trace("literal", token, token.stripped)
-        
-        // epsilon has two representations in apus grammars, either the greek letter ε, or the empty string literal ""
-        //        if token.stripped == "" {
-        //            trace("epsilon", token, token.stripped)
-        //            cI += 1
-        //            return GrammarNode(kind: .EPS, name: "ε")
-        //        }
-        
-        //        let name = terminalAlias ?? token.stripped
-        //        print("literal terminalAlias: \(terminalAlias ?? "nil") token.stripped: \(token.stripped)")
-        let name = token.stripped
+
+        // Token.kind for a user-grammar literal terminal is the FULL QUOTED FORM (e.g. `"operator"`),
+        // not the stripped content. This keeps the literal-kind namespace disjoint from the
+        // identifier-kind namespace (nonterminals and named regex terminals), so an unquoted
+        // reference like `operator` in a production body can never collide with the literal `"operator"`.
+        let name = String(token.image)
+        // The unescaped literal CONTENT — what the scanner matches against input characters,
+        // and what Frankenstein splitting needs for prefix matching against token images.
+        let source = token.stripped.escapesRemoved
+
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
                 trace("parse warning: redefinition of \(name) as \(skip ? "skipped" : "not skipped")")
             }
-        }
-        // the token is a string literal, use a regex builder to create a Regex
-        // a literal may occur multiple times in a grammar, including as a terminal definition
-        // we don't want to enter the same literal over and over, especially when it might overwrite initial mode annotations
-        if grammar.terminals[name] == nil {
-            // to build the correct regex we need to remove the escape sequences from the token because the literal uses Swift string notation.
-            // e.g. "//" in the grammar matches a single '/' in the message, and a "\t" will match a tab character in the message
-            let source = token.stripped.escapesRemoved
+        } else {
             let regex = Regex { source }
             grammar.terminals[name] = TokenPattern(source, regex, true, skip)
             grammar.registerTerminal(name)
-            //            Logger.parse.debug("added literal name: \(name) image: \(self.token.image)")
-        } else {
-            //            Logger.parse.debug("already defined literal name: \(name) image: \(self.token.image)")
         }
-        
-        
+
         cI += 1
-        return GrammarNode(kind: .T, name: name)
+        let node = GrammarNode(kind: .T, name: name)
+        node.content = source
+        return node
     }
     
     func epsilon() -> GrammarNode {
@@ -580,8 +632,11 @@ class ApusParser {
             try expect(["("])
             cI += 1
             while token.kind == "literal" {
-                let excluded = token.stripped
-                if !excluded.isEmpty {
+                // Exclusion entries must match Token.kind values in the symbol table.
+                // User-grammar literal terminals are now keyed by their full quoted form
+                // (see literal()), so we record the same form here.
+                let excluded = String(token.image)
+                if !token.stripped.isEmpty {
                     node.exclude.insert(excluded)
                 }
                 cI += 1
@@ -589,7 +644,26 @@ class ApusParser {
             try expect([")"])
             cI += 1
         }
-        
+
+        // check for positive forward lookahead annotation: >>1("(" ")" ...)
+        // Mirrors `---` shape but checks the NEXT token at parse time, not duals.
+        // EOS sentinel ("○") is treated as approved automatically — matches Swift's
+        // canParseAsGenericArgumentList rule where EOF closes the generic clause.
+        if token.kind == ">>1" {
+            cI += 1
+            try expect(["("])
+            cI += 1
+            while token.kind == "literal" {
+                let approved = String(token.image)
+                if !token.stripped.isEmpty {
+                    node.followAhead.insert(approved)
+                }
+                cI += 1
+            }
+            try expect([")"])
+            cI += 1
+        }
+
         return node
     }
     

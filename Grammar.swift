@@ -65,6 +65,10 @@ class Grammar {
     /// The integer ID for the epsilon sentinel in first/follow BitSets.
     /// Set by `finalizeSymbolTable()` after all terminals are registered.
     var epsilonID: Int!
+
+    /// The integer ID for the end-of-string sentinel "○" token.
+    /// Pre-seeded at Grammar init with ID 0 (see `symbolToID` default value).
+    var eosID: Int { 0 }
     
     /// Register a terminal kind and return its integer ID. Idempotent.
     /// Called from `regex()` and `literal()` during grammar construction.
@@ -121,6 +125,26 @@ class Grammar {
             if node.seq == nil, let alt = node.alt { assignNameIDsRecursive(alt) }
         } else if node.kind != .END {
             if let alt = node.alt { assignNameIDsRecursive(alt) }
+        }
+    }
+
+    // MARK: - @unless(X) Target Resolution
+
+    /// Resolve `unlessTargetName` strings (captured at parse time) to GrammarNode
+    /// pointers. Walks every alternate chain under each nonterminal. Call after
+    /// `assignNameIDs()` and before `populateBitSets()`.
+    func resolveUnlessTargets() throws {
+        for (_, nt) in nonTerminals {
+            var alt: GrammarNode? = nt.alt
+            while let a = alt {
+                if let name = a.unlessTargetName {
+                    guard let target = nonTerminals[name] else {
+                        throw ApusParserError.undefinedNonTerminal(name: name, definedAsTerminal: terminals[name] != nil)
+                    }
+                    a.unlessTarget = target
+                }
+                alt = a.alt
+            }
         }
     }
 
@@ -320,6 +344,10 @@ class Grammar {
         node.excludeBS = BitSet()
         for s in node.exclude {
             if let id = symbolToID[s] { node.excludeBS.insert(id) }
+        }
+        node.followAheadBS = BitSet()
+        for s in node.followAhead {
+            if let id = symbolToID[s] { node.followAheadBS.insert(id) }
         }
         if node.kind != .END {
             if let seq = node.seq { populateBitSetsRecursive(seq) }

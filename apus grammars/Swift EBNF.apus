@@ -465,21 +465,23 @@ platformVersion = decimalDigits "." decimalDigits "." decimalDigits .
 // DECLARATIONS
 
 declaration = importDeclaration .
-declaration = constantDeclaration .
-declaration = variableDeclaration .
-declaration = typealiasDeclaration .
-declaration = functionDeclaration .
-declaration = enumDeclaration .
-declaration = structDeclaration .
-declaration = classDeclaration .
-declaration = actorDeclaration .
-declaration = protocolDeclaration .
-declaration = initializerDeclaration .
-declaration = deinitializerDeclaration .
-declaration = extensionDeclaration .
-declaration = subscriptDeclaration .
-declaration = operatorDeclaration .
-declaration = precedenceGroupDeclaration . // WTF is \ doing here ???
+            | constantDeclaration .
+            | variableDeclaration .
+            | typealiasDeclaration .
+            | functionDeclaration .
+            | enumDeclaration .
+            | structDeclaration .
+            | classDeclaration .
+            | actorDeclaration .
+            | protocolDeclaration .
+            | initializerDeclaration .
+            | deinitializerDeclaration .
+            | extensionDeclaration .
+            | subscriptDeclaration .
+            | macroDeclaration .
+            | operatorDeclaration .
+            | precedenceGroupDeclaration
+            .
 
 codeBlock = "{" statements? "}" .
 
@@ -742,7 +744,7 @@ expressionPattern = expression .
 
 // GENERIC PARAMETERS AND ARGUMENTS
 
-genericParameterClause = "<" genericParameterList ">" .
+genericParameterClause = "<" attributes? genericParameterList ">" .
 genericParameterList = genericParameter | genericParameter "," genericParameterList .
 genericParameter = typeName .
 genericParameter = typeName ":" typeIdentifier .

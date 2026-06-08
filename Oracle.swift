@@ -49,6 +49,30 @@ struct RightAssocRule: DisambiguationRule {
     }
 }
 
+/// Alternate-level `@unless(X)` predicate: prune yields of this slot whose
+/// end position is also the start of a yield of nonterminal `target`.
+///
+/// Encodes Swift's `canParseAsXxx` pattern at the grammar level — when a
+/// "fallback" alternate competes with a "richer" alternate that uses `target`,
+/// suppress the fallback whenever the richer interpretation is structurally
+/// available.
+///
+/// Implementation: a yield triple `(i, k, j)` of the annotated slot is pruned
+/// iff `target` has a yield with `i == j` — i.e. the richer alternate could
+/// have parsed starting where this fallback ended.
+struct UnlessPredicateRule: DisambiguationRule {
+    let target: GrammarNode
+    func prune(_ yields: inout Set<BinarySpan>) -> Int {
+        let targetStarts = Set(target.yield.map(\.i))
+        var pruned = 0
+        for span in yields where targetStarts.contains(span.j) {
+            yields.remove(span)
+            pruned += 1
+        }
+        return pruned
+    }
+}
+
 private func pruneByExtent(
     yields: inout Set<BinarySpan>,
     keep: ([TokenPosition]) -> TokenPosition
@@ -104,19 +128,34 @@ class Oracle {
         self.grammar = grammar
         self.tokens = tokens
         for (_, nt) in grammar.nonTerminals {
-            guard let d = nt.disambiguation else { continue }
-            switch d {
-            case .shortest: rules.append((nt, ShortestMatchRule()))
-            case .longest:  rules.append((nt, LongestMatchRule()))
-            case .left, .right:
-                let rule: DisambiguationRule = d == .left ? LeftAssocRule() : RightAssocRule()
-                var alt = nt.alt
-                while let a = alt {
-                    for sym in a.bodySymbols {
-                        rules.append((sym, rule))
+            // LHS-level disambiguation pragmas: @longest, @shortest, @left, @right.
+            if let d = nt.disambiguation {
+                switch d {
+                case .shortest: rules.append((nt, ShortestMatchRule()))
+                case .longest:  rules.append((nt, LongestMatchRule()))
+                case .left, .right:
+                    let rule: DisambiguationRule = d == .left ? LeftAssocRule() : RightAssocRule()
+                    var alt = nt.alt
+                    while let a = alt {
+                        for sym in a.bodySymbols {
+                            rules.append((sym, rule))
+                        }
+                        alt = a.alt
                     }
-                    alt = a.alt
                 }
+            }
+            // Alternate-level @unless(X) predicates.
+            // The annotation is captured on the .ALT node, but yields live on body symbols.
+            // Register the rule on the LAST body symbol of the alternate — its yield's `j` is
+            // where the alternate ended, which is where `X` would speculatively start.
+            var alt: GrammarNode? = nt.alt
+            while let a = alt {
+                if let target = a.unlessTarget {
+                    if let last = a.bodySymbols.last {
+                        rules.append((last, UnlessPredicateRule(target: target)))
+                    }
+                }
+                alt = a.alt
             }
         }
     }
@@ -126,7 +165,12 @@ class Oracle {
         let n = TokenPosition(token: tokens.count - 1)
         guard grammar.root.yield.contains(where: { $0.i == .zero && $0.j == n }) else { return 0 }
 
-        let deadYields = pruneUnproductive(endPosition: n)
+        var deadYields = 0
+        while true {
+            let pruned = pruneUnproductive(endPosition: n)
+            deadYields += pruned
+            if pruned == 0 { break }
+        }
         var disambiguated = 0
         var changed = true
         while changed {
@@ -139,10 +183,18 @@ class Oracle {
                 }
             }
         }
+        // Second dead-wood sweep: rules may have pruned body-symbol yields whose
+        // parent .N yields are now unreachable. Cascade to a fixed point.
+        var secondDead = 0
+        while true {
+            let pruned = pruneUnproductive(endPosition: n)
+            secondDead += pruned
+            if pruned == 0 { break }
+        }
 
-        let total = deadYields + disambiguated
+        let total = deadYields + secondDead + disambiguated
         if total > 0 {
-            print("oracle: removed \(deadYields) dead + \(disambiguated) disambiguated yields")
+            print("oracle: removed \(deadYields)+\(secondDead) dead + \(disambiguated) disambiguated yields")
         }
         assert(isUnambiguous(endPosition: n), "Oracle postcondition violated: residual ambiguity remains")
         return total
@@ -176,8 +228,14 @@ class Oracle {
             case .T, .TI, .C, .B:
                 result = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
             case .N:
-                guard let lhs = sym.alt else { return [] }
-                result = Set(lhs.yield.lazy.filter { $0.i == from }.map(\.j))
+                if sym.isRHS {
+                    guard let lhs = sym.alt else { return [] }
+                    let occurrenceEnds = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
+                    let lhsEnds = Set(lhs.yield.lazy.filter { $0.i == from }.map(\.j))
+                    result = occurrenceEnds.intersection(lhsEnds)
+                } else {
+                    result = Set(sym.yield.lazy.filter { $0.i == from }.map(\.j))
+                }
             case .DO, .OPT, .KLN, .POS:
                 var positions = Set<TokenPosition>()
                 if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }
@@ -275,6 +333,10 @@ class Oracle {
         }
 
         func visitSymbol(_ sym: GrammarNode, from: TokenPosition, to: TokenPosition) {
+            if sym.yield.contains(where: { ($0.i == from && $0.j == to) || ($0.k == from && $0.j == to) }) {
+                reachable.insert(NodeSpan(id: ObjectIdentifier(sym), from: from, to: to))
+            }
+
             switch sym.kind {
             case .N:
                 guard let lhs = sym.alt else { return }
@@ -303,14 +365,33 @@ class Oracle {
         // Seed from root
         visit(grammar.root, from: .zero, to: n)
 
-        // Remove unreachable yields from nonterminals
-        var pruned = 0
-        for (_, nt) in grammar.nonTerminals {
-            let before = nt.yield.count
-            nt.yield = nt.yield.filter { span in
-                reachable.contains(NodeSpan(id: ObjectIdentifier(nt), from: span.i, to: span.j))
+        // Remove unreachable yields from every grammar node. Body-symbol yields
+        // can otherwise keep stale tilings alive after a parent alternate was pruned.
+        var allNodes: [GrammarNode] = [grammar.root]
+        var seen = Set<ObjectIdentifier>()
+
+        func collect(_ node: GrammarNode?) {
+            guard let node else { return }
+            guard seen.insert(ObjectIdentifier(node)).inserted else { return }
+            allNodes.append(node)
+            if node.kind != .END {
+                collect(node.seq)
             }
-            pruned += before - nt.yield.count
+            collect(node.alt)
+        }
+
+        for nt in grammar.nonTerminals.values {
+            collect(nt)
+        }
+
+        var pruned = 0
+        for node in allNodes {
+            let before = node.yield.count
+            node.yield = node.yield.filter { span in
+                reachable.contains(NodeSpan(id: ObjectIdentifier(node), from: span.i, to: span.j))
+                    || reachable.contains(NodeSpan(id: ObjectIdentifier(node), from: span.k, to: span.j))
+            }
+            pruned += before - node.yield.count
         }
         return pruned
     }

@@ -93,6 +93,8 @@ func adventParse(_ source: String) throws -> AdventParseResult? {
         let matched = parser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
         guard matched else { return nil }
 
+        Oracle(grammar: grammar, tokens: scanner.tokens).disambiguate()
+
         let builder = DerivationBuilder(grammar: grammar, tokens: parser.tokens)
         guard let tree = builder.buildAST() else { return nil }
         return AdventParseResult(tree: tree, builder: builder)
@@ -112,6 +114,49 @@ func adventSwiftSyntaxTree(_ source: String) throws -> SourceFileSyntax? {
 }
 
 // MARK: - Probes
+
+// Focused snippets that exercise the scanner-level regex lookbehind annotations
+// (++N / --N) on plainRegularExpressionLiteral in Swift.apus.
+let regexLookbehindSnippets: [SwiftSnippet] = [
+    // Division — `--1` blocks regex because the previous token is a value.
+    SwiftSnippet(label: "div-int-int",      source: "let x = 1 / 2",            origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "div-ident-ident",  source: "let z = a / b",            origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "div-call-int",     source: "let z = f() / 2",          origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "div-subscript",    source: "let z = arr[0] / 2",       origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "div-chain",        source: "let r = 1 / 2 ; let s = 3 / 4", origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+
+    // Regex — default allow after expression-starting tokens.
+    SwiftSnippet(label: "regex-after-eq",   source: "let r = /abc/",            origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "regex-after-lparen", source: "let r = (/abc/)",        origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "regex-in-array",   source: "let arr = [/abc/]",        origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+
+    // Compound positive override — eliminates Swift's `preferRegexOverBinaryOperator` hack.
+    SwiftSnippet(label: "regex-after-try-bang",
+                 source: #"let m = try! /^x/.wholeMatch(in: "hello")"#,
+                 origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "regex-after-try-question",
+                 source: #"let m = try? /^x/.wholeMatch(in: "hello")"#,
+                 origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+
+    // Ternary — `?` is NOT in the deny list, so the GLL parser finds the ternary parse.
+    SwiftSnippet(label: "ternary-with-spaces",
+                 source: "let r = b ? /1/ : /2/",
+                 origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "ternary-tight",
+                 source: "let r = b?/1/:/2/",
+                 origin: "RegexLookbehind", syntaxVersion: "603.0.1",
+                 disabledReason: "scanner allows regex after '?' (lookbehind works); blocked by Swift.apus conditionalOperator's <s> spacing requirement, a separate grammar policy"),
+]
+
+@Suite("Regex Lookbehind (Swift.apus integration)", .serialized)
+struct RegexLookbehindIntegration {
+    @Test("Advent accepts", arguments: regexLookbehindSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let result = try adventParse(snippet.source)
+        #expect(result != nil, "Advent failed to parse: \(snippet.source)")
+    }
+}
 
 @Suite("SwiftSyntax Comparison", .serialized)
 struct SwiftSyntaxTests {

@@ -29,7 +29,7 @@ let grammarFileURL = URL(fileURLWithPath: #filePath)
 //    .appendingPathComponent("apus grammars/apusWithAction")
 //    .appendingPathComponent("apus grammars/TortureSyntax")
 //    .appendingPathComponent("apus grammars/test")
-//    .appendingPathComponent("apus grammars/silent")
+//    .appendingPathComponent("apus grammars/regex-operator")
 //    .appendingPathComponent("apus grammars/tortureART")
 //    .appendingPathComponent("apus grammars/tortureEBNF")
 //    .appendingPathComponent("apus grammars/apusAmbiguous")
@@ -100,10 +100,10 @@ for (mi, message) in grammar.messages.enumerated() {
     stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yieldCount)\n"
     stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
     Logger.ui.info("\(stats, privacy: .public)")
-//    print("all message tokens:")
-//    for t in messageScanner.tokens{
-//        print(t, t.image)
-//    }
+    print("all message tokens:")
+    for t in messageScanner.tokens{
+        print(t, t.image)
+    }
 //    print("tokenPatterns:")
 //    for tp in grammar.terminals {
 //        print(tp.key, tp.value.source)
