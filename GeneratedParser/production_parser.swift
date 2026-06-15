@@ -63,28 +63,26 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
+	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)+\\\"/",	/\"(?:[^\"\\]|\\.)+\"/,	false,	false),
 	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
-	"character":	("/\'.\'/",	/'.'/,	false,	false),
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"identifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
-	""."":	(".",	Regex { "." },	true,	false),
-	""="":	("=",	Regex { "=" },	true,	false),
-	"">"":	(">",	Regex { ">" },	true,	false),
-	""}"":	("}",	Regex { "}" },	true,	false),
-	""-"":	("-",	Regex { "-" },	true,	false),
-	""{"":	("{",	Regex { "{" },	true,	false),
-	""any"":	("any",	Regex { "any" },	true,	false),
-	""<"":	("<",	Regex { "<" },	true,	false),
 	""|"":	("|",	Regex { "|" },	true,	false),
-	""]"":	("]",	Regex { "]" },	true,	false),
-	""("":	("(",	Regex { "(" },	true,	false),
-	"")"":	(")",	Regex { ")" },	true,	false),
 	""["":	("[",	Regex { "[" },	true,	false),
+	""{"":	("{",	Regex { "{" },	true,	false),
+	""("":	("(",	Regex { "(" },	true,	false),
+	"":-"":	(":-",	Regex { ":-" },	true,	false),
+	""."":	(".",	Regex { "." },	true,	false),
+	"">"":	(">",	Regex { ">" },	true,	false),
+	""]"":	("]",	Regex { "]" },	true,	false),
+	"")"":	(")",	Regex { ")" },	true,	false),
+	""}"":	("}",	Regex { "}" },	true,	false),
+	""<"":	("<",	Regex { "<" },	true,	false),
 ]
 func factor() throws {
 	switch token.kind {
-	case "\"any\"", "character", "identifier", "regex":
+	case "identifier", "literal", "regex":
 		try terminal()
 	case "\"[\"":
 		cI += 1
@@ -107,28 +105,15 @@ func factor() throws {
 		expect("\")\"")
 		cI += 1
 	default:
-		expect("\"(\"", "\"<\"", "\"[\"", "\"any\"", "\"{\"", "character", "identifier", "regex")
+		expect("\"(\"", "\"<\"", "\"[\"", "\"{\"", "identifier", "literal", "regex")
 	}
-}
-func grammar() throws {
-	repeat {
-		try production()
-	} while ["identifier"].contains(token.kind)
 }
 func production() throws {
 	expect("identifier")
 	cI += 1
-	switch token.kind {
-	case "\"-\"":
-		cI += 1
-		expect("regex")
-		cI += 1
-	case "\"=\"":
-		cI += 1
-		try selection()
-	default:
-		expect("\"-\"", "\"=\"")
-	}
+	expect("\":-\"")
+	cI += 1
+	try selection()
 	expect("\".\"")
 	cI += 1
 }
@@ -142,23 +127,21 @@ func selection() throws {
 func sequence() throws {
 	repeat {
 		try factor()
-	} while ["\"(\"", "\"<\"", "\"[\"", "\"any\"", "\"{\"", "character", "identifier", "regex"].contains(token.kind)
+	} while ["\"(\"", "\"<\"", "\"[\"", "\"{\"", "identifier", "literal", "regex"].contains(token.kind)
 }
 func terminal() throws {
 	switch token.kind {
 	case "identifier":
 		cI += 1
-	case "character":
+	case "literal":
 		cI += 1
 	case "regex":
 		cI += 1
-	case "\"any\"":
-		cI += 1
 	default:
-		expect("\"any\"", "character", "identifier", "regex")
+		expect("identifier", "literal", "regex")
 	}
 }
 func parse() throws {
-	try grammar()
+	try production()
 	expect("$")
 }

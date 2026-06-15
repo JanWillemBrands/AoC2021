@@ -9,8 +9,14 @@
 import Foundation
 //import AdventMacros
 
-var trace = false
-var traceIndent = 0
+// Trace toggle. Marked `nonisolated(unsafe)` because:
+//   - In release builds the trace function is fully gated out by `#if DEBUG`.
+//   - In test/debug builds the parser path that mutates trace is serialized by
+//     the test infrastructure's `withParserIsolation` lock.
+// Direct global access is intentional; the trace plumbing is performance-critical
+// and a TaskLocal would force every call site through a closure.
+nonisolated(unsafe) var trace = false
+nonisolated(unsafe) var traceIndent = 0
 
 func trace(_ items: Any..., terminator term: String = "") {
 #if DEBUG

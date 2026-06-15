@@ -117,8 +117,9 @@ func parseMatches(grammar grammarString: String, message: String) throws -> Bool
         let messageParser = MessageParser(grammar: grammar)
         messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
 
-        let extent = TokenPosition(token: messageParser.tokens.count - 1)
-        return messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
+        return messageParser.yield(of: messageParser.currentParseRoot).contains {
+            $0.i == messageScanner.input.startIndex && $0.j == messageScanner.input.endIndex
+        }
     }
 }
 
@@ -231,8 +232,9 @@ func parseLanguageMessage(_ fixture: LanguageFixture, message: String) throws ->
         let parser = MessageParser(grammar: fixture.grammar)
         parser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
 
-        let extent = TokenPosition(token: parser.tokens.count - 1)
-        return parser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
+        return parser.yield(of: parser.currentParseRoot).contains {
+            $0.i == messageScanner.input.startIndex && $0.j == messageScanner.input.endIndex
+        }
     }
 }
 
@@ -266,9 +268,10 @@ func parseAndDisambiguate(grammar grammarString: String, message: String) throws
         let messageParser = MessageParser(grammar: grammar)
         messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
 
-        let extent = TokenPosition(token: messageParser.tokens.count - 1)
-        let matches = messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
-        let pruned = Oracle(grammar: grammar, tokens: messageScanner.tokens).disambiguate()
+        let matches = messageParser.yield(of: messageParser.currentParseRoot).contains {
+            $0.i == messageScanner.input.startIndex && $0.j == messageScanner.input.endIndex
+        }
+        let pruned = Oracle(parser: messageParser, tokens: messageScanner.tokens, input: messageScanner.input).disambiguate()
         return (matches, pruned)
     }
 }

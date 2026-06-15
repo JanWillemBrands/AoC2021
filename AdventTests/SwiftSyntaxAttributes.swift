@@ -946,7 +946,7 @@ let attributeSnippets: [SwiftSnippet] = [
 @Suite("SwiftSyntax - Attributes — SwiftSyntax comparison", .serialized)
 struct AttributeSyntaxTests {
 
-    @Test("SwiftSyntax accepts", arguments: attributeSnippets)
+    @Test("SwiftSyntax accepts", .tags(.swiftSyntaxReference), arguments: attributeSnippets)
     func swiftSyntaxAccepts(_ snippet: SwiftSnippet) throws {
         guard snippet.disabledReason == nil else { return }
         let parsed = Parser.parse(source: snippet.source)
@@ -956,14 +956,14 @@ struct AttributeSyntaxTests {
     @Test("Advent accepts", arguments: attributeSnippets)
     func adventAccepts(_ snippet: SwiftSnippet) throws {
         guard snippet.disabledReason == nil else { return }
-        let result = try adventParse(snippet.source)
+        let result = try adventParse(snippet)
         #expect(result != nil, "Advent failed to parse: \(snippet.source)")
     }
 
     @Test("no residual ambiguity", arguments: attributeSnippets)
     func unambiguous(_ snippet: SwiftSnippet) throws {
         guard snippet.disabledReason == nil else { return }
-        guard let result = try adventParse(snippet.source) else {
+        guard let result = try adventParse(snippet) else {
             Issue.record("Advent failed to parse: \(snippet.source)")
             return
         }
@@ -977,7 +977,7 @@ struct AttributeSyntaxTests {
         let reference = Parser.parse(source: snippet.source)
         let refDump = dumpSwiftSyntaxNode(Syntax(reference), indent: 0)
 
-        guard let adventTree = try adventSwiftSyntaxTree(snippet.source) else {
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
             Issue.record("Advent failed to produce SwiftSyntax tree: \(snippet.source)")
             return
         }

@@ -7,14 +7,22 @@
 // Deviations from the standard CPython PEG grammar:
 //
 // 1. INDENT/DEDENT: CPython's tokenizer generates INDENT/DEDENT tokens.
-//    We inject >>| and |<< synthetic tokens via injectLayoutTokens() before
-//    parsing. The grammar uses these directly in block and match_stmt rules.
+//    APUS computes them lexically from source indentation and serves them
+//    on-demand to the parser through a virtual-token table populated at
+//    `MessageParser.prepareInput` (gated on `usesInjectedLayoutTokens`).
+//    The grammar uses `>>|` and `|<<` directly in block and match_stmt rules.
 //
-// 2. Blank lines: CPython's tokenizer suppresses NEWLINE for blank and
-//    comment-only lines. Our scanner emits NEWLINE for every \n, so file
-//    and block rules accept NEWLINE as a no-op alternative alongside
-//    statement. injectLayoutTokens() also skips indent/dedent processing
-//    for tokens whose image is purely newline characters.
+// 2. NEWLINE-as-token retired: APUS treats `\r?\n` as global trivia, not as
+//    a distinct token. Statement terminators are expressed as the `<n>`
+//    boundary predicate ("a line break appears in the trivia gap between
+//    the previous emit and the current cursor"). `<n>` at end-of-input is
+//    satisfied unconditionally — see `MessageParser.boundaryMatches`. This
+//    naturally handles three CPython tokenizer quirks at once:
+//      - Blank / comment-only lines vanish as trivia (no NEWLINE alternative
+//        needed in `file` / `block` KLNs).
+//      - Newlines inside `(`/`[`/`{` are eaten as trivia by default (no
+//        scanner mode-stack required for implicit line continuation).
+//      - Files missing a trailing newline parse without grammar special-case.
 //
 // 3. Soft keywords: "match", "case", "type" are soft keywords in Python
 //    (usable as identifiers). Our scanner produces Schrodinger tokens
@@ -30,45 +38,17 @@
 // 5. f-strings: Not covered. They require scanner-level interpolation
 //    support (recursive descent into expression parsing mid-token).
 //
-// 6. Bracket newline suppression: CPython's tokenizer uses a bracket
-//    depth counter to suppress NEWLINE inside (), [], {}. We achieve the
-//    same via scanner modes (bracket-mode) which demote NEWLINE to trivia.
-//
 
 // =============================================================================
 // LEXICAL DEFINITIONS
 // =============================================================================
 
-hspace          : /[ \t\f]+/ .
+// Whitespace includes `\r?\n` — newlines are global trivia, statement
+// boundaries are expressed by the `<n>` predicate (deviation 2 in header).
+// Implicit line continuation inside `(`/`[`/`{` falls out for free.
+whitespace      : /[ \t\f\r\n]+/ .
 continuation    : /\\[ \t]*\r?\n/ .
 comment         : /#[^\r\n]*/ .
-NEWLINE         - /\r?\n/ .
-
-// Bracket-mode: newlines inside (), [], {} become trivia instead of NEWLINE
-// tokens. This implements Python's implicit line joining.
-bracketNewline : /\r?\n/ .
-               === "bracket-mode"
-
-pyLP - "(" .
-     === "" >>> "bracket-mode"
-     === "bracket-mode" >>> "bracket-mode"
-
-pyRP - ")" .
-     === "bracket-mode" <<<
-
-pyLS - "[" .
-     === "" >>> "bracket-mode"
-     === "bracket-mode" >>> "bracket-mode"
-
-pyRS - "]" .
-     === "bracket-mode" <<<
-
-pyLC - "{" .
-     === "" >>> "bracket-mode"
-     === "bracket-mode" >>> "bracket-mode"
-
-pyRC - "}" .
-     === "bracket-mode" <<<
 
 NAME - /[a-zA-Z_]\w*/ .
 NUMBER - /0[xX](?:_?[0-9a-fA-F])+|0[oO](?:_?[0-7])+|0[bB](?:_?[01])+|(?:[0-9](?:_?[0-9])*)(?:\.(?:[0-9](?:_?[0-9])*))?(?:[eE][+-]?(?:[0-9](?:_?[0-9])*))?[jJ]?|(?:\.[0-9](?:_?[0-9])*)(?:[eE][+-]?(?:[0-9](?:_?[0-9])*))?[jJ]?/ .
@@ -78,9 +58,9 @@ STRING - /[bBuU]?[rR]?"""(?:[^"\\]|\\.|\r?\n|"(?!""))*"""|[bBuU]?[rR]?'''(?:[^'\
 // STARTING RULES
 // =============================================================================
 
-// Deviation: NEWLINE alternative handles blank/comment-only lines that
-// CPython's tokenizer would suppress (see deviation 2 above).
-file = <NEWLINE | statement> .
+// Blank / comment-only lines are eaten as global trivia (see deviation 2),
+// so the file rule simply iterates statements.
+file = <statement> .
 
 // =============================================================================
 // GENERAL STATEMENTS
@@ -88,7 +68,9 @@ file = <NEWLINE | statement> .
 
 statement = simple_stmts | compound_stmt .
 
-simple_stmts = simple_stmt {";" simple_stmt} [";"] NEWLINE .
+// Trailing `<n>` asserts the statement is terminated by a line break (or by
+// end-of-input, per the EOS rule in `MessageParser.boundaryMatches`).
+simple_stmts = simple_stmt {";" simple_stmt} [";"] <n> .
 
 // =============================================================================
 // SIMPLE STATEMENTS
@@ -161,11 +143,13 @@ type_alias = "type" NAME [type_params] "=" expression .
 compound_stmt = function_def | if_stmt | class_def | with_stmt
               | for_stmt | try_stmt | while_stmt | match_stmt .
 
-// Deviation: NEWLINE alternative handles blank/comment-only lines.
-// Deviation: >>| and |<< replace INDENT and DEDENT tokens.
-block = simple_stmts | NEWLINE >>| <NEWLINE | statement> |<< .
+// Single-line vs multi-line block disambiguated by leading newline:
+//   >n< simple_stmts — one-liner on the same line as the colon
+//   <n> >>| ... |<<  — indented multi-line block on a new line
+// `>>|` and `|<<` are virtual INDENT/DEDENT tokens; blank lines vanish as trivia.
+block = >n< simple_stmts | <n> >>| <statement> |<< .
 
-decorator = "@" named_expression NEWLINE .
+decorator = "@" named_expression <n> .
 
 function_def = {decorator} ["async"] "def" NAME [type_params] "(" [parameters] ")" ["->" expression] ":" block .
 
@@ -203,8 +187,9 @@ finally_block = "finally" ":" block .
 // =============================================================================
 
 // "match" and "case" are soft keywords -- become Schrodinger tokens.
-// Deviation: >>| |<< replace INDENT/DEDENT. NEWLINE handles blank lines.
-match_stmt = "match" subject_expr ":" NEWLINE >>| <NEWLINE | case_block> |<< .
+// `<n>` asserts a line break after the colon; `>>|`/`|<<` are virtual
+// INDENT/DEDENT. Blank lines between cases vanish as trivia.
+match_stmt = "match" subject_expr ":" <n> >>| <case_block> |<< .
 
 subject_expr = star_named_expression "," [star_named_expressions]
              | named_expression .

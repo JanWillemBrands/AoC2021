@@ -50,9 +50,7 @@ extension GrammarNodeKind {
 }
 
 final class GrammarNode {
-    
-//    var frankensteinMatchAllowed = false    // only relevant for GrammarNodes with kind = "literal"
-    
+
     static var count = 0
     
     // this is to give GrammarNodes access to the grammar
@@ -66,6 +64,11 @@ final class GrammarNode {
     
     let kind: GrammarNodeKind
     let name: String
+
+    /// True for LHS non-terminals declared with `=:` — their parse result is
+    /// consumed as trivia rather than emitted to the outer BSR. Recognised at
+    /// trivia-skip time via a recursive `MessageParser` sub-instance.
+    var isTrivia: Bool = false
     
     var alt, seq, prv: GrammarNode?
 //    var alt: GrammarNode? {
@@ -94,13 +97,6 @@ final class GrammarNode {
         self.alt = alt
         self.seq = seq
     }
-
-    /// Unescaped literal CONTENT for `.T` literal-terminal nodes (e.g. `>` for a node named `"\">\""`).
-    /// Set once by `ApusParser.literal()` at grammar-parse time. Read on the Frankenstein hot path
-    /// in `tokenMatch()` as a plain field load — no decoding, no allocation, no dict round-trip.
-    /// Empty for all other nodes (regex terminals, nonterminals, ε, etc.); those never reach the
-    /// Frankenstein paths because `~~~` can only be attached to a literal.
-    var content: String = ""
 
     var actions: [String] = []  // stores semantic actions
     var signature: String?      // function signature text (params, throws, return) for .N nodes
@@ -165,7 +161,9 @@ final class GrammarNode {
         }
     }
     
-    var yield: Set<BinarySpan> = []
+    // BSR yields moved to `MessageParser.yields`, indexed by `node.number`.
+    // Keeps the grammar load-time-immutable and lets multiple parsers (or a
+    // recursive sub-parse) share a grammar without state collisions.
     var disambiguation: Disambiguation?
     
     var cell = Cell(name: "", r: 0, c: 0)
@@ -301,21 +299,13 @@ extension GrammarNode {
 
 extension GrammarNode {
     /// Reset per-parse state on this node and every node transitively reachable
-    /// via `.seq` and `.alt`, with cycle detection so we don't loop on the
-    /// known back-pointers (END.seq → bracket, RHS-N.alt → LHS-N, END.alt → ALT).
-    /// Called from `MessageParser.parse()` to reset BSR yields between message
-    /// parses; without this, yields accumulate across messages and Oracle's
-    /// post-parse mutations leak from one parse into the next.
+    /// Walk all reachable grammar nodes from `self` via `.seq` and `.alt`, with
+    /// cycle detection. Since BSR yields moved to `MessageParser.yields`,
+    /// `clearNodes()` no longer touches per-node state — kept for callers that
+    /// still invoke it; reset of `MessageParser.yields` happens at the start
+    /// of `parse()` instead.
     func clearNodes() {
-        var visited = Set<ObjectIdentifier>()
-        clearNodesRecursive(visited: &visited)
-    }
-
-    private func clearNodesRecursive(visited: inout Set<ObjectIdentifier>) {
-        guard visited.insert(ObjectIdentifier(self)).inserted else { return }
-        yield = []
-        seq?.clearNodesRecursive(visited: &visited)
-        alt?.clearNodesRecursive(visited: &visited)
+        // no-op since BSR yields moved to parser-side storage
     }
 }
 

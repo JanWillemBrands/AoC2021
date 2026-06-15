@@ -1,5 +1,17 @@
 # Frankenstein Tokens: Splitting Longest-Match Tokens in GLL Parsing
 
+> **Superseded (Jun 2026).** The Frankenstein mechanism (`~~~` annotation,
+> `Grammar.frankensteinID`, the `≋` sentinel, partial-token prefix matching in
+> `tokenMatch()`, `TokenPosition.charOffset`, and `GrammarNode.content`) has been
+> removed from the codebase. Different-extent token alternatives (the
+> `>>` vs `> >` motivating case) are now expected to be handled either by
+> char-level operator assembly in the grammar itself or — once LCNP Phase B
+> lands — by per-terminal `lex(at:, terminalID:)` queries which return all
+> valid end positions directly.
+>
+> Kept for historical context. See `articles/Multi-Lex Adoption Design.md`
+> §"Mechanisms that LCNP replaces" for the LCNP equivalent.
+
 ## Problem
 
 Scanner use longest match. Scanner see `>>`, scanner make one token. Good for operators.

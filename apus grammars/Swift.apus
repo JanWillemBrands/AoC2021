@@ -27,15 +27,11 @@ comment : /\/\/.*\r?\n?/ .
 
 // SCANNER MODE ANNOTATIONS TO HANDLE NESTED COMMENTS
 
-multilineCommentHead    : "/*" .
-                        === "" >>> "multiline-comment"
-                        === "multiline-comment" >>> "multiline-comment"
-
-multilineCommentText    : /(?s).*?(?=\/\*|\*\/)/ .                      // any character upto but not including */ or /*
-                        === "multiline-comment"
-
-multilineCommentTail    : "*/" .
-                        === "multiline-comment" <<<
+// Nested multiline comment — Phase E Step 2 (Jun 13, 2026).
+// Replaces three scanner-mode terminals + six `===` annotations with a single
+// `=:` non-terminal whose recursive body lets the full GLL machinery handle
+// nesting. Recognised as trivia during `OnDemandLiteralLexer.skipTrivia`.
+multilineComment =: "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineComment } "*/" .
 
 //multilineComment = "/*" multilineCommentText "*/" .
 //multilineCommentText = multilineCommentTextItem multilineCommentText? .
@@ -214,16 +210,15 @@ staticStringLiteral             = singleLineStringLiteral
                                 
 // SCANNER MODE ANNOTATIONS TO HANDLE INTERPOLATED STRING EXPRESSIONS
 
+// Phase E Step 2b (Jun 13, 2026): scanner-mode annotations retired. Under
+// LCNP these terminals are queried per-slot, so the spurious matches that
+// would happen outside an interpolated-string context are never asked for.
 interpolatedStringLiteralHead   - /"(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .                // start with " end with \(
-                                === "" >>> "string-interpolation"
-                                === "inside-parentheses" >>> "string-interpolation"
 
 interpolatedStringLiteralPart   - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .               // start with ) end with \(
-                                === "string-interpolation"
 
 interpolatedStringLiteralTail   - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ .        // start with ) end with " and not containing any \(
 //interpolatedStringLiteralTail   - /(?!.*\\\()\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?"/ .        // start with ) end with " and not containing any \(
-                                === "string-interpolation" <<<
                                 
 interpolatedStringLiteral       = interpolatedStringLiteralHead
                                   functionCallArgumentList { interpolatedStringLiteralPart functionCallArgumentList }
@@ -382,7 +377,7 @@ integerLiteral = hexadecimalLiteral .
 // inter-token whitespace).  Lets `>>` be either one 2-char operator OR two
 // `>` tokens (closing nested generic args) — the surrounding context picks.
 // Goals:
-//   - Replace Frankenstein `~~~` on `>` in generic-close clauses
+//   - Handle `>` in generic-close clauses via char-level operator assembly
 //   - Close Bucket B (operator-trailing-`/` + regex), e.g. `^^/regex/`
 // ASCII only for now; Unicode operator ranges (TSPL Sm/So/Mn) to be added
 // in a follow-up.  The old rules above are kept as comment until this design is proven,
@@ -618,21 +613,11 @@ captureListItems = captureListItem | captureListItem "," captureListItems .
 captureListItem = captureSpecifier? identifier .
 captureListItem = captureSpecifier? identifier "=" expression .
 captureListItem = captureSpecifier? selfExpression .
-captureSpecifier = "weak" | "unowned" | "unowned" "(" "safe" ")" | "unowned" "(" "unsafe" ")" . // TODO: no space allowed before "(" here
+captureSpecifier = "weak" | "unowned" | "unowned" >s< "(" "safe" ")" | "unowned" >s< "(" "unsafe" ")" . // TODO: verify no space allowed before "("
 
 implicitMemberExpression = "." softIdentifier .                         // allows e.g. '.public'
 implicitMemberExpression = "." softIdentifier "." postfixExpression .
 
-// SCANNER MODE ANNOTATIONS TO HANDLE NESTED PARENTHESES INSIDE STRING INTERPOLATION
-
-leftParenthesis     - "(" .
-                    === "" >>> "inside-parentheses"
-                    === "inside-parentheses" >>> "inside-parentheses"
-                    === "string-interpolation" >>> "inside-parentheses"
-
-rightParenthesis    - ")" .
-                    === "inside-parentheses" <<<
-                    
 parenthesizedExpression = "(" expression ")" .
 
 tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ","? ")" .
@@ -641,11 +626,9 @@ tupleElement = expression | softIdentifier ":" expression .
 
 wildcardExpression = "_" .
 
-//macroExpansionExpression = "#" identifier genericArgumentClause? functionCallArgumentClause? trailingClosures? .
-macroIdentifier             - /#\p{XID_Start}\p{XID_Continue}*/ .
-macroExpansionExpression    = macroIdentifier genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+macroExpansionExpression = "#" >s< identifier genericArgumentClause? functionCallArgumentClause? trailingClosures? .
 
-keyPathExpression = "\\" type? "." keyPathComponents .      // escape needed for apus literals, which use Swift string syntax
+keyPathExpression = "\\" type? "." keyPathComponents .      // TODO: escape needed for apus literals, which use Swift string syntax
 //keyPathExpression = "\" type? "." keyPathComponents .
 
 keyPathComponents = keyPathComponent | keyPathComponent "." keyPathComponents .

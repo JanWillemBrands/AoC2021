@@ -1,0 +1,2 @@
+label,sourceLen,tokens,descriptors,duplicateDescriptors,suppressedDescriptors,crfSize,yieldCount,matched,oraclePruned
+regex-after-lparen,15,2,209,1,64,91,156,true,38

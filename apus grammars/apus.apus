@@ -29,7 +29,7 @@ factor      = terminal
             .
 
 terminal    = identifier    [ "---" "(" < literal > ")" ]
-            | literal       [ "~~~" ]
+            | literal
             | regex
             | epsilon | empty
             .
@@ -79,7 +79,7 @@ factor      = terminal
             .
 
 terminal    = identifier    [ "---" "(" < literal > ")" ]
-            | literal       [ "~~~" ]
+            | literal
             | regex
             | epsilon | empty
             .

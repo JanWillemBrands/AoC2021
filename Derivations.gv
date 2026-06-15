@@ -3,69 +3,64 @@ digraph Derivations {
   node [fontname=Menlo, fontsize=10]
   edge [arrowsize=0.5]
   rankdir=TB; ordering=out; labelloc=t
-  label=<topLevelDeclaration = [ statements ] .>
-  n0 [shape=ellipse, width=0, height=0, label=<topLevelDeclaration>]
-  n1 [shape=ellipse, width=0, height=0, label=<statements>]
-  n2 [shape=ellipse, width=0, height=0, label=<statement>]
-  n3 [shape=ellipse, width=0, height=0, label=<expression>]
-  n4 [shape=ellipse, width=0, height=0, label=<prefixExpression>]
-  n5 [shape=ellipse, width=0, height=0, label=<postfixExpression>]
-  n6 [shape=ellipse, width=0, height=0, label=<primaryExpression>]
-  n7 [shape=ellipse, width=0, height=0, label=<identifier>]
-  n8 [shape=box, width=0, height=0, label=<Array>]
-  n7 -> n8
+  label=<production = "identifier" "":-"" selection ""."" .>
+  n0 [shape=ellipse, width=0, height=0, label=<production>]
+  n1 [shape=box, width=0, height=0, label=<comment>]
+  n0 -> n1
+  n2 [shape=box, width=0, height=0, label=<:->]
+  n0 -> n2
+  n3 [shape=ellipse, width=0, height=0, label=<selection>]
+  n4 [shape=ellipse, width=0, height=0, label=<sequence>]
+  n5 [shape=ellipse, width=0, height=0, label=<factor>]
+  n6 [shape=ellipse, width=0, height=0, label=<terminal>]
+  n7 [shape=box, width=0, height=0, label=<"/*">]
   n6 -> n7
-  n9 [shape=ellipse, width=0, height=0, label=<genericArgumentClause>]
-  n10 [shape=box, width=0, height=0, label=<&lt;>]
-  n9 -> n10
-  n11 [shape=ellipse, width=0, height=0, label=<genericArgumentList>]
-  n12 [shape=ellipse, width=0, height=0, label=<genericArgument>]
-  n13 [shape=ellipse, width=0, height=0, label=<type>]
-  n14 [shape=ellipse, width=0, height=0, label=<typeIdentifier>]
-  n15 [shape=ellipse, width=0, height=0, label=<typeName>]
-  n16 [shape=ellipse, width=0, height=0, label=<identifier>]
-  n17 [shape=box, width=0, height=0, label=<Array>]
-  n16 -> n17
-  n15 -> n16
-  n14 -> n15
-  n18 [shape=ellipse, width=0, height=0, label=<genericArgumentClause>]
-  n19 [shape=box, width=0, height=0, label=<&lt;>]
-  n18 -> n19
-  n20 [shape=ellipse, width=0, height=0, label=<genericArgumentList>]
-  n21 [shape=ellipse, width=0, height=0, label=<genericArgument>]
-  n22 [shape=ellipse, width=0, height=0, label=<type>]
-  n23 [shape=ellipse, width=0, height=0, label=<typeIdentifier>]
-  n24 [shape=ellipse, width=0, height=0, label=<typeName>]
-  n25 [shape=ellipse, width=0, height=0, label=<identifier>]
-  n26 [shape=box, width=0, height=0, label=<Int>]
-  n25 -> n26
-  n24 -> n25
-  n23 -> n24
-  n22 -> n23
-  n21 -> n22
-  n20 -> n21
-  n18 -> n20
-  n27 [shape=box, width=0, height=0, label=<&gt;>]
-  n18 -> n27
-  n14 -> n18
+  n5 -> n6
+  n4 -> n5
+  n8 [shape=ellipse, width=0, height=0, label=<factor>]
+  n9 [shape=box, width=0, height=0, label=<{>]
+  n8 -> n9
+  n10 [shape=ellipse, width=0, height=0, label=<selection>]
+  n11 [shape=ellipse, width=0, height=0, label=<sequence>]
+  n12 [shape=ellipse, width=0, height=0, label=<factor>]
+  n13 [shape=ellipse, width=0, height=0, label=<terminal>]
+  n14 [shape=box, width=0, height=0, label=</(?:(?!\/\*|\*\/)[\s\S])+/>]
   n13 -> n14
   n12 -> n13
   n11 -> n12
-  n9 -> n11
-  n28 [shape=box, width=0, height=0, label=<&gt;>]
-  n9 -> n28
-  n6 -> n9
-  n5 -> n6
-  n4 -> n5
+  n10 -> n11
+  n15 [shape=box, width=0, height=0, label=<|>]
+  n10 -> n15
+  n16 [shape=ellipse, width=0, height=0, label=<sequence>]
+  n17 [shape=ellipse, width=0, height=0, label=<factor>]
+  n18 [shape=ellipse, width=0, height=0, label=<terminal>]
+  n19 [shape=box, width=0, height=0, label=<comment>]
+  n18 -> n19
+  n17 -> n18
+  n16 -> n17
+  n10 -> n16
+  n8 -> n10
+  n20 [shape=box, width=0, height=0, label=<}>]
+  n8 -> n20
+  n4 -> n8
+  n21 [shape=ellipse, width=0, height=0, label=<factor>]
+  n22 [shape=ellipse, width=0, height=0, label=<terminal>]
+  n23 [shape=box, width=0, height=0, label=<"*/">]
+  n22 -> n23
+  n21 -> n22
+  n4 -> n21
   n3 -> n4
-  n2 -> n3
-  n1 -> n2
-  n0 -> n1
-  { rank=same; n8; n10; n17; n19; n26; n27; n28 }
-  n8 -> n10 [style=invis]
-  n10 -> n17 [style=invis]
-  n17 -> n19 [style=invis]
-  n19 -> n26 [style=invis]
-  n26 -> n27 [style=invis]
-  n27 -> n28 [style=invis]
+  n0 -> n3
+  n24 [shape=box, width=0, height=0, label=<.>]
+  n0 -> n24
+  { rank=same; n1; n2; n7; n9; n14; n15; n19; n20; n23; n24 }
+  n1 -> n2 [style=invis]
+  n2 -> n7 [style=invis]
+  n7 -> n9 [style=invis]
+  n9 -> n14 [style=invis]
+  n14 -> n15 [style=invis]
+  n15 -> n19 [style=invis]
+  n19 -> n20 [style=invis]
+  n20 -> n23 [style=invis]
+  n23 -> n24 [style=invis]
 }

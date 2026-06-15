@@ -18,7 +18,8 @@ let enableDiagrams = true
 
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-    .appendingPathComponent("apus grammars/Swift")
+    .appendingPathComponent("apus grammars/charGLL")
+//    .appendingPathComponent("apus grammars/Swift")
 //    .appendingPathComponent("apus grammars/layout")
 //    .appendingPathComponent("apus grammars/apus")
 //    .appendingPathComponent("grammars/Python/Python")
@@ -95,7 +96,7 @@ for (mi, message) in grammar.messages.enumerated() {
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
 
     // Oracle: post-parse disambiguation (rules from grammar annotations)
-    Oracle(grammar: grammar, tokens: messageScanner.tokens).disambiguate()
+    Oracle(parser: messageParser, tokens: messageScanner.tokens, input: messageScanner.input).disambiguate()
     var stats = "cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount\n"
     stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yieldCount)\n"
     stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
@@ -177,7 +178,7 @@ for (mi, message) in grammar.messages.enumerated() {
 //    }
 
         // MARK: - Generate SPPF Diagram
-        let sppfExtractor = SPPFExtractor(grammar: grammar, tokens: messageScanner.tokens)
+        let sppfExtractor = SPPFExtractor(parser: messageParser, tokens: messageScanner.tokens, input: messageScanner.input)
 
         if let sppfRoot = sppfExtractor.extractSPPF() {
             let sppfFile = URL(fileURLWithPath: #filePath)
@@ -195,7 +196,7 @@ for (mi, message) in grammar.messages.enumerated() {
             .deletingLastPathComponent()
             .appendingPathComponent("Derivations")
             .appendingPathExtension("gv")
-        try generateDerivationDiagram(outputFile: derivFile, grammar: grammar, tokens: messageScanner.tokens)
+        try generateDerivationDiagram(outputFile: derivFile, parser: messageParser, tokens: messageScanner.tokens, input: messageScanner.input)
         info += "Derivation diagram written to \(derivFile.lastPathComponent)\n"
 
         Logger.ui.info("\(info, privacy: .public)")

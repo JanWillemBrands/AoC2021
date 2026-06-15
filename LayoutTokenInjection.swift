@@ -19,6 +19,87 @@
 
 import OSLog
 
+/// Phase G (Jun 14, 2026): parser-side variant of `injectLayoutTokens`.
+///
+/// Walks the scanner-produced token stream once and returns a
+/// `[CharPosition: [kindID]]` table of zero-length synthetic tokens
+/// (`>>|` / `|<<`) keyed by the source position where each fires. Used by
+/// `OnDemandLiteralLexer.lex` to answer `INDENT`/`DEDENT` queries on-demand
+/// without mutating the scanner's `tokens[]`.
+///
+/// The algorithm mirrors `injectLayoutTokens` exactly: track an indent stack
+/// and bracket depth, compare line columns, emit `>>|` on indent and `|<<`
+/// on each dedent level closed. Multiple dedents at the same position become
+/// a multi-element value in the table.
+///
+/// Gating: caller is responsible for checking `grammar.usesInjectedLayoutTokens`
+/// before invoking this. With the flag off the parser allocates nothing.
+func computeVirtualLayoutTokens(
+    tokens: [Token],
+    input: String,
+    indentKindID: Int,
+    dedentKindID: Int,
+    tabWidth: Int = 8,
+    bracketPairs: [(open: String, close: String)] = []
+) -> [CharPosition: [Int]] {
+    var result: [CharPosition: [Int]] = [:]
+    let openers = Set(bracketPairs.map(\.open))
+    let closers = Set(bracketPairs.map(\.close))
+
+    var indentStack: [Int] = [0]
+    var bracketDepth = 0
+
+    for i in tokens.indices {
+        let tok = tokens[i]
+
+        if openers.contains(tok.kind) { bracketDepth += 1 }
+        if closers.contains(tok.kind), bracketDepth > 0 { bracketDepth -= 1 }
+
+        if tok.kind == "○" {
+            while indentStack.count > 1 {
+                indentStack.removeLast()
+                result[tok.image.startIndex, default: []].append(dedentKindID)
+            }
+            continue
+        }
+
+        let isNewlineToken = !tok.image.isEmpty && tok.image.allSatisfy { $0 == "\n" || $0 == "\r" }
+        if isNewlineToken { continue }
+
+        let lineBreaks: Int
+        if i == 0 {
+            lineBreaks = 1
+        } else {
+            let span = input[tokens[i - 1].image.startIndex..<tok.image.startIndex]
+            var breaks = 0
+            var prevWasCR = false
+            for ch in span {
+                let isCR = ch == "\r"
+                let isLF = ch == "\n"
+                if isCR || (isLF && !prevWasCR) { breaks += 1 }
+                prevWasCR = isCR
+            }
+            lineBreaks = breaks
+        }
+
+        if lineBreaks > 0 && bracketDepth == 0 {
+            let col = input.columnOf(tok.image.startIndex, tabWidth: tabWidth)
+            let insertionPoint = tok.image.startIndex
+            if col > indentStack.last! {
+                indentStack.append(col)
+                result[insertionPoint, default: []].append(indentKindID)
+            } else {
+                while indentStack.count > 1 && col < indentStack.last! {
+                    indentStack.removeLast()
+                    result[insertionPoint, default: []].append(dedentKindID)
+                }
+            }
+        }
+    }
+
+    return result
+}
+
 func injectLayoutTokens(
     tokens: inout [Token],
     trivia: inout [[Token]],

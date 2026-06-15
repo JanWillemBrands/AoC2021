@@ -5,80 +5,135 @@ digraph SPPF {
   edge [arrowsize = 0.4]
   rankdir = "TB"
   ordering = out
-  n0 [shape = box, style = rounded, width=0.0, height=0.0, label = <topLevelDeclaration,0,7>]
-  n1 [shape = rectangle, width=0.0, height=0.0, label = "topLevelDeclaration=[statements]·,0"]
-  n2 [shape = rectangle, width=0.0, height=0.0, label = <topLevelDeclaration=[statements·],0,7>]
-  n3 [shape = rectangle, width=0.0, height=0.0, label = "topLevelDeclaration=[statements·],0"]
-  n4 [shape = box, style = rounded, width=0.0, height=0.0, label = <statements,0,7>]
-  n5 [shape = rectangle, width=0.0, height=0.0, label = "statements=statement[";"]·,7"]
-  n6 [shape = rectangle, width=0.0, height=0.0, label = <statements=statement[";"·],7,7>]
-  n7 [shape = box, style = rounded, width=0.0, height=0.0, label = <statement,0,7>]
-  n8 [shape = rectangle, width=0.0, height=0.0, label = "statements=statement[";"·],7"]
-  n9 [shape = rectangle, width=0.0, height=0.0, label = "statement=expression·,0"]
-  n10 [shape = box, style = "rounded, dashed", width=0.0, height=0.0, label = <ε,7,7>]
-  n11 [shape = box, style = rounded, width=0.0, height=0.0, label = <expression,0,7>]
-  n12 [shape = rectangle, width=0.0, height=0.0, label = "expression=[tryOperator][awaitOperator]prefixExpression[infixExpressions]·,7"]
-  n13 [shape = rectangle, width=0.0, height=0.0, label = <expression=[tryOperator][awaitOperator]prefixExpression[infixExpressions·],7,7>]
-  n14 [shape = rectangle, width=0.0, height=0.0, label = <expression=[tryOperator][awaitOperator]prefixExpression·[infixExpressions],0,7>]
-  n15 [shape = rectangle, width=0.0, height=0.0, label = "expression=[tryOperator][awaitOperator]prefixExpression[infixExpressions·],7"]
-  n16 [shape = rectangle, width=0.0, height=0.0, label = "expression=[tryOperator][awaitOperator]prefixExpression·[infixExpressions],0"]
-  n17 [shape = box, style = rounded, width=0.0, height=0.0, label = <prefixExpression,0,7>]
-  n18 [shape = rectangle, width=0.0, height=0.0, label = <expression=[tryOperator][awaitOperator]·prefixExpression[infixExpressions],0,0>]
-  n19 [shape = rectangle, width=0.0, height=0.0, label = "prefixExpression=[prefixOperator]postfixExpression·,0"]
-  n20 [shape = rectangle, width=0.0, height=0.0, label = "expression=[tryOperator][awaitOperator]·prefixExpression[infixExpressions],0"]
-  n21 [shape = box, style = rounded, width=0.0, height=0.0, label = <postfixExpression,0,7>]
-  n22 [shape = rectangle, width=0.0, height=0.0, label = <prefixExpression=[prefixOperator·]postfixExpression,0,0>]
-  n23 [shape = rectangle, width=0.0, height=0.0, label = <expression=[tryOperator·][awaitOperator]prefixExpression[infixExpressions],0,0>]
-  n24 [shape = rectangle, width=0.0, height=0.0, label = "postfixExpression=primaryExpression·,0"]
-  n25 [shape = rectangle, width=0.0, height=0.0, label = "prefixExpression=[prefixOperator·]postfixExpression,0"]
-  n26 [shape = rectangle, width=0.0, height=0.0, label = "expression=[tryOperator·][awaitOperator]prefixExpression[infixExpressions],0"]
-  n27 [shape = box, style = rounded, width=0.0, height=0.0, label = <primaryExpression,0,7>]
-  n28 [shape = box, style = "rounded, dashed", width=0.0, height=0.0, label = <ε,0,0>]
-  n29 [shape = rectangle, width=0.0, height=0.0, label = "primaryExpression=identifiergenericArgumentClause·,1"]
-  n30 [shape = box, style = rounded, width=0.0, height=0.0, label = <genericArgumentClause,1,7>]
-  n31 [shape = box, style = rounded, width=0.0, height=0.0, label = <identifier,0,1>]
-  n32 [shape = rectangle, width=0.0, height=0.0, label = "genericArgumentClause="&lt;"genericArgumentList[","]"&gt;"·,6"]
-  n33 [shape = rectangle, width=0.0, height=0.0, label = "identifier=rawIdentifier·,0"]
-  n34 [shape = box, style = rounded, width=0.0, height=0.0, label = <""&gt;"",6,7>]
-  n35 [shape = rectangle, width=0.0, height=0.0, label = <genericArgumentClause="&lt;"genericArgumentList[","]·"&gt;",1,6>]
-  n36 [shape = box, style = rounded, width=0.0, height=0.0, label = <"rawIdentifier",0,1>]
+  n0 [shape = box, style = rounded, width=0.0, height=0.0, label = <production,0[any],Optional(70[utf8])>]
+  n1 [shape = rectangle, width=0.0, height=0.0, label = "production=identifier":-"selection"."·,67[utf8]"]
+  n2 [shape = box, style = rounded, width=0.0, height=0.0, label = <""."",67[utf8],Optional(70[utf8])>]
+  n3 [shape = rectangle, width=0.0, height=0.0, label = <production=identifier":-"selection·".",0[any],Optional(67[utf8])>]
+  n4 [shape = rectangle, width=0.0, height=0.0, label = "production=identifier":-"selection·".",16[utf8]"]
+  n5 [shape = box, style = rounded, width=0.0, height=0.0, label = <selection,16[utf8],Optional(67[utf8])>]
+  n6 [shape = rectangle, width=0.0, height=0.0, label = <production=identifier":-"·selection".",0[any],Optional(16[utf8])>]
+  n7 [shape = rectangle, width=0.0, height=0.0, label = "selection=sequence{"|"sequence}·,67[utf8]"]
+  n8 [shape = rectangle, width=0.0, height=0.0, label = "production=identifier":-"·selection".",13[utf8]"]
+  n9 [shape = rectangle, width=0.0, height=0.0, label = <selection=sequence{"|"sequence·},67[utf8],Optional(67[utf8])>]
+  n10 [shape = box, style = rounded, width=0.0, height=0.0, label = <sequence,16[utf8],Optional(67[utf8])>]
+  n11 [shape = box, style = rounded, width=0.0, height=0.0, label = <"":-"",13[utf8],Optional(16[utf8])>]
+  n12 [shape = box, style = rounded, width=0.0, height=0.0, label = <"identifier",0[any],Optional(13[utf8])>]
+  n13 [shape = rectangle, width=0.0, height=0.0, label = "selection=sequence{"|"sequence·},67[utf8]"]
+  n14 [shape = rectangle, width=0.0, height=0.0, label = "sequence=&lt;factor&gt;·,16[utf8]"]
+  n15 [shape = box, style = "rounded, dashed", width=0.0, height=0.0, label = <ε,67[utf8],Optional(67[utf8])>]
+  n16 [shape = rectangle, width=0.0, height=0.0, label = <sequence=&lt;factor·&gt;,16[utf8],Optional(67[utf8])>]
+  n17 [shape = rectangle, width=0.0, height=0.0, label = "sequence=&lt;factor·&gt;,62[utf8]"]
+  n18 [shape = box, style = rounded, width=0.0, height=0.0, label = <factor,62[utf8],Optional(67[utf8])>]
+  n19 [shape = rectangle, width=0.0, height=0.0, label = <sequence=&lt;factor·&gt;,16[utf8],Optional(62[utf8])>]
+  n20 [shape = rectangle, width=0.0, height=0.0, label = "factor=terminal·,62[utf8]"]
+  n21 [shape = rectangle, width=0.0, height=0.0, label = "sequence=&lt;factor·&gt;,21[utf8]"]
+  n22 [shape = box, style = rounded, width=0.0, height=0.0, label = <terminal,62[utf8],Optional(67[utf8])>]
+  n23 [shape = box, style = rounded, width=0.0, height=0.0, label = <factor,21[utf8],Optional(62[utf8])>]
+  n24 [shape = rectangle, width=0.0, height=0.0, label = <sequence=&lt;factor·&gt;,16[utf8],Optional(21[utf8])>]
+  n25 [shape = rectangle, width=0.0, height=0.0, label = "terminal=literal·,62[utf8]"]
+  n26 [shape = rectangle, width=0.0, height=0.0, label = "factor="{"selection"}"·,60[utf8]"]
+  n27 [shape = rectangle, width=0.0, height=0.0, label = "sequence=&lt;factor·&gt;,16[utf8]"]
+  n28 [shape = box, style = rounded, width=0.0, height=0.0, label = <"literal",62[utf8],Optional(67[utf8])>]
+  n29 [shape = box, style = rounded, width=0.0, height=0.0, label = <""}"",60[utf8],Optional(62[utf8])>]
+  n30 [shape = rectangle, width=0.0, height=0.0, label = <factor="{"selection·"}",21[utf8],Optional(60[utf8])>]
+  n31 [shape = box, style = rounded, width=0.0, height=0.0, label = <factor,16[utf8],Optional(21[utf8])>]
+  n32 [shape = rectangle, width=0.0, height=0.0, label = "factor="{"selection·"}",23[utf8]"]
+  n33 [shape = rectangle, width=0.0, height=0.0, label = "factor=terminal·,16[utf8]"]
+  n34 [shape = box, style = rounded, width=0.0, height=0.0, label = <selection,23[utf8],Optional(60[utf8])>]
+  n35 [shape = box, style = rounded, width=0.0, height=0.0, label = <""{"",21[utf8],Optional(23[utf8])>]
+  n36 [shape = box, style = rounded, width=0.0, height=0.0, label = <terminal,16[utf8],Optional(21[utf8])>]
+  n37 [shape = rectangle, width=0.0, height=0.0, label = "selection=sequence{"|"sequence}·,50[utf8]"]
+  n38 [shape = rectangle, width=0.0, height=0.0, label = "selection=sequence{"|"sequence}·,60[utf8]"]
+  n39 [shape = rectangle, width=0.0, height=0.0, label = "terminal=literal·,16[utf8]"]
+  n40 [shape = rectangle, width=0.0, height=0.0, label = <selection=sequence{"|"sequence·},50[utf8],Optional(60[utf8])>]
+  n41 [shape = box, style = rounded, width=0.0, height=0.0, label = <sequence,23[utf8],Optional(50[utf8])>]
+  n42 [shape = rectangle, width=0.0, height=0.0, label = <selection=sequence{"|"sequence·},60[utf8],Optional(60[utf8])>]
+  n43 [shape = box, style = rounded, width=0.0, height=0.0, label = <sequence,23[utf8],Optional(60[utf8])>]
+  n44 [shape = box, style = rounded, width=0.0, height=0.0, label = <"literal",16[utf8],Optional(21[utf8])>]
+  n45 [shape = rectangle, width=0.0, height=0.0, label = "selection=sequence{"|"sequence·},52[utf8]"]
+  n46 [shape = rectangle, width=0.0, height=0.0, label = "sequence=&lt;factor&gt;·,23[utf8]"]
+  n47 [shape = rectangle, width=0.0, height=0.0, label = "selection=sequence{"|"sequence·},60[utf8]"]
+  n48 [shape = box, style = rounded, width=0.0, height=0.0, label = <sequence,52[utf8],Optional(60[utf8])>]
+  n49 [shape = box, style = rounded, width=0.0, height=0.0, label = <""|"",50[utf8],Optional(52[utf8])>]
+  n50 [shape = rectangle, width=0.0, height=0.0, label = <sequence=&lt;factor·&gt;,23[utf8],Optional(50[utf8])>]
+  n51 [shape = box, style = "rounded, dashed", width=0.0, height=0.0, label = <ε,60[utf8],Optional(60[utf8])>]
+  n52 [shape = rectangle, width=0.0, height=0.0, label = "sequence=&lt;factor&gt;·,52[utf8]"]
+  n53 [shape = rectangle, width=0.0, height=0.0, label = "sequence=&lt;factor·&gt;,23[utf8]"]
+  n54 [shape = rectangle, width=0.0, height=0.0, label = <sequence=&lt;factor·&gt;,52[utf8],Optional(60[utf8])>]
+  n55 [shape = box, style = rounded, width=0.0, height=0.0, label = <factor,23[utf8],Optional(50[utf8])>]
+  n56 [shape = rectangle, width=0.0, height=0.0, label = "sequence=&lt;factor·&gt;,52[utf8]"]
+  n57 [shape = rectangle, width=0.0, height=0.0, label = "factor=terminal·,23[utf8]"]
+  n58 [shape = box, style = rounded, width=0.0, height=0.0, label = <factor,52[utf8],Optional(60[utf8])>]
+  n59 [shape = box, style = rounded, width=0.0, height=0.0, label = <terminal,23[utf8],Optional(50[utf8])>]
+  n60 [shape = rectangle, width=0.0, height=0.0, label = "factor=terminal·,52[utf8]"]
+  n61 [shape = rectangle, width=0.0, height=0.0, label = "terminal=regex·,23[utf8]"]
+  n62 [shape = box, style = rounded, width=0.0, height=0.0, label = <terminal,52[utf8],Optional(60[utf8])>]
+  n63 [shape = box, style = rounded, width=0.0, height=0.0, label = <"regex",23[utf8],Optional(50[utf8])>]
+  n64 [shape = rectangle, width=0.0, height=0.0, label = "terminal=identifier·,52[utf8]"]
+  n65 [shape = box, style = rounded, width=0.0, height=0.0, label = <"identifier",52[utf8],Optional(60[utf8])>]
   n0 -> n1
+  n1 -> n3
   n1 -> n2
-  n2 -> n3
   n3 -> n4
+  n4 -> n6
   n4 -> n5
   n5 -> n7
-  n5 -> n6
   n6 -> n8
+  n7 -> n10
   n7 -> n9
-  n8 -> n10
-  n9 -> n11
-  n11 -> n12
-  n12 -> n14
-  n12 -> n13
+  n8 -> n12
+  n8 -> n11
+  n9 -> n13
+  n10 -> n14
   n13 -> n15
   n14 -> n16
-  n15 -> n10
   n16 -> n17
-  n16 -> n18
   n17 -> n19
+  n17 -> n18
   n18 -> n20
   n19 -> n21
-  n19 -> n22
-  n20 -> n18
-  n20 -> n23
+  n20 -> n22
   n21 -> n24
+  n21 -> n23
   n22 -> n25
   n23 -> n26
   n24 -> n27
   n25 -> n28
-  n26 -> n28
-  n27 -> n29
-  n29 -> n31
-  n29 -> n30
+  n26 -> n30
+  n26 -> n29
+  n27 -> n31
   n30 -> n32
   n31 -> n33
   n32 -> n35
   n32 -> n34
   n33 -> n36
+  n34 -> n37
+  n34 -> n38
+  n36 -> n39
+  n37 -> n41
+  n37 -> n40
+  n38 -> n43
+  n38 -> n42
+  n39 -> n44
+  n40 -> n45
+  n41 -> n46
+  n42 -> n47
+  n45 -> n49
+  n45 -> n48
+  n46 -> n50
+  n47 -> n51
+  n48 -> n52
+  n50 -> n53
+  n52 -> n54
+  n53 -> n55
+  n54 -> n56
+  n55 -> n57
+  n56 -> n58
+  n57 -> n59
+  n58 -> n60
+  n59 -> n61
+  n60 -> n62
+  n61 -> n63
+  n62 -> n64
+  n64 -> n65
 }

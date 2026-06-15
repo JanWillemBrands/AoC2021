@@ -14,25 +14,30 @@ import SwiftParser
 // MARK: - SwiftSyntax Tree Generator
 
 struct SwiftSyntaxGenerator {
+    let parser: MessageParser
     let grammar: Grammar
     let tokens: [Token]
+    let input: String
 
-    private var endCache = [NodePos: Set<TokenPosition>]()
+    private var endCache = [NodePos: Set<CharPosition>]()
     private var endGuard = Set<NodePos>()
 
-    private struct NodePos: Hashable { let id: ObjectIdentifier; let from: TokenPosition }
+    private struct NodePos: Hashable { let id: ObjectIdentifier; let from: CharPosition }
 
-    init(grammar: Grammar, tokens: [Token]) {
-        self.grammar = grammar
+    init(parser: MessageParser, tokens: [Token], input: String) {
+        self.parser = parser
+        self.grammar = parser.grammar
         self.tokens = tokens
+        self.input = input
     }
 
     mutating func generate() -> SourceFileSyntax? {
-        let n = TokenPosition(token: tokens.count - 1)
-        guard grammar.root.yield.contains(where: { $0.i == .zero && $0.j == n }) else {
+        let n = input.endIndex
+        let origin = input.startIndex
+        guard parser.yield(of: grammar.root).contains(where: { $0.i == origin && $0.j == n }) else {
             return nil
         }
-        let items = convertNonterminal(grammar.root, from: .zero, to: n)
+        let items = convertNonterminal(grammar.root, from: origin, to: n)
         return SourceFileSyntax(
             statements: CodeBlockItemListSyntax(items.map { CodeBlockItemSyntax(item: $0) }),
             endOfFileToken: .endOfFileToken()
@@ -41,30 +46,30 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - BSR Navigation (decoupled from DerivationBuilder)
 
-    private mutating func endPositions(_ sym: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
+    private mutating func endPositions(_ sym: GrammarNode, from: CharPosition) -> Set<CharPosition> {
         let key = NodePos(id: ObjectIdentifier(sym), from: from)
         if let cached = endCache[key] { return cached }
         guard endGuard.insert(key).inserted else { return [] }
         defer { endGuard.remove(key) }
 
-        let result: Set<TokenPosition>
+        let result: Set<CharPosition>
         switch sym.kind {
         case .T, .TI, .C, .B:
-            result = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
+            result = Set(parser.yield(of: sym).lazy.filter { $0.k == from }.map(\.j))
         case .N:
             if sym.isRHS {
                 guard let lhs = sym.alt else { return [] }
-                let occurrenceEnds = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
-                let lhsEnds = Set(lhs.yield.lazy.filter { $0.i == from }.map(\.j))
+                let occurrenceEnds = Set(parser.yield(of: sym).lazy.filter { $0.k == from }.map(\.j))
+                let lhsEnds = Set(parser.yield(of: lhs).lazy.filter { $0.i == from }.map(\.j))
                 result = occurrenceEnds.intersection(lhsEnds)
             } else {
-                result = Set(sym.yield.lazy.filter { $0.i == from }.map(\.j))
+                result = Set(parser.yield(of: sym).lazy.filter { $0.i == from }.map(\.j))
             }
         case .DO, .OPT, .KLN, .POS:
-            var positions = Set<TokenPosition>()
+            var positions = Set<CharPosition>()
             if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }
             if sym.kind.isClosure {
-                var visited = Set<TokenPosition>()
+                var visited = Set<CharPosition>()
                 var queue = [from]
                 var index = 0
                 while index < queue.count {
@@ -89,11 +94,11 @@ struct SwiftSyntaxGenerator {
         return result
     }
 
-    private mutating func iterationEndPositions(_ bracket: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
-        var positions = Set<TokenPosition>()
+    private mutating func iterationEndPositions(_ bracket: GrammarNode, from: CharPosition) -> Set<CharPosition> {
+        var positions = Set<CharPosition>()
         var alt = bracket.alt
         while let a = alt {
-            var frontier: Set<TokenPosition> = [from]
+            var frontier: Set<CharPosition> = [from]
             var consumedSymbol = false
             for sym in a.bodySymbols where sym.kind != .EPS {
                 consumedSymbol = true
@@ -108,7 +113,7 @@ struct SwiftSyntaxGenerator {
 
     /// Find the single matching alternate and tile its body over [from..to].
     /// Relies on the Oracle postcondition: exactly one alternate matches.
-    private mutating func tileAlternate(_ node: GrammarNode, from: TokenPosition, to: TokenPosition) -> (alt: GrammarNode, spans: [(GrammarNode, TokenPosition, TokenPosition)])? {
+    private mutating func tileAlternate(_ node: GrammarNode, from: CharPosition, to: CharPosition) -> (alt: GrammarNode, spans: [(GrammarNode, CharPosition, CharPosition)])? {
         var alt = node.alt
         while let a = alt {
             defer { alt = a.alt }
@@ -119,12 +124,12 @@ struct SwiftSyntaxGenerator {
         return nil
     }
 
-    private mutating func tileBody(_ symbols: [GrammarNode], from: TokenPosition, to: TokenPosition) -> [(GrammarNode, TokenPosition, TokenPosition)]? {
-        var spans: [(GrammarNode, TokenPosition, TokenPosition)] = []
+    private mutating func tileBody(_ symbols: [GrammarNode], from: CharPosition, to: CharPosition) -> [(GrammarNode, CharPosition, CharPosition)]? {
+        var spans: [(GrammarNode, CharPosition, CharPosition)] = []
         return tileBody(symbols, index: 0, from: from, to: to, into: &spans) ? spans : nil
     }
 
-    private mutating func tileBody(_ symbols: [GrammarNode], index: Int, from: TokenPosition, to: TokenPosition, into spans: inout [(GrammarNode, TokenPosition, TokenPosition)]) -> Bool {
+    private mutating func tileBody(_ symbols: [GrammarNode], index: Int, from: CharPosition, to: CharPosition, into spans: inout [(GrammarNode, CharPosition, CharPosition)]) -> Bool {
         guard index < symbols.count else { return from == to }
         let symbol = symbols[index]
         if symbol.kind == .EPS {
@@ -147,15 +152,16 @@ struct SwiftSyntaxGenerator {
     }
 
     /// Get token text at a position.
-    private func tokenText(at pos: TokenPosition) -> String {
-        guard tokens.indices.contains(pos.tokenIndex) else { return "" }
-        return String(tokens[pos.tokenIndex].image)
+    private func tokenText(at pos: CharPosition) -> String {
+        let idx = pos.tokenIndex(in: tokens, input: input)
+        guard tokens.indices.contains(idx) else { return "" }
+        return String(tokens[idx].image)
     }
 
     // MARK: - Top-level dispatch
 
     /// Convert a nonterminal spanning [from..to] into CodeBlockItem elements.
-    private mutating func convertNonterminal(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> [CodeBlockItemSyntax.Item] {
+    private mutating func convertNonterminal(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax.Item] {
         let lhsNode = nt.kind == .N && nt.seq == nil ? nt : lhs(nt) ?? nt
         switch lhsNode.name {
         case "topLevelDeclaration":
@@ -167,7 +173,7 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - Statements
 
-    private mutating func convertTopLevelDeclaration(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> [CodeBlockItemSyntax.Item] {
+    private mutating func convertTopLevelDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax.Item] {
         // topLevelDeclaration = statements? .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to),
               let stmtsNT = find("statements", in: spans) else { return [] }
@@ -176,13 +182,13 @@ struct SwiftSyntaxGenerator {
 
     private struct NTSpan {
         let nt: GrammarNode
-        let from: TokenPosition
-        let to: TokenPosition
+        let from: CharPosition
+        let to: CharPosition
     }
 
     /// Search through brackets to find a nonterminal by name within a span.
     /// Only digs through brackets (OPT, DO, KLN, POS), NOT through non-matching nonterminals.
-    private mutating func findNonterminal(named name: String, sym: GrammarNode, from: TokenPosition, to: TokenPosition) -> NTSpan? {
+    private mutating func findNonterminal(named name: String, sym: GrammarNode, from: CharPosition, to: CharPosition) -> NTSpan? {
         if from == to && (sym.kind == .OPT || sym.kind == .KLN) { return nil }
         switch sym.kind {
         case .N:
@@ -198,7 +204,7 @@ struct SwiftSyntaxGenerator {
         return nil
     }
 
-    private mutating func find(_ name: String, in spans: [(GrammarNode, TokenPosition, TokenPosition)]) -> NTSpan? {
+    private mutating func find(_ name: String, in spans: [(GrammarNode, CharPosition, CharPosition)]) -> NTSpan? {
         for (sym, from, to) in spans {
             if let found = findNonterminal(named: name, sym: sym, from: from, to: to) {
                 return found
@@ -207,7 +213,7 @@ struct SwiftSyntaxGenerator {
         return nil
     }
 
-    private mutating func convertStatements(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> [CodeBlockItemSyntax.Item] {
+    private mutating func convertStatements(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax.Item] {
         // statements = statement statementSeparator statements? .
         // statements = statement .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return [] }
@@ -222,7 +228,7 @@ struct SwiftSyntaxGenerator {
         return items
     }
 
-    private mutating func convertStatement(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> CodeBlockItemSyntax.Item? {
+    private mutating func convertStatement(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> CodeBlockItemSyntax.Item? {
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return nil }
         if let declNT = find("declaration", in: spans),
            let decl = convertDeclaration(declNT.nt, from: declNT.from, to: declNT.to) {
@@ -236,7 +242,7 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - Declarations
 
-    private mutating func convertDeclaration(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> DeclSyntax? {
+    private mutating func convertDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> DeclSyntax? {
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return nil }
         if let constNT = find("constantDeclaration", in: spans) {
             return DeclSyntax(convertVarLetDecl(constNT.nt, from: constNT.from, to: constNT.to, isLet: true))
@@ -247,7 +253,7 @@ struct SwiftSyntaxGenerator {
         return nil
     }
 
-    private mutating func convertVarLetDecl(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition, isLet: Bool) -> VariableDeclSyntax {
+    private mutating func convertVarLetDecl(_ nt: GrammarNode, from: CharPosition, to: CharPosition, isLet: Bool) -> VariableDeclSyntax {
         // constantDeclaration = attributes? declarationModifiers? "let" patternInitializerList .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             return VariableDeclSyntax(bindingSpecifier: .keyword(isLet ? .let : .var), bindings: [])
@@ -261,7 +267,7 @@ struct SwiftSyntaxGenerator {
         )
     }
 
-    private mutating func convertPatternInitializerList(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> [PatternBindingSyntax] {
+    private mutating func convertPatternInitializerList(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [PatternBindingSyntax] {
         // patternInitializerList = patternInitializer | patternInitializer "," patternInitializerList .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return [] }
         var bindings: [PatternBindingSyntax] = []
@@ -288,7 +294,7 @@ struct SwiftSyntaxGenerator {
         return nil
     }
 
-    private mutating func convertPatternInitializer(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> PatternBindingSyntax {
+    private mutating func convertPatternInitializer(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> PatternBindingSyntax {
         // patternInitializer = bindingPattern initializer? .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             return PatternBindingSyntax(pattern: IdentifierPatternSyntax(identifier: .identifier("?")))
@@ -312,7 +318,7 @@ struct SwiftSyntaxGenerator {
         )
     }
 
-    private mutating func convertBindingPattern(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> (PatternSyntax, TypeAnnotationSyntax?) {
+    private mutating func convertBindingPattern(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> (PatternSyntax, TypeAnnotationSyntax?) {
         // bindingPattern = identifierPattern typeAnnotation? .
         // (also: wildcardPattern typeAnnotation?, tuplePattern typeAnnotation?)
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
@@ -331,7 +337,7 @@ struct SwiftSyntaxGenerator {
         return (pattern, typeAnnotation)
     }
 
-    private mutating func convertTypeAnnotation(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> TypeAnnotationSyntax? {
+    private mutating func convertTypeAnnotation(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> TypeAnnotationSyntax? {
         // typeAnnotation = ":" attributes? "inout"? type .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to),
               let typeNT = find("type", in: spans) else { return nil }
@@ -341,7 +347,7 @@ struct SwiftSyntaxGenerator {
         )
     }
 
-    private mutating func convertInitializer(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> InitializerClauseSyntax? {
+    private mutating func convertInitializer(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> InitializerClauseSyntax? {
         // initializer = "=" expression .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to),
               let exprNT = find("expression", in: spans) else { return nil }
@@ -353,7 +359,7 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - Expressions
 
-    private mutating func convertExpression(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ExprSyntax {
+    private mutating func convertExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         // expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             return ExprSyntax(MissingExprSyntax())
@@ -373,7 +379,7 @@ struct SwiftSyntaxGenerator {
         return operand
     }
 
-    private mutating func flattenInfixExpressions(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition, into elements: inout [ExprSyntax]) {
+    private mutating func flattenInfixExpressions(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into elements: inout [ExprSyntax]) {
         // infixExpressions = infixExpression infixExpressions? .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return }
         for (sym, f, t) in spans {
@@ -386,7 +392,7 @@ struct SwiftSyntaxGenerator {
         }
     }
 
-    private mutating func flattenInfixExpression(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition, into elements: inout [ExprSyntax]) {
+    private mutating func flattenInfixExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into elements: inout [ExprSyntax]) {
         // infixExpression = infixOperator prefixExpression .
         // infixExpression = conditionalOperator .
         // infixExpression = typeCastingOperator .
@@ -410,7 +416,7 @@ struct SwiftSyntaxGenerator {
         }
     }
 
-    private mutating func convertConditionalOperator(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ExprSyntax {
+    private mutating func convertConditionalOperator(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         // conditionalOperator = "?" expression ":" .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             return ExprSyntax(MissingExprSyntax())
@@ -425,7 +431,7 @@ struct SwiftSyntaxGenerator {
         ))
     }
 
-    private mutating func convertTypeCastingOperator(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition, into elements: inout [ExprSyntax]) {
+    private mutating func convertTypeCastingOperator(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into elements: inout [ExprSyntax]) {
         // typeCastingOperator = "is" type .
         // typeCastingOperator = "as" type .
         // typeCastingOperator = "as" "?" type .
@@ -445,7 +451,7 @@ struct SwiftSyntaxGenerator {
         }
     }
 
-    private mutating func convertPrefixExpression(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ExprSyntax {
+    private mutating func convertPrefixExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         // prefixExpression = prefixOperator? postfixExpression .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             return ExprSyntax(MissingExprSyntax())
@@ -478,7 +484,7 @@ struct SwiftSyntaxGenerator {
         return operand
     }
 
-    private mutating func convertPostfixExpression(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ExprSyntax {
+    private mutating func convertPostfixExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         // postfixExpression = primaryExpression postfixOperation* .
         // For Phase 1+2, just dig through to primaryExpression
         guard let (_, spans) = tileAlternate(nt, from: from, to: to),
@@ -488,7 +494,7 @@ struct SwiftSyntaxGenerator {
         return convertPrimaryExpression(primNT.nt, from: primNT.from, to: primNT.to)
     }
 
-    private mutating func convertPrimaryExpression(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ExprSyntax {
+    private mutating func convertPrimaryExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             return ExprSyntax(MissingExprSyntax())
         }
@@ -504,7 +510,7 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - Literals
 
-    private mutating func convertLiteralExpression(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ExprSyntax {
+    private mutating func convertLiteralExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         guard let (_, spans) = tileAlternate(nt, from: from, to: to),
               let litNT = find("literal", in: spans) else {
             return ExprSyntax(MissingExprSyntax())
@@ -512,7 +518,7 @@ struct SwiftSyntaxGenerator {
         return convertLiteral(litNT.nt, from: litNT.from, to: litNT.to)
     }
 
-    private mutating func convertLiteral(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ExprSyntax {
+    private mutating func convertLiteral(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             return ExprSyntax(MissingExprSyntax())
         }
@@ -534,7 +540,7 @@ struct SwiftSyntaxGenerator {
         return ExprSyntax(MissingExprSyntax())
     }
 
-    private mutating func convertNumericLiteral(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ExprSyntax {
+    private mutating func convertNumericLiteral(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         // numericLiteral = signedIntegerLiteral | signedFloatingPointLiteral .
         // For now, collect all terminal text and decide based on content
         let text = collectTerminalText(from: from, to: to)
@@ -544,7 +550,7 @@ struct SwiftSyntaxGenerator {
         return ExprSyntax(IntegerLiteralExprSyntax(literal: .integerLiteral(text)))
     }
 
-    private mutating func convertStringLiteral(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ExprSyntax {
+    private mutating func convertStringLiteral(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         // Collect all text between quotes
         let fullText = collectTerminalText(from: from, to: to)
         // SwiftSyntax models string literals with quote tokens and segment lists.
@@ -573,7 +579,7 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - Types
 
-    private mutating func convertType(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> TypeSyntax {
+    private mutating func convertType(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> TypeSyntax {
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             return TypeSyntax(MissingTypeSyntax())
         }
@@ -587,12 +593,12 @@ struct SwiftSyntaxGenerator {
         return TypeSyntax(IdentifierTypeSyntax(name: .identifier(text)))
     }
 
-    private mutating func convertTypeIdentifier(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> TypeSyntax {
+    private mutating func convertTypeIdentifier(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> TypeSyntax {
         let name = collectTerminalText(from: from, to: to)
         return TypeSyntax(IdentifierTypeSyntax(name: .identifier(name)))
     }
 
-    private mutating func convertOptionalType(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> TypeSyntax {
+    private mutating func convertOptionalType(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> TypeSyntax {
         // optionalType = type "?" .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to),
               let typeNT = find("type", in: spans) else {
@@ -606,15 +612,14 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - Terminal Text Collection
 
-    private func collectTerminalText(from: TokenPosition, to: TokenPosition) -> String {
+    private func collectTerminalText(from: CharPosition, to: CharPosition) -> String {
         var texts: [String] = []
-        var pos = from
-        while pos < to {
-            if tokens.indices.contains(pos.tokenIndex) {
-                let text = String(tokens[pos.tokenIndex].image)
-                if !text.isEmpty { texts.append(text) }
-            }
-            pos = TokenPosition(token: pos.tokenIndex + 1)
+        var idx = from.tokenIndex(in: tokens, input: input)
+        let endIdx = to.tokenIndex(in: tokens, input: input)
+        while idx < endIdx, tokens.indices.contains(idx) {
+            let text = String(tokens[idx].image)
+            if !text.isEmpty { texts.append(text) }
+            idx += 1
         }
         return texts.joined()
     }

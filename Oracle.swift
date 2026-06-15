@@ -62,8 +62,12 @@ struct RightAssocRule: DisambiguationRule {
 /// have parsed starting where this fallback ended.
 struct UnlessPredicateRule: DisambiguationRule {
     let target: GrammarNode
+    /// Closure that returns the current yields of an arbitrary grammar node.
+    /// Injected by the `Oracle` so the rule can read the *target*'s yields
+    /// without coupling to either `MessageParser` or the old `node.yield` field.
+    let yieldsOf: (GrammarNode) -> Set<BinarySpan>
     func prune(_ yields: inout Set<BinarySpan>) -> Int {
-        let targetStarts = Set(target.yield.map(\.i))
+        let targetStarts = Set(yieldsOf(target).map(\.i))
         var pruned = 0
         for span in yields where targetStarts.contains(span.j) {
             yields.remove(span)
@@ -75,7 +79,7 @@ struct UnlessPredicateRule: DisambiguationRule {
 
 private func pruneByExtent(
     yields: inout Set<BinarySpan>,
-    keep: ([TokenPosition]) -> TokenPosition
+    keep: ([CharPosition]) -> CharPosition
 ) -> Int {
     let grouped = Dictionary(grouping: yields) { $0.i }
     var pruned = 0
@@ -92,13 +96,13 @@ private func pruneByExtent(
 }
 
 private struct SpanKey: Hashable {
-    let i: TokenPosition
-    let j: TokenPosition
+    let i: CharPosition
+    let j: CharPosition
 }
 
 private func pruneByPivot(
     yields: inout Set<BinarySpan>,
-    keep: ([TokenPosition]) -> TokenPosition
+    keep: ([CharPosition]) -> CharPosition
 ) -> Int {
     let grouped = Dictionary(grouping: yields) { SpanKey(i: $0.i, j: $0.j) }
     var pruned = 0
@@ -117,16 +121,20 @@ private func pruneByPivot(
 // MARK: - Oracle
 
 class Oracle {
+    let parser: MessageParser
     let grammar: Grammar
     let tokens: [Token]
+    let input: String
     private var rules: [(node: GrammarNode, rule: DisambiguationRule)] = []
 
-    private struct NodeSpan: Hashable { let id: ObjectIdentifier; let from, to: TokenPosition }
-    private struct NodePos: Hashable  { let id: ObjectIdentifier; let from: TokenPosition }
+    private struct NodeSpan: Hashable { let id: ObjectIdentifier; let from, to: CharPosition }
+    private struct NodePos: Hashable  { let id: ObjectIdentifier; let from: CharPosition }
 
-    init(grammar: Grammar, tokens: [Token]) {
-        self.grammar = grammar
+    init(parser: MessageParser, tokens: [Token], input: String) {
+        self.parser = parser
+        self.grammar = parser.grammar
         self.tokens = tokens
+        self.input = input
         for (_, nt) in grammar.nonTerminals {
             // LHS-level disambiguation pragmas: @longest, @shortest, @left, @right.
             if let d = nt.disambiguation {
@@ -152,7 +160,9 @@ class Oracle {
             while let a = alt {
                 if let target = a.unlessTarget {
                     if let last = a.bodySymbols.last {
-                        rules.append((last, UnlessPredicateRule(target: target)))
+                        let p = parser  // capture for the closure
+                        rules.append((last, UnlessPredicateRule(target: target,
+                                                                yieldsOf: { p.yield(of: $0) })))
                     }
                 }
                 alt = a.alt
@@ -162,8 +172,9 @@ class Oracle {
 
     @discardableResult
     func disambiguate() -> Int {
-        let n = TokenPosition(token: tokens.count - 1)
-        guard grammar.root.yield.contains(where: { $0.i == .zero && $0.j == n }) else { return 0 }
+        let n = input.endIndex
+        let origin = input.startIndex
+        guard parser.yield(of: grammar.root).contains(where: { $0.i == origin && $0.j == n }) else { return 0 }
 
         var deadYields = 0
         while true {
@@ -176,7 +187,13 @@ class Oracle {
         while changed {
             changed = false
             for (node, rule) in rules {
-                let pruned = rule.prune(&node.yield)
+                // Copy out / write back instead of `&parser.yields[node.number]`
+                // — UnlessPredicateRule's closure reads `parser.yields[target.number]`,
+                // and Swift's law of exclusivity forbids a read and a modify on
+                // the same parent (the `yields` array) at the same time.
+                var spans = parser.yields[node.number]
+                let pruned = rule.prune(&spans)
+                parser.yields[node.number] = spans
                 if pruned > 0 {
                     disambiguated += pruned
                     changed = true
@@ -202,45 +219,45 @@ class Oracle {
 
     // MARK: - Postcondition: No Residual Ambiguity
 
-    private func isUnambiguous(endPosition n: TokenPosition) -> Bool {
+    private func isUnambiguous(endPosition n: CharPosition) -> Bool {
         // TODO: implement full ambiguity check across all reachable nonterminals
         return true
     }
 
     // MARK: - Phase 1: Prune Unproductive Yields
 
-    private func pruneUnproductive(endPosition n: TokenPosition) -> Int {
+    private func pruneUnproductive(endPosition n: CharPosition) -> Int {
         var reachable = Set<NodeSpan>()
         var expanding = Set<NodeSpan>()
-        var endCache = [NodePos: Set<TokenPosition>]()
+        var endCache = [NodePos: Set<CharPosition>]()
         var endGuard = Set<NodePos>()
 
         // End positions reachable from `sym` starting at `from`.
         // Mirrors DerivationBuilder.endPositions — read-only query on yields.
-        func endPositions(_ sym: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
+        func endPositions(_ sym: GrammarNode, from: CharPosition) -> Set<CharPosition> {
             let key = NodePos(id: ObjectIdentifier(sym), from: from)
             if let cached = endCache[key] { return cached }
             guard endGuard.insert(key).inserted else { return [] }
             defer { endGuard.remove(key) }
 
-            let result: Set<TokenPosition>
+            let result: Set<CharPosition>
             switch sym.kind {
             case .T, .TI, .C, .B:
-                result = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
+                result = Set(parser.yield(of: sym).lazy.filter { $0.k == from }.map(\.j))
             case .N:
                 if sym.isRHS {
                     guard let lhs = sym.alt else { return [] }
-                    let occurrenceEnds = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
-                    let lhsEnds = Set(lhs.yield.lazy.filter { $0.i == from }.map(\.j))
+                    let occurrenceEnds = Set(parser.yield(of: sym).lazy.filter { $0.k == from }.map(\.j))
+                    let lhsEnds = Set(parser.yield(of: lhs).lazy.filter { $0.i == from }.map(\.j))
                     result = occurrenceEnds.intersection(lhsEnds)
                 } else {
-                    result = Set(sym.yield.lazy.filter { $0.i == from }.map(\.j))
+                    result = Set(parser.yield(of: sym).lazy.filter { $0.i == from }.map(\.j))
                 }
             case .DO, .OPT, .KLN, .POS:
-                var positions = Set<TokenPosition>()
+                var positions = Set<CharPosition>()
                 if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }
                 if sym.kind.isClosure {
-                    var visited = Set<TokenPosition>()
+                    var visited = Set<CharPosition>()
                     var queue = [from]
                     while !queue.isEmpty {
                         let pos = queue.removeFirst()
@@ -263,15 +280,15 @@ class Oracle {
             return result
         }
 
-        func iterEndPositions(_ bracket: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
-            var positions = Set<TokenPosition>()
+        func iterEndPositions(_ bracket: GrammarNode, from: CharPosition) -> Set<CharPosition> {
+            var positions = Set<CharPosition>()
             var alt = bracket.alt
             while let a = alt {
                 let body = a.bodySymbols.filter { $0.kind != .EPS }
                 if body.isEmpty {
                     positions.insert(from)
                 } else {
-                    var frontier: Set<TokenPosition> = [from]
+                    var frontier: Set<CharPosition> = [from]
                     for sym in body {
                         frontier = frontier.reduce(into: Set()) { $0.formUnion(endPositions(sym, from: $1)) }
                         if frontier.isEmpty { break }
@@ -286,13 +303,13 @@ class Oracle {
         // Walk the BSR graph top-down. Returns true if any valid tiling
         // of `node`'s alternates covers [from, to].
         @discardableResult
-        func visit(_ node: GrammarNode, from: TokenPosition, to: TokenPosition) -> Bool {
+        func visit(_ node: GrammarNode, from: CharPosition, to: CharPosition) -> Bool {
             let key = NodeSpan(id: ObjectIdentifier(node), from: from, to: to)
             if reachable.contains(key) { return true }
             guard expanding.insert(key).inserted else { return false }
             defer { expanding.remove(key) }
 
-            guard node.yield.contains(where: { $0.i == from && $0.j == to }) else { return false }
+            guard parser.yield(of: node).contains(where: { $0.i == from && $0.j == to }) else { return false }
 
             if visitAlternates(node, from: from, to: to) {
                 reachable.insert(key)
@@ -301,7 +318,7 @@ class Oracle {
             return false
         }
 
-        func visitAlternates(_ node: GrammarNode, from: TokenPosition, to: TokenPosition) -> Bool {
+        func visitAlternates(_ node: GrammarNode, from: CharPosition, to: CharPosition) -> Bool {
             var found = false
             var alt = node.alt
             while let a = alt {
@@ -318,7 +335,7 @@ class Oracle {
 
         // Tile body symbols over [from, to]. Returns true if any complete
         // tiling exists, and recursively visits nonterminals along the way.
-        func tileBody(_ symbols: [GrammarNode], from: TokenPosition, to: TokenPosition) -> Bool {
+        func tileBody(_ symbols: [GrammarNode], from: CharPosition, to: CharPosition) -> Bool {
             guard let first = symbols.first else { return from == to }
             let rest = Array(symbols.dropFirst())
             var found = false
@@ -332,8 +349,8 @@ class Oracle {
             return found
         }
 
-        func visitSymbol(_ sym: GrammarNode, from: TokenPosition, to: TokenPosition) {
-            if sym.yield.contains(where: { ($0.i == from && $0.j == to) || ($0.k == from && $0.j == to) }) {
+        func visitSymbol(_ sym: GrammarNode, from: CharPosition, to: CharPosition) {
+            if parser.yield(of: sym).contains(where: { ($0.i == from && $0.j == to) || ($0.k == from && $0.j == to) }) {
                 reachable.insert(NodeSpan(id: ObjectIdentifier(sym), from: from, to: to))
             }
 
@@ -348,7 +365,7 @@ class Oracle {
             }
         }
 
-        func visitBracket(_ bracket: GrammarNode, from: TokenPosition, to: TokenPosition) {
+        func visitBracket(_ bracket: GrammarNode, from: CharPosition, to: CharPosition) {
             if from == to { return }
             for end in iterEndPositions(bracket, from: from) where end <= to && end > from {
                 if visitAlternates(bracket, from: from, to: end) {
@@ -363,7 +380,7 @@ class Oracle {
         }
 
         // Seed from root
-        visit(grammar.root, from: .zero, to: n)
+        visit(grammar.root, from: input.startIndex, to: n)
 
         // Remove unreachable yields from every grammar node. Body-symbol yields
         // can otherwise keep stale tilings alive after a parent alternate was pruned.
@@ -386,12 +403,12 @@ class Oracle {
 
         var pruned = 0
         for node in allNodes {
-            let before = node.yield.count
-            node.yield = node.yield.filter { span in
+            let before = parser.yields[node.number].count
+            parser.yields[node.number] = parser.yields[node.number].filter { span in
                 reachable.contains(NodeSpan(id: ObjectIdentifier(node), from: span.i, to: span.j))
                     || reachable.contains(NodeSpan(id: ObjectIdentifier(node), from: span.k, to: span.j))
             }
-            pruned += before - node.yield.count
+            pruned += before - parser.yields[node.number].count
         }
         return pruned
     }

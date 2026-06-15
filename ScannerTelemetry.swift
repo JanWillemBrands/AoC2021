@@ -10,10 +10,9 @@ protocol ScannerTelemetry: AnyObject {
     func scanStarted(inputSize: Int, literalPatternCount: Int, regexPatternCount: Int)
     func recordLiteralPhase(elapsed: Double)
     func recordRegexPhase(elapsed: Double)
-    func recordRegexCall(kind: String, elapsed: Double, charsScanned: Int, inputSize: Int, mode: String)
-    func recordMatchedToken(tokenDescription: String, image: String, modeBeforeTransition: String)
-    func recordTransition(_ description: String)
-    func recordNonAdvancingMatch(kind: String, image: String, position: String, mode: String, candidates: [String])
+    func recordRegexCall(kind: String, elapsed: Double, charsScanned: Int, inputSize: Int)
+    func recordMatchedToken(tokenDescription: String, image: String)
+    func recordNonAdvancingMatch(kind: String, image: String, position: String, candidates: [String])
     func recordProgress(charsScanned: Int, inputSize: Int, tokenCount: Int)
     func recordByteLimitStop(_ scanByteLimit: Int)
     func scanFinished(inputSize: Int, tokenCount: Int)
@@ -24,10 +23,9 @@ final class NoopScannerTelemetry: ScannerTelemetry {
     func scanStarted(inputSize: Int, literalPatternCount: Int, regexPatternCount: Int) {}
     func recordLiteralPhase(elapsed: Double) {}
     func recordRegexPhase(elapsed: Double) {}
-    func recordRegexCall(kind: String, elapsed: Double, charsScanned: Int, inputSize: Int, mode: String) {}
-    func recordMatchedToken(tokenDescription: String, image: String, modeBeforeTransition: String) {}
-    func recordTransition(_ description: String) {}
-    func recordNonAdvancingMatch(kind: String, image: String, position: String, mode: String, candidates: [String]) {}
+    func recordRegexCall(kind: String, elapsed: Double, charsScanned: Int, inputSize: Int) {}
+    func recordMatchedToken(tokenDescription: String, image: String) {}
+    func recordNonAdvancingMatch(kind: String, image: String, position: String, candidates: [String]) {}
     func recordProgress(charsScanned: Int, inputSize: Int, tokenCount: Int) {}
     func recordByteLimitStop(_ scanByteLimit: Int) {}
     func scanFinished(inputSize: Int, tokenCount: Int) {}
@@ -43,7 +41,6 @@ final class DebugScannerTelemetry: ScannerTelemetry {
 
     // Toggle debug scanner reporting here.
     private let telemetryEnabled = false
-    private let modeTraceEnabled = false
 
     private let timingLogURL = URL(fileURLWithPath: "/tmp/scan_timing.log")
     private let eventLogURL = URL(fileURLWithPath: "/tmp/scan_events.log")
@@ -69,7 +66,7 @@ final class DebugScannerTelemetry: ScannerTelemetry {
         regexPhaseTime += elapsed
     }
 
-    func recordRegexCall(kind: String, elapsed: Double, charsScanned: Int, inputSize: Int, mode: String) {
+    func recordRegexCall(kind: String, elapsed: Double, charsScanned: Int, inputSize: Int) {
         guard telemetryEnabled else { return }
         patternTime[kind, default: 0] += elapsed
         patternCalls[kind, default: 0] += 1
@@ -77,23 +74,15 @@ final class DebugScannerTelemetry: ScannerTelemetry {
             print("  SLOW REGEX: '\(kind)' took \(String(format: "%.1f", elapsed))s at byte \(charsScanned)/\(inputSize)")
         }
         if elapsed > 0.25 {
-            appendEvent("SLOW REGEX kind=\(kind) elapsed=\(String(format: "%.3f", elapsed))s byte=\(charsScanned)/\(inputSize) mode=\(mode)")
+            appendEvent("SLOW REGEX kind=\(kind) elapsed=\(String(format: "%.3f", elapsed))s byte=\(charsScanned)/\(inputSize)")
         }
     }
 
-    func recordMatchedToken(tokenDescription: String, image: String, modeBeforeTransition: String) {
-        guard telemetryEnabled, modeTraceEnabled else { return }
-        print("mode: \(tokenDescription) image: '\(image)'")
-    }
+    func recordMatchedToken(tokenDescription: String, image: String) {}
 
-    func recordTransition(_ description: String) {
-        guard telemetryEnabled, modeTraceEnabled else { return }
-        print("mode: \(description)")
-    }
-
-    func recordNonAdvancingMatch(kind: String, image: String, position: String, mode: String, candidates: [String]) {
+    func recordNonAdvancingMatch(kind: String, image: String, position: String, candidates: [String]) {
         guard telemetryEnabled else { return }
-        appendEvent("NON-ADVANCING kind=\(kind) image=\(image.debugDescription) pos=\(position) mode=\(mode) candidates=\(candidates.joined(separator: ","))")
+        appendEvent("NON-ADVANCING kind=\(kind) image=\(image.debugDescription) pos=\(position) candidates=\(candidates.joined(separator: ","))")
     }
 
     func recordProgress(charsScanned: Int, inputSize: Int, tokenCount: Int) {

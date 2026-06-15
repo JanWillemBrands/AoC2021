@@ -20,7 +20,7 @@ import Foundation
 // Matches the paper's crfNode (L, i).
 struct ParsePosition: Hashable, Comparable, CustomStringConvertible {
     let slot: GrammarNode
-    let index: TokenPosition
+    let index: CharPosition
 
     var description: String { "\(slot).\(index)" }
     var ebnfDot: String { "\(slot.ebnfDot()),\(index)" }
@@ -34,12 +34,12 @@ struct ParsePosition: Hashable, Comparable, CustomStringConvertible {
 // Represents clusterNode (X, k) from the paper.
 final class ParseCluster: CustomStringConvertible {
     let slot: GrammarNode           // the LHS nonterminal (X)
-    let index: TokenPosition        // input position (k)
+    let index: CharPosition         // input position (k)
 
     var returns: Set<ParsePosition> = []
-    var pops: Set<TokenPosition> = []   // Paper: P — contingent returns
+    var pops: Set<CharPosition> = []   // Paper: P — contingent returns
 
-    init(slot: GrammarNode, index: TokenPosition) {
+    init(slot: GrammarNode, index: CharPosition) {
         self.slot = slot
         self.index = index
     }
@@ -54,14 +54,19 @@ final class ParseCluster: CustomStringConvertible {
 extension MessageParser {
 
     // Paper: ntAdd(X, j) — add descriptors for all alternates of a bracket/nonterminal
-    func addDecscriptorsForAlternates(X: GrammarNode, k: TokenPosition, i: TokenPosition) {
+    func addDecscriptorsForAlternates(X: GrammarNode, k: CharPosition, i: CharPosition) {
         assert([.N, .DO, .OPT, .ALT, .KLN, .POS].contains(X.kind), "Called \(#function) on a GrammarNode \(X) which is not a bracket")
-        // For LL(1) nonterminals without Schrödinger duals or Frankenstein tokens,
-        // at most one alternate can match — stop after finding it.
-        let canEarlyTerminate = X.isLocallyLL1
-            && tokens[i.tokenIndex].dual == nil
-            && i.charOffset == 0
-            && !X.firstBS.contains(grammar.frankensteinID)
+        // LL(1) early-termination: once a matching alternate is found, the
+        // remaining alternates cannot also match. This is a property of the
+        // grammar, derived statically by `verifyLL1` + the multi-lex
+        // prefix-overlap check in `handleAlternatesAmbiguity`. The parser
+        // doesn't consult the lexer's disambiguation strategy at all here —
+        // multi-lex independence.
+        // TODO: re-enable for multi-lex. Temporarily forced off while the
+        // LCNP migration proceeds — `X.isLocallyLL1` (and its supporting
+        // prefix-overlap diagnostic) is preserved so we can switch this back
+        // on once the parser-driven lex path is in place.
+        let canEarlyTerminate = false && X.isLocallyLL1
         var current = X.alt
         while let alt = current {
             if testSelect(slot: alt, bracket: X) {
@@ -71,7 +76,7 @@ extension MessageParser {
             current = alt.alt
         }
     }
-    
+
     // Paper: call(L, i, j) — enter a nonterminal
     func call() {
         // cL points to the RHS nonterminal node
@@ -101,7 +106,7 @@ extension MessageParser {
             addDecscriptorsForAlternates(X: cL.alt!, k: cI, i: cI)
         }
     }
-    
+
     // Paper: rtn(X, k, j) — return from a nonterminal
     func rtn(X: GrammarNode) {
         let clusterKey = ParsePosition(slot: X, index: cU)
@@ -118,7 +123,7 @@ extension MessageParser {
             }
         }
     }
-    
+
     // bracketCall — enter a bracket (DO, OPT, KLN, POS)
     // Similar to call() but the bracket node IS the "nonterminal" — no indirection through .alt
     func bracketCall(bracket: GrammarNode) {
@@ -143,7 +148,7 @@ extension MessageParser {
             addDecscriptorsForAlternates(X: bracket, k: cI, i: cI)
         }
     }
-    
+
     // bracketRtn — return from a bracket
     // Similar to rtn() but also handles KLN/POS re-entry
     func bracketRtn(bracket: GrammarNode) {
@@ -186,4 +191,3 @@ extension MessageParser {
         }
     }
 }
-

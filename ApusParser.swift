@@ -210,32 +210,12 @@ class ApusParser {
             try expect(["."])
             cI += 1
             
-            // handle gated transitions: === "gate" [<<<] [>>> "push"]
-            // Gate/push mode names are scanner-state labels, not literals or identifier, although they share the same strucrure.
-            // TODO: extend gate/push operand parsing to accept identifier operands (in addition to literal/empty)
-            //       so regex named captures can drive mode gating/transitions (e.g. === tag, >>> tag).
-            while token.kind == "===" {
-                cI += 1
-                try expect(["literal", "empty"])
-                let gate = token.stripped.escapesRemoved
-                cI += 1
-                let pops = token.kind == "<<<"
-                if pops { cI += 1 }
-                var push: String? = nil
-                if token.kind == ">>>" {
-                    cI += 1
-                    try expect(["literal", "empty"])
-                    push = token.stripped.escapesRemoved
-                    cI += 1
-                }
-                guard grammar.terminals[terminal.name] != nil else {
-                    Logger.parse.warning("WARNING: terminal \(terminal.name, privacy: .public) not found when parsing mode transition")
-                    continue
-                }
-                grammar.terminals[terminal.name]?.transitions.append(GatedTransition(gate: gate, pops: pops, push: push))
-            }
+            // Gated-transition annotation (=== "gate" [<<<] [>>> "push"]) retired
+            // in the scanner-retirement commit. Scanner mode-stack and
+            // `TokenPattern.transitions` are gone; LCNP per-terminal lex
+            // makes mode gating unnecessary.
 
-            // handle scanner-level lookbehind: ++N(...) / --N(...)
+            // handle parser-side lookbehind: ++N(...) / --N(...)
             // Each line is a comma-separated chain of rules (AND); polarity must be uniform within a line.
             // Multiple lines on the same terminal accumulate (OR).
             let lookbehindHeads: Set<String> = ["++1", "++2", "--1", "--2"]
@@ -293,14 +273,16 @@ class ApusParser {
             }
 
         } else {
-            // production rule
-            try expect(["="])
-            // Collect signature actions (between nonterminal name and "=")
+            // production rule — `=` for emit, `=:` for trivia (Phase E Step 2).
+            try expect(["=", "=:"])
+            let isTrivia = token.kind == "=:"
+            // Collect signature actions (between nonterminal name and `=`/`=:`)
             let signatureActions = collectActions(at: cI)
             cI += 1
-            // Actions between "=" and body naturally land on the first ALT node
-            // via sequence()'s collectActions(at: cI) — no separate locals collection needed.
-            if grammar.startSymbol == "" {
+            // Actions between operator and body naturally land on the first ALT
+            // node via sequence()'s collectActions(at: cI) — no separate locals
+            // collection needed.
+            if !isTrivia, grammar.startSymbol == "" {
                 grammar.startSymbol = nonTerminalName
             }
             let node = try selection()
@@ -315,6 +297,9 @@ class ApusParser {
             } else {
                 lhsNode = GrammarNode(kind: .N, name: nonTerminalName, alt: node)
                 grammar.nonTerminals[nonTerminalName] = lhsNode
+            }
+            if isTrivia {
+                lhsNode.isTrivia = true
             }
             if let sig = signatureActions.first {
                 lhsNode.signature = sig
@@ -546,8 +531,7 @@ class ApusParser {
         // identifier-kind namespace (nonterminals and named regex terminals), so an unquoted
         // reference like `operator` in a production body can never collide with the literal `"operator"`.
         let name = String(token.image)
-        // The unescaped literal CONTENT — what the scanner matches against input characters,
-        // and what Frankenstein splitting needs for prefix matching against token images.
+        // The unescaped literal CONTENT — what the scanner matches against input characters.
         let source = token.stripped.escapesRemoved
 
         if let definition = grammar.terminals[name] {
@@ -561,9 +545,7 @@ class ApusParser {
         }
 
         cI += 1
-        let node = GrammarNode(kind: .T, name: name)
-        node.content = source
-        return node
+        return GrammarNode(kind: .T, name: name)
     }
     
     func epsilon() -> GrammarNode {
@@ -591,12 +573,6 @@ class ApusParser {
             cI += 1
         case "literal":
             node = literal()
-            
-            if token.kind == "~~~" {
-                node.first.insert("≋")      // insert a partial-token sentinel, which then gets propagated through FIRST/FOLLOW
-                cI += 1
-            }
-            
         case "epsilon", "empty":
             node = epsilon()
         case "regex":

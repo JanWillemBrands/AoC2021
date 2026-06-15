@@ -13,14 +13,14 @@ import OSLog
 class ParseTreeNode: CustomStringConvertible {
     let name: String
     let token: Token?
-    let from: TokenPosition
-    let to: TokenPosition
+    let from: CharPosition
+    let to: CharPosition
     var children: [ParseTreeNode] = []
     var isAmbiguous = false
     var isMissing = false
     var isTerminal: Bool { token != nil }
 
-    init(_ name: String, from: TokenPosition, to: TokenPosition, token: Token? = nil) {
+    init(_ name: String, from: CharPosition, to: CharPosition, token: Token? = nil) {
         self.name = name
         self.token = token
         self.from = from
@@ -54,30 +54,35 @@ class ParseTreeNode: CustomStringConvertible {
 /// Builds concrete parse trees from BSR yield evidence on GrammarNodes.
 /// EBNF brackets are transparent — their contents are inlined as direct children.
 class DerivationBuilder {
+    let parser: MessageParser
     let grammar: Grammar
     let tokens: [Token]
+    let input: String
 
     private var expanding = Set<NodeSpan>()
-    private var endCache = [NodePos: Set<TokenPosition>]()
+    private var endCache = [NodePos: Set<CharPosition>]()
     private var endGuard = Set<NodePos>()
 
-    private struct NodeSpan: Hashable { let id: ObjectIdentifier; let from, to: TokenPosition }
-    private struct NodePos: Hashable  { let id: ObjectIdentifier; let from: TokenPosition }
+    private struct NodeSpan: Hashable { let id: ObjectIdentifier; let from, to: CharPosition }
+    private struct NodePos: Hashable  { let id: ObjectIdentifier; let from: CharPosition }
 
-    init(grammar: Grammar, tokens: [Token]) {
-        self.grammar = grammar
+    init(parser: MessageParser, tokens: [Token], input: String) {
+        self.parser = parser
+        self.grammar = parser.grammar
         self.tokens = tokens
+        self.input = input
     }
 
     func buildAllTrees(limit: Int = 10) -> [ParseTreeNode] {
-        let n = TokenPosition(token: tokens.count - 1)
-        guard grammar.root.yield.contains(where: { $0.i == .zero && $0.j == n }) else { return [] }
-        return treesFor(grammar.root, from: .zero, to: n, limit: limit)
+        let n = input.endIndex
+        let origin = input.startIndex
+        guard parser.yield(of: grammar.root).contains(where: { $0.i == origin && $0.j == n }) else { return [] }
+        return treesFor(grammar.root, from: origin, to: n, limit: limit)
     }
 
     // MARK: Tree Construction
 
-    private func treesFor(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [ParseTreeNode] {
+    private func treesFor(_ nt: GrammarNode, from: CharPosition, to: CharPosition, limit: Int) -> [ParseTreeNode] {
         let key = NodeSpan(id: ObjectIdentifier(nt), from: from, to: to)
         guard expanding.insert(key).inserted else { return [] }
         defer { expanding.remove(key) }
@@ -94,7 +99,7 @@ class DerivationBuilder {
     }
 
     /// Walk alternates of a node, tile each body over [from, to].
-    private func expandAlternates(_ node: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
+    private func expandAlternates(_ node: GrammarNode, from: CharPosition, to: CharPosition, limit: Int) -> [[ParseTreeNode]] {
         var results = [[ParseTreeNode]]()
         var alt = node.alt
         while let a = alt {
@@ -111,7 +116,7 @@ class DerivationBuilder {
     }
 
     /// Tile body symbols left-to-right using BSR end positions as split points.
-    private func tileBody(_ symbols: [GrammarNode], from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
+    private func tileBody(_ symbols: [GrammarNode], from: CharPosition, to: CharPosition, limit: Int) -> [[ParseTreeNode]] {
         guard let first = symbols.first else { return from == to ? [[]] : [] }
         let rest = Array(symbols.dropFirst())
         var results = [[ParseTreeNode]]()
@@ -129,13 +134,14 @@ class DerivationBuilder {
     }
 
     /// Build children for one symbol. Brackets are transparent (contents inlined as siblings).
-    private func symbolChildren(_ sym: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
+    private func symbolChildren(_ sym: GrammarNode, from: CharPosition, to: CharPosition, limit: Int) -> [[ParseTreeNode]] {
+        let fromTokenIdx = from.tokenIndex(in: tokens, input: input)
         switch sym.kind {
         case .T, .TI, .C:
-            guard tokens.indices.contains(from.tokenIndex) else { return [] }
-            return [[ParseTreeNode(sym.name, from: from, to: to, token: tokens[from.tokenIndex])]]
+            guard tokens.indices.contains(fromTokenIdx) else { return [] }
+            return [[ParseTreeNode(sym.name, from: from, to: to, token: tokens[fromTokenIdx])]]
         case .B:
-            let anchor = tokens[min(from.tokenIndex, tokens.count - 1)]
+            let anchor = tokens[min(fromTokenIdx, tokens.count - 1)]
             let idx = anchor.image.startIndex
             return [[ParseTreeNode(sym.name, from: from, to: to, token: Token(image: anchor.image.base[idx..<idx], kind: sym.name))]]
         case .N:
@@ -150,7 +156,7 @@ class DerivationBuilder {
     }
 
     /// Chain bracket iterations over [from, to]. Closures recurse for additional iterations.
-    private func expandIterations(_ bracket: GrammarNode, from: TokenPosition, to: TokenPosition, limit: Int) -> [[ParseTreeNode]] {
+    private func expandIterations(_ bracket: GrammarNode, from: CharPosition, to: CharPosition, limit: Int) -> [[ParseTreeNode]] {
         if from == to { return [[]] }
         var results = [[ParseTreeNode]]()
         for end in iterationEndPositions(bracket, from: from) where end <= to && end > from {
@@ -175,8 +181,8 @@ class DerivationBuilder {
     struct Diagnostic: CustomStringConvertible {
         let message: String
         let node: String
-        let from: TokenPosition
-        let to: TokenPosition
+        let from: CharPosition
+        let to: CharPosition
         let candidateCount: Int
 
         var description: String {
@@ -188,12 +194,13 @@ class DerivationBuilder {
 
     func buildAST() -> ParseTreeNode? {
         diagnostics = []
-        let n = TokenPosition(token: tokens.count - 1)
-        guard grammar.root.yield.contains(where: { $0.i == .zero && $0.j == n }) else {
+        let n = input.endIndex
+        let origin = input.startIndex
+        guard parser.yield(of: grammar.root).contains(where: { $0.i == origin && $0.j == n }) else {
             Logger.ui.warning("AST: no complete parse found")
             return nil
         }
-        let root = buildASTNode(grammar.root, from: .zero, to: n)
+        let root = buildASTNode(grammar.root, from: origin, to: n)
         if !diagnostics.isEmpty {
             Logger.ui.warning("AST: \(self.diagnostics.count, privacy: .public) residual ambiguities")
             for d in diagnostics {
@@ -203,7 +210,7 @@ class DerivationBuilder {
         return root
     }
 
-    private func buildASTNode(_ nt: GrammarNode, from: TokenPosition, to: TokenPosition) -> ParseTreeNode {
+    private func buildASTNode(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ParseTreeNode {
         let key = NodeSpan(id: ObjectIdentifier(nt), from: from, to: to)
         guard expanding.insert(key).inserted else {
             let node = ParseTreeNode(nt.name, from: from, to: to)
@@ -217,7 +224,7 @@ class DerivationBuilder {
         return node
     }
 
-    private func buildASTAlternate(_ node: GrammarNode, from: TokenPosition, to: TokenPosition) -> [ParseTreeNode] {
+    private func buildASTAlternate(_ node: GrammarNode, from: CharPosition, to: CharPosition) -> [ParseTreeNode] {
         var candidates: [(alt: GrammarNode, children: [ParseTreeNode])] = []
         var alt = node.alt
         while let a = alt {
@@ -242,7 +249,7 @@ class DerivationBuilder {
         return candidates.first?.children ?? []
     }
 
-    private func tileASTBody(_ symbols: [GrammarNode], from: TokenPosition, to: TokenPosition) -> [ParseTreeNode]? {
+    private func tileASTBody(_ symbols: [GrammarNode], from: CharPosition, to: CharPosition) -> [ParseTreeNode]? {
         guard let first = symbols.first else { return from == to ? [] : nil }
         let rest = Array(symbols.dropFirst())
 
@@ -270,14 +277,15 @@ class DerivationBuilder {
         return candidates
     }
 
-    private func buildASTSymbol(_ sym: GrammarNode, from: TokenPosition, to: TokenPosition) -> ParseTreeNode? {
+    private func buildASTSymbol(_ sym: GrammarNode, from: CharPosition, to: CharPosition) -> ParseTreeNode? {
+        let fromTokenIdx = from.tokenIndex(in: tokens, input: input)
         switch sym.kind {
         case .T, .TI, .C:
-            guard tokens.indices.contains(from.tokenIndex) else { return nil }
-            return ParseTreeNode(sym.name, from: from, to: to, token: tokens[from.tokenIndex])
+            guard tokens.indices.contains(fromTokenIdx) else { return nil }
+            return ParseTreeNode(sym.name, from: from, to: to, token: tokens[fromTokenIdx])
 
         case .B:
-            let anchor = tokens[min(from.tokenIndex, tokens.count - 1)]
+            let anchor = tokens[min(fromTokenIdx, tokens.count - 1)]
             let idx = anchor.image.startIndex
             let syntheticToken = Token(image: anchor.image.base[idx..<idx], kind: sym.name)
             return ParseTreeNode(sym.name, from: from, to: to, token: syntheticToken)
@@ -294,7 +302,7 @@ class DerivationBuilder {
         }
     }
 
-    private func buildASTBracket(_ bracket: GrammarNode, from: TokenPosition, to: TokenPosition) -> ParseTreeNode? {
+    private func buildASTBracket(_ bracket: GrammarNode, from: CharPosition, to: CharPosition) -> ParseTreeNode? {
         let node = ParseTreeNode(bracket.name, from: from, to: to)
         if from == to { return node }
 
@@ -326,30 +334,30 @@ class DerivationBuilder {
 
     // MARK: - BSR End Position Queries
 
-    private func endPositions(_ sym: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
+    private func endPositions(_ sym: GrammarNode, from: CharPosition) -> Set<CharPosition> {
         let key = NodePos(id: ObjectIdentifier(sym), from: from)
         if let cached = endCache[key] { return cached }
         guard endGuard.insert(key).inserted else { return [] }
         defer { endGuard.remove(key) }
 
-        let result: Set<TokenPosition>
+        let result: Set<CharPosition>
         switch sym.kind {
         case .T, .TI, .C, .B:
-            result = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
+            result = Set(parser.yield(of: sym).lazy.filter { $0.k == from }.map(\.j))
         case .N:
             if sym.isRHS {
                 guard let lhs = sym.alt else { return [] }
-                let occurrenceEnds = Set(sym.yield.lazy.filter { $0.k == from }.map(\.j))
-                let lhsEnds = Set(lhs.yield.lazy.filter { $0.i == from }.map(\.j))
+                let occurrenceEnds = Set(parser.yield(of: sym).lazy.filter { $0.k == from }.map(\.j))
+                let lhsEnds = Set(parser.yield(of: lhs).lazy.filter { $0.i == from }.map(\.j))
                 result = occurrenceEnds.intersection(lhsEnds)
             } else {
-                result = Set(sym.yield.lazy.filter { $0.i == from }.map(\.j))
+                result = Set(parser.yield(of: sym).lazy.filter { $0.i == from }.map(\.j))
             }
         case .DO, .OPT, .KLN, .POS:
-            var positions = Set<TokenPosition>()
+            var positions = Set<CharPosition>()
             if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }
             if sym.kind.isClosure {
-                var visited = Set<TokenPosition>()
+                var visited = Set<CharPosition>()
                 var queue = [from]
                 while !queue.isEmpty {
                     let pos = queue.removeFirst()
@@ -374,15 +382,15 @@ class DerivationBuilder {
 
     /// End positions after exactly one bracket iteration, computed by chaining
     /// end positions through each alternate's body symbols.
-    private func iterationEndPositions(_ bracket: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
-        var positions = Set<TokenPosition>()
+    private func iterationEndPositions(_ bracket: GrammarNode, from: CharPosition) -> Set<CharPosition> {
+        var positions = Set<CharPosition>()
         var alt = bracket.alt
         while let a = alt {
             let body = a.bodySymbols.filter { $0.kind != .EPS }
             if body.isEmpty {
                 positions.insert(from)
             } else {
-                var frontier: Set<TokenPosition> = [from]
+                var frontier: Set<CharPosition> = [from]
                 for sym in body {
                     frontier = frontier.reduce(into: Set()) { $0.formUnion(endPositions(sym, from: $1)) }
                     if frontier.isEmpty { break }
@@ -397,9 +405,9 @@ class DerivationBuilder {
 
 // MARK: - Graphviz Rendering
 
-func generateDerivationDiagram(outputFile file: URL, grammar: Grammar, tokens: [Token]) throws {
-    let trees = DerivationBuilder(grammar: grammar, tokens: tokens).buildAllTrees()
-    let title = grammar.root.ebnf().graphvizHTML
+func generateDerivationDiagram(outputFile file: URL, parser: MessageParser, tokens: [Token], input: String) throws {
+    let trees = DerivationBuilder(parser: parser, tokens: tokens, input: input).buildAllTrees()
+    let title = parser.grammar.root.ebnf().graphvizHTML
 
     guard !trees.isEmpty else {
         try """
@@ -442,7 +450,7 @@ func generateDerivationDiagram(outputFile file: URL, grammar: Grammar, tokens: [
 private func renderTree(_ tree: ParseTreeNode, prefix: String) -> String {
     var dot = ""
     var n = 0
-    var leaves: [(id: String, pos: TokenPosition)] = []
+    var leaves: [(id: String, pos: CharPosition)] = []
 
     func emit(_ node: ParseTreeNode) -> String {
         let id = "\(prefix)n\(n)"; n += 1

@@ -2,8 +2,8 @@
 //  SpecialTokenTests.swift
 //  AdventTests
 //
-//  Tests for Schrödinger tokens (ambiguous scanner matches), Frankenstein tokens
-//  (partial token splitting), and exclusion sets (keyword suppression).
+//  Tests for Schrödinger tokens (ambiguous scanner matches), regex lookbehind
+//  annotations, and exclusion sets (keyword suppression).
 //
 
 import Testing
@@ -67,71 +67,6 @@ struct SpecialTokenTests {
                 grammar: #"word - /[a-z]+/. alnum - /[a-z0-9]+/. S = word | alnum."#,
                 pass: ["foo", "foo123"],
                 label: "regex–regex Schrödinger"
-            ),
-        ]
-
-        @Test(arguments: cases)
-        func test(_ tc: TestCase) throws {
-            try runTestCase(tc)
-        }
-    }
-
-    // MARK: - Frankenstein Tokens
-
-    @Suite("Frankenstein Tokens", .serialized)
-    struct FrankensteinTokens {
-        static let cases: [TestCase] = [
-            TestCase(
-                grammar: #"shift - ">>". S = ">" ~~~ ">" ~~~ | ">>"."#,
-                pass: [">>", "> >"],
-                label: "basic Frankenstein split or direct match"
-            ),
-            TestCase(
-                grammar: #"shift - ">>". S = ">" ~~~ ">" ~~~ ."#,
-                pass: [">>", "> >"],
-                fail: [">"],
-                label: "Frankenstein-only split"
-            ),
-            TestCase(
-                grammar: #"tripleShift - ">>>". shift - ">>". S = ">" ~~~ ">" ~~~ ">" ~~~ ."#,
-                pass: [">>>", ">> >", "> >>", "> > >"],
-                fail: [">>", ">", ">> >>"],
-                label: "three-way Frankenstein split"
-            ),
-            TestCase(
-                grammar: #"shift - ">>". S = "a" ">" ~~~ ">" ~~~ "b"."#,
-                pass: ["a >> b", "a > > b"],
-                fail: ["a > b", "a b"],
-                label: "Frankenstein mid-sequence"
-            ),
-            TestCase(
-                grammar: #"shift - ">>". S = ">" ~~~ ">" ~~~ "a" | ">>" "b"."#,
-                pass: [">> a", ">> b", "> > a"],
-                fail: ["> > b"],
-                label: "Frankenstein vs direct in alternation"
-            ),
-            TestCase(
-                grammar: #"shift - ">>". S = A B. A = ">" ~~~ . B = ">" ~~~ ."#,
-                pass: [">>", "> >"],
-                fail: [">"],
-                label: "Frankenstein across nonterminals"
-            ),
-            TestCase(
-                grammar: #"shift - ">>". id - /[a-z]+/. S = id ["<" tlist ">" ~~~]. tlist = S {"," S}."#,
-                pass: ["foo", "foo < bar >", "foo < bar < baz > >", "foo < bar < baz >>"],
-                label: "nested generics Frankenstein"
-            ),
-            TestCase(
-                grammar: #"shift - ">>". S = "<" "x" ">" ~~~ [">" ~~~]."#,
-                pass: ["< x >", "< x >>"],
-                fail: ["< x"],
-                label: "Frankenstein in optional"
-            ),
-            TestCase(
-                grammar: #"doubleeq - "==". S = "x" "=" ~~~ "=" ~~~ "y"."#,
-                pass: ["x == y", "x = = y"],
-                fail: ["x = y"],
-                label: "Frankenstein non-angle-bracket"
             ),
         ]
 
@@ -256,8 +191,9 @@ struct SpecialTokenTests {
                 let messageParser = MessageParser(grammar: grammar)
                 messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
 
-                let extent = TokenPosition(token: messageParser.tokens.count - 1)
-                let matched = messageParser.currentParseRoot.yield.contains { $0.i == .zero && $0.j == extent }
+                let matched = messageParser.yield(of: messageParser.currentParseRoot).contains {
+                    $0.i == messageScanner.input.startIndex && $0.j == messageScanner.input.endIndex
+                }
                 return (matched, messageParser.descriptorCount)
             }
         }

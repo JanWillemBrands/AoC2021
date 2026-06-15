@@ -17,19 +17,6 @@ enum ScannerFailure: Error {
     case couldNotReadFile
 }
 
-struct GatedTransition: CustomStringConvertible {
-    let gate: String
-    let pops: Bool
-    let push: String?
-
-    var description: String {
-        var s = "=== \"\(gate)\""
-        if pops { s += " <<<" }
-        if let push { s += " >>> \"\(push)\"" }
-        return s
-    }
-}
-
 // Scanner-level lookbehind annotation: ++N(...) / --N(...).
 // A LookbehindRule fires when the visible token N positions before the
 // current scan position has a kind in `kinds`. Rules inside a LookbehindLine
@@ -63,15 +50,13 @@ struct TokenPattern {
     let regex: Regex<Substring>
     let isLiteral: Bool
     let isSkip: Bool
-    var transitions: [GatedTransition]
     var lookbehind: LookbehindSpec
 
-    init(_ source: String, _ regex: Regex<Substring>, _ isLiteral: Bool, _ isSkip: Bool, transitions: [GatedTransition] = [], lookbehind: LookbehindSpec = LookbehindSpec()) {
+    init(_ source: String, _ regex: Regex<Substring>, _ isLiteral: Bool, _ isSkip: Bool, lookbehind: LookbehindSpec = LookbehindSpec()) {
         self.source = source
         self.regex = regex
         self.isLiteral = isLiteral
         self.isSkip = isSkip
-        self.transitions = transitions
         self.lookbehind = lookbehind
     }
 }
@@ -79,17 +64,16 @@ struct TokenPattern {
 final class Token: CustomStringConvertible {
     var image: Substring
     var kind: String
-    /// Integer ID from `Grammar.symbolToID`, assigned by `MessageParser.parse(tokens:trivia:input:)`
+    /// Integer ID from `Grammar.symbolToID`, assigned by `MessageParser.prepareInput`
     /// before the GLL algorithm runs. Enables O(1) integer comparison in `tokenMatch()`
     /// and O(1) BitSet membership tests in `testSelect()`.
     var kindID: Int!
-    var dual: Token?                            // multiple regex matches of equal length create a 'Schrödinger' token linked list
-    
+
     init(image: Substring, kind: String) {
         self.image = image
         self.kind = kind
     }
-    
+
     var stripped: String {
         switch kind {
         case "literal", "empty":
@@ -107,18 +91,11 @@ final class Token: CustomStringConvertible {
             return String(image)
         }
     }
-    
-    var description: String {
-        if let dual {
-            return "'" + kind + "' ~ " + dual.description
-        }
-        return "'" + kind + "'"
-    }
-    var debugDescription: String {  // includes the unique token kind ID
+
+    var description: String { "'" + kind + "'" }
+
+    var debugDescription: String {
         let idStr = kindID.map(String.init) ?? "?"
-        if let dual {
-            return "'" + kind + "':" + idStr + " ~ " + dual.description
-        }
         return "'" + kind + "':" + idStr
     }
 }
@@ -129,8 +106,6 @@ private struct Pattern {
     let regex: Regex<Substring>
     let isLiteral: Bool
     let isSkip: Bool
-    let transitions: [GatedTransition]
-    let lookbehind: LookbehindSpec
 }
 
 /// Scanner takes an input string and token patterns, and produces a token array.
@@ -142,11 +117,6 @@ final class Scanner {
     var tokens: [Token] = []                // normal, visible tokens that can be referenced in the grammar production rules
     var trivia: [[Token]] = [[]]            // skipped tokens are stored as lists in an array indexed by the visible token following them
     
-    private var modeStack: [String] = []    // tracks state to allow e.g. nested token construction
-    private var scannerMode: String {       // isolated to the scanner, not driven by the parser
-        return modeStack.last ?? ""
-    }
-    
     private var literalPatterns: [Pattern] = []
     private var regexPatterns: [Pattern] = []
     private let telemetry: any ScannerTelemetry
@@ -157,7 +127,7 @@ final class Scanner {
         
         // Partition: keyword terminals use fast hasPrefix, the rest use regex engine.
         for (kind, pattern) in patterns {
-            let p = Pattern(kind: kind, source: pattern.source, regex: pattern.regex, isLiteral: pattern.isLiteral, isSkip: pattern.isSkip, transitions: pattern.transitions, lookbehind: pattern.lookbehind)
+            let p = Pattern(kind: kind, source: pattern.source, regex: pattern.regex, isLiteral: pattern.isLiteral, isSkip: pattern.isSkip)
             if pattern.isLiteral {
                 literalPatterns.append(p)
             } else {
@@ -187,13 +157,14 @@ final class Scanner {
             var matchEnd = matchStart
             var candidates: [Candidate] = []
             let remaining = input[matchStart...]
-            let mode = modeStack.last ?? ""
 
-            // Phase 1: literal keywords via hasPrefix (gated pre-filter, then fast string comparison)
+            // Phase 1: literal keywords via hasPrefix.
+            // Lookbehind (`++N`/`--N`) used to gate here; as of Phase E Step 1
+            // it's evaluated parser-side in `MessageParser.tokenMatch`, so the
+            // scanner emits all syntactically-possible matches and the parser
+            // suppresses ones that don't satisfy the annotation.
             let litT0 = CFAbsoluteTimeGetCurrent()
             for lp in literalPatterns {
-                guard lp.transitions.isEmpty || lp.transitions.contains(where: { $0.gate == mode }) else { continue }
-                guard lookbehindAllows(lp.lookbehind) else { continue }
                 if remaining.hasPrefix(lp.source) {
                     let literalEnd = input.index(matchStart, offsetBy: lp.source.count)
                     if literalEnd > matchEnd {
@@ -210,19 +181,16 @@ final class Scanner {
 
             telemetry.recordLiteralPhase(elapsed: CFAbsoluteTimeGetCurrent() - litT0)
 
-            // Phase 2: regex patterns via prefixMatch (gated pre-filter, then regex engine)
+            // Phase 2: regex patterns via prefixMatch.
             let regT0 = CFAbsoluteTimeGetCurrent()
-            
-            for rp in regexPatterns {
-                guard rp.transitions.isEmpty || rp.transitions.contains(where: { $0.gate == mode }) else { continue }
-                guard lookbehindAllows(rp.lookbehind) else { continue }
 
+            for rp in regexPatterns {
                 let t0 = CFAbsoluteTimeGetCurrent()
-                
+
                 let match = remaining.prefixMatch(of: rp.regex)
-                
+
                 let elapsed = CFAbsoluteTimeGetCurrent() - t0
-                telemetry.recordRegexCall(kind: rp.kind, elapsed: elapsed, charsScanned: charsScanned, inputSize: inputSize, mode: mode)
+                telemetry.recordRegexCall(kind: rp.kind, elapsed: elapsed, charsScanned: charsScanned, inputSize: inputSize)
 
                 if let match {
                     if match.0.endIndex > matchEnd {
@@ -244,6 +212,12 @@ final class Scanner {
                 try scanError(position: matchStart)
             }
 
+            // Same-span ties (Schrödinger duals) are no longer tracked — Phase D
+            // moved disambiguation to per-end LCNP filters in the parser, so the
+            // eager scanner only needs to commit one candidate per position.
+            // Order: literal-emit first, everything else after (stable within
+            // group), so a literal keyword wins over a same-length identifier
+            // regex by default.
             let front = candidates.filter { $0.pattern.isLiteral && !$0.pattern.isSkip }
             let back = candidates.filter { !($0.pattern.isLiteral && !$0.pattern.isSkip) }
             let ordered = front + back
@@ -257,25 +231,12 @@ final class Scanner {
                     kind: headMatch.kind,
                     image: String(headMatch.image),
                     position: pos,
-                    mode: mode,
                     candidates: ordered.map { $0.token.kind }
                 )
                 throw ScannerFailure.nonAdvancingMatch(position: matchStart, tokenKind: headMatch.kind, tokenImage: String(headMatch.image))
             }
 
-            var tail = headMatch
-            for candidate in ordered.dropFirst() {
-                tail.dual = candidate.token
-                tail = candidate.token
-            }
-
-            telemetry.recordMatchedToken(tokenDescription: headMatch.description, image: String(headMatch.image), modeBeforeTransition: mode)
-            // Phase 4: execute the winning candidate's gated transition (unconditional post-action)
-            if let transition = headPattern.transitions.first(where: { $0.gate == mode }) {
-                telemetry.recordTransition(transition.description)
-                if transition.pops { modeStack.removeLast() }
-                if let push = transition.push { modeStack.append(push) }
-            }
+            telemetry.recordMatchedToken(tokenDescription: headMatch.description, image: String(headMatch.image))
 
             if headPattern.isSkip {
                 trivia[tokens.count].append(headMatch)
@@ -297,38 +258,6 @@ final class Scanner {
         let end = input.endIndex
         tokens.append(Token(image: input[end..<end], kind: "○"))  // append EndOfString token anchored in input
         telemetry.scanFinished(inputSize: inputSize, tokenCount: tokens.count)
-    }
-
-    // Evaluate a ++/-- lookbehind spec against the visible token stream.
-    // Returns true when the candidate is allowed to compete.
-    //   positiveLines OR'd; if any matches → allow (overrides negatives)
-    //   negativeLines OR'd; if any matches → block
-    //   no positive matched but positive lines defined and no negative lines → block (whitelist mode)
-    //   otherwise → allow
-    private func lookbehindAllows(_ spec: LookbehindSpec) -> Bool {
-        if spec.isEmpty { return true }
-        if spec.positiveLines.contains(where: matchesLine) { return true }
-        if spec.negativeLines.contains(where: matchesLine) { return false }
-        if !spec.positiveLines.isEmpty && spec.negativeLines.isEmpty { return false }
-        return true
-    }
-
-    // A line matches when every rule in it matches (AND).
-    // A rule matches when the token `distance` visible tokens back has a kind
-    // in the rule's kinds list. Schrödinger duals are walked as OR.
-    private func matchesLine(_ line: LookbehindLine) -> Bool {
-        for rule in line.rules {
-            let idx = tokens.count - rule.distance
-            guard idx >= 0 else { return false }
-            var t: Token? = tokens[idx]
-            var hit = false
-            while let cur = t {
-                if rule.kinds.contains(cur.kind) { hit = true; break }
-                t = cur.dual
-            }
-            if !hit { return false }
-        }
-        return true
     }
 
     private func scanError(position: String.Index) throws -> Never {

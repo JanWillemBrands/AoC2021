@@ -16,7 +16,45 @@
 
 import OSLog
 import Foundation
+import BitCollections
 //import AdventMacros
+
+/// Parser-side resolved form of a `LookbehindRule`. The `kinds: [String]` from
+/// the grammar are translated into a `BitSet` of `terminalID` once at parse
+/// setup, so the evaluator runs purely on integer IDs.
+struct ResolvedLookbehindRule {
+    let polarity: LookbehindPolarity
+    let distance: Int
+    let kindsBitSet: BitSet
+}
+
+/// A line of AND'd rules (matches the original `LookbehindLine`).
+struct ResolvedLookbehindLine {
+    let rules: [ResolvedLookbehindRule]
+}
+
+/// Parser-side resolved form of `LookbehindSpec` keyed by terminal ID.
+struct ResolvedLookbehindSpec {
+    let positiveLines: [ResolvedLookbehindLine]
+    let negativeLines: [ResolvedLookbehindLine]
+    var isEmpty: Bool { positiveLines.isEmpty && negativeLines.isEmpty }
+}
+
+/// One terminal commit recorded by the parse loop's `.T`/`.TI`/`.C` arm. Used
+/// to evaluate `++N`/`--N` lookbehind annotations and `<s>`/`>s<`/`<n>`/`>n<`
+/// boundary annotations from parser state.
+///
+/// `rawEnd` is the literal/regex content's end position **before** trailing
+/// trivia skipping; `end` (the dictionary key in `terminalCommitsByEnd`) is
+/// the cursor position **after** trivia skipping. The two differ exactly when
+/// the lexer skipped trivia after the match, which is what `boundaryMatches`
+/// needs to know to answer "is there whitespace between previous emit and
+/// current cursor?".
+struct TerminalCommit {
+    let kindID: Int
+    let start: CharPosition
+    let rawEnd: CharPosition
+}
 
 class MessageParser {
 
@@ -31,8 +69,126 @@ class MessageParser {
     // MARK: - GLL algorithm state (paper variables)
     var currentParseRoot: GrammarNode!
     var cL: GrammarNode!                    // current grammar slot
-    var cI: TokenPosition = .zero           // current input position
-    var cU: TokenPosition = .zero           // current cluster index
+    var cI: CharPosition = "".startIndex    // current input position
+    var cU: CharPosition = "".startIndex    // current cluster index
+
+    // MARK: - Token lookup by source position
+    /// Maps each visible token's `image.startIndex` to its array index in `tokens`.
+    /// `input.startIndex` also maps to 0 so the initial cursor finds the first token
+    /// even when there's leading trivia. Built once per parse from the scanner output.
+    var tokenIndexByStart: [CharPosition: Int] = [:]
+
+    // MARK: - LCNP lex API
+    /// Per-terminal lex queries the parser issues at every `.T`/`.TI`/`.C` slot
+    /// and every `testSelect` / `followCheck` / `continuationViable` callsite.
+    /// Backed by `OnDemandLiteralLexer` against `input` directly: literals via
+    /// `hasPrefix`, regex via `prefixMatch`, trivia (whitespace + `=:`
+    /// non-terminal recognisers) via `skipTrivia`.
+    var lexer: LCNPLexer!
+
+    // MARK: - Lex memoization
+    /// `(pos, terminalID) → [LexMatch]` cache. Lex queries are pure given the
+    /// input; the same (pos, terminalID) is asked many times during a parse
+    /// (one query per terminal in `firstBS` per `testSelect` invocation; plus
+    /// dual visits to the same position via descriptor re-entry). Without
+    /// memoization the per-terminal LCNP migration would re-run pattern
+    /// matching tens of thousands of times.
+    var lexCache: [LexCacheKey: [LexMatch]] = [:]
+
+    @inline(__always)
+    func cachedLex(at pos: CharPosition, terminalID: Int) -> [LexMatch] {
+        let key = LexCacheKey(pos: pos, terminalID: terminalID)
+        if let cached = lexCache[key] { return cached }
+        let result = lexer.lex(at: pos, terminalID: terminalID)
+        lexCache[key] = result
+        return result
+    }
+
+    // MARK: - Lookbehind (parser-side evaluation)
+
+    /// Resolve a `LookbehindSpec` (kinds as strings) into a
+    /// `ResolvedLookbehindSpec` (kinds as `BitSet<Int>`) by looking each kind
+    /// name up via `grammar.symbolToID`. Unknown kind names are dropped — same
+    /// semantic as the original `Scanner.matchesLine` falling through on a
+    /// missing match.
+    private func resolveLookbehindSpec(_ spec: LookbehindSpec) -> ResolvedLookbehindSpec {
+        func resolveLine(_ line: LookbehindLine) -> ResolvedLookbehindLine {
+            let rules = line.rules.map { rule -> ResolvedLookbehindRule in
+                var bs = BitSet()
+                for kind in rule.kinds {
+                    if let id = grammar.symbolToID[kind] { bs.insert(id) }
+                }
+                return ResolvedLookbehindRule(polarity: rule.polarity, distance: rule.distance, kindsBitSet: bs)
+            }
+            return ResolvedLookbehindLine(rules: rules)
+        }
+        return ResolvedLookbehindSpec(
+            positiveLines: spec.positiveLines.map(resolveLine),
+            negativeLines: spec.negativeLines.map(resolveLine)
+        )
+    }
+
+    /// `BitSet` of terminal kindIDs whose commit ends exactly at `pos`. Reads
+    /// the parser's per-parse `terminalCommitsByEnd` log.
+    private func terminalKindIDs(endingAt pos: CharPosition) -> BitSet {
+        guard let commits = terminalCommitsByEnd[pos] else { return BitSet() }
+        var bs = BitSet()
+        for c in commits { bs.insert(c.kindID) }
+        return bs
+    }
+
+    /// "N visible terminals back from `pos`" expressed over the parser's
+    /// commit log. `distance == 1` → kindIDs committed ending at `pos`;
+    /// `distance == 2` → kindIDs committed ending at the start of any commit
+    /// ending at `pos`; etc. Walks set-unions when multiple histories arrive
+    /// at the same position (the GLL-multi-history equivalent of the original
+    /// Schrödinger-dual chain walk in `Scanner.matchesLine`).
+    func previousKindIDs(at pos: CharPosition, distance: Int) -> BitSet {
+        var endPositions: Set<CharPosition> = [pos]
+        for _ in 1..<distance {
+            var next: Set<CharPosition> = []
+            for p in endPositions {
+                if let commits = terminalCommitsByEnd[p] {
+                    for c in commits { next.insert(c.start) }
+                }
+            }
+            if next.isEmpty { return BitSet() }
+            endPositions = next
+        }
+        var result = BitSet()
+        for p in endPositions {
+            result.formUnion(terminalKindIDs(endingAt: p))
+        }
+        return result
+    }
+
+    /// Evaluate a resolved lookbehind spec at parser position `pos`. Mirrors
+    /// `Scanner.lookbehindAllows`:
+    ///   - positive lines OR'd; any match → allow (overrides negatives)
+    ///   - negative lines OR'd; any match → block
+    ///   - whitelist mode (positives only, none match) → block
+    ///   - otherwise → allow
+    /// Each rule's `kinds` comparison walks the parser's per-position kindID
+    /// union; under GLL-multi-history this means "the rule fires if any path
+    /// arrived at this position via a matching terminal" — the same OR-walk
+    /// the original implementation did across Schrödinger duals.
+    func lookbehindAllows(_ spec: ResolvedLookbehindSpec, at pos: CharPosition) -> Bool {
+        if spec.isEmpty { return true }
+        if spec.positiveLines.contains(where: { matchesLine($0, at: pos) }) { return true }
+        if spec.negativeLines.contains(where: { matchesLine($0, at: pos) }) { return false }
+        if !spec.positiveLines.isEmpty && spec.negativeLines.isEmpty { return false }
+        return true
+    }
+
+    private func matchesLine(_ line: ResolvedLookbehindLine, at pos: CharPosition) -> Bool {
+        for rule in line.rules {
+            let prev = previousKindIDs(at: pos, distance: rule.distance)
+            if prev.intersection(rule.kindsBitSet).isEmpty {
+                return false
+            }
+        }
+        return true
+    }
 
     // MARK: - Descriptor management (Paper: R, U)
     var remaining: [Descriptor] = []
@@ -49,10 +205,38 @@ class MessageParser {
     var crf: [ParsePosition: ParseCluster] = [:]
 
     // MARK: - Binary Subtree Representation (Paper: Υ)
+    /// Per-node BSR yields, indexed by `node.number`. Replaces the per-node
+    /// `var yield: Set<BinarySpan>` that used to live on `GrammarNode`. With
+    /// yields parser-side, the grammar is load-time-immutable: a recursive
+    /// sub-parse can run on the same grammar by spinning up a separate
+    /// `MessageParser` instance with its own `yields` array.
+    var yields: [Set<BinarySpan>] = []
+
+    /// Read accessor for consumers (Oracle, diagrams, tests). Inside the
+    /// parser/BSR hot path we use direct `yields[node.number]` access.
+    @inline(__always)
+    func yield(of node: GrammarNode) -> Set<BinarySpan> {
+        yields[node.number]
+    }
+
     var yieldCount = 0
 
+    // MARK: - Lookbehind (Phase E Step 1: parser-side lookbehind evaluation)
+    /// `terminalID → resolved lookbehind` for every terminal with a non-empty
+    /// `LookbehindSpec` in the grammar. Resolved at parse setup: kind-name
+    /// strings are translated to BitSets keyed by `grammar.symbolToID`, so the
+    /// evaluator runs entirely on integer IDs.
+    var lookbehindByTerminalID: [Int: ResolvedLookbehindSpec] = [:]
+
+    /// Per-parse record of every terminal commit: `endPosition → [Commit]`.
+    /// Each `.T`/`.TI`/`.C` arm in the main parse loop appends one entry when
+    /// it advances `cI`. Used by `previousKindIDs(at:distance:)` to evaluate
+    /// `++N`/`--N` annotations against parser-state rather than the eager
+    /// scanner's committed-token stream.
+    var terminalCommitsByEnd: [CharPosition: [TerminalCommit]] = [:]
+
     // MARK: - Error reporting, captures the furthest the parse has progressed before a mismatch occurred
-    var furthestMismatchIndex: TokenPosition = .zero
+    var furthestMismatchIndex: CharPosition = "".startIndex
     var furthestMismatchSlot: GrammarNode!
     var furthestMismatchExpected: Set<String> = []
 
@@ -64,38 +248,158 @@ class MessageParser {
 
     // MARK: - Parse API
 
-    func parse(tokens: [Token], trivia: [[Token]] = [], input: String = "") {
-        // Reset all per-parse state
+    /// `root` defaults to `grammar.root` (full parse); pass a `=:` non-terminal
+    /// to run a sub-parse for trivia recognition. `start` defaults to
+    /// `input.startIndex`; pass a `CharPosition` to seed the GLL at a different
+    /// position. Yields end up in `self.yields` indexed by `node.number`;
+    /// callers read accepting end positions via `yield(of: root)`.
+    ///
+    /// Composed of `prepareInput` (per-input setup, runs once per input) and
+    /// `runGLL` (per-call state reset + GLL loop, can run many times against
+    /// the same prepared input). Trivia recogniser closures use exactly this
+    /// split: their sub-parser is prepared once, then `runGLL` is called per
+    /// recogniser invocation — that's what keeps the per-call cost minimal.
+    func parse(tokens: [Token], trivia: [[Token]] = [], input: String = "",
+               root: GrammarNode? = nil, start: CharPosition? = nil) {
+        prepareInput(tokens: tokens, trivia: trivia, input: input, isSubParser: root != nil)
+        runGLL(root: root ?? grammar.root, start: start ?? input.startIndex)
+    }
+
+    /// Per-input setup: assigns `kindID`s to tokens, builds the lex stack,
+    /// resolves lookbehind specs, constructs sub-parsers for `=:` non-terminals.
+    /// Idempotent for repeated calls on the same `(tokens, input)`; the
+    /// expectation is that callers (including sub-parsers) call this once
+    /// per input and then `runGLL` many times against the prepared state.
+    func prepareInput(tokens: [Token], trivia: [[Token]] = [], input: String = "",
+                      isSubParser: Bool = false) {
         self.tokens = tokens
         self.trivia = trivia
         self.input = input
         // Map each token's string kind to its integer kindID from the symbol table.
-        // This includes Schrödinger duals (linked via token.dual) which represent
-        // ambiguous scanner matches of equal length.
         for token in tokens {
-            var t: Token? = token
-            while let current = t {
-                current.kindID = grammar.symbolToID[current.kind]!
-                t = current.dual
+            token.kindID = grammar.symbolToID[token.kind]!
+        }
+        // Build the position→token-index sidecar before the GLL loop. Visible
+        // tokens are keyed by their `image.startIndex`; `input.startIndex` also
+        // maps to 0 so the initial cursor finds token 0 even when leading
+        // trivia means `tokens[0].image.startIndex != input.startIndex`.
+        tokenIndexByStart.removeAll(keepingCapacity: true)
+        for (i, t) in tokens.enumerated() {
+            tokenIndexByStart[t.image.startIndex] = i
+        }
+        if !tokens.isEmpty {
+            tokenIndexByStart[input.startIndex] = 0
+        }
+        // LCNP lex stack: `OnDemandLiteralLexer` only (Phase E Step 2d retired
+        // `LegacyScannerLexAdapter`). All literals and regex terminals serve
+        // from `input` directly; lookbehind (`++N`/`--N`) is enforced
+        // parser-side in `tokenMatch`. `transitions`-annotated terminals lose
+        // their mode-gating — documented Python regression.
+        var literalSourceByID: [Int: String] = [:]
+        var regexByID: [Int: Regex<Substring>] = [:]
+        var triviaRegexes: [Regex<Substring>] = []
+        lookbehindByTerminalID.removeAll(keepingCapacity: true)
+        for (name, pat) in grammar.terminals {
+            guard let id = grammar.symbolToID[name] else { continue }
+            if pat.isLiteral {
+                literalSourceByID[id] = pat.source
+            } else if !pat.isSkip {
+                // Regex terminal: answer from input directly. Any lookbehind
+                // annotation is enforced at `tokenMatch` via parser state.
+                regexByID[id] = pat.regex
+            }
+            if pat.isSkip, !isSubParser {
+                // Trivia (whitespace, line comment, etc.) applies only to the
+                // full parse. Sub-parsers running a `=:` body don't strip
+                // outer trivia — inside a multiline comment, what would
+                // otherwise be skipped whitespace IS comment content.
+                triviaRegexes.append(pat.regex)
+            }
+            if !pat.lookbehind.isEmpty {
+                lookbehindByTerminalID[id] = resolveLookbehindSpec(pat.lookbehind)
             }
         }
-        currentParseRoot = grammar.root
-        cL = nil; cI = .zero; cU = .zero
+        // Build trivia non-terminal recognisers for each `=:` LHS in the
+        // grammar. Each recogniser owns a sub-parser instance prepared on the
+        // *same* input as the outer parser; the closure calls `sub.runGLL`
+        // (cheap) rather than `sub.parse` (rebuilds everything). Skipped for
+        // sub-parsers themselves — they'd recurse infinitely.
+        var triviaRecognisers: [(CharPosition) -> CharPosition?] = []
+        if !isSubParser {
+            for (_, nt) in grammar.nonTerminals where nt.isTrivia {
+                let sub = MessageParser(grammar: grammar)
+                sub.prepareInput(tokens: tokens, trivia: trivia, input: input, isSubParser: true)
+                let recogniser: (CharPosition) -> CharPosition? = { pos in
+                    sub.runGLL(root: nt, start: pos)
+                    let ends = sub.yield(of: nt).lazy.filter { $0.i == pos }.map(\.j)
+                    return ends.max()
+                }
+                triviaRecognisers.append(recogniser)
+            }
+        }
+        // Phase G: synthetic layout tokens (Python INDENT/DEDENT, etc.) are
+        // resolved by `OnDemandLiteralLexer` from a precomputed source-position
+        // table instead of being injected into `tokens[]`. Gated on
+        // `grammar.usesInjectedLayoutTokens` so non-layout grammars allocate
+        // nothing. Sub-parsers (`=:` bodies) skip the precompute — synthetic
+        // tokens live at the outer parse level only.
+        var virtualTokensAt: [CharPosition: [Int]] = [:]
+        if grammar.usesInjectedLayoutTokens, !isSubParser,
+           let indentKindID = grammar.symbolToID[">>|"],
+           let dedentKindID = grammar.symbolToID["|<<"] {
+            virtualTokensAt = computeVirtualLayoutTokens(
+                tokens: tokens,
+                input: input,
+                indentKindID: indentKindID,
+                dedentKindID: dedentKindID,
+                bracketPairs: [("(", ")"), ("[", "]"), ("{", "}")]
+            )
+        }
+        lexer = OnDemandLiteralLexer(
+            input: input,
+            literalSourceByID: literalSourceByID,
+            regexByID: regexByID,
+            triviaRegexes: triviaRegexes,
+            triviaRecognisers: triviaRecognisers,
+            eosID: grammar.eosID,
+            virtualTokensAt: virtualTokensAt
+        )
+        lexCache.removeAll(keepingCapacity: true)
+    }
+
+    /// Per-call: reset GLL state, seed root cluster, run the GLL loop. Reads
+    /// from the already-prepared lex stack. Multiple invocations on the same
+    /// prepared input are cheap — only this routine runs per recogniser call.
+    func runGLL(root: GrammarNode, start: CharPosition) {
+        currentParseRoot = root
+        terminalCommitsByEnd.removeAll(keepingCapacity: true)
+        let origin = start
+        cL = nil; cI = origin; cU = origin
         unique = []; remaining = []
         failedParses = 0; successfullParses = 0
         descriptorCount = 0; duplicateDescriptorCount = 0; suppressedDescriptorCount = 0
         crf = [:]; yieldCount = 0
-        furthestMismatchIndex = .zero
+        // Size the BSR yields array to the global node count (each grammar's
+        // node numbers are unique in `GrammarNode.count`'s monotonic counter,
+        // so this is large enough to index any node in the current grammar).
+        // Reset to empty sets — cheaper than reallocating every parse since
+        // `Set<BinarySpan>.removeAll(keepingCapacity:)` retains backing buffers.
+        if yields.count < GrammarNode.count {
+            yields = Array(repeating: [], count: GrammarNode.count)
+        } else {
+            for i in yields.indices { yields[i].removeAll(keepingCapacity: true) }
+        }
+        furthestMismatchIndex = origin
         furthestMismatchSlot = currentParseRoot
         furthestMismatchExpected = []
 
-        // Set up root cluster
-        let rootCluster = ParseCluster(slot: grammar.root, index: .zero)
-        crf[ParsePosition(slot: grammar.root, index: .zero)] = rootCluster
-        grammar.root.clearNodes()
+        // Set up root cluster (root may be a `=:` non-terminal for a sub-parse)
+        let rootNode = currentParseRoot!
+        let rootCluster = ParseCluster(slot: rootNode, index: origin)
+        crf[ParsePosition(slot: rootNode, index: origin)] = rootCluster
 
         // Seed initial descriptors (Paper: ntAdd for start symbol)
-        addDecscriptorsForAlternates(X: grammar.root, k: .zero, i: .zero)
+        addDecscriptorsForAlternates(X: rootNode, k: origin, i: origin)
 
         // Run GLL algorithm
         var progressCounter = 0
@@ -110,7 +414,7 @@ class MessageParser {
             while true {
 
                 trace = false
-                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[cI.tokenIndex].kind) \(tokens[cI.tokenIndex].image)")
+                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[tokenIdx(at: cI)].kind) \(tokens[tokenIdx(at: cI)].image)")
 
                 switch cL.kind {
                 case .EPS:
@@ -125,12 +429,32 @@ class MessageParser {
                         continue nextDescriptor
                     }
                 case .T, .TI, .C:
-                    if let next = tokenMatch() {
-                        addYield(L: cL, i: cU, k: cI, j: next)
-                        cI = next
+                    let matches = tokenMatch()
+                    if matches.isEmpty {
+                        recordMismatch(expected: cL.name)
+                        continue nextDescriptor
+                    }
+                    if matches.count == 1 {
+                        // Single match — continue in place (hot path).
+                        let m = matches[0]
+                        addYield(L: cL, i: cU, k: cI, j: m.end)
+                        terminalCommitsByEnd[m.end, default: []].append(
+                            TerminalCommit(kindID: cL.nameID, start: cI, rawEnd: m.rawEnd))
+                        cI = m.end
                         cL = cL.seq!
                     } else {
-                        recordMismatch(expected: cL.name)
+                        // Multi-match fork: one continuation descriptor per
+                        // distinct end position. Doesn't fire today (lex sources
+                        // produce at most one distinct end per terminal at a
+                        // position), but lets the parse loop handle variable-
+                        // length matches when Phase C/E lexers start returning
+                        // multiple ends.
+                        for m in matches {
+                            addYield(L: cL, i: cU, k: cI, j: m.end)
+                            terminalCommitsByEnd[m.end, default: []].append(
+                                TerminalCommit(kindID: cL.nameID, start: cI, rawEnd: m.rawEnd))
+                            addDescriptor(L: cL.seq!, k: cU, i: m.end)
+                        }
                         continue nextDescriptor
                     }
                 case .N:
@@ -192,9 +516,14 @@ class MessageParser {
             }
         }
 
-        let eosPosition = TokenPosition(token: tokens.count - 1)
-        successfullParses = currentParseRoot.yield.filter { y in y.i == .zero && y.j == eosPosition }.count
+        // For a full parse this counts root yields covering [origin..input.endIndex].
+        // For a sub-parse (root != grammar.root), the caller will read yield(of: root)
+        // directly to discover accepting end positions.
+        successfullParses = yield(of: currentParseRoot).filter { y in y.i == origin && y.j == input.endIndex }.count
         trace = false
+        // Skip the diagnostic prints for sub-parses (`=:` recogniser runs);
+        // they fire at every trivia-skip position and drown out the console.
+        guard root === grammar.root else { return }
         print(
             "\nmatched:", successfullParses,
             "  failed:", failedParses,
@@ -204,7 +533,7 @@ class MessageParser {
             "  suppressedDescriptors:", suppressedDescriptorCount
         )
         if successfullParses == 0 {
-            let mismatchToken = tokens[furthestMismatchIndex.tokenIndex]
+            let mismatchToken = tokens[tokenIdx(at: furthestMismatchIndex)]
             let position = mismatchToken.image.base.linePosition(of: mismatchToken.image.startIndex)
             let expected = furthestMismatchExpected.sorted().joined(separator: ", ")
             print("""
@@ -218,6 +547,17 @@ class MessageParser {
 
     // MARK: - Internal helpers
 
+    /// Look up the array index of the visible token whose `image.startIndex == pos`.
+    /// `input.startIndex` is aliased to 0 (handles leading trivia) and
+    /// `input.endIndex` is aliased to the EOS token's index.
+    /// Falls back to a binary-search bridge if the position isn't a known token
+    /// boundary — that should only happen for diagnostic output.
+    @inline(__always)
+    func tokenIdx(at pos: CharPosition) -> Int {
+        if let idx = tokenIndexByStart[pos] { return idx }
+        return pos.tokenIndex(in: tokens, input: input)
+    }
+
     func recordMismatch(expected: String) {
         failedParses += 1
         if cI > furthestMismatchIndex {
@@ -229,189 +569,203 @@ class MessageParser {
         }
     }
 
-    /// Evaluate a boundary operator at a token position.
-    /// Boundaries are predicates between the previous and current token.
-    func boundaryMatches(_ boundary: String, at position: TokenPosition) -> Bool {
-        guard position.tokenIndex > 0 && position.tokenIndex < tokens.count else { return false }
-        let left = position.tokenIndex - 1
-        let right = position.tokenIndex
-        switch boundary {
-        case "<s>": return hasInterTokenGap(at: left, and: right)
-        case "<n>": return lineBreakCountBetweenTokens(at: left, and: right) > 0
-        case ">s<": return !hasInterTokenGap(at: left, and: right)
-        case ">n<": return lineBreakCountBetweenTokens(at: left, and: right) == 0
-        default:
-            fatalError("\(#function): unexpected boundary \(boundary)")
+    /// Evaluate a boundary operator at a parser cursor position.
+    /// Boundaries are predicates over the *trivia gap* between the previous
+    /// consumed terminal's raw end and the current cursor — i.e. they ask
+    /// "what (if anything) did `skipTrivia` skip to get the cursor here?".
+    ///
+    /// Each commit in `terminalCommitsByEnd[position]` carries the literal/
+    /// regex end position *before* trivia skipping. The slice
+    /// `input[rawEnd..<position]` is exactly the trivia text the lexer
+    /// skipped, and the boundary semantics reduce to predicates on that slice.
+    /// Multi-history GLL can produce multiple commits at the same position;
+    /// the answer must be consistent across them. We require unanimity:
+    ///   - `<s>`/`<n>` (require trivia) → true iff *every* commit has trivia
+    ///     of the required shape
+    ///   - `>s<`/`>n<` (require none)   → true iff *every* commit has no
+    ///     trivia of the forbidden shape
+    ///
+    /// End-of-input rule for `<n>`: when `position == input.endIndex`, treat
+    /// the boundary as satisfied unconditionally. Languages that use `<n>` as
+    /// a statement terminator typically also accept end-of-file in lieu of a
+    /// final newline (Python, JS ASI, many others); CPython's tokenizer
+    /// emits a synthetic NEWLINE before EOF for exactly this reason. The rule
+    /// holds for any grammar — `<n>` at EOS never has anything legitimate to
+    /// follow.
+    func boundaryMatches(_ boundary: String, at position: CharPosition) -> Bool {
+        if boundary == "<n>", position == input.endIndex { return true }
+        let commits = terminalCommitsByEnd[position] ?? []
+        // No previous commit at this position — happens at the very start of
+        // a (sub-)parse before any terminal has been consumed. Treat the
+        // boundary as failing; in well-formed grammars `<s>` doesn't appear
+        // before any terminal has been consumed.
+        guard !commits.isEmpty else { return false }
+        for commit in commits {
+            let gap = input[commit.rawEnd..<position]
+            let satisfied: Bool
+            switch boundary {
+            case "<s>": satisfied = !gap.isEmpty
+            case ">s<": satisfied = gap.isEmpty
+            case "<n>": satisfied = gap.contains(where: isLineBreak)
+            case ">n<": satisfied = !gap.contains(where: isLineBreak)
+            default: fatalError("\(#function): unexpected boundary \(boundary)")
+            }
+            if !satisfied { return false }
         }
+        return true
     }
 
-    // TODO:  why is this no longer used?
-    func testRepeat() -> Bool {
-        let d = Descriptor(L: cL, k: cU, i: cI)
-        return !unique.insert(d).inserted
+    @inline(__always)
+    private func isLineBreak(_ ch: Character) -> Bool {
+        ch == "\n" || ch == "\r"
     }
 
     /// Test whether the current token is in the selection set for a grammar slot.
-    /// Returns true if any Schrödinger dual of `tokens[cI]` satisfies:
-    ///   token ∈ FIRST(slot)  ∨  (ε ∈ FIRST(slot) ∧ token ∈ FOLLOW(bracket))
-    /// Uses BitSet membership (O(1) bit test) instead of Set<String>.contains().
-    /// At Frankenstein sub-positions, conservatively returns true (rare path).
+    /// Returns true if some terminal that LCNP can lex at `cI` is in
+    ///   FIRST(slot)  ∨  (ε ∈ FIRST(slot) ∧ FOLLOW(bracket))
+    ///
+    /// Phase D Step 3: the Schrödinger `---(…)` exclude semantic is now a
+    /// per-end LCNP filter — for each candidate terminal in the predict set,
+    /// suppress its matches whose end coincides with an excluded terminal's
+    /// match at this position. Retires the `tokens[idx].kindID` head lookup
+    /// that the eager scanner used to canonicalise same-span ambiguity.
     func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
-
-        let headToken = tokens[cI.tokenIndex]
-        let headID = headToken.kindID!
-        var current = headToken
-        while true {
-            let cID = current.kindID!
-            // Skip this dual if it's excluded by the slot's ---(...) annotation.
-            // The head token (primary match) is the keyword/literal; if it's in
-            // the exclusion set, this dual path should not be taken.
-            if current !== headToken && slot.excludeBS.contains(headID) {
-                // This is a dual being tested, and the primary token is excluded
-            } else if slot.firstBS.contains(cID)
-                || slot.firstBS.contains(grammar.epsilonID) && bracket.followBS.contains(cID) {
-                return true
-            }
-            if let next = current.dual {
-                current = next
-            } else {
-                if slot.firstBS.contains(grammar.frankensteinID)
-                    || slot.firstBS.contains(grammar.epsilonID) && bracket.followBS.contains(grammar.frankensteinID) {
+        func anyTerminalMatches(in bs: BitSet) -> Bool {
+            for kID in bs {
+                if kID == grammar.epsilonID { continue }
+                let matches = cachedLex(at: cI, terminalID: kID)
+                if matches.isEmpty { continue }
+                if slot.excludeBS.isEmpty { return true }
+                let survives = matches.contains { m in
+                    for eID in slot.excludeBS where eID != kID && eID != grammar.epsilonID {
+                        for em in cachedLex(at: cI, terminalID: eID) where em.end == m.end {
+                            return false
+                        }
+                    }
                     return true
                 }
-                return false
+                if survives { return true }
             }
+            return false
         }
+
+        if anyTerminalMatches(in: slot.firstBS) { return true }
+        if slot.firstBS.contains(grammar.epsilonID),
+           anyTerminalMatches(in: bracket.followBS) { return true }
+        return false
     }
 
-    /// Match the current terminal against the token at cI. Returns the next position on success.
-    /// Fast path: integer kindID comparison + Schrödinger duals.
-    /// Frankenstein path: prefix-match against the token image when cI has a charOffset,
-    /// or when the grammar slot allows Frankenstein splitting.
-    func tokenMatch() -> TokenPosition? {
-        let tokenIdx = cI.tokenIndex
-        let charOff  = cI.charOffset
+    /// Match the current terminal against the input at cI.
+    ///
+    /// Asks the memoizing lex cache for matches of `cL.nameID` at `cI`, then
+    /// applies the two parser-level filters the LCNP API doesn't see:
+    ///   - `---(…)` exclusion: if the head token's kindID is in `cL.excludeBS`,
+    ///     suppress matches whose terminalID differs from the head's kindID.
+    ///   - `>>1(…)` followAhead: when set, the NEXT token must satisfy the
+    ///     followAhead bitset (or be EOS).
+    ///
+    /// Phase C Step 2: returns the full set of distinct matches so the main
+    /// parse loop can fork descriptors over them. Each match carries both
+    /// `end` (cursor after trivia skip) and `rawEnd` (literal end, before
+    /// trivia skip) — the parse loop logs `rawEnd` into `terminalCommitsByEnd`
+    /// so boundary checks (`<s>`/`>s<`/`<n>`/`>n<`) can answer trivia-gap
+    /// questions without a scanner-produced token stream.
+    func tokenMatch() -> [LexMatch] {
+        var matches = cachedLex(at: cI, terminalID: cL.nameID)
+        guard !matches.isEmpty else { return [] }
 
-        if charOff != 0 {
-            // RARE: Frankenstein sub-position — match against remainder of token image.
-            // `cL.content` is the unescaped literal value, stored once by `ApusParser.literal()`.
-            // Only `.T` literal terminals can reach this path (since `~~~` is literal-only),
-            // so `content` is guaranteed populated here.
-            let image = tokens[tokenIdx].stripped
-            let remainder = image.dropFirst(charOff)
-            let needle = cL.content
-            if remainder.hasPrefix(needle) {
-                let newOff = charOff + needle.count
-                if newOff >= image.count {
-                    return cI.nextToken()           // token fully consumed
-                }
-                return cI.at(charOffset: newOff)    // more remainder
-            }
-            return nil
+        // Lookbehind: `++N(…)` / `--N(…)` — evaluate against parser-side
+        // commit history (Phase E Step 1). Filters out matches whose context
+        // doesn't satisfy the grammar's lookbehind annotation. Cheap when the
+        // terminal has no lookbehind (most do not).
+        if let lookbehind = lookbehindByTerminalID[cL.nameID],
+           !lookbehindAllows(lookbehind, at: cI) {
+            return []
         }
 
-        // FAST PATH: exact match + Schrödinger duals
-        let headToken = tokens[tokenIdx]
-        var current = headToken
-        while true {
-            // Skip duals excluded by ---(...) annotation on the grammar slot
-            if current !== headToken && cL.excludeBS.contains(headToken.kindID) {
-                // This dual is suppressed; the primary token is in the exclusion set
-            } else if cL.nameID == current.kindID {
-                // Positive forward-1-token lookahead: when the slot has a `>>1(...)`
-                // approved-follow set, the NEXT token must be in it (or be the EOS
-                // sentinel, which is always approved). Walks the next token's
-                // Schrödinger duals — any matching dual approves.
-                if !cL.followAheadBS.isEmpty {
-                    let nextIdx = tokenIdx + 1
-                    var ok = false
-                    if nextIdx < tokens.count {
-                        var probe: Token? = tokens[nextIdx]
-                        while let p = probe {
-                            if p.kindID == grammar.eosID || cL.followAheadBS.contains(p.kindID) {
-                                ok = true
-                                break
-                            }
-                            probe = p.dual
-                        }
-                    } else {
-                        ok = true   // off the end of the array → treat as EOS
+        // Exclude: `---(…)` — for each candidate end, if any excluded terminal
+        // also lexes at this position with the same end, suppress the match.
+        // Phase D Step 2: per-end LCNP query, retiring the `tokens[idx].kindID`
+        // head lookup that the eager scanner used to canonicalise same-span
+        // ambiguity. Relies on the lexer's keyword-boundary guard so e.g.
+        // literal "let" doesn't over-match "letx".
+        if !cL.excludeBS.isEmpty {
+            matches = matches.filter { m in
+                for eID in cL.excludeBS where eID != cL.nameID && eID != grammar.epsilonID {
+                    for em in cachedLex(at: cI, terminalID: eID) where em.end == m.end {
+                        return false
                     }
-                    if !ok { return nil }
                 }
-                return cI.nextToken()
+                return true
             }
-            guard let next = current.dual else { break }
-            current = next
+            if matches.isEmpty { return [] }
         }
 
-
-        // RARE: Frankenstein prefix split — see comment above for needle derivation.
-        if cL.firstBS.contains(grammar.frankensteinID) {
-            let image = tokens[tokenIdx].stripped
-            let needle = cL.content
-            if image.hasPrefix(needle) && image.count > needle.count {
-                return cI.at(charOffset: needle.count)
-            }
-        }
-        return nil
-    }
-
-    /// Test whether the current token is in the follow set of a bracket (LHS nonterminal).
-    /// Handles Schrödinger tokens by checking all duals.
-    /// At Frankenstein sub-positions, conservatively returns true (rare path).
-    func followCheck(bracket: GrammarNode) -> Bool {
-        var current = tokens[cI.tokenIndex]
-        while true {
-            if bracket.followBS.contains(current.kindID) { return true }
-            guard let next = current.dual else {
-                if bracket.followBS.contains(grammar.frankensteinID) { return true }
+        // Predict-set lookahead — Phase F's `lexLKH`. For each candidate end,
+        // some terminal that can legally follow this slot must lex at the end
+        // (or we're at EOS / past the input). Prunes matches whose end has no
+        // viable continuation, saving the descriptor that would otherwise die
+        // one slot later.
+        //
+        // The predict set is the grammar-computed `cL.followBS` ("FIRST of the
+        // suffix after this slot, with epsilon look-through") — except when
+        // the grammar author wrote a manual `>>1(…)` annotation, in which
+        // case `cL.followAheadBS` is a stricter override and wins. Skip the
+        // filter when:
+        //   - the predict set is empty (no follow info), or
+        //   - the predict set contains ε (suffix fully nullable — anything
+        //     can be a valid end including end-of-input).
+        let predictBS = cL.followAheadBS.isEmpty ? cL.followBS : cL.followAheadBS
+        if !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
+            matches = matches.filter { m in
+                // Past the end of input acts as EOS — always allowed.
+                if m.end >= input.endIndex { return true }
+                for fID in predictBS where fID != grammar.epsilonID {
+                    if !cachedLex(at: m.end, terminalID: fID).isEmpty { return true }
+                }
                 return false
             }
-            current = next
+            if matches.isEmpty { return [] }
         }
+
+        // Distinct end positions, first-seen order for determinism. Today the
+        // lex sources mostly return one match (or duplicates with the same end
+        // via Schrödinger duals); the deduped vector keeps the API ready for
+        // variable-length regex matches without changing behaviour now.
+        var seen: Set<CharPosition> = []
+        var result: [LexMatch] = []
+        result.reserveCapacity(matches.count)
+        for m in matches where seen.insert(m.end).inserted {
+            result.append(m)
+        }
+        return result
     }
 
-    /// Test whether a continuation grammar slot can proceed with the token at a given position.
-    /// Used to suppress descriptors in rtn/bracketRtn/pop replay when the continuation
-    /// cannot match the current token. Conservative: returns true for nullable, END, EPS,
-    /// and Frankenstein sub-positions to avoid false rejections.
-    func continuationViable(continuation: GrammarNode, at position: TokenPosition) -> Bool {
+    /// Test whether some terminal in the bracket's FOLLOW set can be lexed at `cI`.
+    /// Phase B Step 3: per-terminal LCNP iteration through the lex cache.
+    func followCheck(bracket: GrammarNode) -> Bool {
+        for fID in bracket.followBS {
+            if fID == grammar.epsilonID { continue }
+            if !cachedLex(at: cI, terminalID: fID).isEmpty { return true }
+        }
+        return false
+    }
+
+    /// Test whether a continuation grammar slot can proceed with input at the
+    /// given position. Used to suppress descriptors in rtn/bracketRtn/pop replay
+    /// when the continuation cannot match. Conservative: returns true for
+    /// nullable, END, EPS to avoid false rejections.
+    func continuationViable(continuation: GrammarNode, at position: CharPosition) -> Bool {
         // Structural nodes that don't consume input are always viable
         if continuation.kind == .END || continuation.kind == .EPS { return true }
         // Nullable continuation: can't determine without enclosing FOLLOW context
         if continuation.firstBS.contains(grammar.epsilonID) { return true }
-        // Frankenstein sub-position: conservatively viable (rare path)
-        if position.charOffset != 0 { return true }
-        // Check token (and Schrödinger duals) against FIRST(continuation)
-        var current = tokens[position.tokenIndex]
-        while true {
-            if continuation.firstBS.contains(current.kindID) { return true }
-            guard let next = current.dual else {
-                return continuation.firstBS.contains(grammar.frankensteinID)
-            }
-            current = next
+        // Per-terminal LCNP iteration over FIRST(continuation)
+        for kID in continuation.firstBS {
+            if kID == grammar.epsilonID { continue }
+            if !cachedLex(at: position, terminalID: kID).isEmpty { return true }
         }
+        return false
     }
 
-    /// Count line breaks from the first token's START index to the second token's START index.
-    /// `\r\n` counts as one line break.
-    func lineBreakCountBetweenTokens(at first: Int, and second: Int) -> Int {
-        let span = input[tokens[first].image.startIndex..<tokens[second].image.startIndex]
-        var breaks = 0
-        var prevWasCR = false
-        for ch in span {
-            let isCR = ch == "\r"
-            let isLF = ch == "\n"
-            if isCR || (isLF && !prevWasCR) { breaks += 1 }
-            prevWasCR = isCR
-        }
-        return breaks
-    }
-
-    /// True when there are source characters between the first token END and the second token START.
-    /// This backs <s> and >s< so synthetic layout tokens can still observe source spacing.
-    func hasInterTokenGap(at first: Int, and second: Int) -> Bool {
-        tokens[first].image.endIndex < tokens[second].image.startIndex
-    }
 }

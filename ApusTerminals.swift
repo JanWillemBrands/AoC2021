@@ -25,6 +25,7 @@ let apusTerminals: [String:TokenPattern] = [
 
     ".":            TokenPattern(".",                       Regex { "." },                      true,  false),
     ":":            TokenPattern(":",                       Regex { ":" },                      true,  false),
+    "=:":           TokenPattern("=:",                      Regex { "=:" },                     true,  false),
     "=":            TokenPattern("=",                       Regex { "=" },                      true,  false),
     "-":            TokenPattern("-",                       Regex { "-" },                      true,  false),
     "|":            TokenPattern("|",                       Regex { "|" },                      true,  false),
@@ -42,7 +43,6 @@ let apusTerminals: [String:TokenPattern] = [
     "===":          TokenPattern("===",                     Regex { "===" },                    true,  false),
     ">>>":          TokenPattern(">>>",                     Regex { ">>>" },                    true,  false),
     "<<<":          TokenPattern("<<<",                     Regex { "<<<" },                    true,  false),
-    "~~~":          TokenPattern("~~~",                     Regex { "~~~" },                    true,  false),
     "---":          TokenPattern("---",                     Regex { "---" },                    true,  false),
     ">>|":          TokenPattern(">>|",                     Regex { ">>|" },                    true,  false),
     "|<<":          TokenPattern("|<<",                     Regex { "|<<" },                    true,  false),

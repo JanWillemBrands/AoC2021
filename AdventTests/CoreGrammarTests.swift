@@ -431,6 +431,28 @@ struct CoreGrammarTests {
         }
     }
 
+    // MARK: - =: trivia non-terminal (Phase E Step 2)
+
+    @Suite("TriviaNonTerminal", .serialized)
+    struct TriviaNonTerminal {
+        static let cases: [TestCase] = [
+            TestCase(
+                // `nested =:` is a trivia non-terminal: its recogniser runs as
+                // a recursive sub-parse during skipTrivia. Nested `<…>` blocks
+                // count as trivia and get consumed before matching `x`.
+                grammar: #"nested =: "<" { /[^<>]/ | nested } ">" . S = "x"."#,
+                pass: ["x", "<>x", "<a>x", "<<a>>x", "<<<a>>>x", "<a><b>x"],
+                fail: ["<x", "x<", "<a>"],
+                label: "nested-bracket trivia via =:"
+            ),
+        ]
+
+        @Test(arguments: cases)
+        func test(_ tc: TestCase) throws {
+            try runTestCase(tc)
+        }
+    }
+
     // MARK: - Oracle Disambiguation
 
     @Suite("Oracle Disambiguation", .serialized)

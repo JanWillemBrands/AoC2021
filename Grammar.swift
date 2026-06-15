@@ -12,7 +12,6 @@ import BitCollections
 // Internal sentinel strings for FIRST/FOLLOW sets and the symbol table:
 //   end-of-input:  "○" (WHITE CIRCLE U+25CB)
 //   epsilon:       ""  (empty string), displayed as "ε"
-//   partial-token: "≋" (TRIPLE TILDE U+224B) a.k.a. Frankenstein
 
 
 // Result of parsing an APUS grammar file.
@@ -53,14 +52,8 @@ class Grammar {
 
     // the representation of the end-of-input token: "○" (BLACK CIRCLE U+25CF), displayed as "$"
 
-    // the representation of a Frankenstein token: "≋" (TRIPLE TILDE U+224B)
-    
     /// Maps terminal name → integer ID. Initialised with "○" → 0 (EOS).
     var symbolToID: [String: Int] = ["○": 0]
-    
-    /// The integer ID for the partial token sentinel in first/follow BitSets.
-    /// Set by `finalizeSymbolTable()` after all terminals are registered.
-    var frankensteinID: Int!
 
     /// The integer ID for the epsilon sentinel in first/follow BitSets.
     /// Set by `finalizeSymbolTable()` after all terminals are registered.
@@ -83,13 +76,8 @@ class Grammar {
     /// Assign epsilon its ID (T+1). Call after all terminals are registered
     /// but before `assignNameIDs()`.
     func finalizeSymbolTable() {
-        frankensteinID = symbolToID.count
-        symbolToID["≋"] = frankensteinID
         epsilonID = symbolToID.count
         symbolToID[""] = epsilonID
-//        for (name, id) in symbolToID {
-//            print("ID", id, "for terminal", name)
-//        }
     }
     
     /// Walk all grammar nodes and set `nameID` on terminal-like nodes
@@ -374,7 +362,7 @@ extension Grammar {
         case .EOS, .T, .TI, .C:
             try populateFirstFollowSets(for: node.seq!)
 //            node.first = [node.name]
-            node.first.insert(node.name)    // there may already be a frankenstein sentinel
+            node.first.insert(node.name)
             updateFollow(for: node)
         case .B:
             // Boundary/trivia constraints are not part of FIRST/FOLLOW token prediction.

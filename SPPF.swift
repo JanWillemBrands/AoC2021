@@ -71,12 +71,12 @@ enum SPPFNodeKind {
 class SPPFNode: CustomStringConvertible {
     let kind: SPPFNodeKind
     let slot: GrammarNode       // the grammar node (nonterminal, terminal, or slot position)
-    let i: TokenPosition        // left extent (or pivot k for packed nodes)
-    let j: TokenPosition        // right extent (.unused for packed nodes)
+    let i: CharPosition         // left extent (or pivot k for packed nodes)
+    let j: CharPosition?        // right extent (nil for packed nodes)
     var children: [SPPFNode] = []
     var extended = false        // has this node been extended (expanded) already?
 
-    init(kind: SPPFNodeKind, slot: GrammarNode, i: TokenPosition, j: TokenPosition) {
+    init(kind: SPPFNodeKind, slot: GrammarNode, i: CharPosition, j: CharPosition?) {
         self.kind = kind
         self.slot = slot
         self.i = i
@@ -136,8 +136,8 @@ class SPPFNode: CustomStringConvertible {
 /// Key for deduplicating symbol and intermediate nodes: (slot, i, j).
 struct SPPFNodeKey: Hashable {
     let slot: GrammarNode
-    let i: TokenPosition
-    let j: TokenPosition
+    let i: CharPosition
+    let j: CharPosition
 }
 
 // MARK: - SPPF Extractor
@@ -162,23 +162,27 @@ struct SPPFNodeKey: Hashable {
 class SPPFExtractor {
     
     // MARK: - Inputs from parser
+    let parser: MessageParser
     let grammar: Grammar
     let tokens: [Token]
-    
+    let input: String
+
     // MARK: - SPPF extraction state
     var slotIndex: [GrammarNode: Int] = [:]
     var sppfNodes: [SPPFNodeKey: SPPFNode] = [:]
     var sppfAllNodes: [SPPFNode] = []
     var _sppfNonTerminals: [String: GrammarNode] = [:]
     var syntheticEpsilonNode: GrammarNode?
-    
+
     // MARK: - Initialization
-    
-    init(grammar: Grammar, tokens: [Token]) {
-        self.grammar = grammar
+
+    init(parser: MessageParser, tokens: [Token], input: String) {
+        self.parser = parser
+        self.grammar = parser.grammar
         self.tokens = tokens
-        self._sppfNonTerminals = grammar.nonTerminals
-        buildSlotIndex(nonTerminals: grammar.nonTerminals)
+        self.input = input
+        self._sppfNonTerminals = parser.grammar.nonTerminals
+        buildSlotIndex(nonTerminals: parser.grammar.nonTerminals)
     }
     
     // MARK: - Slot Index Computation
@@ -262,26 +266,26 @@ class SPPFExtractor {
     ///   For closures (KLN/POS), chain through multiple iterations via BFS.
     ///   Nullable brackets (KLN/OPT) also include `from` itself (empty match).
     /// - Epsilon: matches only at `from` (empty span).
-    private func endPositions(_ symbol: GrammarNode, from: TokenPosition) -> Set<TokenPosition> {
+    private func endPositions(_ symbol: GrammarNode, from: CharPosition) -> Set<CharPosition> {
         switch symbol.kind {
         case .T, .TI, .C, .B:
-            var positions: Set<TokenPosition> = []
-            for span in symbol.yield where span.k == from { positions.insert(span.j) }
+            var positions: Set<CharPosition> = []
+            for span in parser.yield(of: symbol) where span.k == from { positions.insert(span.j) }
             return positions
         case .N:
             guard let lhs = symbol.alt else { return [] }
-            var positions: Set<TokenPosition> = []
-            for span in lhs.yield where span.i == from { positions.insert(span.j) }
+            var positions: Set<CharPosition> = []
+            for span in parser.yield(of: lhs) where span.i == from { positions.insert(span.j) }
             return positions
         case .DO, .OPT, .KLN, .POS:
-            var positions: Set<TokenPosition> = []
+            var positions: Set<CharPosition> = []
             if symbol.kind == .KLN || symbol.kind == .OPT { positions.insert(from) }
-            var visited: Set<TokenPosition> = []
+            var visited: Set<CharPosition> = []
             var queue = [from]
             while !queue.isEmpty {
                 let pos = queue.removeFirst()
                 guard visited.insert(pos).inserted else { continue }
-                for span in symbol.yield where span.k == pos {
+                for span in parser.yield(of: symbol) where span.k == pos {
                     positions.insert(span.j)
                     if symbol.kind.isClosure { queue.append(span.j) }
                 }
@@ -297,10 +301,10 @@ class SPPFExtractor {
     /// Chain through a sequence of symbols to find all possible end positions.
     /// Starting from `start`, for each symbol in order, collect where it could end
     /// given all possible start positions from the previous symbol.
-    private func chainEndPositions(symbols: [GrammarNode], from start: TokenPosition) -> Set<TokenPosition> {
-        var positions: Set<TokenPosition> = [start]
+    private func chainEndPositions(symbols: [GrammarNode], from start: CharPosition) -> Set<CharPosition> {
+        var positions: Set<CharPosition> = [start]
         for symbol in symbols {
-            var nextPositions: Set<TokenPosition> = []
+            var nextPositions: Set<CharPosition> = []
             for pos in positions {
                 nextPositions.formUnion(endPositions(symbol, from: pos))
             }
@@ -322,20 +326,21 @@ class SPPFExtractor {
     /// Returns the root SPPFNode, or nil if no parse exists.
     func extractSPPF() -> SPPFNode? {
         let startSymbol = grammar.root
-        let extent = TokenPosition(token: tokens.count - 1)  // exclude EOS
+        let extent = input.endIndex  // exclude EOS — EOS token's startIndex == input.endIndex
+        let origin = input.startIndex
 
         // Clear previous SPPF
         sppfNodes = [:]
         sppfAllNodes = []
 
         // Paper: if Υ has an element of the form (S ::= α, 0, k, n)
-        guard startSymbol.yield.contains(where: { $0.i == .zero && $0.j == extent }) else {
+        guard parser.yield(of: startSymbol).contains(where: { $0.i == origin && $0.j == extent }) else {
             trace("SPPF: no complete parse found for \(startSymbol.name) spanning 0..\(extent)")
             return nil
         }
 
         // Paper: create a node labelled (S, 0, n) in G
-        let root = findOrCreateNode(kind: .symbol, slot: startSymbol, i: .zero, j: extent)
+        let root = findOrCreateNode(kind: .symbol, slot: startSymbol, i: origin, j: extent)
         
         // Paper: while G has an extendable leaf node
         // Each pass may create new nodes, so we snapshot and repeat until stable.
@@ -364,7 +369,9 @@ class SPPFExtractor {
     ///   3. Intermediate node: look up BSR pivots for the grammar slot.
     private func extendNode(_ w: SPPFNode) {
         let i = w.i
-        let j = w.j
+        // w is extendable (symbol or intermediate) so j is never nil; packed
+        // nodes carry `nil` for j but are never extended.
+        let j = w.j!
         
         if w.isNonterminal {
             // Paper: μ is a nonterminal X
@@ -372,7 +379,7 @@ class SPPFExtractor {
             // (it stores cU, the cluster index). So mkPNforCompleteRule searches
             // the intermediate BSRs to find actual split points for each alternate.
             let X = w.slot
-            if X.yield.contains(where: { $0.i == i && $0.j == j }) {
+            if parser.yield(of: X).contains(where: { $0.i == i && $0.j == j }) {
                 mkPNforCompleteRule(lhs: X, i: i, j: j, parent: w)
             }
         } else if w.kind == .symbol && w.slot.kind.isBracket {
@@ -404,7 +411,7 @@ class SPPFExtractor {
             } else {
                 // Paper: for each (α, i, k, j) ∈ Υ { mkPN(X ::= α · δ, i, k, j, G) }
                 // Look up BSR evidence directly from the slot's yield.
-                for span in slot.yield where span.i == i && span.j == j {
+                for span in parser.yield(of: slot) where span.i == i && span.j == j {
                     mkPN(slot: slot, i: i, k: span.k, j: j, parent: w)
                 }
             }
@@ -423,11 +430,12 @@ class SPPFExtractor {
         let bracket = w.slot
         let bodyEnd = bracket.bracketEndNode!  // END node = {τ·} slot
         let i = w.i
-        let j = w.j
+        // w is a bracket symbol node; only packed nodes carry nil for j.
+        let j = w.j!
         
         if i == j {
             // Empty match (KLN/OPT matching nothing) — create packed node with ε child
-            let packedNode = SPPFNode(kind: .packed, slot: bodyEnd, i: i, j: .unused)
+            let packedNode = SPPFNode(kind: .packed, slot: bodyEnd, i: i, j: nil)
             w.children.append(packedNode)
             sppfAllNodes.append(packedNode)
             
@@ -437,8 +445,8 @@ class SPPFExtractor {
         }
         
         // Find last iteration starts: BSR spans ending at j give us iteration boundaries.
-        var lastIterationStarts: Set<TokenPosition> = []
-        for span in bracket.yield where span.j == j {
+        var lastIterationStarts: Set<CharPosition> = []
+        for span in parser.yield(of: bracket) where span.j == j {
             lastIterationStarts.insert(span.k)
         }
         
@@ -454,7 +462,7 @@ class SPPFExtractor {
                 mkBracketIterationContent(bracket: bracket, i: i, j: j, parent: w)
             } else {
                 // Multiple iterations: left = bracket(i, k), right = last iteration content(k, j)
-                let packedNode = SPPFNode(kind: .packed, slot: bodyEnd, i: k, j: .unused)
+                let packedNode = SPPFNode(kind: .packed, slot: bodyEnd, i: k, j: nil)
                 w.children.append(packedNode)
                 sppfAllNodes.append(packedNode)
                 
@@ -471,7 +479,7 @@ class SPPFExtractor {
     /// Create the SPPF content for one iteration of a bracket spanning (i, j).
     /// Searches the bracket's alternates to find which one matched and decomposes it
     /// into binary form, mirroring mkPNforCompleteRule but for bracket bodies.
-    private func mkBracketIterationContent(bracket: GrammarNode, i: TokenPosition, j: TokenPosition, parent: SPPFNode) {
+    private func mkBracketIterationContent(bracket: GrammarNode, i: CharPosition, j: CharPosition, parent: SPPFNode) {
         let bodyEnd = bracket.bracketEndNode!  // END node = {τ·} slot
         
         // Walk the bracket's alternates
@@ -486,14 +494,14 @@ class SPPFExtractor {
             
             if symbols.count == 1 {
                 // Single-symbol alternate: check for BSR evidence
-                let spans = last.yield.filter { $0.i == i && $0.j == j }
+                let spans = parser.yield(of: last).filter { $0.i == i && $0.j == j }
                 if spans.contains(where: { $0.k == i }) {
                     if parent.kind == .packed {
                         let child = makeSymbolOrIntermediateNode(for: last, i: i, j: j)
                         parent.children.append(child)
                     } else {
                         // Parent is the bracket symbol node (single iteration case)
-                        let packedNode = SPPFNode(kind: .packed, slot: bodyEnd, i: i, j: .unused)
+                        let packedNode = SPPFNode(kind: .packed, slot: bodyEnd, i: i, j: nil)
                         parent.children.append(packedNode)
                         sppfAllNodes.append(packedNode)
                         
@@ -503,7 +511,7 @@ class SPPFExtractor {
                 }
             } else {
                 // Multi-symbol alternate: find pivots and decompose
-                let lastSpans = last.yield.filter { $0.i == i && $0.j == j }
+                let lastSpans = parser.yield(of: last).filter { $0.i == i && $0.j == j }
                 for span in lastSpans {
                     let k = span.k
                     
@@ -514,7 +522,7 @@ class SPPFExtractor {
                         parent.children.append(intermediateChild)
                     } else {
                         // Parent is the bracket symbol node (single iteration case)
-                        let packedNode = SPPFNode(kind: .packed, slot: bodyEnd, i: k, j: .unused)
+                        let packedNode = SPPFNode(kind: .packed, slot: bodyEnd, i: k, j: nil)
                         parent.children.append(packedNode)
                         sppfAllNodes.append(packedNode)
                         
@@ -537,7 +545,7 @@ class SPPFExtractor {
     }
     
     /// Find or create an epsilon symbol node at position `pos`.
-    private func findOrCreateEpsilonSymbolNode(at pos: TokenPosition) -> SPPFNode {
+    private func findOrCreateEpsilonSymbolNode(at pos: CharPosition) -> SPPFNode {
         // Try to find an existing EPS grammar node in the grammar
         if syntheticEpsilonNode == nil {
             outer: for (_, nt) in _sppfNonTerminals {
@@ -577,9 +585,9 @@ class SPPFExtractor {
     ///     - |β| = 0: no left child (single symbol, handled elsewhere)
     ///     - |β| = 1: symbol node for β, spanning (i, k)
     ///     - |β| > 1: intermediate node for the slot before x, spanning (i, k)
-    private func mkPN(slot: GrammarNode, i: TokenPosition, k: TokenPosition, j: TokenPosition, parent: SPPFNode) {
+    private func mkPN(slot: GrammarNode, i: CharPosition, k: CharPosition, j: CharPosition, parent: SPPFNode) {
         // Paper: make a node y in G labelled (X ::= α · δ, k)
-        let packedNode = SPPFNode(kind: .packed, slot: slot, i: k, j: .unused)
+        let packedNode = SPPFNode(kind: .packed, slot: slot, i: k, j: nil)
         parent.children.append(packedNode)
         sppfAllNodes.append(packedNode)
         
@@ -603,7 +611,7 @@ class SPPFExtractor {
     /// For single-symbol alternates: check direct BSR evidence at the last symbol.
     /// For multi-symbol alternates: find pivot positions by chaining through prefix
     /// symbols' end positions, then validate the last symbol can reach j.
-    private func mkPNforCompleteRule(lhs: GrammarNode, i: TokenPosition, j: TokenPosition, parent: SPPFNode) {
+    private func mkPNforCompleteRule(lhs: GrammarNode, i: CharPosition, j: CharPosition, parent: SPPFNode) {
         var altNode = lhs.alt
         while let alt = altNode {
             defer { altNode = alt.alt }
@@ -616,12 +624,12 @@ class SPPFExtractor {
             
             if symbolCount == 1 {
                 // Single-symbol alternate: pivot is i, the only child spans (i, j)
-                let spans = last.yield.filter { $0.i == i && $0.j == j }
+                let spans = parser.yield(of: last).filter { $0.i == i && $0.j == j }
                 let hasDirect = spans.contains { $0.k == i }
                 let hasBracket = last.kind.isBracket && !spans.isEmpty
                 
                 if hasDirect || hasBracket {
-                    let packedNode = SPPFNode(kind: .packed, slot: last, i: i, j: .unused)
+                    let packedNode = SPPFNode(kind: .packed, slot: last, i: i, j: nil)
                     parent.children.append(packedNode)
                     sppfAllNodes.append(packedNode)
                     
@@ -637,7 +645,7 @@ class SPPFExtractor {
                 pivots = pivots.filter { $0 >= i && $0 <= j }
                 
                 for k in pivots where endPositions(last, from: k).contains(j) {
-                    let packedNode = SPPFNode(kind: .packed, slot: last, i: k, j: .unused)
+                    let packedNode = SPPFNode(kind: .packed, slot: last, i: k, j: nil)
                     parent.children.append(packedNode)
                     sppfAllNodes.append(packedNode)
                     
@@ -664,7 +672,7 @@ class SPPFExtractor {
     /// Decomposes α = βx where x is the slot (last symbol of α):
     ///   - Right child: symbol/intermediate node for x spanning (k, j)
     ///   - Left child: depends on |β| (see mkPN documentation)
-    private func mkPNforSlot(slot: GrammarNode, i: TokenPosition, k: TokenPosition, j: TokenPosition, packedNode: SPPFNode) {
+    private func mkPNforSlot(slot: GrammarNode, i: CharPosition, k: CharPosition, j: CharPosition, packedNode: SPPFNode) {
         guard let alphaLen = slotIndex[slot] else { return }
         
         // Paper: α = βx where |x| = 1
@@ -695,7 +703,7 @@ class SPPFExtractor {
     ///   - Terminal/epsilon → symbol node (marked as non-extendable)
     ///   - Bracket → symbol node (acts like anonymous nonterminal)
     ///   - Other → intermediate node (grammar slot position)
-    private func makeSymbolOrIntermediateNode(for node: GrammarNode, i: TokenPosition, j: TokenPosition) -> SPPFNode {
+    private func makeSymbolOrIntermediateNode(for node: GrammarNode, i: CharPosition, j: CharPosition) -> SPPFNode {
         switch node.kind {
         case .N:
             if node.isLHS {
@@ -723,7 +731,7 @@ class SPPFExtractor {
     
     /// Paper: mkN(Ω, i, j, y, G) — find or create a node labelled (Ω, i, j).
     /// Node deduplication ensures the SPPF remains a compact DAG rather than a tree.
-    private func findOrCreateNode(kind: SPPFNodeKind, slot: GrammarNode, i: TokenPosition, j: TokenPosition) -> SPPFNode {
+    private func findOrCreateNode(kind: SPPFNodeKind, slot: GrammarNode, i: CharPosition, j: CharPosition) -> SPPFNode {
         let key = SPPFNodeKey(slot: slot, i: i, j: j)
         if let existing = sppfNodes[key] {
             return existing

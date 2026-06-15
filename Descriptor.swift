@@ -7,43 +7,188 @@
 
 // Paper: descriptor = (L, k, i) — grammar slot, cluster index, input index
 import OSLog
+import Foundation
+import BitCollections
 
-/// Packed token position: upper bits = token array index, lower bits = character offset within token.
-/// Character offset 0 = normal position. Character offset > 0 = Frankenstein sub-position
-/// (mid-token split, e.g. ">>" being consumed as two separate ">").
-struct TokenPosition: Hashable, Comparable, CustomStringConvertible {
-    private static let shift = 4
-    private static let mask: Int32  = 0xF
+// MARK: - LCNP source-position model
+//
+// Per "Multi-Lex Adoption Design 2.md". Positions everywhere (BSR/CRF/
+// Descriptor/Oracle) are `String.Index` into the parser's input. Lex queries
+// are answered on-demand by `OnDemandLiteralLexer`.
 
-    var bits: Int32
+/// Character index into the parser's input string.
+/// `String.Index` for the initial implementation — a later perf pass may swap
+/// to an interned integer if descriptor pressure justifies the complexity.
+typealias CharPosition = String.Index
 
-    var tokenIndex: Int         { Int(bits) >> Self.shift }
-    var charOffset: Int         { Int(bits & Self.mask) }
+/// One terminal match returned by the lexer.
+/// Empty result from `lex` means the terminal does not match at that position.
+///
+/// `end` is the cursor position **after** trailing trivia skipping (where the
+/// parser resumes). `rawEnd` is the position right after the literal/regex
+/// content itself, **before** trivia skipping. The two differ exactly when the
+/// lexer skipped trivia after the match; `boundaryMatches` uses that delta to
+/// answer `<s>`/`>s<`/`<n>`/`>n<` without needing a scanner-produced token
+/// stream.
+struct LexMatch: Hashable {
+    let terminalID: Int
+    let end: CharPosition
+    let rawEnd: CharPosition
+}
 
-    init(token: Int, charOffset: Int = 0) {
-        self.bits = Int32(token << Self.shift | charOffset)
+/// Key for the parser's `(pos, terminalID) → [LexMatch]` memoization table.
+/// Lex queries are pure given the input; the same (pos, terminalID) gets asked
+/// many times during a parse (testSelect iterates `firstBS`, descriptor re-entry
+/// revisits positions). Without this cache the per-terminal LCNP path would
+/// re-run pattern matching tens of thousands of times.
+struct LexCacheKey: Hashable {
+    let pos: CharPosition
+    let terminalID: Int
+}
+
+/// Parser-driven, per-terminal lexer interface.
+/// Lifted from the LCNP paper's `lex(u, t)` / `lexLKH(t, i, β, X)` functions.
+protocol LCNPLexer {
+    /// All valid end positions for `terminalID` starting at `pos`.
+    func lex(at pos: CharPosition, terminalID: Int) -> [LexMatch]
+
+    /// `lex` filtered against the parser's next-symbol expectations.
+    /// Optimisation step — `lex` remains the semantic base. Default impl just
+    /// delegates to `lex`; adapters/recognizers may override to prune.
+    func lexLKH(at pos: CharPosition, terminalID: Int, predict: BitSet) -> [LexMatch]
+}
+
+extension LCNPLexer {
+    func lexLKH(at pos: CharPosition, terminalID: Int, predict: BitSet) -> [LexMatch] {
+        lex(at: pos, terminalID: terminalID)
+    }
+}
+
+/// On-demand `LCNPLexer` covering literal terminals (Phase B Step 2) and regex
+/// terminals (Phase C Step 1) directly against `input`. Trivia skipping uses
+/// the grammar's `isSkip` patterns plus `=:` non-terminal recognisers.
+///
+/// Phase E Step 2d (Jun 14, 2026): `LegacyScannerLexAdapter` retired — this
+/// lexer is the only path now. Terminals not present in `literalSourceByID`
+/// nor `regexByID` simply return no match. `transitions`-annotated terminals
+/// (Python's `bracketNewline`) lose their mode-gating; that's a documented
+/// regression captured in the design doc.
+///
+/// Virtual tokens (Phase G, Jun 14, 2026): zero-length matches at source-
+/// derived positions. Used for layout-sensitive synthetic tokens like
+/// `INDENT` / `DEDENT` (Python, Haskell offside) and EOS. The
+/// `virtualTokensAt` table is computed once at parse setup by walking the
+/// input lexically; the lex consults it after trivia-skipping the cursor.
+/// EOS still has a fallback special-case for grammars that don't populate
+/// the table.
+///
+/// Match `end` is the position **after skipping trailing trivia**, so it
+/// coincides with the next visible-token start in well-formed inputs and
+/// preserves the parser's "cursor sits at a token boundary" invariant.
+struct OnDemandLiteralLexer: LCNPLexer {
+    let input: String
+    /// `terminalID → literal source text` for every literal terminal in the grammar.
+    let literalSourceByID: [Int: String]
+    /// `terminalID → compiled regex` for every regex terminal (non-literal,
+    /// non-skip). Answered from `input` directly via `prefixMatch`.
+    let regexByID: [Int: Regex<Substring>]
+    /// Compiled `isSkip` patterns from the grammar, used to skip whitespace /
+    /// comments / etc. between the parser's cursor and the next meaningful
+    /// character.
+    let triviaRegexes: [Regex<Substring>]
+    /// Recognisers for `=:` non-terminal trivia (Phase E Step 2). Each closure
+    /// runs a recursive `MessageParser` sub-parse rooted at the `=:` non-
+    /// terminal and returns the longest accepting end position at `pos`, or
+    /// `nil` if no match. Tried after `triviaRegexes` in `skipTrivia`.
+    let triviaRecognisers: [(CharPosition) -> CharPosition?]
+    /// Terminal ID of the synthetic EOS sentinel (`"○"`). Matched directly at
+    /// `input.endIndex` (after trivia skip), since EOS isn't in
+    /// `grammar.terminals` and wouldn't otherwise have a lex source.
+    let eosID: Int
+    /// Source-derived zero-length tokens keyed by character position. Used by
+    /// layout-sensitive grammars (Python's INDENT/DEDENT, etc.). Populated
+    /// once at parse setup, gated on `grammar.usesInjectedLayoutTokens`.
+    /// Multiple synthetic terminals at the same position appear once each in
+    /// the value array (e.g. two DEDENTs at the same column).
+    let virtualTokensAt: [CharPosition: [Int]]
+
+    func lex(at pos: CharPosition, terminalID: Int) -> [LexMatch] {
+        let scanStart = skipTrivia(from: pos)
+        // Virtual zero-length match: registered at this position by the
+        // layout-table precompute (e.g. INDENT/DEDENT in Python).
+        if let virtuals = virtualTokensAt[scanStart], virtuals.contains(terminalID) {
+            return [LexMatch(terminalID: terminalID, end: scanStart, rawEnd: scanStart)]
+        }
+        if terminalID == eosID {
+            // EOS matches at end of input (after any trailing trivia).
+            guard scanStart == input.endIndex else { return [] }
+            return [LexMatch(terminalID: terminalID, end: scanStart, rawEnd: scanStart)]
+        }
+        if let literal = literalSourceByID[terminalID] {
+            // Bounds: only attempt the prefix check if there's room for it.
+            guard scanStart < input.endIndex else { return [] }
+            let remaining = input[scanStart...]
+            guard remaining.hasPrefix(literal) else { return [] }
+            let literalEnd = input.index(scanStart, offsetBy: literal.count)
+            let cursorEnd = skipTrivia(from: literalEnd)
+            return [LexMatch(terminalID: terminalID, end: cursorEnd, rawEnd: literalEnd)]
+        }
+        if let regex = regexByID[terminalID] {
+            guard scanStart < input.endIndex else { return [] }
+            guard let m = input[scanStart...].prefixMatch(of: regex),
+                  m.0.endIndex > scanStart else { return [] }
+            let cursorEnd = skipTrivia(from: m.0.endIndex)
+            return [LexMatch(terminalID: terminalID, end: cursorEnd, rawEnd: m.0.endIndex)]
+        }
+        return []
     }
 
-    private init(bits: Int32) { self.bits = bits }
+    /// Advance past any sequence of trivia matches starting at `pos`. Tries
+    /// regex trivia first (fast path), then `=:` non-terminal recognisers
+    /// (heavier, for nested constructs that regex can't express). Stops as
+    /// soon as nothing advances the cursor.
+    private func skipTrivia(from pos: CharPosition) -> CharPosition {
+        var cursor = pos
+        outer: while cursor < input.endIndex {
+            for re in triviaRegexes {
+                if let m = input[cursor...].prefixMatch(of: re), m.0.endIndex > cursor {
+                    cursor = m.0.endIndex
+                    continue outer
+                }
+            }
+            for recognise in triviaRecognisers {
+                if let end = recognise(cursor), end > cursor {
+                    cursor = end
+                    continue outer
+                }
+            }
+            break
+        }
+        return cursor
+    }
+}
 
-    func nextToken() -> TokenPosition { TokenPosition(token: tokenIndex + 1) }
-    func at(charOffset: Int) -> TokenPosition { TokenPosition(token: tokenIndex, charOffset: charOffset) }
-
-    static let zero = TokenPosition(bits: 0)
-    static let unused = TokenPosition(bits: -1)
-
-    static func < (lhs: TokenPosition, rhs: TokenPosition) -> Bool { lhs.bits < rhs.bits }
-
-    var description: String {
-        charOffset == 0 ? "\(tokenIndex)" : "\(tokenIndex).\(charOffset)"
+extension CharPosition {
+    /// Locate the token index whose image starts at this position. Returns
+    /// `tokens.count` if `self` is at or past `input.endIndex`. Used only for
+    /// diagnostics (`recordMismatch`, AST/diagram builders) — the parse loop
+    /// never falls off a token boundary.
+    func tokenIndex(in tokens: [Token], input: String) -> Int {
+        if self >= input.endIndex { return tokens.count }
+        // Binary search by image.startIndex.
+        var lo = 0, hi = tokens.count
+        while lo < hi {
+            let mid = (lo + hi) >> 1
+            if tokens[mid].image.startIndex < self { lo = mid + 1 } else { hi = mid }
+        }
+        return lo
     }
 }
 
 struct Descriptor: Hashable {
     let L: GrammarNode          // grammar slot
-    let k: TokenPosition        // cluster index
-    let i: TokenPosition        // input index
-    // MemoryLayout<Descriptor>.size = 16 bytes (8 + 4 + 4)
+    let k: CharPosition         // cluster index
+    let i: CharPosition         // input index
 }
 
 // MARK: - MessageParser Descriptor Operations
@@ -51,7 +196,7 @@ struct Descriptor: Hashable {
 extension MessageParser {
 
     // Paper: dscAdd(L, k, i)
-    func addDescriptor(L: GrammarNode, k: TokenPosition, i: TokenPosition) {
+    func addDescriptor(L: GrammarNode, k: CharPosition, i: CharPosition) {
         let d = Descriptor(L: L, k: k, i: i)
         if unique.insert(d).inserted {
             remaining.append(d)
