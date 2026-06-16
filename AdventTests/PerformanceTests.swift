@@ -61,14 +61,14 @@ struct PerformanceTests {
         }
     }
 
-    private static func buildScanners(grammar: Grammar, grammarName: String, limit: Int) throws -> [Scanner] {
+    private static func buildInputs(grammar: Grammar, grammarName: String, limit: Int) throws -> [String] {
         let grammarDir = try grammarURL(named: grammarName).deletingLastPathComponent()
         let projectDir = testProjectDirectory()
-        var scanners: [Scanner] = []
+        var inputs: [String] = []
 
         for message in grammar.messages {
-            if limit > 0 && scanners.count >= limit { break }
-            let scanner: Scanner
+            if limit > 0 && inputs.count >= limit { break }
+            let input: String
             if message.hasPrefix("#") {
                 let fileName = message.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
                 let candidateURLs: [URL] = [
@@ -81,15 +81,14 @@ struct PerformanceTests {
                         candidates: candidateURLs.map(\.path)
                     )
                 }
-                let fileMessage = try String(contentsOf: messageFileURL, encoding: .utf8)
-                scanner = try Scanner(fromString: fileMessage, patterns: grammar.terminals)
+                input = try String(contentsOf: messageFileURL, encoding: .utf8)
             } else {
-                scanner = try Scanner(fromString: message, patterns: grammar.terminals)
+                input = String(message)
             }
-            scanners.append(scanner)
+            inputs.append(input)
         }
 
-        return scanners
+        return inputs
     }
 
     @Test("Performance harness prints stable metrics")
@@ -104,17 +103,17 @@ struct PerformanceTests {
 
         for grammarName in grammars {
             let grammar = try Self.loadGrammar(named: grammarName)
-            let scanners = try Self.buildScanners(grammar: grammar, grammarName: grammarName, limit: messageLimit)
+            let inputs = try Self.buildInputs(grammar: grammar, grammarName: grammarName, limit: messageLimit)
 
-            #expect(!scanners.isEmpty, "No messages found for grammar '\(grammarName)'. Add ^^^ messages or increase messageLimitPerGrammar.")
+            #expect(!inputs.isEmpty, "No messages found for grammar '\(grammarName)'. Add ^^^ messages or increase messageLimitPerGrammar.")
 
             let parser = MessageParser(grammar: grammar)
 
             if warmupRuns > 0 {
                 for _ in 0..<warmupRuns {
-                    for scanner in scanners {
+                    for input in inputs {
                         withParserIsolation {
-                            parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
+                            parser.parse(input: input)
                         }
                     }
                 }
@@ -128,9 +127,9 @@ struct PerformanceTests {
                 let cpuStart = clock()
 
                 var totals = Totals()
-                for scanner in scanners {
+                for input in inputs {
                     withParserIsolation {
-                        parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
+                        parser.parse(input: input)
                     }
                     totals.add(from: parser)
                 }
@@ -140,7 +139,7 @@ struct PerformanceTests {
                 wallSum += wallSeconds
                 cpuSum += cpuSeconds
 
-                print("\(grammarName),\(run),\(wallSeconds),\(cpuSeconds),\(scanners.count),\(totals.descriptorCount),\(totals.duplicateDescriptorCount),\(totals.suppressedDescriptorCount),\(totals.crfCount),\(totals.yieldCount)")
+                print("\(grammarName),\(run),\(wallSeconds),\(cpuSeconds),\(inputs.count),\(totals.descriptorCount),\(totals.duplicateDescriptorCount),\(totals.suppressedDescriptorCount),\(totals.crfCount),\(totals.yieldCount)")
 
                 #expect(totals.descriptorCount > 0, "Descriptor count should be > 0 for '\(grammarName)'.")
             }

@@ -12,8 +12,8 @@ message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 grammar     = < production > { message } .
               
 production  = [ pragma ] identifier
-                ( ":" ( regex | literal ) "." context
-                | "-" ( regex | literal ) "." context
+                ( ":" ( regex | literal ) "." [ follow ]
+                | "-" ( regex | literal ) "." [ follow ]
                 | "=" selection "."
                 ) .
 
@@ -38,11 +38,6 @@ epsilon     = "ε" .
 empty       = "\"\"" .
 
 layout      = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
-
-context     = mode | follow .
-
-mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
-name        = literal | identifier | empty .
 
 follow      = ( "++1" | "++2" | "--1" | "--2" ) "(" < literal > ")" .
 
@@ -62,8 +57,8 @@ message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 grammar     = < production > { message } .
               
 production  = [ pragma ] identifier
-                ( ":" ( regex | literal ) "." context
-                | "-" ( regex | literal ) "." context
+                ( ":" ( regex | literal ) "." [ follow ]
+                | "-" ( regex | literal ) "." [ follow ]
                 | "=" selection "."
                 ) .
 
@@ -88,10 +83,5 @@ epsilon     = "ε" .
 empty       = "\"\"" .
 
 layout      = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
-
-context     = mode | follow .
-
-mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
-name        = literal | identifier | empty .
 
 follow      = ( "++1" | "++2" | "--1" | "--2" ) "(" < literal > ")" .

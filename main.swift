@@ -59,52 +59,38 @@ if grammar.messages.isEmpty {
 
 for (mi, message) in grammar.messages.enumerated() {
     print("\n=== message \(mi+1)/\(grammar.messages.count): \(message.prefix(60)) ===")
-    let messageScanner: Scanner
-    do {
-        if message.hasPrefix("#") {
-            let fileName = message.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
-            let messageFileURL = URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent()
-                .appendingPathComponent(fileName)
-            let fileMessage = try String(contentsOf: messageFileURL, encoding: .utf8)
-            messageScanner = try Scanner(fromString: fileMessage, patterns: grammar.terminals)
-        } else {
-            messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
+    let input: String
+    if message.hasPrefix("#") {
+        let fileName = message.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
+        let messageFileURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent(fileName)
+        do {
+            input = try String(contentsOf: messageFileURL, encoding: .utf8)
+        } catch {
+            Logger.ui.error("failed to read message file: \(messageFileURL.lastPathComponent, privacy: .public)")
+            continue
         }
-    } catch {
-        Logger.ui.error("failed to scan message: \(message.prefix(100), privacy: .public)...")
-        continue
-    }
-
-    if grammar.usesInjectedLayoutTokens {
-        injectLayoutTokens(
-            tokens: &messageScanner.tokens,
-            trivia: &messageScanner.trivia,
-            input: messageScanner.input,
-            bracketPairs: [("(", ")"), ("[", "]"), ("{", "}")]
-        )
+    } else {
+        input = String(message)
     }
 
     // use the AST to parse the message
     let start = clock()
 
     for _ in 0..<1 {
-        messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
+        messageParser.parse(input: input)
     }
 
     let end = clock()
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
 
     // Oracle: post-parse disambiguation (rules from grammar annotations)
-    Oracle(parser: messageParser, tokens: messageScanner.tokens, input: messageScanner.input).disambiguate()
+    Oracle(parser: messageParser, input: input).disambiguate()
     var stats = "cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount\n"
     stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yieldCount)\n"
     stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
     Logger.ui.info("\(stats, privacy: .public)")
-    print("all message tokens:")
-    for t in messageScanner.tokens{
-        print(t, t.image)
-    }
 //    print("tokenPatterns:")
 //    for tp in grammar.terminals {
 //        print(tp.key, tp.value.source)
@@ -178,7 +164,7 @@ for (mi, message) in grammar.messages.enumerated() {
 //    }
 
         // MARK: - Generate SPPF Diagram
-        let sppfExtractor = SPPFExtractor(parser: messageParser, tokens: messageScanner.tokens, input: messageScanner.input)
+        let sppfExtractor = SPPFExtractor(parser: messageParser, input: input)
 
         if let sppfRoot = sppfExtractor.extractSPPF() {
             let sppfFile = URL(fileURLWithPath: #filePath)
@@ -196,7 +182,7 @@ for (mi, message) in grammar.messages.enumerated() {
             .deletingLastPathComponent()
             .appendingPathComponent("Derivations")
             .appendingPathExtension("gv")
-        try generateDerivationDiagram(outputFile: derivFile, parser: messageParser, tokens: messageScanner.tokens, input: messageScanner.input)
+        try generateDerivationDiagram(outputFile: derivFile, parser: messageParser, input: input)
         info += "Derivation diagram written to \(derivFile.lastPathComponent)\n"
 
         Logger.ui.info("\(info, privacy: .public)")

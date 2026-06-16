@@ -16,7 +16,6 @@ import SwiftParser
 struct SwiftSyntaxGenerator {
     let parser: MessageParser
     let grammar: Grammar
-    let tokens: [Token]
     let input: String
 
     private var endCache = [NodePos: Set<CharPosition>]()
@@ -24,10 +23,9 @@ struct SwiftSyntaxGenerator {
 
     private struct NodePos: Hashable { let id: ObjectIdentifier; let from: CharPosition }
 
-    init(parser: MessageParser, tokens: [Token], input: String) {
+    init(parser: MessageParser, input: String) {
         self.parser = parser
         self.grammar = parser.grammar
-        self.tokens = tokens
         self.input = input
     }
 
@@ -151,11 +149,14 @@ struct SwiftSyntaxGenerator {
         sym.kind == .N ? sym.alt : nil
     }
 
-    /// Get token text at a position.
+    /// Exact source text of the terminal that the parser committed starting
+    /// at `pos`. Returns the empty string if no terminal started there (e.g.
+    /// the position is inside trivia, or no parse reached it). The boundaries
+    /// come from the parser's commit log — no whitespace heuristics, no
+    /// language-specific assumptions.
     private func tokenText(at pos: CharPosition) -> String {
-        let idx = pos.tokenIndex(in: tokens, input: input)
-        guard tokens.indices.contains(idx) else { return "" }
-        return String(tokens[idx].image)
+        guard let image = parser.terminalImage(startingAt: pos) else { return "" }
+        return String(image)
     }
 
     // MARK: - Top-level dispatch
@@ -612,15 +613,18 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - Terminal Text Collection
 
+    /// Collect the concatenated text of every terminal that committed in
+    /// the span `[from, to)`. Walks the parser's commit log — boundaries are
+    /// grammar-defined, trivia (whatever lies between consecutive commits)
+    /// is dropped. Order is by start position.
     private func collectTerminalText(from: CharPosition, to: CharPosition) -> String {
-        var texts: [String] = []
-        var idx = from.tokenIndex(in: tokens, input: input)
-        let endIdx = to.tokenIndex(in: tokens, input: input)
-        while idx < endIdx, tokens.indices.contains(idx) {
-            let text = String(tokens[idx].image)
-            if !text.isEmpty { texts.append(text) }
-            idx += 1
+        let starts = parser.terminalCommitsByStart.keys
+            .filter { $0 >= from && $0 < to }
+            .sorted()
+        var result = ""
+        for s in starts {
+            if let img = parser.terminalImage(startingAt: s) { result += img }
         }
-        return texts.joined()
+        return result
     }
 }

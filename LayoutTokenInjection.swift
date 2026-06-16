@@ -19,23 +19,28 @@
 
 import OSLog
 
-/// Phase G (Jun 14, 2026): parser-side variant of `injectLayoutTokens`.
+/// Phase G (Jun 14, 2026), rewritten in Phase I (Jun 15, 2026) to walk
+/// `input` directly without a scanner-produced token stream.
 ///
-/// Walks the scanner-produced token stream once and returns a
-/// `[CharPosition: [kindID]]` table of zero-length synthetic tokens
+/// Returns a `[CharPosition: [kindID]]` table of zero-length synthetic tokens
 /// (`>>|` / `|<<`) keyed by the source position where each fires. Used by
-/// `OnDemandLiteralLexer.lex` to answer `INDENT`/`DEDENT` queries on-demand
-/// without mutating the scanner's `tokens[]`.
+/// `OnDemandLiteralLexer.lex` to answer `INDENT`/`DEDENT` queries on-demand.
 ///
-/// The algorithm mirrors `injectLayoutTokens` exactly: track an indent stack
-/// and bracket depth, compare line columns, emit `>>|` on indent and `|<<`
-/// on each dedent level closed. Multiple dedents at the same position become
-/// a multi-element value in the table.
+/// Algorithm: char-by-char walk of `input`. For each line, measure indent
+/// column at the first visible char, compare to the indent stack, emit
+/// `>>|` on increase or `|<<` for each level closed on decrease. Skip indent
+/// tracking inside string literals, comments, and bracket nesting (implicit
+/// line continuation). At end-of-input emit `|<<` for each remaining indent
+/// level on the stack.
 ///
-/// Gating: caller is responsible for checking `grammar.usesInjectedLayoutTokens`
-/// before invoking this. With the flag off the parser allocates nothing.
+/// String/comment delimiters are Python-shaped (hardcoded for now): `"`, `'`,
+/// `"""`, `'''` for strings (with backslash escapes); `#` for line comments.
+/// Future grammars may parameterize these — they're the only language-
+/// specific choices the algorithm makes.
+///
+/// Gating: caller checks `grammar.usesInjectedLayoutTokens` first; with the
+/// flag off no work is done.
 func computeVirtualLayoutTokens(
-    tokens: [Token],
     input: String,
     indentKindID: Int,
     dedentKindID: Int,
@@ -43,159 +48,138 @@ func computeVirtualLayoutTokens(
     bracketPairs: [(open: String, close: String)] = []
 ) -> [CharPosition: [Int]] {
     var result: [CharPosition: [Int]] = [:]
-    let openers = Set(bracketPairs.map(\.open))
-    let closers = Set(bracketPairs.map(\.close))
+    // Single-char bracket recognition. Multi-char brackets aren't supported
+    // here yet (no concrete grammar needs them).
+    let openers = Set(bracketPairs.compactMap { $0.open.first })
+    let closers = Set(bracketPairs.compactMap { $0.close.first })
 
     var indentStack: [Int] = [0]
     var bracketDepth = 0
+    var cursor = input.startIndex
 
-    for i in tokens.indices {
-        let tok = tokens[i]
-
-        if openers.contains(tok.kind) { bracketDepth += 1 }
-        if closers.contains(tok.kind), bracketDepth > 0 { bracketDepth -= 1 }
-
-        if tok.kind == "○" {
-            while indentStack.count > 1 {
-                indentStack.removeLast()
-                result[tok.image.startIndex, default: []].append(dedentKindID)
-            }
-            continue
+    while cursor < input.endIndex {
+        // (1) Measure indent column at line start.
+        var col = 0
+        while cursor < input.endIndex {
+            let ch = input[cursor]
+            if ch == " " { col += 1 }
+            else if ch == "\t" { col += tabWidth - (col % tabWidth) }
+            else { break }
+            cursor = input.index(after: cursor)
         }
 
-        let isNewlineToken = !tok.image.isEmpty && tok.image.allSatisfy { $0 == "\n" || $0 == "\r" }
-        if isNewlineToken { continue }
-
-        let lineBreaks: Int
-        if i == 0 {
-            lineBreaks = 1
-        } else {
-            let span = input[tokens[i - 1].image.startIndex..<tok.image.startIndex]
-            var breaks = 0
-            var prevWasCR = false
-            for ch in span {
-                let isCR = ch == "\r"
-                let isLF = ch == "\n"
-                if isCR || (isLF && !prevWasCR) { breaks += 1 }
-                prevWasCR = isCR
+        // (2) Decide if this line has visible content. Blank lines (only a
+        //     newline) and comment-only lines (# … \n) do not trigger
+        //     indent/dedent — matches CPython's tokenizer.
+        let firstVisible = cursor
+        var hasContent = false
+        if cursor < input.endIndex {
+            let ch = input[cursor]
+            if ch != "\n", ch != "\r", ch != "#" {
+                hasContent = true
             }
-            lineBreaks = breaks
         }
 
-        if lineBreaks > 0 && bracketDepth == 0 {
-            let col = input.columnOf(tok.image.startIndex, tabWidth: tabWidth)
-            let insertionPoint = tok.image.startIndex
+        // (3) Emit INDENT/DEDENT at the first-visible position, outside
+        //     brackets. Multiple dedents at the same column collapse into a
+        //     multi-element entry.
+        if hasContent, bracketDepth == 0 {
             if col > indentStack.last! {
                 indentStack.append(col)
-                result[insertionPoint, default: []].append(indentKindID)
+                result[firstVisible, default: []].append(indentKindID)
             } else {
-                while indentStack.count > 1 && col < indentStack.last! {
+                while indentStack.count > 1, col < indentStack.last! {
                     indentStack.removeLast()
-                    result[insertionPoint, default: []].append(dedentKindID)
+                    result[firstVisible, default: []].append(dedentKindID)
                 }
             }
         }
+
+        // (4) Walk to end of line, updating bracket depth, skipping string
+        //     literals and comments.
+        while cursor < input.endIndex {
+            let ch = input[cursor]
+            if ch == "\n" || ch == "\r" {
+                cursor = input.index(after: cursor)
+                if ch == "\r", cursor < input.endIndex, input[cursor] == "\n" {
+                    cursor = input.index(after: cursor)
+                }
+                break
+            }
+            if ch == "#" {
+                while cursor < input.endIndex, input[cursor] != "\n", input[cursor] != "\r" {
+                    cursor = input.index(after: cursor)
+                }
+                continue
+            }
+            if ch == "\"" || ch == "'" {
+                cursor = skipPythonStringLiteral(input, from: cursor, delim: ch)
+                continue
+            }
+            if openers.contains(ch) { bracketDepth += 1 }
+            else if closers.contains(ch), bracketDepth > 0 { bracketDepth -= 1 }
+            cursor = input.index(after: cursor)
+        }
+    }
+
+    // (5) Trailing dedents at end-of-input — pop the indent stack.
+    while indentStack.count > 1 {
+        indentStack.removeLast()
+        result[input.endIndex, default: []].append(dedentKindID)
     }
 
     return result
 }
 
-func injectLayoutTokens(
-    tokens: inout [Token],
-    trivia: inout [[Token]],
-    input: String,
-    tabWidth: Int = 8,
-    bracketPairs: [(open: String, close: String)] = []
-) {
-
-    let openers = Set(bracketPairs.map(\.open))
-    let closers = Set(bracketPairs.map(\.close))
-
-    var indentStack: [Int] = [0]
-    var bracketDepth = 0
-    var newTokens: [Token] = []
-    var newTrivia: [[Token]] = [[]]
-
-    for i in tokens.indices {
-        let tok = tokens[i]
-
-        if openers.contains(tok.kind) { bracketDepth += 1 }
-        if closers.contains(tok.kind) {
-            if bracketDepth > 0 {
-                bracketDepth -= 1
-            } else {
-                Logger.scan.warning("layout injection: unbalanced closer '\(tok.kind, privacy: .public)' at token \(i)")
-            }
-        }
-
-        if tok.kind == "○" {
-            if bracketDepth > 0 {
-                Logger.scan.warning("layout injection: \(bracketDepth) unclosed bracket(s) at end of input")
-            }
-            while indentStack.count > 1 {
-                indentStack.removeLast()
-                let marker = input[tok.image.startIndex..<tok.image.startIndex]
-                newTokens.append(Token(image: marker, kind: "|<<"))
-                newTrivia.append([])
-            }
-            newTrivia[newTokens.count].append(contentsOf: trivia[i])
-            newTokens.append(tok)
-            newTrivia.append([])
-            continue
-        }
-
-        // Visible NEWLINE tokens sit at column 0 but carry no indentation intent.
-        // Skip them to avoid false dedents on blank/comment-only lines.
-        let isNewlineToken = !tok.image.isEmpty && tok.image.allSatisfy({ $0 == "\n" || $0 == "\r" })
-        if isNewlineToken {
-            newTrivia[newTokens.count].append(contentsOf: trivia[i])
-            newTokens.append(tok)
-            newTrivia.append([])
-            continue
-        }
-
-        // Count line breaks from previous token's START (not END) so that
-        // newlines inside visible NEWLINE tokens are detected.
-        // \r\n counts as one line break (the prevWasCR guard).
-        let lineBreaks: Int
-        if i == 0 {
-            lineBreaks = 1
-        } else {
-            let span = input[tokens[i - 1].image.startIndex..<tok.image.startIndex]
-            var breaks = 0
-            var prevWasCR = false
-            for ch in span {
-                let isCR = ch == "\r"
-                let isLF = ch == "\n"
-                if isCR || (isLF && !prevWasCR) { breaks += 1 }
-                prevWasCR = isCR
-            }
-            lineBreaks = breaks
-        }
-
-        if lineBreaks > 0 && bracketDepth == 0 {
-            let col = input.columnOf(tok.image.startIndex, tabWidth: tabWidth)
-            let insertionPoint = tok.image.startIndex
-            if col > indentStack.last! {
-                indentStack.append(col)
-                let marker = input[insertionPoint..<insertionPoint]
-                newTokens.append(Token(image: marker, kind: ">>|"))
-                newTrivia.append([])
-            } else {
-                while indentStack.count > 1 && col < indentStack.last! {
-                    indentStack.removeLast()
-                    let marker = input[insertionPoint..<insertionPoint]
-                    newTokens.append(Token(image: marker, kind: "|<<"))
-                    newTrivia.append([])
-                }
-            }
-        }
-
-        newTrivia[newTokens.count].append(contentsOf: trivia[i])
-        newTokens.append(tok)
-        newTrivia.append([])
+/// Skip a Python string literal starting at `cursor`. Handles single-line
+/// (`"…"`, `'…'`) and triple-quoted (`"""…"""`, `'''…'''`) variants, with
+/// backslash escapes inside both. Returns the position just past the
+/// terminating delimiter (or `input.endIndex` if the string is unterminated).
+private func skipPythonStringLiteral(_ input: String, from cursor: CharPosition, delim: Character) -> CharPosition {
+    // Detect triple-quoted by peeking two chars ahead.
+    let secondIndex = input.index(after: cursor)
+    let isTriple: Bool
+    if secondIndex < input.endIndex, input[secondIndex] == delim {
+        let thirdIndex = input.index(after: secondIndex)
+        isTriple = thirdIndex < input.endIndex && input[thirdIndex] == delim
+    } else {
+        isTriple = false
     }
 
-    tokens = newTokens
-    trivia = newTrivia
+    if isTriple {
+        var c = input.index(cursor, offsetBy: 3)
+        while c < input.endIndex {
+            if input[c] == "\\" {
+                let next = input.index(after: c)
+                c = next < input.endIndex ? input.index(after: next) : input.endIndex
+                continue
+            }
+            if input[c] == delim {
+                let one = input.index(after: c)
+                let two = one < input.endIndex ? input.index(after: one) : input.endIndex
+                if one < input.endIndex, two < input.endIndex,
+                   input[one] == delim, input[two] == delim {
+                    return input.index(after: two)
+                }
+            }
+            c = input.index(after: c)
+        }
+        return input.endIndex
+    } else {
+        var c = input.index(after: cursor)
+        while c < input.endIndex {
+            let ch = input[c]
+            if ch == "\\" {
+                let next = input.index(after: c)
+                c = next < input.endIndex ? input.index(after: next) : input.endIndex
+                continue
+            }
+            if ch == delim { return input.index(after: c) }
+            // Unterminated single-line string at line break — give up.
+            if ch == "\n" || ch == "\r" { return c }
+            c = input.index(after: c)
+        }
+        return input.endIndex
+    }
 }
+

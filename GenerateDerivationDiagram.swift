@@ -12,23 +12,27 @@ import OSLog
 
 class ParseTreeNode: CustomStringConvertible {
     let name: String
-    let token: Token?
+    /// Source slice covered by this node when it's a leaf (terminal or
+    /// boundary). `nil` for non-terminal interior nodes — those are described
+    /// by their children. Replaces the old `token: Token?` field that
+    /// indirected through the scanner-produced token array.
+    let image: Substring?
     let from: CharPosition
     let to: CharPosition
     var children: [ParseTreeNode] = []
     var isAmbiguous = false
     var isMissing = false
-    var isTerminal: Bool { token != nil }
+    var isTerminal: Bool { image != nil }
 
-    init(_ name: String, from: CharPosition, to: CharPosition, token: Token? = nil) {
+    init(_ name: String, from: CharPosition, to: CharPosition, image: Substring? = nil) {
         self.name = name
-        self.token = token
+        self.image = image
         self.from = from
         self.to = to
     }
 
     var description: String {
-        if let token { return "\(name)(\"\(token.image)\")" }
+        if let image { return "\(name)(\"\(image)\")" }
         if isMissing { return "\(name) <missing>" }
         return "\(name)[\(children.count)]"
     }
@@ -36,10 +40,9 @@ class ParseTreeNode: CustomStringConvertible {
     func dump(indent: Int = 0) -> String {
         let pad = String(repeating: "  ", count: indent)
         if isMissing { return "\(pad)\(name) <missing>\n" }
-        if let token {
-            let text = String(token.image)
-            if text.isEmpty { return "\(pad)\(name)\n" }
-            return "\(pad)\(name) \"\(text)\"\n"
+        if let image {
+            if image.isEmpty { return "\(pad)\(name)\n" }
+            return "\(pad)\(name) \"\(image)\"\n"
         }
         var result = "\(pad)\(name)\n"
         for child in children {
@@ -56,7 +59,6 @@ class ParseTreeNode: CustomStringConvertible {
 class DerivationBuilder {
     let parser: MessageParser
     let grammar: Grammar
-    let tokens: [Token]
     let input: String
 
     private var expanding = Set<NodeSpan>()
@@ -66,10 +68,9 @@ class DerivationBuilder {
     private struct NodeSpan: Hashable { let id: ObjectIdentifier; let from, to: CharPosition }
     private struct NodePos: Hashable  { let id: ObjectIdentifier; let from: CharPosition }
 
-    init(parser: MessageParser, tokens: [Token], input: String) {
+    init(parser: MessageParser, input: String) {
         self.parser = parser
         self.grammar = parser.grammar
-        self.tokens = tokens
         self.input = input
     }
 
@@ -135,15 +136,16 @@ class DerivationBuilder {
 
     /// Build children for one symbol. Brackets are transparent (contents inlined as siblings).
     private func symbolChildren(_ sym: GrammarNode, from: CharPosition, to: CharPosition, limit: Int) -> [[ParseTreeNode]] {
-        let fromTokenIdx = from.tokenIndex(in: tokens, input: input)
         switch sym.kind {
         case .T, .TI, .C:
-            guard tokens.indices.contains(fromTokenIdx) else { return [] }
-            return [[ParseTreeNode(sym.name, from: from, to: to, token: tokens[fromTokenIdx])]]
+            // Exact grammar-defined content of this terminal; falls back to
+            // the BSR span (which includes trailing trivia) if no commit is
+            // recorded — shouldn't happen in well-formed parses.
+            let image = parser.terminalImage(startingAt: from) ?? input[from..<to]
+            return [[ParseTreeNode(sym.name, from: from, to: to, image: image)]]
         case .B:
-            let anchor = tokens[min(fromTokenIdx, tokens.count - 1)]
-            let idx = anchor.image.startIndex
-            return [[ParseTreeNode(sym.name, from: from, to: to, token: Token(image: anchor.image.base[idx..<idx], kind: sym.name))]]
+            // Boundary: zero-length predicate; no source content.
+            return [[ParseTreeNode(sym.name, from: from, to: to, image: input[from..<from])]]
         case .N:
             guard let lhs = sym.alt else { return [] }
             return treesFor(lhs, from: from, to: to, limit: limit).map { [$0] }
@@ -278,17 +280,14 @@ class DerivationBuilder {
     }
 
     private func buildASTSymbol(_ sym: GrammarNode, from: CharPosition, to: CharPosition) -> ParseTreeNode? {
-        let fromTokenIdx = from.tokenIndex(in: tokens, input: input)
         switch sym.kind {
         case .T, .TI, .C:
-            guard tokens.indices.contains(fromTokenIdx) else { return nil }
-            return ParseTreeNode(sym.name, from: from, to: to, token: tokens[fromTokenIdx])
+            let image = parser.terminalImage(startingAt: from) ?? input[from..<to]
+            return ParseTreeNode(sym.name, from: from, to: to, image: image)
 
         case .B:
-            let anchor = tokens[min(fromTokenIdx, tokens.count - 1)]
-            let idx = anchor.image.startIndex
-            let syntheticToken = Token(image: anchor.image.base[idx..<idx], kind: sym.name)
-            return ParseTreeNode(sym.name, from: from, to: to, token: syntheticToken)
+            // Boundary: zero-length predicate; no source content.
+            return ParseTreeNode(sym.name, from: from, to: to, image: input[from..<from])
 
         case .N:
             guard let lhs = sym.alt else { return nil }
@@ -405,8 +404,8 @@ class DerivationBuilder {
 
 // MARK: - Graphviz Rendering
 
-func generateDerivationDiagram(outputFile file: URL, parser: MessageParser, tokens: [Token], input: String) throws {
-    let trees = DerivationBuilder(parser: parser, tokens: tokens, input: input).buildAllTrees()
+func generateDerivationDiagram(outputFile file: URL, parser: MessageParser, input: String) throws {
+    let trees = DerivationBuilder(parser: parser, input: input).buildAllTrees()
     let title = parser.grammar.root.ebnf().graphvizHTML
 
     guard !trees.isEmpty else {
@@ -455,7 +454,7 @@ private func renderTree(_ tree: ParseTreeNode, prefix: String) -> String {
     func emit(_ node: ParseTreeNode) -> String {
         let id = "\(prefix)n\(n)"; n += 1
         if node.isTerminal {
-            let image = String(node.token!.image)
+            let image = String(node.image!)
             if image.isEmpty {
                 dot += "  \(id) [shape=box, width=0, height=0, color=gray50, fontcolor=gray50, label=<\(node.name.graphvizHTML)>]\n"
             } else {

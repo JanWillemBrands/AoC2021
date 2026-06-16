@@ -108,17 +108,11 @@ func parseMatches(grammar grammarString: String, message: String) throws -> Bool
         let parser = try ApusParser(fromString: grammarWithWhitespace)
         let grammar = try parser.parse(explicitStartSymbol: "")
 
-        let messageScanner: Scanner
-        do {
-            messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
-        } catch is ScannerFailure {
-            return false
-        }
         let messageParser = MessageParser(grammar: grammar)
-        messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
+        messageParser.parse(input: message)
 
         return messageParser.yield(of: messageParser.currentParseRoot).contains {
-            $0.i == messageScanner.input.startIndex && $0.j == messageScanner.input.endIndex
+            $0.i == message.startIndex && $0.j == message.endIndex
         }
     }
 }
@@ -192,7 +186,7 @@ func loadLanguageFixture(_ path: String) throws -> LanguageFixture {
 
 func parseLanguageMessage(_ fixture: LanguageFixture, message: String) throws -> Bool {
     try withParserIsolation {
-        let messageScanner: Scanner
+        let input: String
         if message.hasPrefix("#") {
             let fileName = message.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
             let projectDir = testProjectDirectory()
@@ -214,26 +208,16 @@ func parseLanguageMessage(_ fixture: LanguageFixture, message: String) throws ->
                 )
             }
 
-            let content = try String(contentsOf: fileURL, encoding: .utf8)
-            messageScanner = try Scanner(fromString: content, patterns: fixture.grammar.terminals)
+            input = try String(contentsOf: fileURL, encoding: .utf8)
         } else {
-            messageScanner = try Scanner(fromString: message, patterns: fixture.grammar.terminals)
-        }
-
-        if fixture.needsLayout {
-            injectLayoutTokens(
-                tokens: &messageScanner.tokens,
-                trivia: &messageScanner.trivia,
-                input: messageScanner.input,
-                bracketPairs: [("(", ")"), ("[", "]"), ("{", "}")]
-            )
+            input = message
         }
 
         let parser = MessageParser(grammar: fixture.grammar)
-        parser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
+        parser.parse(input: input)
 
         return parser.yield(of: parser.currentParseRoot).contains {
-            $0.i == messageScanner.input.startIndex && $0.j == messageScanner.input.endIndex
+            $0.i == input.startIndex && $0.j == input.endIndex
         }
     }
 }
@@ -259,19 +243,13 @@ func parseAndDisambiguate(grammar grammarString: String, message: String) throws
         let parser = try ApusParser(fromString: grammarWithWhitespace)
         let grammar = try parser.parse(explicitStartSymbol: "")
 
-        let messageScanner: Scanner
-        do {
-            messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
-        } catch is ScannerFailure {
-            return (false, 0)
-        }
         let messageParser = MessageParser(grammar: grammar)
-        messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
+        messageParser.parse(input: message)
 
         let matches = messageParser.yield(of: messageParser.currentParseRoot).contains {
-            $0.i == messageScanner.input.startIndex && $0.j == messageScanner.input.endIndex
+            $0.i == message.startIndex && $0.j == message.endIndex
         }
-        let pruned = Oracle(parser: messageParser, tokens: messageScanner.tokens, input: messageScanner.input).disambiguate()
+        let pruned = Oracle(parser: messageParser, input: message).disambiguate()
         return (matches, pruned)
     }
 }

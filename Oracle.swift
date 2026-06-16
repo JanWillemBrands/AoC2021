@@ -123,17 +123,15 @@ private func pruneByPivot(
 class Oracle {
     let parser: MessageParser
     let grammar: Grammar
-    let tokens: [Token]
     let input: String
     private var rules: [(node: GrammarNode, rule: DisambiguationRule)] = []
 
     private struct NodeSpan: Hashable { let id: ObjectIdentifier; let from, to: CharPosition }
     private struct NodePos: Hashable  { let id: ObjectIdentifier; let from: CharPosition }
 
-    init(parser: MessageParser, tokens: [Token], input: String) {
+    init(parser: MessageParser, input: String) {
         self.parser = parser
         self.grammar = parser.grammar
-        self.tokens = tokens
         self.input = input
         for (_, nt) in grammar.nonTerminals {
             // LHS-level disambiguation pragmas: @longest, @shortest, @left, @right.

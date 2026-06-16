@@ -5,11 +5,8 @@
 //  Created by Johannes Brands on 01/03/2024.
 //
 
-// TODO: explicit matching rules e.g. -\- any, regex101 not preceed or follow <<!  !>>, or exclude "\" not preceded "-/-" not followed "-\-"
-
 import OSLog
 import Foundation
-//import AdventMacros
 
 enum ScannerFailure: Error {
     case charactersDoNotMatchAnySymbol(position: String.Index, input: String)
@@ -64,9 +61,13 @@ struct TokenPattern {
 final class Token: CustomStringConvertible {
     var image: Substring
     var kind: String
-    /// Integer ID from `Grammar.symbolToID`, assigned by `MessageParser.prepareInput`
-    /// before the GLL algorithm runs. Enables O(1) integer comparison in `tokenMatch()`
-    /// and O(1) BitSet membership tests in `testSelect()`.
+    /// TODO (Phase I close, Jun 16, 2026): `kindID` is no longer read by
+    /// anything on the parser hot path — `MessageParser` operates on
+    /// `cL.nameID` (grammar-side) and lex queries the OnDemandLiteralLexer
+    /// by terminal ID. `Token` is now used only by `ApusParser` to tokenize
+    /// `.apus` grammar sources, and `ApusParser` reads `Token.kind` (string),
+    /// never `kindID`. The field should be removable — but doing so requires
+    /// confirming no remaining caller depends on it. Tracked, not urgent.
     var kindID: Int!
 
     init(image: Substring, kind: String) {

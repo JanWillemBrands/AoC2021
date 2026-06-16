@@ -62,8 +62,6 @@ class MessageParser {
     let grammar: Grammar
 
     // MARK: - Per-parse input
-    var tokens: [Token] = []
-    var trivia: [[Token]] = []
     var input: String = ""
 
     // MARK: - GLL algorithm state (paper variables)
@@ -71,12 +69,6 @@ class MessageParser {
     var cL: GrammarNode!                    // current grammar slot
     var cI: CharPosition = "".startIndex    // current input position
     var cU: CharPosition = "".startIndex    // current cluster index
-
-    // MARK: - Token lookup by source position
-    /// Maps each visible token's `image.startIndex` to its array index in `tokens`.
-    /// `input.startIndex` also maps to 0 so the initial cursor finds the first token
-    /// even when there's leading trivia. Built once per parse from the scanner output.
-    var tokenIndexByStart: [CharPosition: Int] = [:]
 
     // MARK: - LCNP lex API
     /// Per-terminal lex queries the parser issues at every `.T`/`.TI`/`.C` slot
@@ -228,12 +220,26 @@ class MessageParser {
     /// evaluator runs entirely on integer IDs.
     var lookbehindByTerminalID: [Int: ResolvedLookbehindSpec] = [:]
 
-    /// Per-parse record of every terminal commit: `endPosition → [Commit]`.
-    /// Each `.T`/`.TI`/`.C` arm in the main parse loop appends one entry when
-    /// it advances `cI`. Used by `previousKindIDs(at:distance:)` to evaluate
-    /// `++N`/`--N` annotations against parser-state rather than the eager
-    /// scanner's committed-token stream.
+    /// Per-parse record of every terminal commit, dual-indexed by end and
+    /// start position. Each `.T`/`.TI`/`.C` arm in the main parse loop
+    /// appends to both. `byEnd` powers `previousKindIDs(at:distance:)` for
+    /// `++N`/`--N` lookbehind; `byStart` powers `terminalImage(startingAt:)`
+    /// for diagnostic/AST readers that need the exact grammar-defined
+    /// literal content at a given source position.
     var terminalCommitsByEnd: [CharPosition: [TerminalCommit]] = [:]
+    var terminalCommitsByStart: [CharPosition: [TerminalCommit]] = [:]
+
+    /// Exact source slice of the terminal that committed starting at `start`,
+    /// or `nil` if no terminal started at this position. Multiple commits at
+    /// the same start position (e.g. an ambiguous parse where two different
+    /// terminals matched the same opening character) are resolved by
+    /// returning the longest match — the grammar-authoritative span. Replaces
+    /// the eager-scanner's `tokens[idx].image` lookup.
+    func terminalImage(startingAt start: CharPosition) -> Substring? {
+        guard let commits = terminalCommitsByStart[start], !commits.isEmpty else { return nil }
+        let longestRawEnd = commits.map(\.rawEnd).max()!
+        return input[start..<longestRawEnd]
+    }
 
     // MARK: - Error reporting, captures the furthest the parse has progressed before a mismatch occurred
     var furthestMismatchIndex: CharPosition = "".startIndex
@@ -259,37 +265,19 @@ class MessageParser {
     /// the same prepared input). Trivia recogniser closures use exactly this
     /// split: their sub-parser is prepared once, then `runGLL` is called per
     /// recogniser invocation — that's what keeps the per-call cost minimal.
-    func parse(tokens: [Token], trivia: [[Token]] = [], input: String = "",
-               root: GrammarNode? = nil, start: CharPosition? = nil) {
-        prepareInput(tokens: tokens, trivia: trivia, input: input, isSubParser: root != nil)
+    func parse(input: String, root: GrammarNode? = nil, start: CharPosition? = nil) {
+        prepareInput(input: input, isSubParser: root != nil)
         runGLL(root: root ?? grammar.root, start: start ?? input.startIndex)
     }
 
-    /// Per-input setup: assigns `kindID`s to tokens, builds the lex stack,
-    /// resolves lookbehind specs, constructs sub-parsers for `=:` non-terminals.
-    /// Idempotent for repeated calls on the same `(tokens, input)`; the
-    /// expectation is that callers (including sub-parsers) call this once
-    /// per input and then `runGLL` many times against the prepared state.
-    func prepareInput(tokens: [Token], trivia: [[Token]] = [], input: String = "",
-                      isSubParser: Bool = false) {
-        self.tokens = tokens
-        self.trivia = trivia
+    /// Per-input setup: builds the lex stack, resolves lookbehind specs,
+    /// constructs sub-parsers for `=:` non-terminals, precomputes layout
+    /// virtual tokens when the grammar uses them. Idempotent for repeated
+    /// calls on the same `input`; the expectation is that callers (including
+    /// sub-parsers) call this once per input and then `runGLL` many times
+    /// against the prepared state.
+    func prepareInput(input: String, isSubParser: Bool = false) {
         self.input = input
-        // Map each token's string kind to its integer kindID from the symbol table.
-        for token in tokens {
-            token.kindID = grammar.symbolToID[token.kind]!
-        }
-        // Build the position→token-index sidecar before the GLL loop. Visible
-        // tokens are keyed by their `image.startIndex`; `input.startIndex` also
-        // maps to 0 so the initial cursor finds token 0 even when leading
-        // trivia means `tokens[0].image.startIndex != input.startIndex`.
-        tokenIndexByStart.removeAll(keepingCapacity: true)
-        for (i, t) in tokens.enumerated() {
-            tokenIndexByStart[t.image.startIndex] = i
-        }
-        if !tokens.isEmpty {
-            tokenIndexByStart[input.startIndex] = 0
-        }
         // LCNP lex stack: `OnDemandLiteralLexer` only (Phase E Step 2d retired
         // `LegacyScannerLexAdapter`). All literals and regex terminals serve
         // from `input` directly; lookbehind (`++N`/`--N`) is enforced
@@ -328,7 +316,7 @@ class MessageParser {
         if !isSubParser {
             for (_, nt) in grammar.nonTerminals where nt.isTrivia {
                 let sub = MessageParser(grammar: grammar)
-                sub.prepareInput(tokens: tokens, trivia: trivia, input: input, isSubParser: true)
+                sub.prepareInput(input: input, isSubParser: true)
                 let recogniser: (CharPosition) -> CharPosition? = { pos in
                     sub.runGLL(root: nt, start: pos)
                     let ends = sub.yield(of: nt).lazy.filter { $0.i == pos }.map(\.j)
@@ -348,7 +336,6 @@ class MessageParser {
            let indentKindID = grammar.symbolToID[">>|"],
            let dedentKindID = grammar.symbolToID["|<<"] {
             virtualTokensAt = computeVirtualLayoutTokens(
-                tokens: tokens,
                 input: input,
                 indentKindID: indentKindID,
                 dedentKindID: dedentKindID,
@@ -373,6 +360,7 @@ class MessageParser {
     func runGLL(root: GrammarNode, start: CharPosition) {
         currentParseRoot = root
         terminalCommitsByEnd.removeAll(keepingCapacity: true)
+        terminalCommitsByStart.removeAll(keepingCapacity: true)
         let origin = start
         cL = nil; cI = origin; cU = origin
         unique = []; remaining = []
@@ -404,7 +392,6 @@ class MessageParser {
         // Run GLL algorithm
         var progressCounter = 0
         let progressInterval = 10_000
-        let totalTokens = tokens.count
         nextDescriptor: while getDescriptor() {
             progressCounter += 1
             if progressCounter % progressInterval == 0 {
@@ -414,7 +401,7 @@ class MessageParser {
             while true {
 
                 trace = false
-                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) token: \(tokens[tokenIdx(at: cI)].kind) \(tokens[tokenIdx(at: cI)].image)")
+                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) at: \(input.linePosition(of: cI))")
 
                 switch cL.kind {
                 case .EPS:
@@ -438,8 +425,9 @@ class MessageParser {
                         // Single match — continue in place (hot path).
                         let m = matches[0]
                         addYield(L: cL, i: cU, k: cI, j: m.end)
-                        terminalCommitsByEnd[m.end, default: []].append(
-                            TerminalCommit(kindID: cL.nameID, start: cI, rawEnd: m.rawEnd))
+                        let commit = TerminalCommit(kindID: cL.nameID, start: cI, rawEnd: m.rawEnd)
+                        terminalCommitsByEnd[m.end, default: []].append(commit)
+                        terminalCommitsByStart[cI, default: []].append(commit)
                         cI = m.end
                         cL = cL.seq!
                     } else {
@@ -451,8 +439,9 @@ class MessageParser {
                         // multiple ends.
                         for m in matches {
                             addYield(L: cL, i: cU, k: cI, j: m.end)
-                            terminalCommitsByEnd[m.end, default: []].append(
-                                TerminalCommit(kindID: cL.nameID, start: cI, rawEnd: m.rawEnd))
+                            let commit = TerminalCommit(kindID: cL.nameID, start: cI, rawEnd: m.rawEnd)
+                            terminalCommitsByEnd[m.end, default: []].append(commit)
+                            terminalCommitsByStart[cI, default: []].append(commit)
                             addDescriptor(L: cL.seq!, k: cU, i: m.end)
                         }
                         continue nextDescriptor
@@ -533,12 +522,12 @@ class MessageParser {
             "  suppressedDescriptors:", suppressedDescriptorCount
         )
         if successfullParses == 0 {
-            let mismatchToken = tokens[tokenIdx(at: furthestMismatchIndex)]
-            let position = mismatchToken.image.base.linePosition(of: mismatchToken.image.startIndex)
+            let position = input.linePosition(of: furthestMismatchIndex)
+            let foundSnippet = sourceSnippet(at: furthestMismatchIndex)
             let expected = furthestMismatchExpected.sorted().joined(separator: ", ")
             print("""
                 no parse found at \(position)
-                found token image: '\(mismatchToken.image)' kind: '\(mismatchToken.kind)'
+                found content: '\(foundSnippet)'
                 grammar context: \(furthestMismatchSlot.ebnfDot())
                 expected: \(expected)
                 """)
@@ -546,17 +535,6 @@ class MessageParser {
     }
 
     // MARK: - Internal helpers
-
-    /// Look up the array index of the visible token whose `image.startIndex == pos`.
-    /// `input.startIndex` is aliased to 0 (handles leading trivia) and
-    /// `input.endIndex` is aliased to the EOS token's index.
-    /// Falls back to a binary-search bridge if the position isn't a known token
-    /// boundary — that should only happen for diagnostic output.
-    @inline(__always)
-    func tokenIdx(at pos: CharPosition) -> Int {
-        if let idx = tokenIndexByStart[pos] { return idx }
-        return pos.tokenIndex(in: tokens, input: input)
-    }
 
     func recordMismatch(expected: String) {
         failedParses += 1
@@ -567,6 +545,27 @@ class MessageParser {
         } else if cI == furthestMismatchIndex {
             furthestMismatchExpected.insert(expected)
         }
+    }
+
+    /// Short slice of `input` starting at `pos` for diagnostic output when
+    /// the parse failed at `pos`. The parser never committed a terminal
+    /// there (that's why the parse failed), so there's no grammar-authoritative
+    /// boundary to use — fall back to a Unicode-whitespace stop or a 30-char
+    /// cap. This heuristic is intentionally limited to the failure-report
+    /// path; everything that runs on a *successful* parse should use
+    /// `terminalImage(startingAt:)` for exact boundaries.
+    private func sourceSnippet(at pos: CharPosition) -> Substring {
+        guard pos < input.endIndex else { return "" }
+        var end = pos
+        var count = 0
+        while end < input.endIndex, count < 30 {
+            let ch = input[end]
+            if ch.isWhitespace || ch.isNewline { break }
+            end = input.index(after: end)
+            count += 1
+        }
+        if end == pos, end < input.endIndex { end = input.index(after: end) }
+        return input[pos..<end]
     }
 
     /// Evaluate a boundary operator at a parser cursor position.

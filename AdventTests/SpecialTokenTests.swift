@@ -182,17 +182,11 @@ struct SpecialTokenTests {
                 let parser = try ApusParser(fromString: grammarWithWhitespace)
                 let grammar = try parser.parse(explicitStartSymbol: "")
 
-                let messageScanner: Scanner
-                do {
-                    messageScanner = try Scanner(fromString: message, patterns: grammar.terminals)
-                } catch is ScannerFailure {
-                    return (false, 0)
-                }
                 let messageParser = MessageParser(grammar: grammar)
-                messageParser.parse(tokens: messageScanner.tokens, trivia: messageScanner.trivia, input: messageScanner.input)
+                messageParser.parse(input: message)
 
                 let matched = messageParser.yield(of: messageParser.currentParseRoot).contains {
-                    $0.i == messageScanner.input.startIndex && $0.j == messageScanner.input.endIndex
+                    $0.i == message.startIndex && $0.j == message.endIndex
                 }
                 return (matched, messageParser.descriptorCount)
             }

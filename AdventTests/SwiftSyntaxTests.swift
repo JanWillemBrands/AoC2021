@@ -219,35 +219,13 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
     parseCache.value(for: source) {
         withParserIsolation {
             let grammar = loadFreshSwiftGrammar()
-
-            let scanner: Scanner?
-            do {
-                scanner = try Scanner(fromString: source, patterns: grammar.terminals)
-            } catch {
-                scanner = nil
-            }
-
-            guard let scanner else {
-                let metrics = BaselineMetrics(
-                    sourceLength: source.count,
-                    tokenCount: 0,
-                    descriptorCount: 0,
-                    duplicateDescriptorCount: 0,
-                    suppressedDescriptorCount: 0,
-                    crfCount: 0,
-                    yieldCount: 0,
-                    matched: false,
-                    oraclePruned: 0
-                )
-                metricSink.record(label: label, source: source, metrics: metrics)
-                return AdventRunSnapshot(result: nil, swiftSyntaxTree: nil, metrics: metrics)
-            }
+            let input = source
 
             let parser = MessageParser(grammar: grammar)
-            parser.parse(tokens: scanner.tokens, trivia: scanner.trivia, input: scanner.input)
+            parser.parse(input: input)
 
-            let extent = scanner.input.endIndex
-            let origin = scanner.input.startIndex
+            let extent = input.endIndex
+            let origin = input.startIndex
             let matched = parser.yield(of: parser.currentParseRoot).contains { $0.i == origin && $0.j == extent }
 
             var oraclePruned = 0
@@ -255,18 +233,18 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
             var swiftSyntax: SourceFileSyntax? = nil
 
             if matched {
-                oraclePruned = Oracle(parser: parser, tokens: scanner.tokens, input: scanner.input).disambiguate()
-                let builder = DerivationBuilder(parser: parser, tokens: parser.tokens, input: scanner.input)
+                oraclePruned = Oracle(parser: parser, input: input).disambiguate()
+                let builder = DerivationBuilder(parser: parser, input: input)
                 if let tree = builder.buildAST() {
                     parseResult = AdventParseResult(tree: tree, builder: builder)
                 }
-                var generator = SwiftSyntaxGenerator(parser: parser, tokens: parser.tokens, input: scanner.input)
+                var generator = SwiftSyntaxGenerator(parser: parser, input: input)
                 swiftSyntax = generator.generate()
             }
 
             let metrics = BaselineMetrics(
                 sourceLength: source.count,
-                tokenCount: parser.tokens.count,
+                tokenCount: parser.terminalCommitsByStart.count,
                 descriptorCount: parser.descriptorCount,
                 duplicateDescriptorCount: parser.duplicateDescriptorCount,
                 suppressedDescriptorCount: parser.suppressedDescriptorCount,

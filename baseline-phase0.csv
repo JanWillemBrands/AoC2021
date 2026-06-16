@@ -1,2 +1,11 @@
 label,sourceLen,tokens,descriptors,duplicateDescriptors,suppressedDescriptors,crfSize,yieldCount,matched,oraclePruned
-regex-after-lparen,15,2,209,1,64,91,156,true,38
+testNonBinding1#1,30,16,535,9,206,210,430,true,268
+div-int-int,13,6,168,0,46,73,145,true,34
+testIf#1,13,5,64,0,2,34,39,true,5
+div-ident-ident,13,6,148,0,48,61,123,true,34
+testSpecializeAttribute#3,47,18,251,0,47,112,184,true,52
+div-call-int,15,8,179,0,61,72,164,true,47
+testIf#2,21,7,123,0,29,61,79,true,29
+testClosureParsing#1,18,10,163,0,32,77,130,true,24
+testNonBinding2#1,38,17,547,5,222,222,401,true,192
+div-subscript,18,9,224,0,76,94,190,true,45

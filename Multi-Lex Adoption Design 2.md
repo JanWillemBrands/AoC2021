@@ -463,7 +463,7 @@ What was *not* changed:
 
 That parity is unsurprising: the early-termination path was already rare in practice after Step 3's head-alignment guard tightened it, and the grammars that would have hit it now simply walk a couple of extra alternates per slot before producing the same descriptor set.
 
-**TODO (carry into Phase F):** revisit `canEarlyTerminate = false && X.isLocallyLL1` once the parser-driven lex path is the normal path and `lexLKH(pos, terminalID, predict)` is available. The right re-enable point is when the LCNPLexer pruning makes pre-static `isLocallyLL1` redundant *or* when we have a measured workload showing the early-termination is worth resurrecting. Either way, the variable stays — just delete the `false &&` prefix.
+**Carryover:** see `TODO.md` item 5 ("LL(1) early-termination re-enable evaluation").
 
 #### Phase B — Step 3 plan (remaining)
 
@@ -833,37 +833,13 @@ The fast-path `if slot.excludeBS.isEmpty { return true }` preserves the original
 
 `tokenMatch`, `testSelect`, `followCheck`, `continuationViable`, `addDecscriptorsForAlternates`, and the main parse loop's `.T/.TI/.C` arm all run purely off `cachedLex` results. The eager scanner is now an implementation detail of the legacy fallback adapter, not a participant in parser logic.
 
-**Phase D status:** Done for the parser. The remaining Phase D items in the design doc (`Grammar.propagateExcludeSets`, `GrammarNode.exclude` / `excludeBS`, `---()` parsing) are bookkeeping that can be retired once we're confident no remaining call site reads them. The on-demand lex path doesn't need them, but exclude data is still populated at grammar load and consulted by `testSelect` / `tokenMatch` for the per-end check — so the parser still uses them, just through LCNP semantics rather than head-based ones. Full removal of `---()` would require an alternative grammar mechanism for the keyword-vs-identifier disambiguation case (e.g. moving the exclusion into terminal regexes via negative lookahead), which is deferred until the per-end semantics has proven itself across the full SwiftSyntax 590-case sweep.
+**Phase D status:** Done for the parser. Full retirement of `---()` (alternative grammar mechanism for keyword-vs-identifier disambiguation) is `TODO.md` item 8.
 
 **Next move:** Phase E — migrate filtered regex terminals (`<<1`/`<<2`/`++1`/`--1` lookbehind, gated `=== ">>>"` transitions) into the on-demand path, retiring `LegacyScannerLexAdapter` and the eager scanner end-to-end.
 
 #### Post-Phase F review TODO — exclude semantics and annotations
 
-Once Phase F lands (`lexLKH` predict-set lookahead), revisit the per-end LCNP exclude semantic adopted in Phase D Steps 2 and 3. The pair of statements that motivated the migration:
-
-> - The original "if head's kindID is in `slot.excludeBS`, only count predict-set entries whose terminalID equals the head's" amounts to: "consider only the canonical (head) interpretation, suppress dual interpretations". That fires when the eager scanner committed to an excluded terminal at this position.
-> - The LCNP version asks the same question per terminal: "does this terminal lex here, and does its match end disagree with every excluded terminal's match end here?" When excluded terminal E lexes at the same end as candidate T, T's interpretation is the "dual" of E and gets suppressed. Same predicate, different mechanism, no head needed.
-
-passes today's tests at 191/202 but is worth re-examining for two reasons:
-
-1. **Correctness.** "Same end" is a proxy for "same span". It captures the classical Schrödinger same-span case (e.g. keyword `if` at end=2 vs identifier `if` at end=2) but may not capture every case the original head-based gate was implicitly handling — particularly under variable-length regex matches once Phase C/E lexers start returning multiple `LexMatch.end` values per terminal. Multi-match + per-end exclude needs an audit: does "any excluded terminal lexes at *any* end matching this candidate's" still mean what the grammar author wrote `---(…)` to mean?
-2. **Effectiveness.** The original head-based gate fires at most once per `testSelect` call (single `headKindID` lookup, single `excludeBS.contains`). The LCNP per-end gate iterates `slot.excludeBS` per candidate-terminal per candidate-end, calling `cachedLex` for each excluded terminal. The cache absorbs repeat work, but the cost profile and selectivity have shifted. Worth measuring once `lexLKH` filters the candidate set upstream — predict-pruned candidates plus per-end exclude may be cheaper or more expensive than the head check depending on grammar shape.
-
-More broadly: **all APUS annotations deserve a multi-lex review** once the LCNP migration is settled. Each was designed against the eager scanner's single-committed-token-stream model and may have different correctness / cost / redundancy properties under per-terminal lex on demand. Candidates for re-examination, with the question to answer for each:
-
-- `---(…)` exclude — covered above. Still needed at the parser level, or can it be encoded into terminal regexes (negative lookahead) once on-demand regex is everywhere?
-- `<<1` / `<<2` / `++1` / `++2` / `--1` / `--2` lookbehind — Phase E Step 1 moved the implementation parser-side. Two open questions for the post-Phase F review, both needing measurement rather than theory:
-    1. **Is the gate actually firing on Swift.apus inputs?** Under LCNP, regex is only queried at grammar slots whose FIRST set reaches `regularExpressionLiteral` — typically only at expression-start positions (after operators, openers, separators). Wasted-regex exploration after value-producing terminals may already be impossible via grammar structure alone, making the annotation pure no-op. Instrument the gate on a SwiftSyntax sweep: if zero blocks fire, drop the annotation from `Swift.apus`.
-    2. **Should this move to the Oracle?** The Oracle already has `UnlessPredicateRule` (prune yields based on positional relationships between two grammar nodes). A `LookbehindPruneRule` would slot alongside it cleanly: walk regex yields, prune those whose `i` (start) coincides with the `j` (end) of any "denied" terminal yield. Tradeoff vs. parser-side gate: Oracle wastes the parsing then prunes (no descriptor savings) but has a cleaner mental model and naturally per-yield-position semantics. Best architecture is likely **both** — parser-side gate for descriptor pressure, Oracle backup for cases where the union-over-histories permissive semantic lets something through. Decide based on (1) — if the parser-side gate is doing nothing, neither is needed; if it's firing, the Oracle rule is the simpler long-term home.
-- A worked example of the structural-rewrite alternative for lookbehind is captured in the Phase E discussion (around the "literal/literalNoRegex split"). Cost: ~10–15 production duplications across `primary` / `postfix` / `prefix` / `literal` chains, each call site tagged. That's the "substantial rewrite" the project goal rules out — recorded here so the rejection rationale doesn't get re-litigated.
-- `>>1(…)` parse-time followAhead — Phase F's `lexLKH` is the natural replacement. Each existing `>>1` use should be proven equivalent to a `predict(β, X)` query at the corresponding slot before deletion.
-- `>s<` / `<s>` / `<n>` / `>n<` boundary annotations — under character-position addressing, these are derivable from source spans rather than from the committed token array. Confirm each existing use survives the substitution.
-- `=== "X" >>> "Y"` gated scanner-mode transitions — Phase E moves them out of `Scanner.swift`. Audit whether each currently-gated construct can be represented as a pure terminal-specific recognizer, a grammar-encoded island, or whether it genuinely needs lexical state threaded through descriptors (Phase G fallback).
-- `@unless(X)` parser-level alternate selection — orthogonal to LCNP (it's a grammar-level mechanism, not a lex-level one), but its interaction with the per-end LCNP exclude may matter. Worth verifying the two compose cleanly.
-- `@longest` / `@shortest` / `@left` / `@right` Oracle rules — operate on the BSR after parsing. Independent of how tokens were produced, but the BSR now keys on character positions, so any extent-comparison code should be confirmed against the new coordinate model.
-- Schrödinger dual chains in test grammars — once `Token.dual` retires, grammars that *explicitly* construct Schrödinger duals (via overlapping regex sources) need to verify they still get the intended parser behaviour from independent per-terminal lex queries.
-
-Action item: file a tracking doc (or this section's outline expanded into one) once Phase F is in, walk every annotation against the questions above, and either confirm "still needed and still correct", confirm "needed but reformulate as X", or retire.
+Carried forward to `TODO.md` items 6 and 7 (exclude correctness/effectiveness audit; sweep of every APUS annotation against multi-lex).
 
 ### Phase E - Lookbehind migration, retire LegacyScannerLexAdapter
 
@@ -1150,12 +1126,7 @@ Deletions:
 1. **`bracketNewline` conditional trivia.** Python.apus has `bracketNewline : /\r?\n/ . === "bracket-mode"` — newline-as-trivia only inside `(`/`[`/`{`. With `transitions` ignored (Step 2d), `bracketNewline` is now added to `triviaRegexes` unconditionally (it's still a skip pattern). It over-eats *every* `\n`, swallowing the trailing `\n` that should match `NEWLINE`. Simple statements like `x = 42\n` fail because the parser can't find the trailing NEWLINE.
 2. **Layout-injection tokens.** The `>>|` / `|<<` / `○` synthetic tokens injected by `injectLayoutTokens` aren't in `grammar.terminals`; `OnDemandLiteralLexer` can't find them. Previously the legacy adapter served them from the augmented tokens array. Now they're invisible to the parser. (`○` (EOS) is now handled explicitly; `>>|` and `|<<` are not.)
 
-These two are intentional gaps with concrete fixes pending design:
-
-- **`bracketNewline`-shaped patterns (NEWLINE-vs-trivia distinction based on grammar context)** need either: (a) a `=:` non-terminal trivia that recognises newlines only when reached from inside-bracket contexts (which doesn't fit `=:`'s "always-active" model), or (b) a new annotation that conditionally adds a trivia rule based on bracket nesting depth.
-- **Synthetic layout tokens** need a parser-side virtual-token table populated by `injectLayoutTokens` and consulted by `tokenMatch` before falling through to the lex layer. Per-position lookup by kindID; cheap.
-
-Neither fits the LCNP-via-per-terminal-lex paradigm directly, because both depend on parse-state context (bracket depth, indentation column). They're tracked as the Python-specific multi-lex follow-up. Until then, Python is the documented failing suite. The architectural gain from Step 2 (Swift fully on LCNP, no dual scanner, one lex backend) is real even with Python on the bench.
+**Both gaps closed:** synthetic layout tokens via `virtualTokensAt` (Phase G Step 1) and `bracketNewline` via grammar refactor (Phase G Step 2). Python parses 32/32.
 
 **Cumulative state at Step 2 close:**
 
@@ -1257,9 +1228,9 @@ if !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
 
 **Why the gain is small:** Phase D already pushed exclusion/followAhead/Schrödinger checks down to per-end LCNP filters, and `continuationViable` (in `rtn` / `bracketRtn`'s pop replay) prunes dead-end descriptors before they enter the queue. By Phase F the remaining dead-end terminals were already being suppressed one slot later by `testSelect`'s per-terminal lex. Phase F formally closes the LCNP migration by making the prediction happen *at lex time* (matching the paper's semantics), but the operational headline-win that motivated `lexLKH` in classical implementations was already captured by Phase D's piecemeal filters.
 
-**Token.dual + GatedTransition retirement deferred:** still depend on the eager Scanner. They're harmless (parser ignores them) and full retirement waits on the Python-specific design that will replace `bracketNewline`-style conditional trivia.
+**Token.dual + GatedTransition retirement:** completed in Phase H.
 
-**`>>1(…)` audit deferred:** for each grammar-annotated `followAhead`, the computed `followBS` is a superset (the annotation is a tightening). Retiring `>>1(…)` from grammars requires per-site equivalence proof. Tracked as follow-up; no urgency since the manual annotation wins under the unified filter.
+**`>>1(…)` audit:** carried to `TODO.md` item 7 (annotation sweep).
 
 **Cumulative state at Phase F close:**
 
@@ -1282,9 +1253,9 @@ Synthetic layout tokens (Python's `>>|` INDENT and `|<<` DEDENT) routed through 
 
 **Gating.** Existing `grammar.usesInjectedLayoutTokens` flag (set by `ApusParser` when `>>|` / `|<<` appear unquoted in grammar structure) reused unchanged — non-layout grammars allocate an empty dictionary and pay nothing. Verified: SwiftGrammar full-message suite, CoreGrammarTests, SpecialTokenTests, RegexLookbehindIntegration — all pass identically; no overhead measured on non-layout grammars.
 
-**Coexistence with `injectLayoutTokens`.** The mutating `injectLayoutTokens` in `main.swift` and `TestInfrastructure.swift` still runs and still augments `scanner.tokens[]` with synthetic Token objects — kept for diagnostic readers (DerivationBuilder, SwiftSyntaxGenerator) that walk the augmented stream. The parser hot path no longer needs them; the table path supersedes it. Removal of the mutation deferred to the scanner-retirement commit when the diagnostic readers are also migrated.
+**Coexistence with `injectLayoutTokens`:** retired in Phase I; mutating variant deleted, only the pure `computeVirtualLayoutTokens` survives.
 
-**What this does NOT fix.** Python's `bracketNewline : /\r?\n/ . === "bracket-mode"` is still added unconditionally to `triviaRegexes`, eating every `\r?\n` and blocking NEWLINE-as-emit. All 5 sampled Python failures (`x = 42\n`, `x + y * z\n`, …) fail on this regression. The fix requires a general predicate mechanism (grammar-level "this trivia rule fires only when bracket-depth > 0") whose syntax/semantics is the next design conversation. Documented as open work.
+**`bracketNewline` regression:** fixed in Phase G Step 2 via grammar refactor (Python.apus uses `<n>` boundary + global newline-trivia instead of NEWLINE-as-token).
 
 #### Phase G — Step 2 landed (Jun 14, 2026)
 
@@ -1319,48 +1290,92 @@ Drop the choice and the conflict dissolves: `\r?\n` becomes *global trivia*, and
 
 **What didn't need to happen.** No grammar-level predicate DSL (`when bracketDepth > 0`). No trivia-frame stack on descriptors. No new APUS primitive. The "general mechanism for this class of problems" turned out to be: *don't model a piece of layout as a token if it can be modelled as a trivia-gap predicate*. The existing `<n>` / `>n<` / `<s>` / `>s<` boundary set was sufficient.
 
+### Phase H — Eager scanner machinery retirement (Jun 15, 2026)
+
+With Python parsing and the bracket-newline mode-gating dependency gone, every scanner-internal mechanism that the parser hot path stopped consulting in earlier phases became deletable. Phase H is a single cleanup sweep, ~250 lines removed, no behavioural change.
+
+**Retired:**
+
+| Construct | File | Reason it's gone |
+|---|---|---|
+| `Scanner.matchesLine` + `Scanner.lookbehindAllows` | `Scanner.swift` | Dead since Phase E Step 1 (parser-side `MessageParser.lookbehindAllows` took over) |
+| `Token.dual` field + chain construction | `Scanner.swift` | Schrödinger same-span ties no longer tracked; Phase D's per-end LCNP exclusion filter handles disambiguation |
+| `MessageParser.prepareInput` dual-chain walk | `MessageParser.swift` | One-line `kindID` assignment now |
+| `Scanner.modeStack` / `scannerMode` / mode-gate prefilters / transition execute | `Scanner.swift` | Scanner mode-stack entirely gone; the parser stopped consulting `pat.transitions` in Phase E Step 2d |
+| `GatedTransition` struct | `Scanner.swift` | |
+| `TokenPattern.transitions` field | `Scanner.swift` | |
+| `while token.kind == "==="` annotation block | `ApusParser.production()` | Mode-annotation parser; no longer wires anything anywhere |
+| `===` / `<<<` / `>>>` token registrations | `ApusTerminals.swift` | Grammar syntax for the retired feature |
+| `mode = …`, `context = mode \| follow`, `name = …` productions | `apus.apus` | Meta-grammar productions describing the retired syntax. `context` callsites collapsed to inline `[ follow ]` to preserve nullability. |
+| `attributeHunt.apus`, `apusAmbiguous.apus` | `apus grammars/` | Test fixtures exercising the retired feature; no test referenced them. (`ScanModeTest.apus` deleted by the user in the same window.) |
+| `mode:` / `modeBeforeTransition:` parameters; `recordTransition` method | `ScannerTelemetry.swift` | Telemetry hooks for the retired mode transitions |
+
+**What still uses the eager scanner.** It still produces `tokens[]` / `trivia[][]` for:
+- `MessageParser.prepareInput` — `kindID` assignment, `tokenIndexByStart` sidecar (latter used only by `tokenIdx(at:)` for diagnostics).
+- `DerivationBuilder` / `SwiftSyntaxGenerator` — read `tokens[idx].image` by index when emitting AST/derivation nodes.
+- `recordMismatch` trace output.
+- `LayoutTokenInjection` mutating `tokens[]` in place — kept to feed the above readers. The *parser* now uses `virtualTokensAt` (Phase G Step 1); the *diagnostic* readers still read the augmented token stream.
+
+Replacing the diagnostic readers with parser-side scans of `input` is the remaining work to fully retire the eager scanner. None of it is on the hot path, and the diagnostic users are well-isolated.
+
+**Validation.** All focused suites (Python full grammar, Swift full grammar, APUS full grammar, APUS self-parse, CoreGrammar, SpecialToken, RegexLookbehindIntegration, TriviaNonTerminal) — 47/47 pass, identical to pre-Phase-H. Schrödinger duals continue to disambiguate correctly through the parser-side per-end LCNP filter alone.
+
+**Architectural state at Phase H close.**
+
+- LCNP per-terminal lex (`OnDemandLiteralLexer`) is the sole parsing lex backend.
+- `boundaryMatches` is parser-side, reading `terminalCommitsByEnd[].rawEnd`.
+- Layout tokens (INDENT/DEDENT/EOS) served via parser-side `virtualTokensAt` table.
+- Lookbehind, exclusion, predict-set (`lexLKH`) filters all parser-side.
+- The eager scanner is now a thin tokenization pass with no parser-state feedback loop, kept only for diagnostic readers.
+- Two working language targets (Swift, Python) plus APUS self-hosting; one synthesis test (`TriviaNonTerminal`).
+
+**Carryover work:** completed in Phase I (diagnostic readers migrated off `tokens[]`; mutating `injectLayoutTokens` deleted).
+
+### Phase I — Retire `Scanner` from the message-parsing pipeline (Jun 16, 2026)
+
+After Phase H the eager `Scanner` was kept alive only to feed diagnostic readers (`DerivationBuilder`, `SwiftSyntaxGenerator`, `recordMismatch`, derivation diagram). Phase I migrates those readers to walk `input` and the parser's own commit log directly, then removes `Scanner` from every message-parsing call site. `Scanner` survives in the codebase only for `ApusParser` (which uses it to tokenize `.apus` grammar sources via the fixed `ApusTerminals` set).
+
+**Architectural insight that drove the migration.** The parser already records, for every committed terminal, an exact `(start, rawEnd, kindID)` triple in `terminalCommitsByEnd`. That's grammar-authoritative boundary information — *no* whitespace heuristic, *no* language-specific assumption. Phase I exposed it as the source of truth: the parser dual-indexes commits as `terminalCommitsByStart` and offers `parser.terminalImage(startingAt: CharPosition) -> Substring?` returning the literal source content of the terminal that committed at that position. Trivia falls out as "everything between consecutive commits" — also available by walking the same sidecar.
+
+**`MessageParser` API simplified.** `parse(tokens:trivia:input:…)` → `parse(input:…)`. `prepareInput(tokens:trivia:input:isSubParser:)` → `prepareInput(input:isSubParser:)`. The `tokens: [Token]`, `trivia: [[Token]]`, `tokenIndexByStart` fields and the `tokenIdx(at:)` helper are gone. Sub-parsers (`=:` bodies) share the simplified API.
+
+**Mini-scanner for layout precompute.** `computeVirtualLayoutTokens` previously walked the scanner's `tokens[]`. It now walks `input` char-by-char with hardcoded Python-shaped string and comment delimiters (`"`, `'`, `"""`, `'''`, `#`). 80 lines, language-parameterisable when a second grammar needs different delimiters (Haskell, F#, YAML); no per-language hack today. Gating on `grammar.usesInjectedLayoutTokens` unchanged; non-layout grammars allocate nothing.
+
+**Diagnostic readers migrated.**
+- `DerivationBuilder`: `ParseTreeNode.token: Token?` → `image: Substring?`. Leaves get their image from `parser.terminalImage(startingAt: from)` — exact boundaries, falls back to `input[from..<to]` only if no commit recorded.
+- `SwiftSyntaxGenerator`: `tokenText(at:)` and `collectTerminalText(from:to:)` walk `terminalCommitsByStart` for grammar-defined boundaries. No more whitespace-stop heuristics that would have broken on languages with non-standard separator conventions.
+- `SPPFExtractor`: never actually read `tokens[]`; just dropped the dead parameter.
+- `Oracle`: dead `tokens:` parameter dropped.
+- `recordMismatch`: shows a `sourceSnippet(at:)` slice of `input` instead of `tokens[idx].image`. The heuristic (Unicode whitespace stop, 30-char cap) is intentionally limited to this *failure-report* path; everything that runs on a *successful* parse uses `terminalImage(startingAt:)`.
+
+**Call sites swept.** `main.swift`, `TestInfrastructure.swift` (3 sites), `SwiftSyntaxTests.swift`, `SpecialTokenTests.swift`, `PerformanceTests.swift`. No `Scanner(...)` invocation remains for message parsing. The mutating `injectLayoutTokens(tokens:trivia:input:…)` has been deleted entirely; only the pure `computeVirtualLayoutTokens(input:…)` survives.
+
+**`Token.kindID`** is now used by no parser-hot-path code. `ApusParser` reads `Token.kind` (string) but never `kindID`. Field removal pending audit — `TODO.md` item 9.
+
+**Validation.** 132 / 132 in the focused suite (CoreGrammar across 9 sub-suites, SpecialToken across 3, RegexLookbehindIntegration, TriviaNonTerminal, APUS self-parse, all three LanguageGrammar full-message suites for Python / Swift / APUS). Schrödinger duals still disambiguate, lookbehind still fires, Python's 32 messages still parse, Swift unchanged, APUS self-parse unchanged.
+
+**Architectural state at Phase I close.**
+
+- The message-parsing pipeline is `MessageParser.parse(input:)` + `Oracle(parser:input:)`. `Scanner` no longer appears in any signature or call site for message parsing.
+- `Scanner` survives as a *grammar-loader* dependency: `ApusParser` uses it to tokenize `.apus` files via the fixed `ApusTerminals` set. Quarantined.
+- `Token.kindID`, `Token` itself, `TokenPattern.lookbehind`, `LookbehindSpec/Rule/Line` (string-keyed) — all retained as grammar metadata, consumed by `MessageParser.prepareInput` via `grammar.terminals`. They're not "scanner machinery"; they're grammar metadata that happens to live in `Scanner.swift`. Move-or-rename can wait.
+
+**Open follow-ups:** see `TODO.md` items 10 (consolidate `terminalCommits*` indexes) and 14 (mini-scanner parameterisation for non-Python layout-sensitive grammars).
+
 ## Open Questions
 
-### §A — Lexical state and scanner modes
+The §A–§H open-question outline that opened this section has been resolved or moved:
 
-Today's `=== "X" [<<<] [>>> "Y"]` triples on terminals carry mutable scanner mode. LCNP's default contract should stay stateless: `lex(pos, terminalID)` is a pure validator over source text.
-
-Preferred order:
-1. Handle the construct as a pure terminal-specific recognizer.
-2. If internal language syntax matters, grammar-encode it as an island.
-3. Only if neither works, extend descriptor identity with lexical state.
-
-The open question is not "how do we preserve scanner modes?" but "which concrete constructs truly require lexical state after recognizers and grammar islands are tried?" Raw-string delimiter counts and interpolation nesting are the cases to examine first.
-
-### §B — Whitespace, trivia, and layout
-
-The paper defers whitespace/trivia (l. 624-625). APUS has `>s<`/`<s>`/`<n>`/`>n<` boundary annotations that gate based on inter-token whitespace. With character positions, these should be derived from source spans and trivia summaries rather than from a committed token array.
-
-Minimum likely model: `LexMatch` carries or can recover enough trivia information between the incoming parser position and the visible terminal start/end to answer adjacency and newline predicates. Comments and skipped trivia remain source-derived; they should not require the old scanner stream to survive.
-
-### §C — Performance on Swift workloads
-
-Scott measures Life.java in <0.1s, but Java has cleaner token boundaries than Swift. Swift regex literals, multi-pound strings, interpolated strings, and editor placeholders introduce recognizer calls that may dominate cost. Profile early, especially descriptor count, BSR yield count, recognizer cache hit rate, and wall-clock time.
-
-### §D — `lexLKH` and grammar's existing `firstBS`/`followBS`
-
-`lexLKH` should filter against the paper's single-step `predict(β, X)` first. APUS already has integer FIRST/FOLLOW data in `firstBS` and `followBS`; reuse that before considering deeper Swift-specific lookahead. Any deeper lookahead must be measured as an optimisation, not added as a new semantic mechanism.
-
-### §E — Memoisation of lex results
-
-`lex(pos, terminalID)` is pure given the input. Memoise by `(pos, terminalID)` -> `[LexMatch]`. Cache hits should be common when GLL revisits a source position with the same terminal expectation. Cost is memory; measure before adding more elaborate eviction or packed storage.
-
-### §F — Migration of `Token.image` and `Token.kindID`
-
-Today's parser carries `Token.image: Substring` and `Token.kindID: Int` per token. Under LCNP, token identity becomes `terminalID`, and textual content comes from the source string via `input[start..<end]`. `Token` can remain in the legacy adapter and diagnostics while the normal parser path uses `LexMatch`.
-
-### §G — Test infrastructure
-
-`parseMatches(grammar, message)` can keep the same external semantics. Internally, assertions that compare `TokenPosition` values need to compare `String.Index` / `CharPosition` values. Add baseline tools that can run the same message through the legacy scanner adapter and the LCNP lexer to compare accepted parses and ambiguity profiles.
-
-### §H — Generated parser code (`GenerateParser.swift`)
-
-The generated standalone parser (currently for LL(1) grammars only) needs to track LCNP changes. It should preserve integer terminal IDs and `BitSet` select tests, but emit parser-driven terminal calls rather than assuming a pre-tokenized input stream.
+| § | Topic | Outcome |
+|---|---|---|
+| §A | Lexical state / scanner modes | Phase H deleted the scanner mode-stack entirely; no language has so far needed descriptor-encoded lexical state. |
+| §B | Whitespace / trivia / layout | Phase E close moved boundary evaluation to parser-side `terminalCommitsByEnd[].rawEnd`. |
+| §C | Performance on Swift workloads | Profiling carried to `TODO.md` item 13. |
+| §D | `lexLKH` and existing FIRST/FOLLOW | Phase F implemented using `cL.followBS` as the predict set. |
+| §E | Memoisation of lex results | `lexCache: [LexCacheKey: [LexMatch]]` in `MessageParser`. |
+| §F | `Token.image` / `Token.kindID` | `image` migrated to `parser.terminalImage(startingAt:)`; `kindID` removal carried to `TODO.md` item 9. |
+| §G | Test infrastructure | Migrated in Phase I. |
+| §H | Generated parser code (`GenerateParser.swift`) | Carried to `TODO.md` item 12. |
 
 ## What This Does Not Address
 

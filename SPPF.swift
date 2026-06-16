@@ -164,7 +164,6 @@ class SPPFExtractor {
     // MARK: - Inputs from parser
     let parser: MessageParser
     let grammar: Grammar
-    let tokens: [Token]
     let input: String
 
     // MARK: - SPPF extraction state
@@ -176,10 +175,9 @@ class SPPFExtractor {
 
     // MARK: - Initialization
 
-    init(parser: MessageParser, tokens: [Token], input: String) {
+    init(parser: MessageParser, input: String) {
         self.parser = parser
         self.grammar = parser.grammar
-        self.tokens = tokens
         self.input = input
         self._sppfNonTerminals = parser.grammar.nonTerminals
         buildSlotIndex(nonTerminals: parser.grammar.nonTerminals)
