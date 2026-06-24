@@ -1,31 +1,5 @@
-/*  α · δ  'N' */
-//let x: Set<Set<Int>>        // seems to generate the wrong parse tree
-//let x: Dictionary<String, Array<Int>>
-//func f(dispatched: Set<String>?, _ node: GrammarNode ) {}
-
-
-
-
-
-^^^#ApusParser.swift
-^^^#ApusTerminals.swift
-^^^#BinarySubtreeRepresentation.swift
-^^^#CallReturnForest.swift
-^^^#Descriptor.swift
-^^^#GenerateDerivationDiagram.swift
-^^^#GenerateDiagrams.swift
-^^^#GenerateParser.swift
-^^^#Grammar.swift
-^^^#GrammarNode.swift
-^^^#Loggers.swift
-^^^#ManualOutput.swift
-^^^#MessageParser.swift
-^^^#OutputTools.swift
-^^^#SPPF.swift
-^^^#Scanner.swift
-^^^#StringExtensions.swift
-^^^#main.swift
-
-^^^#AllSources.swift
-
-
+^^^
+let 📆 = "today"
+let x = 📆
+^^^
+"Founded: \(Date.appleFounding, format: 📆)"

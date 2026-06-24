@@ -618,7 +618,7 @@ struct SwiftSyntaxGenerator {
     /// grammar-defined, trivia (whatever lies between consecutive commits)
     /// is dropped. Order is by start position.
     private func collectTerminalText(from: CharPosition, to: CharPosition) -> String {
-        let starts = parser.terminalCommitsByStart.keys
+        let starts = parser.commitsByStart.keys
             .filter { $0 >= from && $0 < to }
             .sorted()
         var result = ""

@@ -692,7 +692,8 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testReasyncFunctions",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "experimental feature"
     ),
     SwiftSnippet(
         label: "testMacroExpansionDeclaration#1",
@@ -966,7 +967,8 @@ let declarationSnippets: [SwiftSnippet] = [
       func badTypeConformance3<T>(_: T) where (T) -> () : EqualComparable { }
       """,
         origin: "DeclarationTests.testWhereClauseWithFunctionType",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "compiler error — function type as conformance subject; swift-syntax accepts but the compiler rejects (we follow compiler)"
     ),
     SwiftSnippet(
         label: "testSuppressedImplicitConformance#1",
@@ -1087,7 +1089,7 @@ let declarationSnippets: [SwiftSnippet] = [
     ),
     SwiftSnippet(label: "testLiteralInitializerWithTrailingClosure#1", source: "let foo = 1 { return 1 }", origin: "DeclarationTests.testLiteralInitializerWithTrailingClosure", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testInitializerWithReturnType#1", source: "init(_ ptr: UnsafeRawBufferPointer, _ a: borrowing Array<Int>) -> dependsOn(a) Self", origin: "DeclarationTests.testInitializerWithReturnType", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
-    SwiftSnippet(label: "testInitializerWithReturnType#2", source: "public init() -> Int", origin: "DeclarationTests.testInitializerWithReturnType", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testInitializerWithReturnType#2", source: "public init() -> Int", origin: "DeclarationTests.testInitializerWithReturnType", syntaxVersion: "603.0.1", disabledReason: "compiler error — initializers can't have a return type; swift-syntax accepts via parseFunctionSignature for error recovery (Declarations.swift:1260) but the compiler rejects (we follow compiler)"),
     SwiftSnippet(label: "testSendingTypeSpecifier#1", source: "func testVarDeclTupleElt() -> (sending String, String) {}", origin: "DeclarationTests.testSendingTypeSpecifier", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testVarDeclTupleElt#1", source: "func testVarDeclTuple2(_ x: (sending String)) {}", origin: "DeclarationTests.testVarDeclTupleElt", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testVarDeclTuple2#1", source: "func testVarDeclTuple2(_ x: (sending String, String)) {}", origin: "DeclarationTests.testVarDeclTuple2", syntaxVersion: "603.0.1"),
@@ -1128,8 +1130,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testCoroutineAccessors",
-        syntaxVersion: "603.0.1",
-        disabledReason: "experimental feature"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testBorrowAndMutateAccessors#1",

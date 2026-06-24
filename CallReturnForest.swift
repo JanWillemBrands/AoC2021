@@ -67,13 +67,19 @@ extension MessageParser {
         // prefix-overlap diagnostic) is preserved so we can switch this back
         // on once the parser-driven lex path is in place.
         let canEarlyTerminate = false && X.isLocallyLL1
+        var selectedAlternate = false
         var current = X.alt
         while let alt = current {
             if testSelect(slot: alt, bracket: X) {
+                selectedAlternate = true
                 addDescriptor(L: alt.seq!, k: k, i: i)
                 if canEarlyTerminate { return }
             }
             current = alt.alt
+        }
+
+        if !selectedAlternate, X.kind == .N {
+            recordMismatch(expected: X.first, at: i, slot: X)
         }
     }
 
@@ -95,6 +101,7 @@ extension MessageParser {
                         addDescriptor(L: cL.seq!, k: cU, i: pop)
                         addYield(L: cL, i: cU, k: cI, j: pop)
                     } else {
+                        recordSuppressedContinuation(cL.seq!, at: pop)
                         suppressedDescriptorCount += 1
                     }
                 }
@@ -118,6 +125,7 @@ extension MessageParser {
                     addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
                     addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
                 } else {
+                    recordSuppressedContinuation(rtn.slot.seq!, at: cI)
                     suppressedDescriptorCount += 1
                 }
             }
@@ -137,6 +145,7 @@ extension MessageParser {
                         addDescriptor(L: bracket.seq!, k: cU, i: pop)
                         addYield(L: bracket, i: cU, k: cI, j: pop)
                     } else {
+                        recordSuppressedContinuation(bracket.seq!, at: pop)
                         suppressedDescriptorCount += 1
                     }
                 }
@@ -161,6 +170,7 @@ extension MessageParser {
                     addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
                     addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
                 } else {
+                    recordSuppressedContinuation(rtn.slot.seq!, at: cI)
                     suppressedDescriptorCount += 1
                 }
             }
@@ -176,6 +186,7 @@ extension MessageParser {
                                     addYield(L: returnEdge.slot, i: returnEdge.index, k: cI, j: pop)
                                     addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: pop)
                                 } else {
+                                    recordSuppressedContinuation(returnEdge.slot.seq!, at: pop)
                                     suppressedDescriptorCount += 1
                                 }
                             }

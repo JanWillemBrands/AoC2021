@@ -121,11 +121,11 @@ extension GrammarNode {
         guard let grammar = GrammarNode.grammar else { return false }
         // Per-alternate: collected literal sources and (source, regex) pairs.
         var perAltLiterals: [[String]] = []
-        var perAltRegexes: [[(source: String, regex: Regex<Substring>)]] = []
+        var perAltRegexes: [[(source: String, regex: Regex<AnyRegexOutput>)]] = []
         var current = self.alt
         while let alt = current {
             var lits: [String] = []
-            var rxs: [(source: String, regex: Regex<Substring>)] = []
+            var rxs: [(source: String, regex: Regex<AnyRegexOutput>)] = []
             for element in alt.first {
                 guard let pat = grammar.terminals[element] else { continue }
                 if pat.isLiteral { lits.append(pat.source) }

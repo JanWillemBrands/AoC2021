@@ -40,20 +40,29 @@ struct ResolvedLookbehindSpec {
     var isEmpty: Bool { positiveLines.isEmpty && negativeLines.isEmpty }
 }
 
-/// One terminal commit recorded by the parse loop's `.T`/`.TI`/`.C` arm. Used
-/// to evaluate `++N`/`--N` lookbehind annotations and `<s>`/`>s<`/`<n>`/`>n<`
-/// boundary annotations from parser state.
+/// One terminal commit recorded by the parse loop's `.T`/`.TI`/`.C` arm.
+/// Carries the four positions that fully describe the commit's span in the
+/// source (modeled on swift-syntax's per-token position quartet):
 ///
-/// `rawEnd` is the literal/regex content's end position **before** trailing
-/// trivia skipping; `end` (the dictionary key in `terminalCommitsByEnd`) is
-/// the cursor position **after** trivia skipping. The two differ exactly when
-/// the lexer skipped trivia after the match, which is what `boundaryMatches`
-/// needs to know to answer "is there whitespace between previous emit and
-/// current cursor?".
+///   - `triviaStart` — start of leading trivia (= previous commit's
+///                     `triviaEnd`, or parse origin for the first commit)
+///   - `start`       — content start (after leading trivia)
+///   - `end`         — content end (before trailing trivia)
+///   - `triviaEnd`   — past trailing trivia; the parser cursor advances here
+///                     and the next commit's `triviaStart` equals this
+///
+/// Image of the terminal:   `input[start ..< end]`
+/// Leading trivia text:     `input[triviaStart ..< start]`
+/// Trailing trivia text:    `input[end ..< triviaEnd]`
+///
+/// Used by `terminalImage(startingAt:)`, `previousKindIDs(at:distance:)`
+/// (`++N`/`--N` lookbehind), and `boundaryMatches` (`<s>`/`>s<`/`<n>`/`>n<`).
 struct TerminalCommit {
-    let kindID: Int
+    let terminalID: Int
+    let triviaStart: CharPosition
     let start: CharPosition
-    let rawEnd: CharPosition
+    let end: CharPosition
+    let triviaEnd: CharPosition
 }
 
 class MessageParser {
@@ -120,28 +129,27 @@ class MessageParser {
         )
     }
 
-    /// `BitSet` of terminal kindIDs whose commit ends exactly at `pos`. Reads
-    /// the parser's per-parse `terminalCommitsByEnd` log.
+    /// `BitSet` of terminal kindIDs whose commit ends exactly at `pos`.
     private func terminalKindIDs(endingAt pos: CharPosition) -> BitSet {
-        guard let commits = terminalCommitsByEnd[pos] else { return BitSet() }
+        guard let idxs = commitsByEnd[pos] else { return BitSet() }
         var bs = BitSet()
-        for c in commits { bs.insert(c.kindID) }
+        for i in idxs { bs.insert(commits[i].terminalID) }
         return bs
     }
 
     /// "N visible terminals back from `pos`" expressed over the parser's
     /// commit log. `distance == 1` → kindIDs committed ending at `pos`;
-    /// `distance == 2` → kindIDs committed ending at the start of any commit
-    /// ending at `pos`; etc. Walks set-unions when multiple histories arrive
-    /// at the same position (the GLL-multi-history equivalent of the original
-    /// Schrödinger-dual chain walk in `Scanner.matchesLine`).
+    /// `distance == 2` → kindIDs committed ending at the `triviaStart` of any
+    /// commit ending at `pos` (since `commit.triviaStart` is the previous
+    /// commit's `end` in steady state); etc. Walks set-unions when multiple
+    /// histories arrive at the same position.
     func previousKindIDs(at pos: CharPosition, distance: Int) -> BitSet {
         var endPositions: Set<CharPosition> = [pos]
         for _ in 1..<distance {
             var next: Set<CharPosition> = []
             for p in endPositions {
-                if let commits = terminalCommitsByEnd[p] {
-                    for c in commits { next.insert(c.start) }
+                if let idxs = commitsByEnd[p] {
+                    for i in idxs { next.insert(commits[i].triviaStart) }
                 }
             }
             if next.isEmpty { return BitSet() }
@@ -220,25 +228,44 @@ class MessageParser {
     /// evaluator runs entirely on integer IDs.
     var lookbehindByTerminalID: [Int: ResolvedLookbehindSpec] = [:]
 
-    /// Per-parse record of every terminal commit, dual-indexed by end and
-    /// start position. Each `.T`/`.TI`/`.C` arm in the main parse loop
-    /// appends to both. `byEnd` powers `previousKindIDs(at:distance:)` for
-    /// `++N`/`--N` lookbehind; `byStart` powers `terminalImage(startingAt:)`
-    /// for diagnostic/AST readers that need the exact grammar-defined
-    /// literal content at a given source position.
-    var terminalCommitsByEnd: [CharPosition: [TerminalCommit]] = [:]
-    var terminalCommitsByStart: [CharPosition: [TerminalCommit]] = [:]
+    /// Per-parse flat log of every terminal commit. Each `.T`/`.TI`/`.C` arm
+    /// in the main parse loop appends to `commits` and indexes the new entry
+    /// in both `commitsByStart` (content start → commit indices) and
+    /// `commitsByEnd` (content end → commit indices). Two indices into one
+    /// store keep the commit data single-sourced; the indices are pointers,
+    /// not copies. `commitsByEnd` powers `previousKindIDs(at:distance:)` for
+    /// `++N`/`--N` lookbehind; `commitsByStart` powers
+    /// `terminalImage(startingAt:)` for diagnostic / AST readers.
+    var commits: [TerminalCommit] = []
+    var commitsByStart: [CharPosition: [Int]] = [:]
+    var commitsByEnd: [CharPosition: [Int]] = [:]
 
-    /// Exact source slice of the terminal that committed starting at `start`,
-    /// or `nil` if no terminal started at this position. Multiple commits at
-    /// the same start position (e.g. an ambiguous parse where two different
-    /// terminals matched the same opening character) are resolved by
-    /// returning the longest match — the grammar-authoritative span. Replaces
-    /// the eager-scanner's `tokens[idx].image` lookup.
-    func terminalImage(startingAt start: CharPosition) -> Substring? {
-        guard let commits = terminalCommitsByStart[start], !commits.isEmpty else { return nil }
-        let longestRawEnd = commits.map(\.rawEnd).max()!
-        return input[start..<longestRawEnd]
+    /// Exact source slice of the terminal that committed starting at the
+    /// given position, or `nil` if no terminal committed there. The argument
+    /// is the BSR-aligned start (= parser cursor at lex time = `triviaStart`
+    /// of the commit), matching what AST/diagram traversal hands out. The
+    /// returned slice spans `[triviaStart, contentEnd)` — i.e. leading trivia
+    /// plus content, but no trailing trivia — preserving the pre-refactor
+    /// contract. Multiple commits at the same start (ambiguous parses) are
+    /// resolved by returning the longest. Replaces the eager-scanner's
+    /// `tokens[idx].image` lookup.
+    func terminalImage(startingAt triviaStart: CharPosition) -> Substring? {
+        guard let idxs = commitsByStart[triviaStart], !idxs.isEmpty else { return nil }
+        let longestEnd = idxs.map { commits[$0].end }.max()!
+        return input[triviaStart..<longestEnd]
+    }
+
+    @inline(__always)
+    func recordCommit(terminalID: Int, triviaStart: CharPosition, start: CharPosition, end: CharPosition, triviaEnd: CharPosition) {
+        let idx = commits.count
+        commits.append(TerminalCommit(terminalID: terminalID, triviaStart: triviaStart, start: start, end: end, triviaEnd: triviaEnd))
+        // Index by `triviaStart` — the position the parser cursor was at when
+        // this commit started. This matches the BSR yield's `k` (= cI at lex
+        // time), so AST/diagram consumers that get a position from the BSR
+        // can look up the commit directly. `commitsByEnd` is keyed by
+        // `triviaEnd` — the position the parser cursor advances to.
+        commitsByStart[triviaStart, default: []].append(idx)
+        commitsByEnd[triviaEnd, default: []].append(idx)
     }
 
     // MARK: - Error reporting, captures the furthest the parse has progressed before a mismatch occurred
@@ -284,8 +311,8 @@ class MessageParser {
         // parser-side in `tokenMatch`. `transitions`-annotated terminals lose
         // their mode-gating — documented Python regression.
         var literalSourceByID: [Int: String] = [:]
-        var regexByID: [Int: Regex<Substring>] = [:]
-        var triviaRegexes: [Regex<Substring>] = []
+        var regexByID: [Int: Regex<AnyRegexOutput>] = [:]
+        var triviaRegexes: [Regex<AnyRegexOutput>] = []
         lookbehindByTerminalID.removeAll(keepingCapacity: true)
         for (name, pat) in grammar.terminals {
             guard let id = grammar.symbolToID[name] else { continue }
@@ -359,8 +386,9 @@ class MessageParser {
     /// prepared input are cheap — only this routine runs per recogniser call.
     func runGLL(root: GrammarNode, start: CharPosition) {
         currentParseRoot = root
-        terminalCommitsByEnd.removeAll(keepingCapacity: true)
-        terminalCommitsByStart.removeAll(keepingCapacity: true)
+        commits.removeAll(keepingCapacity: true)
+        commitsByStart.removeAll(keepingCapacity: true)
+        commitsByEnd.removeAll(keepingCapacity: true)
         let origin = start
         cL = nil; cI = origin; cU = origin
         unique = []; remaining = []
@@ -400,8 +428,8 @@ class MessageParser {
 
             while true {
 
-                trace = false
-                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) at: \(input.linePosition(of: cI))")
+//                trace = false
+//                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) at: \(input.linePosition(of: cI))")
 
                 switch cL.kind {
                 case .EPS:
@@ -424,11 +452,9 @@ class MessageParser {
                     if matches.count == 1 {
                         // Single match — continue in place (hot path).
                         let m = matches[0]
-                        addYield(L: cL, i: cU, k: cI, j: m.end)
-                        let commit = TerminalCommit(kindID: cL.nameID, start: cI, rawEnd: m.rawEnd)
-                        terminalCommitsByEnd[m.end, default: []].append(commit)
-                        terminalCommitsByStart[cI, default: []].append(commit)
-                        cI = m.end
+                        addYield(L: cL, i: cU, k: cI, j: m.triviaEnd)
+                        recordCommit(terminalID: cL.nameID, triviaStart: cI, start: m.start, end: m.end, triviaEnd: m.triviaEnd)
+                        cI = m.triviaEnd
                         cL = cL.seq!
                     } else {
                         // Multi-match fork: one continuation descriptor per
@@ -438,11 +464,9 @@ class MessageParser {
                         // length matches when Phase C/E lexers start returning
                         // multiple ends.
                         for m in matches {
-                            addYield(L: cL, i: cU, k: cI, j: m.end)
-                            let commit = TerminalCommit(kindID: cL.nameID, start: cI, rawEnd: m.rawEnd)
-                            terminalCommitsByEnd[m.end, default: []].append(commit)
-                            terminalCommitsByStart[cI, default: []].append(commit)
-                            addDescriptor(L: cL.seq!, k: cU, i: m.end)
+                            addYield(L: cL, i: cU, k: cI, j: m.triviaEnd)
+                            recordCommit(terminalID: cL.nameID, triviaStart: cI, start: m.start, end: m.end, triviaEnd: m.triviaEnd)
+                            addDescriptor(L: cL.seq!, k: cU, i: m.triviaEnd)
                         }
                         continue nextDescriptor
                     }
@@ -460,10 +484,14 @@ class MessageParser {
                     bracketCall(bracket: cL)
                     continue nextDescriptor
                 case .OPT, .KLN:
-                    // OPT/KLN: also offer skip-past-bracket path (they're nullable)
-                    if testSelect(slot: cL.seq!, bracket: cL) {
+                    // OPT/KLN: also offer skip-past-bracket path (they're nullable).
+                    // Use the same viability predicate as return replay so an optional
+                    // at the end of a production can skip to END.
+                    if continuationViable(continuation: cL.seq!, at: cI) {
                         addDescriptor(L: cL.seq!, k: cU, i: cI)
                         addYield(L: cL, i: cU, k: cI, j: cI)  // empty bracket BSR
+                    } else {
+                        recordSuppressedContinuation(cL.seq!, at: cI)
                     }
                     bracketCall(bracket: cL)
                     continue nextDescriptor
@@ -509,7 +537,7 @@ class MessageParser {
         // For a sub-parse (root != grammar.root), the caller will read yield(of: root)
         // directly to discover accepting end positions.
         successfullParses = yield(of: currentParseRoot).filter { y in y.i == origin && y.j == input.endIndex }.count
-        trace = false
+//        trace = false
         // Skip the diagnostic prints for sub-parses (`=:` recogniser runs);
         // they fire at every trivia-skip position and drown out the console.
         guard root === grammar.root else { return }
@@ -531,19 +559,158 @@ class MessageParser {
                 grammar context: \(furthestMismatchSlot.ebnfDot())
                 expected: \(expected)
                 """)
+            explainNoMatch(slot: furthestMismatchSlot, at: furthestMismatchIndex)
+            dumpRecentCommits()
+        }
+    }
+
+    /// Re-run lex + the `tokenMatch` filters for the failed terminal slot and
+    /// print which step zeroed out the match list. This catches diagnostics
+    /// like "found '(' / expected '('" where raw lex succeeded, but parser-side
+    /// lookbehind, exclusion, or predict-set pruning rejected the branch.
+    func explainNoMatch(slot: GrammarNode, at pos: CharPosition) {
+        guard [.T, .TI, .C].contains(slot.kind) else { return }
+        let id = slot.nameID!
+        let posStr = input.linePosition(of: pos)
+        print("Match explanation for '\(slot.name)' (id=\(id)) at \(posStr):")
+
+        let raw = cachedLex(at: pos, terminalID: id)
+        print("  lex: \(raw.count) match(es)")
+        for m in raw {
+            print("    start=\(input.linePosition(of: m.start)) end=\(input.linePosition(of: m.end)) triviaEnd=\(input.linePosition(of: m.triviaEnd)) image='\(input[m.start..<m.end])'")
+        }
+        if raw.isEmpty {
+            print("  -> lex returned nothing; input does not match this terminal here")
+            return
+        }
+
+        var survivors = raw
+        if let lookbehind = lookbehindByTerminalID[id] {
+            let allowed = lookbehindAllows(lookbehind, at: pos)
+            print("  after lookbehind: \(allowed ? survivors.count : 0)  (allowed=\(allowed))")
+            if !allowed { return }
+        } else {
+            print("  after lookbehind: \(survivors.count)  (no lookbehind on this terminal)")
+        }
+
+        if !slot.excludeBS.isEmpty {
+            survivors = survivors.filter { m in
+                for eID in slot.excludeBS where eID != id && eID != grammar.epsilonID {
+                    for em in cachedLex(at: pos, terminalID: eID) where em.triviaEnd == m.triviaEnd {
+                        return false
+                    }
+                }
+                return true
+            }
+            print("  after exclude:    \(survivors.count)")
+            if survivors.isEmpty { return }
+        } else {
+            print("  after exclude:    \(survivors.count)  (no exclude on this terminal)")
+        }
+
+        let predictBS = slot.followAheadBS.isEmpty ? slot.followBS : slot.followAheadBS
+        let predictKind = slot.followAheadBS.isEmpty ? "followBS" : "followAheadBS (>>1)"
+        if !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
+            let idToName = Dictionary(uniqueKeysWithValues: grammar.symbolToID.map { ($0.value, $0.key) })
+            let names = predictBS.compactMap { idToName[$0] }.sorted()
+            print("  predict (\(predictKind)): \(names.joined(separator: ","))")
+            survivors = survivors.filter { m in
+                if m.triviaEnd >= input.endIndex { return true }
+                for fID in predictBS where fID != grammar.epsilonID {
+                    if !cachedLex(at: m.triviaEnd, terminalID: fID).isEmpty { return true }
+                }
+                return false
+            }
+            print("  after predict:    \(survivors.count)")
+            if survivors.isEmpty {
+                let triedAt = raw.first.map { input.linePosition(of: $0.triviaEnd) } ?? "?"
+                let next = raw.first.map { sourceSnippet(at: $0.triviaEnd) } ?? ""
+                print("    -> nothing in predict set lexes at \(triedAt); next content is '\(next)'")
+            }
+        } else {
+            print("  predict: skipped (empty or nullable)")
+        }
+
+        if !survivors.isEmpty {
+            print("  -> terminal survives tokenMatch filters; failure is probably in a later slot or nonterminal return")
+        }
+    }
+
+//    /// Convenience probe for interactive debugging. Prefer the slot-based
+//    /// overload in parser diagnostics because exclude/follow filters are
+//    /// position-specific in the grammar graph.
+//    func explainNoMatch(terminalName: String, at pos: CharPosition) {
+//        guard let slot = findTerminalSlot(named: terminalName, in: grammar.root) else {
+//            print("explainNoMatch: terminal '\(terminalName)' not found in grammar")
+//            return
+//        }
+//        explainNoMatch(slot: slot, at: pos)
+//    }
+//
+    private func findTerminalSlot(named name: String, in root: GrammarNode) -> GrammarNode? {
+        var visited: Set<ObjectIdentifier> = []
+
+        func visit(_ node: GrammarNode?) -> GrammarNode? {
+            guard let node else { return nil }
+            let oid = ObjectIdentifier(node)
+            guard visited.insert(oid).inserted else { return nil }
+            if [.T, .TI, .C].contains(node.kind), node.name == name {
+                return node
+            }
+            if let found = visit(node.seq) { return found }
+            if let found = visit(node.alt) { return found }
+            return nil
+        }
+
+        return visit(root)
+    }
+
+    /// Print the last `count` terminal commits in append order. Each line
+    /// shows source position, terminal ID, terminal name, and the image
+    /// slice (no surrounding trivia). Intended for failure diagnostics —
+    /// gives a quick view of what the parser most recently consumed before
+    /// getting stuck.
+    func dumpRecentCommits(_ count: Int = 10) {
+        let start = max(0, commits.count - count)
+        guard start < commits.count else {
+            print("Recent commits: (none — parse failed before committing any terminal)")
+            return
+        }
+        let idToName = Dictionary(uniqueKeysWithValues: grammar.symbolToID.map { ($0.value, $0.key) })
+        print("Recent \(commits.count - start) of \(commits.count) terminal commits:")
+        for c in commits[start...] {
+            let image = input[c.start..<c.end]
+            let pos = input.linePosition(of: c.start)
+            let name = idToName[c.terminalID] ?? "?"
+            print("  \(pos)  id=\(c.terminalID) '\(name)'  image='\(image)'")
         }
     }
 
     // MARK: - Internal helpers
 
     func recordMismatch(expected: String) {
+        recordMismatch(expected: [expected])
+    }
+
+    func recordMismatch(expected: Set<String>) {
+        guard let slot = cL else { return }
+        recordMismatch(expected: expected, at: cI, slot: slot)
+    }
+
+    func recordSuppressedContinuation(_ continuation: GrammarNode, at position: CharPosition) {
+        recordMismatch(expected: continuation.first, at: position, slot: continuation)
+    }
+
+    func recordMismatch(expected: Set<String>, at position: CharPosition, slot: GrammarNode) {
+        let expected = expected.subtracting([""])
+        guard !expected.isEmpty else { return }
         failedParses += 1
-        if cI > furthestMismatchIndex {
-            furthestMismatchIndex = cI
-            furthestMismatchSlot = cL
-            furthestMismatchExpected = [expected]
-        } else if cI == furthestMismatchIndex {
-            furthestMismatchExpected.insert(expected)
+        if position > furthestMismatchIndex {
+            furthestMismatchIndex = position
+            furthestMismatchSlot = slot
+            furthestMismatchExpected = expected
+        } else if position == furthestMismatchIndex {
+            furthestMismatchExpected.formUnion(expected)
         }
     }
 
@@ -570,37 +737,30 @@ class MessageParser {
 
     /// Evaluate a boundary operator at a parser cursor position.
     /// Boundaries are predicates over the *trivia gap* between the previous
-    /// consumed terminal's raw end and the current cursor — i.e. they ask
-    /// "what (if anything) did `skipTrivia` skip to get the cursor here?".
+    /// committed terminal's content end and the current cursor — i.e. they
+    /// ask "what (if anything) did `skipTrivia` skip to get the cursor here?".
     ///
-    /// Each commit in `terminalCommitsByEnd[position]` carries the literal/
-    /// regex end position *before* trivia skipping. The slice
-    /// `input[rawEnd..<position]` is exactly the trivia text the lexer
-    /// skipped, and the boundary semantics reduce to predicates on that slice.
-    /// Multi-history GLL can produce multiple commits at the same position;
-    /// the answer must be consistent across them. We require unanimity:
-    ///   - `<s>`/`<n>` (require trivia) → true iff *every* commit has trivia
+    /// Each commit in `commitsByEnd[position]` carries `end` (literal/regex
+    /// end before trailing-trivia skipping). The slice
+    /// `input[end..<position]` is exactly the trivia text the lexer skipped,
+    /// and the boundary semantics reduce to predicates on that slice. Multi-history GLL can produce multiple commits at the same
+    /// position; the answer must be consistent across them. We require
+    /// unanimity:
+    ///   - `<s>`/`<n>` (require trivia) → true iff every commit has trivia
     ///     of the required shape
-    ///   - `>s<`/`>n<` (require none)   → true iff *every* commit has no
-    ///     trivia of the forbidden shape
+    ///   - `>s<`/`>n<` (require none)   → true iff every commit has no trivia
+    ///     of the forbidden shape
     ///
     /// End-of-input rule for `<n>`: when `position == input.endIndex`, treat
-    /// the boundary as satisfied unconditionally. Languages that use `<n>` as
-    /// a statement terminator typically also accept end-of-file in lieu of a
-    /// final newline (Python, JS ASI, many others); CPython's tokenizer
-    /// emits a synthetic NEWLINE before EOF for exactly this reason. The rule
-    /// holds for any grammar — `<n>` at EOS never has anything legitimate to
-    /// follow.
+    /// the boundary as satisfied unconditionally — languages that use `<n>`
+    /// as a statement terminator accept end-of-file in lieu of a final
+    /// newline.
     func boundaryMatches(_ boundary: String, at position: CharPosition) -> Bool {
         if boundary == "<n>", position == input.endIndex { return true }
-        let commits = terminalCommitsByEnd[position] ?? []
-        // No previous commit at this position — happens at the very start of
-        // a (sub-)parse before any terminal has been consumed. Treat the
-        // boundary as failing; in well-formed grammars `<s>` doesn't appear
-        // before any terminal has been consumed.
-        guard !commits.isEmpty else { return false }
-        for commit in commits {
-            let gap = input[commit.rawEnd..<position]
+        guard let idxs = commitsByEnd[position] else { return false }
+        for i in idxs {
+            let c = commits[i]
+            let gap = input[c.end..<position]
             let satisfied: Bool
             switch boundary {
             case "<s>": satisfied = !gap.isEmpty
@@ -637,7 +797,7 @@ class MessageParser {
                 if slot.excludeBS.isEmpty { return true }
                 let survives = matches.contains { m in
                     for eID in slot.excludeBS where eID != kID && eID != grammar.epsilonID {
-                        for em in cachedLex(at: cI, terminalID: eID) where em.end == m.end {
+                        for em in cachedLex(at: cI, terminalID: eID) where em.triviaEnd == m.triviaEnd {
                             return false
                         }
                     }
@@ -664,11 +824,12 @@ class MessageParser {
     ///     followAhead bitset (or be EOS).
     ///
     /// Phase C Step 2: returns the full set of distinct matches so the main
-    /// parse loop can fork descriptors over them. Each match carries both
-    /// `end` (cursor after trivia skip) and `rawEnd` (literal end, before
-    /// trivia skip) — the parse loop logs `rawEnd` into `terminalCommitsByEnd`
-    /// so boundary checks (`<s>`/`>s<`/`<n>`/`>n<`) can answer trivia-gap
-    /// questions without a scanner-produced token stream.
+    /// parse loop can fork descriptors over them. Each match carries `start`
+    /// (content start after leading-trivia skip), `end` (content end), and
+    /// `triviaEnd` (post trailing-trivia, where the parser cursor advances).
+    /// The parse loop records all of these in the commit log so boundary
+    /// checks (`<s>`/`>s<`/`<n>`/`>n<`) can answer trivia-gap questions and
+    /// image extraction can recover the exact source slice.
     func tokenMatch() -> [LexMatch] {
         var matches = cachedLex(at: cI, terminalID: cL.nameID)
         guard !matches.isEmpty else { return [] }
@@ -691,7 +852,7 @@ class MessageParser {
         if !cL.excludeBS.isEmpty {
             matches = matches.filter { m in
                 for eID in cL.excludeBS where eID != cL.nameID && eID != grammar.epsilonID {
-                    for em in cachedLex(at: cI, terminalID: eID) where em.end == m.end {
+                    for em in cachedLex(at: cI, terminalID: eID) where em.triviaEnd == m.triviaEnd {
                         return false
                     }
                 }
@@ -718,9 +879,9 @@ class MessageParser {
         if !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
             matches = matches.filter { m in
                 // Past the end of input acts as EOS — always allowed.
-                if m.end >= input.endIndex { return true }
+                if m.triviaEnd >= input.endIndex { return true }
                 for fID in predictBS where fID != grammar.epsilonID {
-                    if !cachedLex(at: m.end, terminalID: fID).isEmpty { return true }
+                    if !cachedLex(at: m.triviaEnd, terminalID: fID).isEmpty { return true }
                 }
                 return false
             }
@@ -734,7 +895,7 @@ class MessageParser {
         var seen: Set<CharPosition> = []
         var result: [LexMatch] = []
         result.reserveCapacity(matches.count)
-        for m in matches where seen.insert(m.end).inserted {
+        for m in matches where seen.insert(m.triviaEnd).inserted {
             result.append(m)
         }
         return result

@@ -37,7 +37,7 @@ The plugin configuration file:
     textlayout	:  textlayout:cairo textlayout:quartz textlayout:gd
     device	:  bmp:quartz:quartz bmp:cairo:quartz canon:dot:core cgimage:quartz:quartz cmap:map:core cmapx:map:core cmapx_np:map:core dot:dot:core dot_json:json:core eps:ps:core eps:lasi:lasi eps:cairo:cairo exr:quartz:quartz exr:cairo:quartz fig:fig:core gd:cairo:gd gd:gd:gd gd2:cairo:gd gd2:gd:gd gif:cairo:gd gif:quartz:quartz gif:cairo:quartz gif:gd:gd gv:dot:core icns:quartz:quartz icns:cairo:quartz ico:quartz:quartz ico:cairo:quartz imap:map:core imap_np:map:core ismap:map:core jp2:quartz:quartz jp2:cairo:quartz jpe:quartz:quartz jpe:cairo:quartz jpe:cairo:gd jpe:gd:gd jpeg:quartz:quartz jpeg:cairo:quartz jpeg:cairo:gd jpeg:gd:gd jpg:quartz:quartz jpg:cairo:quartz jpg:cairo:gd jpg:gd:gd json:json:core json0:json:core kitty:cairo:kitty kittyz:cairo:kitty mp:mp:core pct:quartz:quartz pct:cairo:quartz pdf:cairo:cairo pdf:quartz:quartz pic:pic:core pict:quartz:quartz pict:cairo:quartz plain:dot:core plain-ext:dot:core png:cairo:cairo png:quartz:quartz png:cairo:quartz png:cairo:gd png:gd:gd pov:pov:core ps:ps:core ps:lasi:lasi ps:cairo:cairo ps2:ps:core ps2:lasi:lasi psd:quartz:quartz psd:cairo:quartz sgi:quartz:quartz sgi:cairo:quartz svg:svg:core svg:cairo:cairo svgz:svg:core tga:quartz:quartz tga:cairo:quartz tif:quartz:quartz tif:cairo:quartz tiff:quartz:quartz tiff:cairo:quartz tk:tk:core vrml:vrml:gd vt:cairo:vt vt-24bit:cairo:vt wbmp:cairo:gd wbmp:gd:gd webp:cairo:webp x11:cairo:xlib xdot:xdot:core xdot1.2:xdot:core xdot1.4:xdot:core xdot_json:json:core xlib:cairo:xlib
     loadimage	:  (lib):ps:core bmp:quartz:quartz eps:xdot:core eps:dot:core eps:map:core eps:ps:core eps:lasi:lasi gd:cairo:gd gd:lasi:gd gd:ps:gd gd:gd:gd gd2:cairo:gd gd2:lasi:gd gd2:ps:gd gd2:gd:gd gif:quartz:quartz gif:cairo:gd gif:lasi:gd gif:ps:gd gif:gd:gd gif:tk:core gif:xdot:core gif:dot:core gif:map:core gif:vrml:core gif:fig:core gif:svg:core jpe:quartz:quartz jpe:cairo:gd jpe:lasi:gd jpe:ps:gd jpe:gd:gd jpe:xdot:core jpe:dot:core jpe:map:core jpe:vrml:core jpe:fig:core jpe:svg:core jpeg:quartz:quartz jpeg:cairo:gd jpeg:lasi:gd jpeg:ps:gd jpeg:gd:gd jpeg:xdot:core jpeg:dot:core jpeg:map:core jpeg:vrml:core jpeg:fig:core jpeg:svg:core jpg:quartz:quartz jpg:cairo:gd jpg:lasi:gd jpg:ps:gd jpg:gd:gd jpg:xdot:core jpg:dot:core jpg:map:core jpg:vrml:core jpg:fig:core jpg:svg:core pdf:quartz:quartz png:quartz:quartz png:ps:cairo png:lasi:cairo png:cairo:cairo png:lasi:gd png:ps:gd png:gd:gd png:xdot:core png:dot:core png:map:core png:vrml:core png:fig:core png:svg:core png:cairo:gd ps:xdot:core ps:dot:core ps:map:core ps:ps:core ps:lasi:lasi svg:svg:core svg:xdot:core svg:dot:core svg:map:core webp:cairo:webp xbm:cairo:gd xbm:lasi:gd xbm:ps:gd xbm:gd:gd
-Error: /Users/janwillem/Developer/Xcode/AoC2021/SPPF.gv: syntax error in line 9 near ':'
+Error: /Users/janwillem/Developer/Xcode/AoC2021/SPPF.gv: syntax error in line 842 near '"'
 Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_FORMAT
 Warning: unknown environment variable SWIFT_DEBUG_INFORMATION_VERSION
 dot - graphviz version 9.0.0 (20230911.1827)
@@ -103,14 +103,86 @@ pack info:
   mode   node
   size   0
   flags  0
-network simplex:  16 nodes 21 edges maxiter=50 balance=1
-network simplex: 16 nodes 21 edges 0 iter 0.00 sec
-Maxrank = 8, minrank = 0
+network simplex:  115 nodes 171 edges maxiter=344 balance=1
+network simplex: 115 nodes 171 edges 16 iter 0.02 sec
+network simplex:  116 nodes 172 edges maxiter=346 balance=1
+network simplex: 116 nodes 172 edges 17 iter 0.00 sec
+network simplex:  116 nodes 172 edges maxiter=346 balance=1
+network simplex: 116 nodes 172 edges 16 iter 0.00 sec
+network simplex:  116 nodes 172 edges maxiter=346 balance=1
+network simplex: 116 nodes 172 edges 16 iter 0.00 sec
+network simplex:  115 nodes 171 edges maxiter=344 balance=1
+network simplex: 115 nodes 171 edges 16 iter 0.00 sec
+network simplex:  115 nodes 171 edges maxiter=344 balance=1
+network simplex: 115 nodes 171 edges 16 iter 0.00 sec
+network simplex:  115 nodes 171 edges maxiter=344 balance=1
+network simplex: 115 nodes 171 edges 16 iter 0.00 sec
+network simplex:  115 nodes 171 edges maxiter=344 balance=1
+network simplex: 115 nodes 171 edges 16 iter 0.00 sec
+network simplex:  116 nodes 172 edges maxiter=346 balance=1
+network simplex: 116 nodes 172 edges 16 iter 0.00 sec
+network simplex:  116 nodes 172 edges maxiter=346 balance=1
+network simplex: 116 nodes 172 edges 16 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+network simplex:  1 nodes 0 edges maxiter=3450 balance=0
+network simplex: 1 nodes 0 edges 0 iter 0.00 sec
+Maxrank = 12, minrank = 0
 mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 0 iter 0 trying 0 cur_cross 0 best_cross 0
+merge2: graph Derivations, rank 1 has only 10 < 20 nodes
+merge2: graph Derivations, rank 2 has only 10 < 30 nodes
+merge2: graph Derivations, rank 3 has only 10 < 40 nodes
+merge2: graph Derivations, rank 4 has only 10 < 50 nodes
+merge2: graph Derivations, rank 5 has only 10 < 60 nodes
+merge2: graph Derivations, rank 6 has only 10 < 84 nodes
+merge2: graph Derivations, rank 7 has only 10 < 124 nodes
+merge2: graph Derivations, rank 8 has only 10 < 194 nodes
+merge2: graph Derivations, rank 9 has only 10 < 274 nodes
+merge2: graph Derivations, rank 10 has only 10 < 387 nodes
+merge2: graph Derivations, rank 11 has only 10 < 580 nodes
+merge2: graph Derivations, rank 12 has only 10 < 580 nodes
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
+mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross Derivations: 0 crossings, 0.00 secs.
-network simplex:  125 nodes 178 edges maxiter=50 balance=2
-network simplex: 125 nodes 178 edges 43 iter 0.02 sec
-routesplines: 28 edges, 126 boxes 0.00 sec
+network simplex:  4878 nodes 7835 edges maxiter=3450 balance=2
+network simplex: 100 200 300 400 500 600 700 800 900 1000 
+network simplex: 1100 1200 1300 1400 1500 1600 1700 1800 
+network simplex: 4878 nodes 7835 edges 1817 iter 0.03 sec
+routesplines: 1765 edges, 6379 boxes 0.02 sec
 Using render: svg:core
 Using device: svg:svg:core
-gvRenderJobs Derivations: 0.00 secs.
+gvRenderJobs Derivations: 0.05 secs.

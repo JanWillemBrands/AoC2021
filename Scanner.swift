@@ -44,14 +44,17 @@ struct LookbehindSpec {
 
 struct TokenPattern {
     let source: String
-    let regex: Regex<Substring>
+    let regex: Regex<AnyRegexOutput>
     let isLiteral: Bool
     let isSkip: Bool
     var lookbehind: LookbehindSpec
 
-    init(_ source: String, _ regex: Regex<Substring>, _ isLiteral: Bool, _ isSkip: Bool, lookbehind: LookbehindSpec = LookbehindSpec()) {
+    // Accept any RegexComponent (e.g. Swift literal `/foo/` typed as Regex<Substring>) and wrap
+    // to Regex<AnyRegexOutput> so the storage can also hold regexes that include capturing
+    // groups (e.g. backreference forms like `(#+)…\1`).
+    init<R: RegexComponent>(_ source: String, _ regex: R, _ isLiteral: Bool, _ isSkip: Bool, lookbehind: LookbehindSpec = LookbehindSpec()) {
         self.source = source
-        self.regex = regex
+        self.regex = Regex<AnyRegexOutput>(regex.regex)
         self.isLiteral = isLiteral
         self.isSkip = isSkip
         self.lookbehind = lookbehind
@@ -104,7 +107,7 @@ final class Token: CustomStringConvertible {
 private struct Pattern {
     let kind: String
     let source: String
-    let regex: Regex<Substring>
+    let regex: Regex<AnyRegexOutput>
     let isLiteral: Bool
     let isSkip: Bool
 }

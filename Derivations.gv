@@ -3,64 +3,4065 @@ digraph Derivations {
   node [fontname=Menlo, fontsize=10]
   edge [arrowsize=0.5]
   rankdir=TB; ordering=out; labelloc=t
-  label=<production = "identifier" "":-"" selection ""."" .>
-  n0 [shape=ellipse, width=0, height=0, label=<production>]
-  n1 [shape=box, width=0, height=0, label=<comment>]
-  n0 -> n1
-  n2 [shape=box, width=0, height=0, label=<:->]
-  n0 -> n2
-  n3 [shape=ellipse, width=0, height=0, label=<selection>]
-  n4 [shape=ellipse, width=0, height=0, label=<sequence>]
-  n5 [shape=ellipse, width=0, height=0, label=<factor>]
-  n6 [shape=ellipse, width=0, height=0, label=<terminal>]
-  n7 [shape=box, width=0, height=0, label=<"/*">]
-  n6 -> n7
-  n5 -> n6
-  n4 -> n5
-  n8 [shape=ellipse, width=0, height=0, label=<factor>]
-  n9 [shape=box, width=0, height=0, label=<{>]
-  n8 -> n9
-  n10 [shape=ellipse, width=0, height=0, label=<selection>]
-  n11 [shape=ellipse, width=0, height=0, label=<sequence>]
-  n12 [shape=ellipse, width=0, height=0, label=<factor>]
-  n13 [shape=ellipse, width=0, height=0, label=<terminal>]
-  n14 [shape=box, width=0, height=0, label=</(?:(?!\/\*|\*\/)[\s\S])+/>]
-  n13 -> n14
-  n12 -> n13
-  n11 -> n12
-  n10 -> n11
-  n15 [shape=box, width=0, height=0, label=<|>]
-  n10 -> n15
-  n16 [shape=ellipse, width=0, height=0, label=<sequence>]
-  n17 [shape=ellipse, width=0, height=0, label=<factor>]
-  n18 [shape=ellipse, width=0, height=0, label=<terminal>]
-  n19 [shape=box, width=0, height=0, label=<comment>]
-  n18 -> n19
-  n17 -> n18
-  n16 -> n17
-  n10 -> n16
-  n8 -> n10
-  n20 [shape=box, width=0, height=0, label=<}>]
-  n8 -> n20
-  n4 -> n8
-  n21 [shape=ellipse, width=0, height=0, label=<factor>]
-  n22 [shape=ellipse, width=0, height=0, label=<terminal>]
-  n23 [shape=box, width=0, height=0, label=<"*/">]
-  n22 -> n23
-  n21 -> n22
-  n4 -> n21
-  n3 -> n4
-  n0 -> n3
-  n24 [shape=box, width=0, height=0, label=<.>]
-  n0 -> n24
-  { rank=same; n1; n2; n7; n9; n14; n15; n19; n20; n23; n24 }
-  n1 -> n2 [style=invis]
-  n2 -> n7 [style=invis]
-  n7 -> n9 [style=invis]
-  n9 -> n14 [style=invis]
-  n14 -> n15 [style=invis]
-  n15 -> n19 [style=invis]
-  n19 -> n20 [style=invis]
-  n20 -> n23 [style=invis]
-  n23 -> n24 [style=invis]
+  label=<S = ""b"" | S S | S S S .>
+  subgraph cluster_0 {
+    label="Derivation 1"; style=dashed
+  d0_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n4 [shape=box, width=0, height=0, label=<b>]
+  d0_n3 -> d0_n4
+  d0_n2 -> d0_n3
+  d0_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n6 [shape=box, width=0, height=0, label=<b>]
+  d0_n5 -> d0_n6
+  d0_n2 -> d0_n5
+  d0_n1 -> d0_n2
+  d0_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n14 [shape=box, width=0, height=0, label=<b>]
+  d0_n13 -> d0_n14
+  d0_n12 -> d0_n13
+  d0_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n17 [shape=box, width=0, height=0, label=<b>]
+  d0_n16 -> d0_n17
+  d0_n15 -> d0_n16
+  d0_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n20 [shape=box, width=0, height=0, label=<b>]
+  d0_n19 -> d0_n20
+  d0_n18 -> d0_n19
+  d0_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n23 [shape=box, width=0, height=0, label=<b>]
+  d0_n22 -> d0_n23
+  d0_n21 -> d0_n22
+  d0_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n25 [shape=box, width=0, height=0, label=<b>]
+  d0_n24 -> d0_n25
+  d0_n21 -> d0_n24
+  d0_n18 -> d0_n21
+  d0_n15 -> d0_n18
+  d0_n12 -> d0_n15
+  d0_n11 -> d0_n12
+  d0_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n30 [shape=box, width=0, height=0, label=<b>]
+  d0_n29 -> d0_n30
+  d0_n28 -> d0_n29
+  d0_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n32 [shape=box, width=0, height=0, label=<b>]
+  d0_n31 -> d0_n32
+  d0_n28 -> d0_n31
+  d0_n27 -> d0_n28
+  d0_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n34 [shape=box, width=0, height=0, label=<b>]
+  d0_n33 -> d0_n34
+  d0_n27 -> d0_n33
+  d0_n26 -> d0_n27
+  d0_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n37 [shape=box, width=0, height=0, label=<b>]
+  d0_n36 -> d0_n37
+  d0_n35 -> d0_n36
+  d0_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n41 [shape=box, width=0, height=0, label=<b>]
+  d0_n40 -> d0_n41
+  d0_n39 -> d0_n40
+  d0_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n43 [shape=box, width=0, height=0, label=<b>]
+  d0_n42 -> d0_n43
+  d0_n39 -> d0_n42
+  d0_n38 -> d0_n39
+  d0_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n46 [shape=box, width=0, height=0, label=<b>]
+  d0_n45 -> d0_n46
+  d0_n44 -> d0_n45
+  d0_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n48 [shape=box, width=0, height=0, label=<b>]
+  d0_n47 -> d0_n48
+  d0_n44 -> d0_n47
+  d0_n38 -> d0_n44
+  d0_n35 -> d0_n38
+  d0_n26 -> d0_n35
+  d0_n11 -> d0_n26
+  d0_n10 -> d0_n11
+  d0_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n50 [shape=box, width=0, height=0, label=<b>]
+  d0_n49 -> d0_n50
+  d0_n10 -> d0_n49
+  d0_n9 -> d0_n10
+  d0_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n55 [shape=box, width=0, height=0, label=<b>]
+  d0_n54 -> d0_n55
+  d0_n53 -> d0_n54
+  d0_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n58 [shape=box, width=0, height=0, label=<b>]
+  d0_n57 -> d0_n58
+  d0_n56 -> d0_n57
+  d0_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n61 [shape=box, width=0, height=0, label=<b>]
+  d0_n60 -> d0_n61
+  d0_n59 -> d0_n60
+  d0_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n63 [shape=box, width=0, height=0, label=<b>]
+  d0_n62 -> d0_n63
+  d0_n59 -> d0_n62
+  d0_n56 -> d0_n59
+  d0_n53 -> d0_n56
+  d0_n52 -> d0_n53
+  d0_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n66 [shape=box, width=0, height=0, label=<b>]
+  d0_n65 -> d0_n66
+  d0_n64 -> d0_n65
+  d0_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n69 [shape=box, width=0, height=0, label=<b>]
+  d0_n68 -> d0_n69
+  d0_n67 -> d0_n68
+  d0_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n71 [shape=box, width=0, height=0, label=<b>]
+  d0_n70 -> d0_n71
+  d0_n67 -> d0_n70
+  d0_n64 -> d0_n67
+  d0_n52 -> d0_n64
+  d0_n51 -> d0_n52
+  d0_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n74 [shape=box, width=0, height=0, label=<b>]
+  d0_n73 -> d0_n74
+  d0_n72 -> d0_n73
+  d0_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n77 [shape=box, width=0, height=0, label=<b>]
+  d0_n76 -> d0_n77
+  d0_n75 -> d0_n76
+  d0_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n82 [shape=box, width=0, height=0, label=<b>]
+  d0_n81 -> d0_n82
+  d0_n80 -> d0_n81
+  d0_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n84 [shape=box, width=0, height=0, label=<b>]
+  d0_n83 -> d0_n84
+  d0_n80 -> d0_n83
+  d0_n79 -> d0_n80
+  d0_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n86 [shape=box, width=0, height=0, label=<b>]
+  d0_n85 -> d0_n86
+  d0_n79 -> d0_n85
+  d0_n78 -> d0_n79
+  d0_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n88 [shape=box, width=0, height=0, label=<b>]
+  d0_n87 -> d0_n88
+  d0_n78 -> d0_n87
+  d0_n75 -> d0_n78
+  d0_n72 -> d0_n75
+  d0_n51 -> d0_n72
+  d0_n9 -> d0_n51
+  d0_n8 -> d0_n9
+  d0_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n92 [shape=box, width=0, height=0, label=<b>]
+  d0_n91 -> d0_n92
+  d0_n90 -> d0_n91
+  d0_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n94 [shape=box, width=0, height=0, label=<b>]
+  d0_n93 -> d0_n94
+  d0_n90 -> d0_n93
+  d0_n89 -> d0_n90
+  d0_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n96 [shape=box, width=0, height=0, label=<b>]
+  d0_n95 -> d0_n96
+  d0_n89 -> d0_n95
+  d0_n8 -> d0_n89
+  d0_n7 -> d0_n8
+  d0_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n100 [shape=box, width=0, height=0, label=<b>]
+  d0_n99 -> d0_n100
+  d0_n98 -> d0_n99
+  d0_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n102 [shape=box, width=0, height=0, label=<b>]
+  d0_n101 -> d0_n102
+  d0_n98 -> d0_n101
+  d0_n97 -> d0_n98
+  d0_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n106 [shape=box, width=0, height=0, label=<b>]
+  d0_n105 -> d0_n106
+  d0_n104 -> d0_n105
+  d0_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n108 [shape=box, width=0, height=0, label=<b>]
+  d0_n107 -> d0_n108
+  d0_n104 -> d0_n107
+  d0_n103 -> d0_n104
+  d0_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n112 [shape=box, width=0, height=0, label=<b>]
+  d0_n111 -> d0_n112
+  d0_n110 -> d0_n111
+  d0_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n114 [shape=box, width=0, height=0, label=<b>]
+  d0_n113 -> d0_n114
+  d0_n110 -> d0_n113
+  d0_n109 -> d0_n110
+  d0_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n118 [shape=box, width=0, height=0, label=<b>]
+  d0_n117 -> d0_n118
+  d0_n116 -> d0_n117
+  d0_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n120 [shape=box, width=0, height=0, label=<b>]
+  d0_n119 -> d0_n120
+  d0_n116 -> d0_n119
+  d0_n115 -> d0_n116
+  d0_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n122 [shape=box, width=0, height=0, label=<b>]
+  d0_n121 -> d0_n122
+  d0_n115 -> d0_n121
+  d0_n109 -> d0_n115
+  d0_n103 -> d0_n109
+  d0_n97 -> d0_n103
+  d0_n7 -> d0_n97
+  d0_n1 -> d0_n7
+  d0_n0 -> d0_n1
+  d0_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n129 [shape=box, width=0, height=0, label=<b>]
+  d0_n128 -> d0_n129
+  d0_n127 -> d0_n128
+  d0_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n131 [shape=box, width=0, height=0, label=<b>]
+  d0_n130 -> d0_n131
+  d0_n127 -> d0_n130
+  d0_n126 -> d0_n127
+  d0_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n133 [shape=box, width=0, height=0, label=<b>]
+  d0_n132 -> d0_n133
+  d0_n126 -> d0_n132
+  d0_n125 -> d0_n126
+  d0_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n135 [shape=box, width=0, height=0, label=<b>]
+  d0_n134 -> d0_n135
+  d0_n125 -> d0_n134
+  d0_n124 -> d0_n125
+  d0_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n138 [shape=box, width=0, height=0, label=<b>]
+  d0_n137 -> d0_n138
+  d0_n136 -> d0_n137
+  d0_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n140 [shape=box, width=0, height=0, label=<b>]
+  d0_n139 -> d0_n140
+  d0_n136 -> d0_n139
+  d0_n124 -> d0_n136
+  d0_n123 -> d0_n124
+  d0_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n146 [shape=box, width=0, height=0, label=<b>]
+  d0_n145 -> d0_n146
+  d0_n144 -> d0_n145
+  d0_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n148 [shape=box, width=0, height=0, label=<b>]
+  d0_n147 -> d0_n148
+  d0_n144 -> d0_n147
+  d0_n143 -> d0_n144
+  d0_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n150 [shape=box, width=0, height=0, label=<b>]
+  d0_n149 -> d0_n150
+  d0_n143 -> d0_n149
+  d0_n142 -> d0_n143
+  d0_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n153 [shape=box, width=0, height=0, label=<b>]
+  d0_n152 -> d0_n153
+  d0_n151 -> d0_n152
+  d0_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n155 [shape=box, width=0, height=0, label=<b>]
+  d0_n154 -> d0_n155
+  d0_n151 -> d0_n154
+  d0_n142 -> d0_n151
+  d0_n141 -> d0_n142
+  d0_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n159 [shape=box, width=0, height=0, label=<b>]
+  d0_n158 -> d0_n159
+  d0_n157 -> d0_n158
+  d0_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n161 [shape=box, width=0, height=0, label=<b>]
+  d0_n160 -> d0_n161
+  d0_n157 -> d0_n160
+  d0_n156 -> d0_n157
+  d0_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n163 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n164 [shape=box, width=0, height=0, label=<b>]
+  d0_n163 -> d0_n164
+  d0_n162 -> d0_n163
+  d0_n165 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d0_n166 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n167 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n168 [shape=box, width=0, height=0, label=<b>]
+  d0_n167 -> d0_n168
+  d0_n166 -> d0_n167
+  d0_n169 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n170 [shape=box, width=0, height=0, label=<b>]
+  d0_n169 -> d0_n170
+  d0_n166 -> d0_n169
+  d0_n165 -> d0_n166
+  d0_n171 [shape=ellipse, width=0, height=0, label=<S>]
+  d0_n172 [shape=box, width=0, height=0, label=<b>]
+  d0_n171 -> d0_n172
+  d0_n165 -> d0_n171
+  d0_n162 -> d0_n165
+  d0_n156 -> d0_n162
+  d0_n141 -> d0_n156
+  d0_n123 -> d0_n141
+  d0_n0 -> d0_n123
+  { rank=same; d0_n4; d0_n6; d0_n14; d0_n17; d0_n20; d0_n23; d0_n25; d0_n30; d0_n32; d0_n34; d0_n37; d0_n41; d0_n43; d0_n46; d0_n48; d0_n50; d0_n55; d0_n58; d0_n61; d0_n63; d0_n66; d0_n69; d0_n71; d0_n74; d0_n77; d0_n82; d0_n84; d0_n86; d0_n88; d0_n92; d0_n94; d0_n96; d0_n100; d0_n102; d0_n106; d0_n108; d0_n112; d0_n114; d0_n118; d0_n120; d0_n122; d0_n129; d0_n131; d0_n133; d0_n135; d0_n138; d0_n140; d0_n146; d0_n148; d0_n150; d0_n153; d0_n155; d0_n159; d0_n161; d0_n164; d0_n168; d0_n170; d0_n172 }
+  d0_n4 -> d0_n6 [style=invis]
+  d0_n6 -> d0_n14 [style=invis]
+  d0_n14 -> d0_n17 [style=invis]
+  d0_n17 -> d0_n20 [style=invis]
+  d0_n20 -> d0_n23 [style=invis]
+  d0_n23 -> d0_n25 [style=invis]
+  d0_n25 -> d0_n30 [style=invis]
+  d0_n30 -> d0_n32 [style=invis]
+  d0_n32 -> d0_n34 [style=invis]
+  d0_n34 -> d0_n37 [style=invis]
+  d0_n37 -> d0_n41 [style=invis]
+  d0_n41 -> d0_n43 [style=invis]
+  d0_n43 -> d0_n46 [style=invis]
+  d0_n46 -> d0_n48 [style=invis]
+  d0_n48 -> d0_n50 [style=invis]
+  d0_n50 -> d0_n55 [style=invis]
+  d0_n55 -> d0_n58 [style=invis]
+  d0_n58 -> d0_n61 [style=invis]
+  d0_n61 -> d0_n63 [style=invis]
+  d0_n63 -> d0_n66 [style=invis]
+  d0_n66 -> d0_n69 [style=invis]
+  d0_n69 -> d0_n71 [style=invis]
+  d0_n71 -> d0_n74 [style=invis]
+  d0_n74 -> d0_n77 [style=invis]
+  d0_n77 -> d0_n82 [style=invis]
+  d0_n82 -> d0_n84 [style=invis]
+  d0_n84 -> d0_n86 [style=invis]
+  d0_n86 -> d0_n88 [style=invis]
+  d0_n88 -> d0_n92 [style=invis]
+  d0_n92 -> d0_n94 [style=invis]
+  d0_n94 -> d0_n96 [style=invis]
+  d0_n96 -> d0_n100 [style=invis]
+  d0_n100 -> d0_n102 [style=invis]
+  d0_n102 -> d0_n106 [style=invis]
+  d0_n106 -> d0_n108 [style=invis]
+  d0_n108 -> d0_n112 [style=invis]
+  d0_n112 -> d0_n114 [style=invis]
+  d0_n114 -> d0_n118 [style=invis]
+  d0_n118 -> d0_n120 [style=invis]
+  d0_n120 -> d0_n122 [style=invis]
+  d0_n122 -> d0_n129 [style=invis]
+  d0_n129 -> d0_n131 [style=invis]
+  d0_n131 -> d0_n133 [style=invis]
+  d0_n133 -> d0_n135 [style=invis]
+  d0_n135 -> d0_n138 [style=invis]
+  d0_n138 -> d0_n140 [style=invis]
+  d0_n140 -> d0_n146 [style=invis]
+  d0_n146 -> d0_n148 [style=invis]
+  d0_n148 -> d0_n150 [style=invis]
+  d0_n150 -> d0_n153 [style=invis]
+  d0_n153 -> d0_n155 [style=invis]
+  d0_n155 -> d0_n159 [style=invis]
+  d0_n159 -> d0_n161 [style=invis]
+  d0_n161 -> d0_n164 [style=invis]
+  d0_n164 -> d0_n168 [style=invis]
+  d0_n168 -> d0_n170 [style=invis]
+  d0_n170 -> d0_n172 [style=invis]
+  }
+
+  subgraph cluster_1 {
+    label="Derivation 2"; style=dashed
+  d1_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n4 [shape=box, width=0, height=0, label=<b>]
+  d1_n3 -> d1_n4
+  d1_n2 -> d1_n3
+  d1_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n6 [shape=box, width=0, height=0, label=<b>]
+  d1_n5 -> d1_n6
+  d1_n2 -> d1_n5
+  d1_n1 -> d1_n2
+  d1_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n14 [shape=box, width=0, height=0, label=<b>]
+  d1_n13 -> d1_n14
+  d1_n12 -> d1_n13
+  d1_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n17 [shape=box, width=0, height=0, label=<b>]
+  d1_n16 -> d1_n17
+  d1_n15 -> d1_n16
+  d1_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n20 [shape=box, width=0, height=0, label=<b>]
+  d1_n19 -> d1_n20
+  d1_n18 -> d1_n19
+  d1_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n23 [shape=box, width=0, height=0, label=<b>]
+  d1_n22 -> d1_n23
+  d1_n21 -> d1_n22
+  d1_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n25 [shape=box, width=0, height=0, label=<b>]
+  d1_n24 -> d1_n25
+  d1_n21 -> d1_n24
+  d1_n18 -> d1_n21
+  d1_n15 -> d1_n18
+  d1_n12 -> d1_n15
+  d1_n11 -> d1_n12
+  d1_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n30 [shape=box, width=0, height=0, label=<b>]
+  d1_n29 -> d1_n30
+  d1_n28 -> d1_n29
+  d1_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n32 [shape=box, width=0, height=0, label=<b>]
+  d1_n31 -> d1_n32
+  d1_n28 -> d1_n31
+  d1_n27 -> d1_n28
+  d1_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n34 [shape=box, width=0, height=0, label=<b>]
+  d1_n33 -> d1_n34
+  d1_n27 -> d1_n33
+  d1_n26 -> d1_n27
+  d1_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n37 [shape=box, width=0, height=0, label=<b>]
+  d1_n36 -> d1_n37
+  d1_n35 -> d1_n36
+  d1_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n41 [shape=box, width=0, height=0, label=<b>]
+  d1_n40 -> d1_n41
+  d1_n39 -> d1_n40
+  d1_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n43 [shape=box, width=0, height=0, label=<b>]
+  d1_n42 -> d1_n43
+  d1_n39 -> d1_n42
+  d1_n38 -> d1_n39
+  d1_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n46 [shape=box, width=0, height=0, label=<b>]
+  d1_n45 -> d1_n46
+  d1_n44 -> d1_n45
+  d1_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n48 [shape=box, width=0, height=0, label=<b>]
+  d1_n47 -> d1_n48
+  d1_n44 -> d1_n47
+  d1_n38 -> d1_n44
+  d1_n35 -> d1_n38
+  d1_n26 -> d1_n35
+  d1_n11 -> d1_n26
+  d1_n10 -> d1_n11
+  d1_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n50 [shape=box, width=0, height=0, label=<b>]
+  d1_n49 -> d1_n50
+  d1_n10 -> d1_n49
+  d1_n9 -> d1_n10
+  d1_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n55 [shape=box, width=0, height=0, label=<b>]
+  d1_n54 -> d1_n55
+  d1_n53 -> d1_n54
+  d1_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n58 [shape=box, width=0, height=0, label=<b>]
+  d1_n57 -> d1_n58
+  d1_n56 -> d1_n57
+  d1_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n61 [shape=box, width=0, height=0, label=<b>]
+  d1_n60 -> d1_n61
+  d1_n59 -> d1_n60
+  d1_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n63 [shape=box, width=0, height=0, label=<b>]
+  d1_n62 -> d1_n63
+  d1_n59 -> d1_n62
+  d1_n56 -> d1_n59
+  d1_n53 -> d1_n56
+  d1_n52 -> d1_n53
+  d1_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n66 [shape=box, width=0, height=0, label=<b>]
+  d1_n65 -> d1_n66
+  d1_n64 -> d1_n65
+  d1_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n69 [shape=box, width=0, height=0, label=<b>]
+  d1_n68 -> d1_n69
+  d1_n67 -> d1_n68
+  d1_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n71 [shape=box, width=0, height=0, label=<b>]
+  d1_n70 -> d1_n71
+  d1_n67 -> d1_n70
+  d1_n64 -> d1_n67
+  d1_n52 -> d1_n64
+  d1_n51 -> d1_n52
+  d1_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n74 [shape=box, width=0, height=0, label=<b>]
+  d1_n73 -> d1_n74
+  d1_n72 -> d1_n73
+  d1_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n77 [shape=box, width=0, height=0, label=<b>]
+  d1_n76 -> d1_n77
+  d1_n75 -> d1_n76
+  d1_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n82 [shape=box, width=0, height=0, label=<b>]
+  d1_n81 -> d1_n82
+  d1_n80 -> d1_n81
+  d1_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n84 [shape=box, width=0, height=0, label=<b>]
+  d1_n83 -> d1_n84
+  d1_n80 -> d1_n83
+  d1_n79 -> d1_n80
+  d1_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n86 [shape=box, width=0, height=0, label=<b>]
+  d1_n85 -> d1_n86
+  d1_n79 -> d1_n85
+  d1_n78 -> d1_n79
+  d1_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n88 [shape=box, width=0, height=0, label=<b>]
+  d1_n87 -> d1_n88
+  d1_n78 -> d1_n87
+  d1_n75 -> d1_n78
+  d1_n72 -> d1_n75
+  d1_n51 -> d1_n72
+  d1_n9 -> d1_n51
+  d1_n8 -> d1_n9
+  d1_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n92 [shape=box, width=0, height=0, label=<b>]
+  d1_n91 -> d1_n92
+  d1_n90 -> d1_n91
+  d1_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n94 [shape=box, width=0, height=0, label=<b>]
+  d1_n93 -> d1_n94
+  d1_n90 -> d1_n93
+  d1_n89 -> d1_n90
+  d1_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n96 [shape=box, width=0, height=0, label=<b>]
+  d1_n95 -> d1_n96
+  d1_n89 -> d1_n95
+  d1_n8 -> d1_n89
+  d1_n7 -> d1_n8
+  d1_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n100 [shape=box, width=0, height=0, label=<b>]
+  d1_n99 -> d1_n100
+  d1_n98 -> d1_n99
+  d1_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n102 [shape=box, width=0, height=0, label=<b>]
+  d1_n101 -> d1_n102
+  d1_n98 -> d1_n101
+  d1_n97 -> d1_n98
+  d1_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n106 [shape=box, width=0, height=0, label=<b>]
+  d1_n105 -> d1_n106
+  d1_n104 -> d1_n105
+  d1_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n108 [shape=box, width=0, height=0, label=<b>]
+  d1_n107 -> d1_n108
+  d1_n104 -> d1_n107
+  d1_n103 -> d1_n104
+  d1_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n112 [shape=box, width=0, height=0, label=<b>]
+  d1_n111 -> d1_n112
+  d1_n110 -> d1_n111
+  d1_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n114 [shape=box, width=0, height=0, label=<b>]
+  d1_n113 -> d1_n114
+  d1_n110 -> d1_n113
+  d1_n109 -> d1_n110
+  d1_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n118 [shape=box, width=0, height=0, label=<b>]
+  d1_n117 -> d1_n118
+  d1_n116 -> d1_n117
+  d1_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n120 [shape=box, width=0, height=0, label=<b>]
+  d1_n119 -> d1_n120
+  d1_n116 -> d1_n119
+  d1_n115 -> d1_n116
+  d1_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n122 [shape=box, width=0, height=0, label=<b>]
+  d1_n121 -> d1_n122
+  d1_n115 -> d1_n121
+  d1_n109 -> d1_n115
+  d1_n103 -> d1_n109
+  d1_n97 -> d1_n103
+  d1_n7 -> d1_n97
+  d1_n1 -> d1_n7
+  d1_n0 -> d1_n1
+  d1_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n129 [shape=box, width=0, height=0, label=<b>]
+  d1_n128 -> d1_n129
+  d1_n127 -> d1_n128
+  d1_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n131 [shape=box, width=0, height=0, label=<b>]
+  d1_n130 -> d1_n131
+  d1_n127 -> d1_n130
+  d1_n126 -> d1_n127
+  d1_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n133 [shape=box, width=0, height=0, label=<b>]
+  d1_n132 -> d1_n133
+  d1_n126 -> d1_n132
+  d1_n125 -> d1_n126
+  d1_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n135 [shape=box, width=0, height=0, label=<b>]
+  d1_n134 -> d1_n135
+  d1_n125 -> d1_n134
+  d1_n124 -> d1_n125
+  d1_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n138 [shape=box, width=0, height=0, label=<b>]
+  d1_n137 -> d1_n138
+  d1_n136 -> d1_n137
+  d1_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n140 [shape=box, width=0, height=0, label=<b>]
+  d1_n139 -> d1_n140
+  d1_n136 -> d1_n139
+  d1_n124 -> d1_n136
+  d1_n123 -> d1_n124
+  d1_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n146 [shape=box, width=0, height=0, label=<b>]
+  d1_n145 -> d1_n146
+  d1_n144 -> d1_n145
+  d1_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n148 [shape=box, width=0, height=0, label=<b>]
+  d1_n147 -> d1_n148
+  d1_n144 -> d1_n147
+  d1_n143 -> d1_n144
+  d1_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n150 [shape=box, width=0, height=0, label=<b>]
+  d1_n149 -> d1_n150
+  d1_n143 -> d1_n149
+  d1_n142 -> d1_n143
+  d1_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n153 [shape=box, width=0, height=0, label=<b>]
+  d1_n152 -> d1_n153
+  d1_n151 -> d1_n152
+  d1_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n155 [shape=box, width=0, height=0, label=<b>]
+  d1_n154 -> d1_n155
+  d1_n151 -> d1_n154
+  d1_n142 -> d1_n151
+  d1_n141 -> d1_n142
+  d1_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n159 [shape=box, width=0, height=0, label=<b>]
+  d1_n158 -> d1_n159
+  d1_n157 -> d1_n158
+  d1_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n161 [shape=box, width=0, height=0, label=<b>]
+  d1_n160 -> d1_n161
+  d1_n157 -> d1_n160
+  d1_n156 -> d1_n157
+  d1_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n163 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n164 [shape=box, width=0, height=0, label=<b>]
+  d1_n163 -> d1_n164
+  d1_n162 -> d1_n163
+  d1_n165 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d1_n166 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n167 [shape=box, width=0, height=0, label=<b>]
+  d1_n166 -> d1_n167
+  d1_n165 -> d1_n166
+  d1_n168 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n169 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n170 [shape=box, width=0, height=0, label=<b>]
+  d1_n169 -> d1_n170
+  d1_n168 -> d1_n169
+  d1_n171 [shape=ellipse, width=0, height=0, label=<S>]
+  d1_n172 [shape=box, width=0, height=0, label=<b>]
+  d1_n171 -> d1_n172
+  d1_n168 -> d1_n171
+  d1_n165 -> d1_n168
+  d1_n162 -> d1_n165
+  d1_n156 -> d1_n162
+  d1_n141 -> d1_n156
+  d1_n123 -> d1_n141
+  d1_n0 -> d1_n123
+  { rank=same; d1_n4; d1_n6; d1_n14; d1_n17; d1_n20; d1_n23; d1_n25; d1_n30; d1_n32; d1_n34; d1_n37; d1_n41; d1_n43; d1_n46; d1_n48; d1_n50; d1_n55; d1_n58; d1_n61; d1_n63; d1_n66; d1_n69; d1_n71; d1_n74; d1_n77; d1_n82; d1_n84; d1_n86; d1_n88; d1_n92; d1_n94; d1_n96; d1_n100; d1_n102; d1_n106; d1_n108; d1_n112; d1_n114; d1_n118; d1_n120; d1_n122; d1_n129; d1_n131; d1_n133; d1_n135; d1_n138; d1_n140; d1_n146; d1_n148; d1_n150; d1_n153; d1_n155; d1_n159; d1_n161; d1_n164; d1_n167; d1_n170; d1_n172 }
+  d1_n4 -> d1_n6 [style=invis]
+  d1_n6 -> d1_n14 [style=invis]
+  d1_n14 -> d1_n17 [style=invis]
+  d1_n17 -> d1_n20 [style=invis]
+  d1_n20 -> d1_n23 [style=invis]
+  d1_n23 -> d1_n25 [style=invis]
+  d1_n25 -> d1_n30 [style=invis]
+  d1_n30 -> d1_n32 [style=invis]
+  d1_n32 -> d1_n34 [style=invis]
+  d1_n34 -> d1_n37 [style=invis]
+  d1_n37 -> d1_n41 [style=invis]
+  d1_n41 -> d1_n43 [style=invis]
+  d1_n43 -> d1_n46 [style=invis]
+  d1_n46 -> d1_n48 [style=invis]
+  d1_n48 -> d1_n50 [style=invis]
+  d1_n50 -> d1_n55 [style=invis]
+  d1_n55 -> d1_n58 [style=invis]
+  d1_n58 -> d1_n61 [style=invis]
+  d1_n61 -> d1_n63 [style=invis]
+  d1_n63 -> d1_n66 [style=invis]
+  d1_n66 -> d1_n69 [style=invis]
+  d1_n69 -> d1_n71 [style=invis]
+  d1_n71 -> d1_n74 [style=invis]
+  d1_n74 -> d1_n77 [style=invis]
+  d1_n77 -> d1_n82 [style=invis]
+  d1_n82 -> d1_n84 [style=invis]
+  d1_n84 -> d1_n86 [style=invis]
+  d1_n86 -> d1_n88 [style=invis]
+  d1_n88 -> d1_n92 [style=invis]
+  d1_n92 -> d1_n94 [style=invis]
+  d1_n94 -> d1_n96 [style=invis]
+  d1_n96 -> d1_n100 [style=invis]
+  d1_n100 -> d1_n102 [style=invis]
+  d1_n102 -> d1_n106 [style=invis]
+  d1_n106 -> d1_n108 [style=invis]
+  d1_n108 -> d1_n112 [style=invis]
+  d1_n112 -> d1_n114 [style=invis]
+  d1_n114 -> d1_n118 [style=invis]
+  d1_n118 -> d1_n120 [style=invis]
+  d1_n120 -> d1_n122 [style=invis]
+  d1_n122 -> d1_n129 [style=invis]
+  d1_n129 -> d1_n131 [style=invis]
+  d1_n131 -> d1_n133 [style=invis]
+  d1_n133 -> d1_n135 [style=invis]
+  d1_n135 -> d1_n138 [style=invis]
+  d1_n138 -> d1_n140 [style=invis]
+  d1_n140 -> d1_n146 [style=invis]
+  d1_n146 -> d1_n148 [style=invis]
+  d1_n148 -> d1_n150 [style=invis]
+  d1_n150 -> d1_n153 [style=invis]
+  d1_n153 -> d1_n155 [style=invis]
+  d1_n155 -> d1_n159 [style=invis]
+  d1_n159 -> d1_n161 [style=invis]
+  d1_n161 -> d1_n164 [style=invis]
+  d1_n164 -> d1_n167 [style=invis]
+  d1_n167 -> d1_n170 [style=invis]
+  d1_n170 -> d1_n172 [style=invis]
+  }
+
+  subgraph cluster_2 {
+    label="Derivation 3"; style=dashed
+  d2_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n4 [shape=box, width=0, height=0, label=<b>]
+  d2_n3 -> d2_n4
+  d2_n2 -> d2_n3
+  d2_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n6 [shape=box, width=0, height=0, label=<b>]
+  d2_n5 -> d2_n6
+  d2_n2 -> d2_n5
+  d2_n1 -> d2_n2
+  d2_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n14 [shape=box, width=0, height=0, label=<b>]
+  d2_n13 -> d2_n14
+  d2_n12 -> d2_n13
+  d2_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n17 [shape=box, width=0, height=0, label=<b>]
+  d2_n16 -> d2_n17
+  d2_n15 -> d2_n16
+  d2_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n20 [shape=box, width=0, height=0, label=<b>]
+  d2_n19 -> d2_n20
+  d2_n18 -> d2_n19
+  d2_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n23 [shape=box, width=0, height=0, label=<b>]
+  d2_n22 -> d2_n23
+  d2_n21 -> d2_n22
+  d2_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n25 [shape=box, width=0, height=0, label=<b>]
+  d2_n24 -> d2_n25
+  d2_n21 -> d2_n24
+  d2_n18 -> d2_n21
+  d2_n15 -> d2_n18
+  d2_n12 -> d2_n15
+  d2_n11 -> d2_n12
+  d2_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n30 [shape=box, width=0, height=0, label=<b>]
+  d2_n29 -> d2_n30
+  d2_n28 -> d2_n29
+  d2_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n32 [shape=box, width=0, height=0, label=<b>]
+  d2_n31 -> d2_n32
+  d2_n28 -> d2_n31
+  d2_n27 -> d2_n28
+  d2_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n34 [shape=box, width=0, height=0, label=<b>]
+  d2_n33 -> d2_n34
+  d2_n27 -> d2_n33
+  d2_n26 -> d2_n27
+  d2_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n37 [shape=box, width=0, height=0, label=<b>]
+  d2_n36 -> d2_n37
+  d2_n35 -> d2_n36
+  d2_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n41 [shape=box, width=0, height=0, label=<b>]
+  d2_n40 -> d2_n41
+  d2_n39 -> d2_n40
+  d2_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n43 [shape=box, width=0, height=0, label=<b>]
+  d2_n42 -> d2_n43
+  d2_n39 -> d2_n42
+  d2_n38 -> d2_n39
+  d2_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n46 [shape=box, width=0, height=0, label=<b>]
+  d2_n45 -> d2_n46
+  d2_n44 -> d2_n45
+  d2_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n48 [shape=box, width=0, height=0, label=<b>]
+  d2_n47 -> d2_n48
+  d2_n44 -> d2_n47
+  d2_n38 -> d2_n44
+  d2_n35 -> d2_n38
+  d2_n26 -> d2_n35
+  d2_n11 -> d2_n26
+  d2_n10 -> d2_n11
+  d2_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n50 [shape=box, width=0, height=0, label=<b>]
+  d2_n49 -> d2_n50
+  d2_n10 -> d2_n49
+  d2_n9 -> d2_n10
+  d2_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n55 [shape=box, width=0, height=0, label=<b>]
+  d2_n54 -> d2_n55
+  d2_n53 -> d2_n54
+  d2_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n58 [shape=box, width=0, height=0, label=<b>]
+  d2_n57 -> d2_n58
+  d2_n56 -> d2_n57
+  d2_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n61 [shape=box, width=0, height=0, label=<b>]
+  d2_n60 -> d2_n61
+  d2_n59 -> d2_n60
+  d2_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n63 [shape=box, width=0, height=0, label=<b>]
+  d2_n62 -> d2_n63
+  d2_n59 -> d2_n62
+  d2_n56 -> d2_n59
+  d2_n53 -> d2_n56
+  d2_n52 -> d2_n53
+  d2_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n66 [shape=box, width=0, height=0, label=<b>]
+  d2_n65 -> d2_n66
+  d2_n64 -> d2_n65
+  d2_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n69 [shape=box, width=0, height=0, label=<b>]
+  d2_n68 -> d2_n69
+  d2_n67 -> d2_n68
+  d2_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n71 [shape=box, width=0, height=0, label=<b>]
+  d2_n70 -> d2_n71
+  d2_n67 -> d2_n70
+  d2_n64 -> d2_n67
+  d2_n52 -> d2_n64
+  d2_n51 -> d2_n52
+  d2_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n74 [shape=box, width=0, height=0, label=<b>]
+  d2_n73 -> d2_n74
+  d2_n72 -> d2_n73
+  d2_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n77 [shape=box, width=0, height=0, label=<b>]
+  d2_n76 -> d2_n77
+  d2_n75 -> d2_n76
+  d2_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n82 [shape=box, width=0, height=0, label=<b>]
+  d2_n81 -> d2_n82
+  d2_n80 -> d2_n81
+  d2_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n84 [shape=box, width=0, height=0, label=<b>]
+  d2_n83 -> d2_n84
+  d2_n80 -> d2_n83
+  d2_n79 -> d2_n80
+  d2_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n86 [shape=box, width=0, height=0, label=<b>]
+  d2_n85 -> d2_n86
+  d2_n79 -> d2_n85
+  d2_n78 -> d2_n79
+  d2_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n88 [shape=box, width=0, height=0, label=<b>]
+  d2_n87 -> d2_n88
+  d2_n78 -> d2_n87
+  d2_n75 -> d2_n78
+  d2_n72 -> d2_n75
+  d2_n51 -> d2_n72
+  d2_n9 -> d2_n51
+  d2_n8 -> d2_n9
+  d2_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n92 [shape=box, width=0, height=0, label=<b>]
+  d2_n91 -> d2_n92
+  d2_n90 -> d2_n91
+  d2_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n94 [shape=box, width=0, height=0, label=<b>]
+  d2_n93 -> d2_n94
+  d2_n90 -> d2_n93
+  d2_n89 -> d2_n90
+  d2_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n96 [shape=box, width=0, height=0, label=<b>]
+  d2_n95 -> d2_n96
+  d2_n89 -> d2_n95
+  d2_n8 -> d2_n89
+  d2_n7 -> d2_n8
+  d2_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n100 [shape=box, width=0, height=0, label=<b>]
+  d2_n99 -> d2_n100
+  d2_n98 -> d2_n99
+  d2_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n102 [shape=box, width=0, height=0, label=<b>]
+  d2_n101 -> d2_n102
+  d2_n98 -> d2_n101
+  d2_n97 -> d2_n98
+  d2_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n106 [shape=box, width=0, height=0, label=<b>]
+  d2_n105 -> d2_n106
+  d2_n104 -> d2_n105
+  d2_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n108 [shape=box, width=0, height=0, label=<b>]
+  d2_n107 -> d2_n108
+  d2_n104 -> d2_n107
+  d2_n103 -> d2_n104
+  d2_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n112 [shape=box, width=0, height=0, label=<b>]
+  d2_n111 -> d2_n112
+  d2_n110 -> d2_n111
+  d2_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n114 [shape=box, width=0, height=0, label=<b>]
+  d2_n113 -> d2_n114
+  d2_n110 -> d2_n113
+  d2_n109 -> d2_n110
+  d2_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n118 [shape=box, width=0, height=0, label=<b>]
+  d2_n117 -> d2_n118
+  d2_n116 -> d2_n117
+  d2_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n120 [shape=box, width=0, height=0, label=<b>]
+  d2_n119 -> d2_n120
+  d2_n116 -> d2_n119
+  d2_n115 -> d2_n116
+  d2_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n122 [shape=box, width=0, height=0, label=<b>]
+  d2_n121 -> d2_n122
+  d2_n115 -> d2_n121
+  d2_n109 -> d2_n115
+  d2_n103 -> d2_n109
+  d2_n97 -> d2_n103
+  d2_n7 -> d2_n97
+  d2_n1 -> d2_n7
+  d2_n0 -> d2_n1
+  d2_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n129 [shape=box, width=0, height=0, label=<b>]
+  d2_n128 -> d2_n129
+  d2_n127 -> d2_n128
+  d2_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n131 [shape=box, width=0, height=0, label=<b>]
+  d2_n130 -> d2_n131
+  d2_n127 -> d2_n130
+  d2_n126 -> d2_n127
+  d2_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n133 [shape=box, width=0, height=0, label=<b>]
+  d2_n132 -> d2_n133
+  d2_n126 -> d2_n132
+  d2_n125 -> d2_n126
+  d2_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n135 [shape=box, width=0, height=0, label=<b>]
+  d2_n134 -> d2_n135
+  d2_n125 -> d2_n134
+  d2_n124 -> d2_n125
+  d2_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n138 [shape=box, width=0, height=0, label=<b>]
+  d2_n137 -> d2_n138
+  d2_n136 -> d2_n137
+  d2_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n140 [shape=box, width=0, height=0, label=<b>]
+  d2_n139 -> d2_n140
+  d2_n136 -> d2_n139
+  d2_n124 -> d2_n136
+  d2_n123 -> d2_n124
+  d2_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n146 [shape=box, width=0, height=0, label=<b>]
+  d2_n145 -> d2_n146
+  d2_n144 -> d2_n145
+  d2_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n148 [shape=box, width=0, height=0, label=<b>]
+  d2_n147 -> d2_n148
+  d2_n144 -> d2_n147
+  d2_n143 -> d2_n144
+  d2_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n150 [shape=box, width=0, height=0, label=<b>]
+  d2_n149 -> d2_n150
+  d2_n143 -> d2_n149
+  d2_n142 -> d2_n143
+  d2_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n153 [shape=box, width=0, height=0, label=<b>]
+  d2_n152 -> d2_n153
+  d2_n151 -> d2_n152
+  d2_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n155 [shape=box, width=0, height=0, label=<b>]
+  d2_n154 -> d2_n155
+  d2_n151 -> d2_n154
+  d2_n142 -> d2_n151
+  d2_n141 -> d2_n142
+  d2_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n159 [shape=box, width=0, height=0, label=<b>]
+  d2_n158 -> d2_n159
+  d2_n157 -> d2_n158
+  d2_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n161 [shape=box, width=0, height=0, label=<b>]
+  d2_n160 -> d2_n161
+  d2_n157 -> d2_n160
+  d2_n156 -> d2_n157
+  d2_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n163 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n164 [shape=box, width=0, height=0, label=<b>]
+  d2_n163 -> d2_n164
+  d2_n162 -> d2_n163
+  d2_n165 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d2_n166 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n167 [shape=box, width=0, height=0, label=<b>]
+  d2_n166 -> d2_n167
+  d2_n165 -> d2_n166
+  d2_n168 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n169 [shape=box, width=0, height=0, label=<b>]
+  d2_n168 -> d2_n169
+  d2_n165 -> d2_n168
+  d2_n170 [shape=ellipse, width=0, height=0, label=<S>]
+  d2_n171 [shape=box, width=0, height=0, label=<b>]
+  d2_n170 -> d2_n171
+  d2_n165 -> d2_n170
+  d2_n162 -> d2_n165
+  d2_n156 -> d2_n162
+  d2_n141 -> d2_n156
+  d2_n123 -> d2_n141
+  d2_n0 -> d2_n123
+  { rank=same; d2_n4; d2_n6; d2_n14; d2_n17; d2_n20; d2_n23; d2_n25; d2_n30; d2_n32; d2_n34; d2_n37; d2_n41; d2_n43; d2_n46; d2_n48; d2_n50; d2_n55; d2_n58; d2_n61; d2_n63; d2_n66; d2_n69; d2_n71; d2_n74; d2_n77; d2_n82; d2_n84; d2_n86; d2_n88; d2_n92; d2_n94; d2_n96; d2_n100; d2_n102; d2_n106; d2_n108; d2_n112; d2_n114; d2_n118; d2_n120; d2_n122; d2_n129; d2_n131; d2_n133; d2_n135; d2_n138; d2_n140; d2_n146; d2_n148; d2_n150; d2_n153; d2_n155; d2_n159; d2_n161; d2_n164; d2_n167; d2_n169; d2_n171 }
+  d2_n4 -> d2_n6 [style=invis]
+  d2_n6 -> d2_n14 [style=invis]
+  d2_n14 -> d2_n17 [style=invis]
+  d2_n17 -> d2_n20 [style=invis]
+  d2_n20 -> d2_n23 [style=invis]
+  d2_n23 -> d2_n25 [style=invis]
+  d2_n25 -> d2_n30 [style=invis]
+  d2_n30 -> d2_n32 [style=invis]
+  d2_n32 -> d2_n34 [style=invis]
+  d2_n34 -> d2_n37 [style=invis]
+  d2_n37 -> d2_n41 [style=invis]
+  d2_n41 -> d2_n43 [style=invis]
+  d2_n43 -> d2_n46 [style=invis]
+  d2_n46 -> d2_n48 [style=invis]
+  d2_n48 -> d2_n50 [style=invis]
+  d2_n50 -> d2_n55 [style=invis]
+  d2_n55 -> d2_n58 [style=invis]
+  d2_n58 -> d2_n61 [style=invis]
+  d2_n61 -> d2_n63 [style=invis]
+  d2_n63 -> d2_n66 [style=invis]
+  d2_n66 -> d2_n69 [style=invis]
+  d2_n69 -> d2_n71 [style=invis]
+  d2_n71 -> d2_n74 [style=invis]
+  d2_n74 -> d2_n77 [style=invis]
+  d2_n77 -> d2_n82 [style=invis]
+  d2_n82 -> d2_n84 [style=invis]
+  d2_n84 -> d2_n86 [style=invis]
+  d2_n86 -> d2_n88 [style=invis]
+  d2_n88 -> d2_n92 [style=invis]
+  d2_n92 -> d2_n94 [style=invis]
+  d2_n94 -> d2_n96 [style=invis]
+  d2_n96 -> d2_n100 [style=invis]
+  d2_n100 -> d2_n102 [style=invis]
+  d2_n102 -> d2_n106 [style=invis]
+  d2_n106 -> d2_n108 [style=invis]
+  d2_n108 -> d2_n112 [style=invis]
+  d2_n112 -> d2_n114 [style=invis]
+  d2_n114 -> d2_n118 [style=invis]
+  d2_n118 -> d2_n120 [style=invis]
+  d2_n120 -> d2_n122 [style=invis]
+  d2_n122 -> d2_n129 [style=invis]
+  d2_n129 -> d2_n131 [style=invis]
+  d2_n131 -> d2_n133 [style=invis]
+  d2_n133 -> d2_n135 [style=invis]
+  d2_n135 -> d2_n138 [style=invis]
+  d2_n138 -> d2_n140 [style=invis]
+  d2_n140 -> d2_n146 [style=invis]
+  d2_n146 -> d2_n148 [style=invis]
+  d2_n148 -> d2_n150 [style=invis]
+  d2_n150 -> d2_n153 [style=invis]
+  d2_n153 -> d2_n155 [style=invis]
+  d2_n155 -> d2_n159 [style=invis]
+  d2_n159 -> d2_n161 [style=invis]
+  d2_n161 -> d2_n164 [style=invis]
+  d2_n164 -> d2_n167 [style=invis]
+  d2_n167 -> d2_n169 [style=invis]
+  d2_n169 -> d2_n171 [style=invis]
+  }
+
+  subgraph cluster_3 {
+    label="Derivation 4"; style=dashed
+  d3_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n4 [shape=box, width=0, height=0, label=<b>]
+  d3_n3 -> d3_n4
+  d3_n2 -> d3_n3
+  d3_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n6 [shape=box, width=0, height=0, label=<b>]
+  d3_n5 -> d3_n6
+  d3_n2 -> d3_n5
+  d3_n1 -> d3_n2
+  d3_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n14 [shape=box, width=0, height=0, label=<b>]
+  d3_n13 -> d3_n14
+  d3_n12 -> d3_n13
+  d3_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n17 [shape=box, width=0, height=0, label=<b>]
+  d3_n16 -> d3_n17
+  d3_n15 -> d3_n16
+  d3_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n20 [shape=box, width=0, height=0, label=<b>]
+  d3_n19 -> d3_n20
+  d3_n18 -> d3_n19
+  d3_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n23 [shape=box, width=0, height=0, label=<b>]
+  d3_n22 -> d3_n23
+  d3_n21 -> d3_n22
+  d3_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n25 [shape=box, width=0, height=0, label=<b>]
+  d3_n24 -> d3_n25
+  d3_n21 -> d3_n24
+  d3_n18 -> d3_n21
+  d3_n15 -> d3_n18
+  d3_n12 -> d3_n15
+  d3_n11 -> d3_n12
+  d3_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n30 [shape=box, width=0, height=0, label=<b>]
+  d3_n29 -> d3_n30
+  d3_n28 -> d3_n29
+  d3_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n32 [shape=box, width=0, height=0, label=<b>]
+  d3_n31 -> d3_n32
+  d3_n28 -> d3_n31
+  d3_n27 -> d3_n28
+  d3_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n34 [shape=box, width=0, height=0, label=<b>]
+  d3_n33 -> d3_n34
+  d3_n27 -> d3_n33
+  d3_n26 -> d3_n27
+  d3_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n37 [shape=box, width=0, height=0, label=<b>]
+  d3_n36 -> d3_n37
+  d3_n35 -> d3_n36
+  d3_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n41 [shape=box, width=0, height=0, label=<b>]
+  d3_n40 -> d3_n41
+  d3_n39 -> d3_n40
+  d3_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n43 [shape=box, width=0, height=0, label=<b>]
+  d3_n42 -> d3_n43
+  d3_n39 -> d3_n42
+  d3_n38 -> d3_n39
+  d3_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n46 [shape=box, width=0, height=0, label=<b>]
+  d3_n45 -> d3_n46
+  d3_n44 -> d3_n45
+  d3_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n48 [shape=box, width=0, height=0, label=<b>]
+  d3_n47 -> d3_n48
+  d3_n44 -> d3_n47
+  d3_n38 -> d3_n44
+  d3_n35 -> d3_n38
+  d3_n26 -> d3_n35
+  d3_n11 -> d3_n26
+  d3_n10 -> d3_n11
+  d3_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n50 [shape=box, width=0, height=0, label=<b>]
+  d3_n49 -> d3_n50
+  d3_n10 -> d3_n49
+  d3_n9 -> d3_n10
+  d3_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n55 [shape=box, width=0, height=0, label=<b>]
+  d3_n54 -> d3_n55
+  d3_n53 -> d3_n54
+  d3_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n58 [shape=box, width=0, height=0, label=<b>]
+  d3_n57 -> d3_n58
+  d3_n56 -> d3_n57
+  d3_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n61 [shape=box, width=0, height=0, label=<b>]
+  d3_n60 -> d3_n61
+  d3_n59 -> d3_n60
+  d3_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n63 [shape=box, width=0, height=0, label=<b>]
+  d3_n62 -> d3_n63
+  d3_n59 -> d3_n62
+  d3_n56 -> d3_n59
+  d3_n53 -> d3_n56
+  d3_n52 -> d3_n53
+  d3_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n66 [shape=box, width=0, height=0, label=<b>]
+  d3_n65 -> d3_n66
+  d3_n64 -> d3_n65
+  d3_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n69 [shape=box, width=0, height=0, label=<b>]
+  d3_n68 -> d3_n69
+  d3_n67 -> d3_n68
+  d3_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n71 [shape=box, width=0, height=0, label=<b>]
+  d3_n70 -> d3_n71
+  d3_n67 -> d3_n70
+  d3_n64 -> d3_n67
+  d3_n52 -> d3_n64
+  d3_n51 -> d3_n52
+  d3_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n74 [shape=box, width=0, height=0, label=<b>]
+  d3_n73 -> d3_n74
+  d3_n72 -> d3_n73
+  d3_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n77 [shape=box, width=0, height=0, label=<b>]
+  d3_n76 -> d3_n77
+  d3_n75 -> d3_n76
+  d3_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n82 [shape=box, width=0, height=0, label=<b>]
+  d3_n81 -> d3_n82
+  d3_n80 -> d3_n81
+  d3_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n84 [shape=box, width=0, height=0, label=<b>]
+  d3_n83 -> d3_n84
+  d3_n80 -> d3_n83
+  d3_n79 -> d3_n80
+  d3_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n86 [shape=box, width=0, height=0, label=<b>]
+  d3_n85 -> d3_n86
+  d3_n79 -> d3_n85
+  d3_n78 -> d3_n79
+  d3_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n88 [shape=box, width=0, height=0, label=<b>]
+  d3_n87 -> d3_n88
+  d3_n78 -> d3_n87
+  d3_n75 -> d3_n78
+  d3_n72 -> d3_n75
+  d3_n51 -> d3_n72
+  d3_n9 -> d3_n51
+  d3_n8 -> d3_n9
+  d3_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n92 [shape=box, width=0, height=0, label=<b>]
+  d3_n91 -> d3_n92
+  d3_n90 -> d3_n91
+  d3_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n94 [shape=box, width=0, height=0, label=<b>]
+  d3_n93 -> d3_n94
+  d3_n90 -> d3_n93
+  d3_n89 -> d3_n90
+  d3_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n96 [shape=box, width=0, height=0, label=<b>]
+  d3_n95 -> d3_n96
+  d3_n89 -> d3_n95
+  d3_n8 -> d3_n89
+  d3_n7 -> d3_n8
+  d3_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n100 [shape=box, width=0, height=0, label=<b>]
+  d3_n99 -> d3_n100
+  d3_n98 -> d3_n99
+  d3_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n102 [shape=box, width=0, height=0, label=<b>]
+  d3_n101 -> d3_n102
+  d3_n98 -> d3_n101
+  d3_n97 -> d3_n98
+  d3_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n106 [shape=box, width=0, height=0, label=<b>]
+  d3_n105 -> d3_n106
+  d3_n104 -> d3_n105
+  d3_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n108 [shape=box, width=0, height=0, label=<b>]
+  d3_n107 -> d3_n108
+  d3_n104 -> d3_n107
+  d3_n103 -> d3_n104
+  d3_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n112 [shape=box, width=0, height=0, label=<b>]
+  d3_n111 -> d3_n112
+  d3_n110 -> d3_n111
+  d3_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n114 [shape=box, width=0, height=0, label=<b>]
+  d3_n113 -> d3_n114
+  d3_n110 -> d3_n113
+  d3_n109 -> d3_n110
+  d3_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n118 [shape=box, width=0, height=0, label=<b>]
+  d3_n117 -> d3_n118
+  d3_n116 -> d3_n117
+  d3_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n120 [shape=box, width=0, height=0, label=<b>]
+  d3_n119 -> d3_n120
+  d3_n116 -> d3_n119
+  d3_n115 -> d3_n116
+  d3_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n122 [shape=box, width=0, height=0, label=<b>]
+  d3_n121 -> d3_n122
+  d3_n115 -> d3_n121
+  d3_n109 -> d3_n115
+  d3_n103 -> d3_n109
+  d3_n97 -> d3_n103
+  d3_n7 -> d3_n97
+  d3_n1 -> d3_n7
+  d3_n0 -> d3_n1
+  d3_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n129 [shape=box, width=0, height=0, label=<b>]
+  d3_n128 -> d3_n129
+  d3_n127 -> d3_n128
+  d3_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n131 [shape=box, width=0, height=0, label=<b>]
+  d3_n130 -> d3_n131
+  d3_n127 -> d3_n130
+  d3_n126 -> d3_n127
+  d3_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n133 [shape=box, width=0, height=0, label=<b>]
+  d3_n132 -> d3_n133
+  d3_n126 -> d3_n132
+  d3_n125 -> d3_n126
+  d3_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n135 [shape=box, width=0, height=0, label=<b>]
+  d3_n134 -> d3_n135
+  d3_n125 -> d3_n134
+  d3_n124 -> d3_n125
+  d3_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n138 [shape=box, width=0, height=0, label=<b>]
+  d3_n137 -> d3_n138
+  d3_n136 -> d3_n137
+  d3_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n140 [shape=box, width=0, height=0, label=<b>]
+  d3_n139 -> d3_n140
+  d3_n136 -> d3_n139
+  d3_n124 -> d3_n136
+  d3_n123 -> d3_n124
+  d3_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n146 [shape=box, width=0, height=0, label=<b>]
+  d3_n145 -> d3_n146
+  d3_n144 -> d3_n145
+  d3_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n148 [shape=box, width=0, height=0, label=<b>]
+  d3_n147 -> d3_n148
+  d3_n144 -> d3_n147
+  d3_n143 -> d3_n144
+  d3_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n150 [shape=box, width=0, height=0, label=<b>]
+  d3_n149 -> d3_n150
+  d3_n143 -> d3_n149
+  d3_n142 -> d3_n143
+  d3_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n153 [shape=box, width=0, height=0, label=<b>]
+  d3_n152 -> d3_n153
+  d3_n151 -> d3_n152
+  d3_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n155 [shape=box, width=0, height=0, label=<b>]
+  d3_n154 -> d3_n155
+  d3_n151 -> d3_n154
+  d3_n142 -> d3_n151
+  d3_n141 -> d3_n142
+  d3_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n159 [shape=box, width=0, height=0, label=<b>]
+  d3_n158 -> d3_n159
+  d3_n157 -> d3_n158
+  d3_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n161 [shape=box, width=0, height=0, label=<b>]
+  d3_n160 -> d3_n161
+  d3_n157 -> d3_n160
+  d3_n156 -> d3_n157
+  d3_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d3_n163 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n164 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n165 [shape=box, width=0, height=0, label=<b>]
+  d3_n164 -> d3_n165
+  d3_n163 -> d3_n164
+  d3_n166 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n167 [shape=box, width=0, height=0, label=<b>]
+  d3_n166 -> d3_n167
+  d3_n163 -> d3_n166
+  d3_n162 -> d3_n163
+  d3_n168 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n169 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n170 [shape=box, width=0, height=0, label=<b>]
+  d3_n169 -> d3_n170
+  d3_n168 -> d3_n169
+  d3_n171 [shape=ellipse, width=0, height=0, label=<S>]
+  d3_n172 [shape=box, width=0, height=0, label=<b>]
+  d3_n171 -> d3_n172
+  d3_n168 -> d3_n171
+  d3_n162 -> d3_n168
+  d3_n156 -> d3_n162
+  d3_n141 -> d3_n156
+  d3_n123 -> d3_n141
+  d3_n0 -> d3_n123
+  { rank=same; d3_n4; d3_n6; d3_n14; d3_n17; d3_n20; d3_n23; d3_n25; d3_n30; d3_n32; d3_n34; d3_n37; d3_n41; d3_n43; d3_n46; d3_n48; d3_n50; d3_n55; d3_n58; d3_n61; d3_n63; d3_n66; d3_n69; d3_n71; d3_n74; d3_n77; d3_n82; d3_n84; d3_n86; d3_n88; d3_n92; d3_n94; d3_n96; d3_n100; d3_n102; d3_n106; d3_n108; d3_n112; d3_n114; d3_n118; d3_n120; d3_n122; d3_n129; d3_n131; d3_n133; d3_n135; d3_n138; d3_n140; d3_n146; d3_n148; d3_n150; d3_n153; d3_n155; d3_n159; d3_n161; d3_n165; d3_n167; d3_n170; d3_n172 }
+  d3_n4 -> d3_n6 [style=invis]
+  d3_n6 -> d3_n14 [style=invis]
+  d3_n14 -> d3_n17 [style=invis]
+  d3_n17 -> d3_n20 [style=invis]
+  d3_n20 -> d3_n23 [style=invis]
+  d3_n23 -> d3_n25 [style=invis]
+  d3_n25 -> d3_n30 [style=invis]
+  d3_n30 -> d3_n32 [style=invis]
+  d3_n32 -> d3_n34 [style=invis]
+  d3_n34 -> d3_n37 [style=invis]
+  d3_n37 -> d3_n41 [style=invis]
+  d3_n41 -> d3_n43 [style=invis]
+  d3_n43 -> d3_n46 [style=invis]
+  d3_n46 -> d3_n48 [style=invis]
+  d3_n48 -> d3_n50 [style=invis]
+  d3_n50 -> d3_n55 [style=invis]
+  d3_n55 -> d3_n58 [style=invis]
+  d3_n58 -> d3_n61 [style=invis]
+  d3_n61 -> d3_n63 [style=invis]
+  d3_n63 -> d3_n66 [style=invis]
+  d3_n66 -> d3_n69 [style=invis]
+  d3_n69 -> d3_n71 [style=invis]
+  d3_n71 -> d3_n74 [style=invis]
+  d3_n74 -> d3_n77 [style=invis]
+  d3_n77 -> d3_n82 [style=invis]
+  d3_n82 -> d3_n84 [style=invis]
+  d3_n84 -> d3_n86 [style=invis]
+  d3_n86 -> d3_n88 [style=invis]
+  d3_n88 -> d3_n92 [style=invis]
+  d3_n92 -> d3_n94 [style=invis]
+  d3_n94 -> d3_n96 [style=invis]
+  d3_n96 -> d3_n100 [style=invis]
+  d3_n100 -> d3_n102 [style=invis]
+  d3_n102 -> d3_n106 [style=invis]
+  d3_n106 -> d3_n108 [style=invis]
+  d3_n108 -> d3_n112 [style=invis]
+  d3_n112 -> d3_n114 [style=invis]
+  d3_n114 -> d3_n118 [style=invis]
+  d3_n118 -> d3_n120 [style=invis]
+  d3_n120 -> d3_n122 [style=invis]
+  d3_n122 -> d3_n129 [style=invis]
+  d3_n129 -> d3_n131 [style=invis]
+  d3_n131 -> d3_n133 [style=invis]
+  d3_n133 -> d3_n135 [style=invis]
+  d3_n135 -> d3_n138 [style=invis]
+  d3_n138 -> d3_n140 [style=invis]
+  d3_n140 -> d3_n146 [style=invis]
+  d3_n146 -> d3_n148 [style=invis]
+  d3_n148 -> d3_n150 [style=invis]
+  d3_n150 -> d3_n153 [style=invis]
+  d3_n153 -> d3_n155 [style=invis]
+  d3_n155 -> d3_n159 [style=invis]
+  d3_n159 -> d3_n161 [style=invis]
+  d3_n161 -> d3_n165 [style=invis]
+  d3_n165 -> d3_n167 [style=invis]
+  d3_n167 -> d3_n170 [style=invis]
+  d3_n170 -> d3_n172 [style=invis]
+  }
+
+  subgraph cluster_4 {
+    label="Derivation 5"; style=dashed
+  d4_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n4 [shape=box, width=0, height=0, label=<b>]
+  d4_n3 -> d4_n4
+  d4_n2 -> d4_n3
+  d4_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n6 [shape=box, width=0, height=0, label=<b>]
+  d4_n5 -> d4_n6
+  d4_n2 -> d4_n5
+  d4_n1 -> d4_n2
+  d4_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n14 [shape=box, width=0, height=0, label=<b>]
+  d4_n13 -> d4_n14
+  d4_n12 -> d4_n13
+  d4_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n17 [shape=box, width=0, height=0, label=<b>]
+  d4_n16 -> d4_n17
+  d4_n15 -> d4_n16
+  d4_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n20 [shape=box, width=0, height=0, label=<b>]
+  d4_n19 -> d4_n20
+  d4_n18 -> d4_n19
+  d4_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n23 [shape=box, width=0, height=0, label=<b>]
+  d4_n22 -> d4_n23
+  d4_n21 -> d4_n22
+  d4_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n25 [shape=box, width=0, height=0, label=<b>]
+  d4_n24 -> d4_n25
+  d4_n21 -> d4_n24
+  d4_n18 -> d4_n21
+  d4_n15 -> d4_n18
+  d4_n12 -> d4_n15
+  d4_n11 -> d4_n12
+  d4_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n30 [shape=box, width=0, height=0, label=<b>]
+  d4_n29 -> d4_n30
+  d4_n28 -> d4_n29
+  d4_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n32 [shape=box, width=0, height=0, label=<b>]
+  d4_n31 -> d4_n32
+  d4_n28 -> d4_n31
+  d4_n27 -> d4_n28
+  d4_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n34 [shape=box, width=0, height=0, label=<b>]
+  d4_n33 -> d4_n34
+  d4_n27 -> d4_n33
+  d4_n26 -> d4_n27
+  d4_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n37 [shape=box, width=0, height=0, label=<b>]
+  d4_n36 -> d4_n37
+  d4_n35 -> d4_n36
+  d4_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n41 [shape=box, width=0, height=0, label=<b>]
+  d4_n40 -> d4_n41
+  d4_n39 -> d4_n40
+  d4_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n43 [shape=box, width=0, height=0, label=<b>]
+  d4_n42 -> d4_n43
+  d4_n39 -> d4_n42
+  d4_n38 -> d4_n39
+  d4_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n46 [shape=box, width=0, height=0, label=<b>]
+  d4_n45 -> d4_n46
+  d4_n44 -> d4_n45
+  d4_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n48 [shape=box, width=0, height=0, label=<b>]
+  d4_n47 -> d4_n48
+  d4_n44 -> d4_n47
+  d4_n38 -> d4_n44
+  d4_n35 -> d4_n38
+  d4_n26 -> d4_n35
+  d4_n11 -> d4_n26
+  d4_n10 -> d4_n11
+  d4_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n50 [shape=box, width=0, height=0, label=<b>]
+  d4_n49 -> d4_n50
+  d4_n10 -> d4_n49
+  d4_n9 -> d4_n10
+  d4_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n55 [shape=box, width=0, height=0, label=<b>]
+  d4_n54 -> d4_n55
+  d4_n53 -> d4_n54
+  d4_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n58 [shape=box, width=0, height=0, label=<b>]
+  d4_n57 -> d4_n58
+  d4_n56 -> d4_n57
+  d4_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n61 [shape=box, width=0, height=0, label=<b>]
+  d4_n60 -> d4_n61
+  d4_n59 -> d4_n60
+  d4_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n63 [shape=box, width=0, height=0, label=<b>]
+  d4_n62 -> d4_n63
+  d4_n59 -> d4_n62
+  d4_n56 -> d4_n59
+  d4_n53 -> d4_n56
+  d4_n52 -> d4_n53
+  d4_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n66 [shape=box, width=0, height=0, label=<b>]
+  d4_n65 -> d4_n66
+  d4_n64 -> d4_n65
+  d4_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n69 [shape=box, width=0, height=0, label=<b>]
+  d4_n68 -> d4_n69
+  d4_n67 -> d4_n68
+  d4_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n71 [shape=box, width=0, height=0, label=<b>]
+  d4_n70 -> d4_n71
+  d4_n67 -> d4_n70
+  d4_n64 -> d4_n67
+  d4_n52 -> d4_n64
+  d4_n51 -> d4_n52
+  d4_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n74 [shape=box, width=0, height=0, label=<b>]
+  d4_n73 -> d4_n74
+  d4_n72 -> d4_n73
+  d4_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n77 [shape=box, width=0, height=0, label=<b>]
+  d4_n76 -> d4_n77
+  d4_n75 -> d4_n76
+  d4_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n82 [shape=box, width=0, height=0, label=<b>]
+  d4_n81 -> d4_n82
+  d4_n80 -> d4_n81
+  d4_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n84 [shape=box, width=0, height=0, label=<b>]
+  d4_n83 -> d4_n84
+  d4_n80 -> d4_n83
+  d4_n79 -> d4_n80
+  d4_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n86 [shape=box, width=0, height=0, label=<b>]
+  d4_n85 -> d4_n86
+  d4_n79 -> d4_n85
+  d4_n78 -> d4_n79
+  d4_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n88 [shape=box, width=0, height=0, label=<b>]
+  d4_n87 -> d4_n88
+  d4_n78 -> d4_n87
+  d4_n75 -> d4_n78
+  d4_n72 -> d4_n75
+  d4_n51 -> d4_n72
+  d4_n9 -> d4_n51
+  d4_n8 -> d4_n9
+  d4_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n92 [shape=box, width=0, height=0, label=<b>]
+  d4_n91 -> d4_n92
+  d4_n90 -> d4_n91
+  d4_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n94 [shape=box, width=0, height=0, label=<b>]
+  d4_n93 -> d4_n94
+  d4_n90 -> d4_n93
+  d4_n89 -> d4_n90
+  d4_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n96 [shape=box, width=0, height=0, label=<b>]
+  d4_n95 -> d4_n96
+  d4_n89 -> d4_n95
+  d4_n8 -> d4_n89
+  d4_n7 -> d4_n8
+  d4_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n100 [shape=box, width=0, height=0, label=<b>]
+  d4_n99 -> d4_n100
+  d4_n98 -> d4_n99
+  d4_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n102 [shape=box, width=0, height=0, label=<b>]
+  d4_n101 -> d4_n102
+  d4_n98 -> d4_n101
+  d4_n97 -> d4_n98
+  d4_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n106 [shape=box, width=0, height=0, label=<b>]
+  d4_n105 -> d4_n106
+  d4_n104 -> d4_n105
+  d4_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n108 [shape=box, width=0, height=0, label=<b>]
+  d4_n107 -> d4_n108
+  d4_n104 -> d4_n107
+  d4_n103 -> d4_n104
+  d4_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n112 [shape=box, width=0, height=0, label=<b>]
+  d4_n111 -> d4_n112
+  d4_n110 -> d4_n111
+  d4_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n114 [shape=box, width=0, height=0, label=<b>]
+  d4_n113 -> d4_n114
+  d4_n110 -> d4_n113
+  d4_n109 -> d4_n110
+  d4_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n118 [shape=box, width=0, height=0, label=<b>]
+  d4_n117 -> d4_n118
+  d4_n116 -> d4_n117
+  d4_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n120 [shape=box, width=0, height=0, label=<b>]
+  d4_n119 -> d4_n120
+  d4_n116 -> d4_n119
+  d4_n115 -> d4_n116
+  d4_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n122 [shape=box, width=0, height=0, label=<b>]
+  d4_n121 -> d4_n122
+  d4_n115 -> d4_n121
+  d4_n109 -> d4_n115
+  d4_n103 -> d4_n109
+  d4_n97 -> d4_n103
+  d4_n7 -> d4_n97
+  d4_n1 -> d4_n7
+  d4_n0 -> d4_n1
+  d4_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n129 [shape=box, width=0, height=0, label=<b>]
+  d4_n128 -> d4_n129
+  d4_n127 -> d4_n128
+  d4_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n131 [shape=box, width=0, height=0, label=<b>]
+  d4_n130 -> d4_n131
+  d4_n127 -> d4_n130
+  d4_n126 -> d4_n127
+  d4_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n133 [shape=box, width=0, height=0, label=<b>]
+  d4_n132 -> d4_n133
+  d4_n126 -> d4_n132
+  d4_n125 -> d4_n126
+  d4_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n135 [shape=box, width=0, height=0, label=<b>]
+  d4_n134 -> d4_n135
+  d4_n125 -> d4_n134
+  d4_n124 -> d4_n125
+  d4_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n138 [shape=box, width=0, height=0, label=<b>]
+  d4_n137 -> d4_n138
+  d4_n136 -> d4_n137
+  d4_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n140 [shape=box, width=0, height=0, label=<b>]
+  d4_n139 -> d4_n140
+  d4_n136 -> d4_n139
+  d4_n124 -> d4_n136
+  d4_n123 -> d4_n124
+  d4_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n146 [shape=box, width=0, height=0, label=<b>]
+  d4_n145 -> d4_n146
+  d4_n144 -> d4_n145
+  d4_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n148 [shape=box, width=0, height=0, label=<b>]
+  d4_n147 -> d4_n148
+  d4_n144 -> d4_n147
+  d4_n143 -> d4_n144
+  d4_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n150 [shape=box, width=0, height=0, label=<b>]
+  d4_n149 -> d4_n150
+  d4_n143 -> d4_n149
+  d4_n142 -> d4_n143
+  d4_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n153 [shape=box, width=0, height=0, label=<b>]
+  d4_n152 -> d4_n153
+  d4_n151 -> d4_n152
+  d4_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n155 [shape=box, width=0, height=0, label=<b>]
+  d4_n154 -> d4_n155
+  d4_n151 -> d4_n154
+  d4_n142 -> d4_n151
+  d4_n141 -> d4_n142
+  d4_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n159 [shape=box, width=0, height=0, label=<b>]
+  d4_n158 -> d4_n159
+  d4_n157 -> d4_n158
+  d4_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n161 [shape=box, width=0, height=0, label=<b>]
+  d4_n160 -> d4_n161
+  d4_n157 -> d4_n160
+  d4_n156 -> d4_n157
+  d4_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n163 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d4_n164 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n165 [shape=box, width=0, height=0, label=<b>]
+  d4_n164 -> d4_n165
+  d4_n163 -> d4_n164
+  d4_n166 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n167 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n168 [shape=box, width=0, height=0, label=<b>]
+  d4_n167 -> d4_n168
+  d4_n166 -> d4_n167
+  d4_n169 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n170 [shape=box, width=0, height=0, label=<b>]
+  d4_n169 -> d4_n170
+  d4_n166 -> d4_n169
+  d4_n163 -> d4_n166
+  d4_n162 -> d4_n163
+  d4_n171 [shape=ellipse, width=0, height=0, label=<S>]
+  d4_n172 [shape=box, width=0, height=0, label=<b>]
+  d4_n171 -> d4_n172
+  d4_n162 -> d4_n171
+  d4_n156 -> d4_n162
+  d4_n141 -> d4_n156
+  d4_n123 -> d4_n141
+  d4_n0 -> d4_n123
+  { rank=same; d4_n4; d4_n6; d4_n14; d4_n17; d4_n20; d4_n23; d4_n25; d4_n30; d4_n32; d4_n34; d4_n37; d4_n41; d4_n43; d4_n46; d4_n48; d4_n50; d4_n55; d4_n58; d4_n61; d4_n63; d4_n66; d4_n69; d4_n71; d4_n74; d4_n77; d4_n82; d4_n84; d4_n86; d4_n88; d4_n92; d4_n94; d4_n96; d4_n100; d4_n102; d4_n106; d4_n108; d4_n112; d4_n114; d4_n118; d4_n120; d4_n122; d4_n129; d4_n131; d4_n133; d4_n135; d4_n138; d4_n140; d4_n146; d4_n148; d4_n150; d4_n153; d4_n155; d4_n159; d4_n161; d4_n165; d4_n168; d4_n170; d4_n172 }
+  d4_n4 -> d4_n6 [style=invis]
+  d4_n6 -> d4_n14 [style=invis]
+  d4_n14 -> d4_n17 [style=invis]
+  d4_n17 -> d4_n20 [style=invis]
+  d4_n20 -> d4_n23 [style=invis]
+  d4_n23 -> d4_n25 [style=invis]
+  d4_n25 -> d4_n30 [style=invis]
+  d4_n30 -> d4_n32 [style=invis]
+  d4_n32 -> d4_n34 [style=invis]
+  d4_n34 -> d4_n37 [style=invis]
+  d4_n37 -> d4_n41 [style=invis]
+  d4_n41 -> d4_n43 [style=invis]
+  d4_n43 -> d4_n46 [style=invis]
+  d4_n46 -> d4_n48 [style=invis]
+  d4_n48 -> d4_n50 [style=invis]
+  d4_n50 -> d4_n55 [style=invis]
+  d4_n55 -> d4_n58 [style=invis]
+  d4_n58 -> d4_n61 [style=invis]
+  d4_n61 -> d4_n63 [style=invis]
+  d4_n63 -> d4_n66 [style=invis]
+  d4_n66 -> d4_n69 [style=invis]
+  d4_n69 -> d4_n71 [style=invis]
+  d4_n71 -> d4_n74 [style=invis]
+  d4_n74 -> d4_n77 [style=invis]
+  d4_n77 -> d4_n82 [style=invis]
+  d4_n82 -> d4_n84 [style=invis]
+  d4_n84 -> d4_n86 [style=invis]
+  d4_n86 -> d4_n88 [style=invis]
+  d4_n88 -> d4_n92 [style=invis]
+  d4_n92 -> d4_n94 [style=invis]
+  d4_n94 -> d4_n96 [style=invis]
+  d4_n96 -> d4_n100 [style=invis]
+  d4_n100 -> d4_n102 [style=invis]
+  d4_n102 -> d4_n106 [style=invis]
+  d4_n106 -> d4_n108 [style=invis]
+  d4_n108 -> d4_n112 [style=invis]
+  d4_n112 -> d4_n114 [style=invis]
+  d4_n114 -> d4_n118 [style=invis]
+  d4_n118 -> d4_n120 [style=invis]
+  d4_n120 -> d4_n122 [style=invis]
+  d4_n122 -> d4_n129 [style=invis]
+  d4_n129 -> d4_n131 [style=invis]
+  d4_n131 -> d4_n133 [style=invis]
+  d4_n133 -> d4_n135 [style=invis]
+  d4_n135 -> d4_n138 [style=invis]
+  d4_n138 -> d4_n140 [style=invis]
+  d4_n140 -> d4_n146 [style=invis]
+  d4_n146 -> d4_n148 [style=invis]
+  d4_n148 -> d4_n150 [style=invis]
+  d4_n150 -> d4_n153 [style=invis]
+  d4_n153 -> d4_n155 [style=invis]
+  d4_n155 -> d4_n159 [style=invis]
+  d4_n159 -> d4_n161 [style=invis]
+  d4_n161 -> d4_n165 [style=invis]
+  d4_n165 -> d4_n168 [style=invis]
+  d4_n168 -> d4_n170 [style=invis]
+  d4_n170 -> d4_n172 [style=invis]
+  }
+
+  subgraph cluster_5 {
+    label="Derivation 6"; style=dashed
+  d5_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n4 [shape=box, width=0, height=0, label=<b>]
+  d5_n3 -> d5_n4
+  d5_n2 -> d5_n3
+  d5_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n6 [shape=box, width=0, height=0, label=<b>]
+  d5_n5 -> d5_n6
+  d5_n2 -> d5_n5
+  d5_n1 -> d5_n2
+  d5_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n14 [shape=box, width=0, height=0, label=<b>]
+  d5_n13 -> d5_n14
+  d5_n12 -> d5_n13
+  d5_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n17 [shape=box, width=0, height=0, label=<b>]
+  d5_n16 -> d5_n17
+  d5_n15 -> d5_n16
+  d5_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n20 [shape=box, width=0, height=0, label=<b>]
+  d5_n19 -> d5_n20
+  d5_n18 -> d5_n19
+  d5_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n23 [shape=box, width=0, height=0, label=<b>]
+  d5_n22 -> d5_n23
+  d5_n21 -> d5_n22
+  d5_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n25 [shape=box, width=0, height=0, label=<b>]
+  d5_n24 -> d5_n25
+  d5_n21 -> d5_n24
+  d5_n18 -> d5_n21
+  d5_n15 -> d5_n18
+  d5_n12 -> d5_n15
+  d5_n11 -> d5_n12
+  d5_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n30 [shape=box, width=0, height=0, label=<b>]
+  d5_n29 -> d5_n30
+  d5_n28 -> d5_n29
+  d5_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n32 [shape=box, width=0, height=0, label=<b>]
+  d5_n31 -> d5_n32
+  d5_n28 -> d5_n31
+  d5_n27 -> d5_n28
+  d5_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n34 [shape=box, width=0, height=0, label=<b>]
+  d5_n33 -> d5_n34
+  d5_n27 -> d5_n33
+  d5_n26 -> d5_n27
+  d5_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n37 [shape=box, width=0, height=0, label=<b>]
+  d5_n36 -> d5_n37
+  d5_n35 -> d5_n36
+  d5_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n41 [shape=box, width=0, height=0, label=<b>]
+  d5_n40 -> d5_n41
+  d5_n39 -> d5_n40
+  d5_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n43 [shape=box, width=0, height=0, label=<b>]
+  d5_n42 -> d5_n43
+  d5_n39 -> d5_n42
+  d5_n38 -> d5_n39
+  d5_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n46 [shape=box, width=0, height=0, label=<b>]
+  d5_n45 -> d5_n46
+  d5_n44 -> d5_n45
+  d5_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n48 [shape=box, width=0, height=0, label=<b>]
+  d5_n47 -> d5_n48
+  d5_n44 -> d5_n47
+  d5_n38 -> d5_n44
+  d5_n35 -> d5_n38
+  d5_n26 -> d5_n35
+  d5_n11 -> d5_n26
+  d5_n10 -> d5_n11
+  d5_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n50 [shape=box, width=0, height=0, label=<b>]
+  d5_n49 -> d5_n50
+  d5_n10 -> d5_n49
+  d5_n9 -> d5_n10
+  d5_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n55 [shape=box, width=0, height=0, label=<b>]
+  d5_n54 -> d5_n55
+  d5_n53 -> d5_n54
+  d5_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n58 [shape=box, width=0, height=0, label=<b>]
+  d5_n57 -> d5_n58
+  d5_n56 -> d5_n57
+  d5_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n61 [shape=box, width=0, height=0, label=<b>]
+  d5_n60 -> d5_n61
+  d5_n59 -> d5_n60
+  d5_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n63 [shape=box, width=0, height=0, label=<b>]
+  d5_n62 -> d5_n63
+  d5_n59 -> d5_n62
+  d5_n56 -> d5_n59
+  d5_n53 -> d5_n56
+  d5_n52 -> d5_n53
+  d5_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n66 [shape=box, width=0, height=0, label=<b>]
+  d5_n65 -> d5_n66
+  d5_n64 -> d5_n65
+  d5_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n69 [shape=box, width=0, height=0, label=<b>]
+  d5_n68 -> d5_n69
+  d5_n67 -> d5_n68
+  d5_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n71 [shape=box, width=0, height=0, label=<b>]
+  d5_n70 -> d5_n71
+  d5_n67 -> d5_n70
+  d5_n64 -> d5_n67
+  d5_n52 -> d5_n64
+  d5_n51 -> d5_n52
+  d5_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n74 [shape=box, width=0, height=0, label=<b>]
+  d5_n73 -> d5_n74
+  d5_n72 -> d5_n73
+  d5_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n77 [shape=box, width=0, height=0, label=<b>]
+  d5_n76 -> d5_n77
+  d5_n75 -> d5_n76
+  d5_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n82 [shape=box, width=0, height=0, label=<b>]
+  d5_n81 -> d5_n82
+  d5_n80 -> d5_n81
+  d5_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n84 [shape=box, width=0, height=0, label=<b>]
+  d5_n83 -> d5_n84
+  d5_n80 -> d5_n83
+  d5_n79 -> d5_n80
+  d5_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n86 [shape=box, width=0, height=0, label=<b>]
+  d5_n85 -> d5_n86
+  d5_n79 -> d5_n85
+  d5_n78 -> d5_n79
+  d5_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n88 [shape=box, width=0, height=0, label=<b>]
+  d5_n87 -> d5_n88
+  d5_n78 -> d5_n87
+  d5_n75 -> d5_n78
+  d5_n72 -> d5_n75
+  d5_n51 -> d5_n72
+  d5_n9 -> d5_n51
+  d5_n8 -> d5_n9
+  d5_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n92 [shape=box, width=0, height=0, label=<b>]
+  d5_n91 -> d5_n92
+  d5_n90 -> d5_n91
+  d5_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n94 [shape=box, width=0, height=0, label=<b>]
+  d5_n93 -> d5_n94
+  d5_n90 -> d5_n93
+  d5_n89 -> d5_n90
+  d5_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n96 [shape=box, width=0, height=0, label=<b>]
+  d5_n95 -> d5_n96
+  d5_n89 -> d5_n95
+  d5_n8 -> d5_n89
+  d5_n7 -> d5_n8
+  d5_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n100 [shape=box, width=0, height=0, label=<b>]
+  d5_n99 -> d5_n100
+  d5_n98 -> d5_n99
+  d5_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n102 [shape=box, width=0, height=0, label=<b>]
+  d5_n101 -> d5_n102
+  d5_n98 -> d5_n101
+  d5_n97 -> d5_n98
+  d5_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n106 [shape=box, width=0, height=0, label=<b>]
+  d5_n105 -> d5_n106
+  d5_n104 -> d5_n105
+  d5_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n108 [shape=box, width=0, height=0, label=<b>]
+  d5_n107 -> d5_n108
+  d5_n104 -> d5_n107
+  d5_n103 -> d5_n104
+  d5_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n112 [shape=box, width=0, height=0, label=<b>]
+  d5_n111 -> d5_n112
+  d5_n110 -> d5_n111
+  d5_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n114 [shape=box, width=0, height=0, label=<b>]
+  d5_n113 -> d5_n114
+  d5_n110 -> d5_n113
+  d5_n109 -> d5_n110
+  d5_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n118 [shape=box, width=0, height=0, label=<b>]
+  d5_n117 -> d5_n118
+  d5_n116 -> d5_n117
+  d5_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n120 [shape=box, width=0, height=0, label=<b>]
+  d5_n119 -> d5_n120
+  d5_n116 -> d5_n119
+  d5_n115 -> d5_n116
+  d5_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n122 [shape=box, width=0, height=0, label=<b>]
+  d5_n121 -> d5_n122
+  d5_n115 -> d5_n121
+  d5_n109 -> d5_n115
+  d5_n103 -> d5_n109
+  d5_n97 -> d5_n103
+  d5_n7 -> d5_n97
+  d5_n1 -> d5_n7
+  d5_n0 -> d5_n1
+  d5_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n129 [shape=box, width=0, height=0, label=<b>]
+  d5_n128 -> d5_n129
+  d5_n127 -> d5_n128
+  d5_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n131 [shape=box, width=0, height=0, label=<b>]
+  d5_n130 -> d5_n131
+  d5_n127 -> d5_n130
+  d5_n126 -> d5_n127
+  d5_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n133 [shape=box, width=0, height=0, label=<b>]
+  d5_n132 -> d5_n133
+  d5_n126 -> d5_n132
+  d5_n125 -> d5_n126
+  d5_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n135 [shape=box, width=0, height=0, label=<b>]
+  d5_n134 -> d5_n135
+  d5_n125 -> d5_n134
+  d5_n124 -> d5_n125
+  d5_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n138 [shape=box, width=0, height=0, label=<b>]
+  d5_n137 -> d5_n138
+  d5_n136 -> d5_n137
+  d5_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n140 [shape=box, width=0, height=0, label=<b>]
+  d5_n139 -> d5_n140
+  d5_n136 -> d5_n139
+  d5_n124 -> d5_n136
+  d5_n123 -> d5_n124
+  d5_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n146 [shape=box, width=0, height=0, label=<b>]
+  d5_n145 -> d5_n146
+  d5_n144 -> d5_n145
+  d5_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n148 [shape=box, width=0, height=0, label=<b>]
+  d5_n147 -> d5_n148
+  d5_n144 -> d5_n147
+  d5_n143 -> d5_n144
+  d5_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n150 [shape=box, width=0, height=0, label=<b>]
+  d5_n149 -> d5_n150
+  d5_n143 -> d5_n149
+  d5_n142 -> d5_n143
+  d5_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n153 [shape=box, width=0, height=0, label=<b>]
+  d5_n152 -> d5_n153
+  d5_n151 -> d5_n152
+  d5_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n155 [shape=box, width=0, height=0, label=<b>]
+  d5_n154 -> d5_n155
+  d5_n151 -> d5_n154
+  d5_n142 -> d5_n151
+  d5_n141 -> d5_n142
+  d5_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n159 [shape=box, width=0, height=0, label=<b>]
+  d5_n158 -> d5_n159
+  d5_n157 -> d5_n158
+  d5_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n161 [shape=box, width=0, height=0, label=<b>]
+  d5_n160 -> d5_n161
+  d5_n157 -> d5_n160
+  d5_n156 -> d5_n157
+  d5_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n163 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d5_n164 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n165 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n166 [shape=box, width=0, height=0, label=<b>]
+  d5_n165 -> d5_n166
+  d5_n164 -> d5_n165
+  d5_n167 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n168 [shape=box, width=0, height=0, label=<b>]
+  d5_n167 -> d5_n168
+  d5_n164 -> d5_n167
+  d5_n163 -> d5_n164
+  d5_n169 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n170 [shape=box, width=0, height=0, label=<b>]
+  d5_n169 -> d5_n170
+  d5_n163 -> d5_n169
+  d5_n162 -> d5_n163
+  d5_n171 [shape=ellipse, width=0, height=0, label=<S>]
+  d5_n172 [shape=box, width=0, height=0, label=<b>]
+  d5_n171 -> d5_n172
+  d5_n162 -> d5_n171
+  d5_n156 -> d5_n162
+  d5_n141 -> d5_n156
+  d5_n123 -> d5_n141
+  d5_n0 -> d5_n123
+  { rank=same; d5_n4; d5_n6; d5_n14; d5_n17; d5_n20; d5_n23; d5_n25; d5_n30; d5_n32; d5_n34; d5_n37; d5_n41; d5_n43; d5_n46; d5_n48; d5_n50; d5_n55; d5_n58; d5_n61; d5_n63; d5_n66; d5_n69; d5_n71; d5_n74; d5_n77; d5_n82; d5_n84; d5_n86; d5_n88; d5_n92; d5_n94; d5_n96; d5_n100; d5_n102; d5_n106; d5_n108; d5_n112; d5_n114; d5_n118; d5_n120; d5_n122; d5_n129; d5_n131; d5_n133; d5_n135; d5_n138; d5_n140; d5_n146; d5_n148; d5_n150; d5_n153; d5_n155; d5_n159; d5_n161; d5_n166; d5_n168; d5_n170; d5_n172 }
+  d5_n4 -> d5_n6 [style=invis]
+  d5_n6 -> d5_n14 [style=invis]
+  d5_n14 -> d5_n17 [style=invis]
+  d5_n17 -> d5_n20 [style=invis]
+  d5_n20 -> d5_n23 [style=invis]
+  d5_n23 -> d5_n25 [style=invis]
+  d5_n25 -> d5_n30 [style=invis]
+  d5_n30 -> d5_n32 [style=invis]
+  d5_n32 -> d5_n34 [style=invis]
+  d5_n34 -> d5_n37 [style=invis]
+  d5_n37 -> d5_n41 [style=invis]
+  d5_n41 -> d5_n43 [style=invis]
+  d5_n43 -> d5_n46 [style=invis]
+  d5_n46 -> d5_n48 [style=invis]
+  d5_n48 -> d5_n50 [style=invis]
+  d5_n50 -> d5_n55 [style=invis]
+  d5_n55 -> d5_n58 [style=invis]
+  d5_n58 -> d5_n61 [style=invis]
+  d5_n61 -> d5_n63 [style=invis]
+  d5_n63 -> d5_n66 [style=invis]
+  d5_n66 -> d5_n69 [style=invis]
+  d5_n69 -> d5_n71 [style=invis]
+  d5_n71 -> d5_n74 [style=invis]
+  d5_n74 -> d5_n77 [style=invis]
+  d5_n77 -> d5_n82 [style=invis]
+  d5_n82 -> d5_n84 [style=invis]
+  d5_n84 -> d5_n86 [style=invis]
+  d5_n86 -> d5_n88 [style=invis]
+  d5_n88 -> d5_n92 [style=invis]
+  d5_n92 -> d5_n94 [style=invis]
+  d5_n94 -> d5_n96 [style=invis]
+  d5_n96 -> d5_n100 [style=invis]
+  d5_n100 -> d5_n102 [style=invis]
+  d5_n102 -> d5_n106 [style=invis]
+  d5_n106 -> d5_n108 [style=invis]
+  d5_n108 -> d5_n112 [style=invis]
+  d5_n112 -> d5_n114 [style=invis]
+  d5_n114 -> d5_n118 [style=invis]
+  d5_n118 -> d5_n120 [style=invis]
+  d5_n120 -> d5_n122 [style=invis]
+  d5_n122 -> d5_n129 [style=invis]
+  d5_n129 -> d5_n131 [style=invis]
+  d5_n131 -> d5_n133 [style=invis]
+  d5_n133 -> d5_n135 [style=invis]
+  d5_n135 -> d5_n138 [style=invis]
+  d5_n138 -> d5_n140 [style=invis]
+  d5_n140 -> d5_n146 [style=invis]
+  d5_n146 -> d5_n148 [style=invis]
+  d5_n148 -> d5_n150 [style=invis]
+  d5_n150 -> d5_n153 [style=invis]
+  d5_n153 -> d5_n155 [style=invis]
+  d5_n155 -> d5_n159 [style=invis]
+  d5_n159 -> d5_n161 [style=invis]
+  d5_n161 -> d5_n166 [style=invis]
+  d5_n166 -> d5_n168 [style=invis]
+  d5_n168 -> d5_n170 [style=invis]
+  d5_n170 -> d5_n172 [style=invis]
+  }
+
+  subgraph cluster_6 {
+    label="Derivation 7"; style=dashed
+  d6_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n4 [shape=box, width=0, height=0, label=<b>]
+  d6_n3 -> d6_n4
+  d6_n2 -> d6_n3
+  d6_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n6 [shape=box, width=0, height=0, label=<b>]
+  d6_n5 -> d6_n6
+  d6_n2 -> d6_n5
+  d6_n1 -> d6_n2
+  d6_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n14 [shape=box, width=0, height=0, label=<b>]
+  d6_n13 -> d6_n14
+  d6_n12 -> d6_n13
+  d6_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n17 [shape=box, width=0, height=0, label=<b>]
+  d6_n16 -> d6_n17
+  d6_n15 -> d6_n16
+  d6_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n20 [shape=box, width=0, height=0, label=<b>]
+  d6_n19 -> d6_n20
+  d6_n18 -> d6_n19
+  d6_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n23 [shape=box, width=0, height=0, label=<b>]
+  d6_n22 -> d6_n23
+  d6_n21 -> d6_n22
+  d6_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n25 [shape=box, width=0, height=0, label=<b>]
+  d6_n24 -> d6_n25
+  d6_n21 -> d6_n24
+  d6_n18 -> d6_n21
+  d6_n15 -> d6_n18
+  d6_n12 -> d6_n15
+  d6_n11 -> d6_n12
+  d6_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n30 [shape=box, width=0, height=0, label=<b>]
+  d6_n29 -> d6_n30
+  d6_n28 -> d6_n29
+  d6_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n32 [shape=box, width=0, height=0, label=<b>]
+  d6_n31 -> d6_n32
+  d6_n28 -> d6_n31
+  d6_n27 -> d6_n28
+  d6_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n34 [shape=box, width=0, height=0, label=<b>]
+  d6_n33 -> d6_n34
+  d6_n27 -> d6_n33
+  d6_n26 -> d6_n27
+  d6_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n37 [shape=box, width=0, height=0, label=<b>]
+  d6_n36 -> d6_n37
+  d6_n35 -> d6_n36
+  d6_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n41 [shape=box, width=0, height=0, label=<b>]
+  d6_n40 -> d6_n41
+  d6_n39 -> d6_n40
+  d6_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n43 [shape=box, width=0, height=0, label=<b>]
+  d6_n42 -> d6_n43
+  d6_n39 -> d6_n42
+  d6_n38 -> d6_n39
+  d6_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n46 [shape=box, width=0, height=0, label=<b>]
+  d6_n45 -> d6_n46
+  d6_n44 -> d6_n45
+  d6_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n48 [shape=box, width=0, height=0, label=<b>]
+  d6_n47 -> d6_n48
+  d6_n44 -> d6_n47
+  d6_n38 -> d6_n44
+  d6_n35 -> d6_n38
+  d6_n26 -> d6_n35
+  d6_n11 -> d6_n26
+  d6_n10 -> d6_n11
+  d6_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n50 [shape=box, width=0, height=0, label=<b>]
+  d6_n49 -> d6_n50
+  d6_n10 -> d6_n49
+  d6_n9 -> d6_n10
+  d6_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n55 [shape=box, width=0, height=0, label=<b>]
+  d6_n54 -> d6_n55
+  d6_n53 -> d6_n54
+  d6_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n58 [shape=box, width=0, height=0, label=<b>]
+  d6_n57 -> d6_n58
+  d6_n56 -> d6_n57
+  d6_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n61 [shape=box, width=0, height=0, label=<b>]
+  d6_n60 -> d6_n61
+  d6_n59 -> d6_n60
+  d6_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n63 [shape=box, width=0, height=0, label=<b>]
+  d6_n62 -> d6_n63
+  d6_n59 -> d6_n62
+  d6_n56 -> d6_n59
+  d6_n53 -> d6_n56
+  d6_n52 -> d6_n53
+  d6_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n66 [shape=box, width=0, height=0, label=<b>]
+  d6_n65 -> d6_n66
+  d6_n64 -> d6_n65
+  d6_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n69 [shape=box, width=0, height=0, label=<b>]
+  d6_n68 -> d6_n69
+  d6_n67 -> d6_n68
+  d6_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n71 [shape=box, width=0, height=0, label=<b>]
+  d6_n70 -> d6_n71
+  d6_n67 -> d6_n70
+  d6_n64 -> d6_n67
+  d6_n52 -> d6_n64
+  d6_n51 -> d6_n52
+  d6_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n74 [shape=box, width=0, height=0, label=<b>]
+  d6_n73 -> d6_n74
+  d6_n72 -> d6_n73
+  d6_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n77 [shape=box, width=0, height=0, label=<b>]
+  d6_n76 -> d6_n77
+  d6_n75 -> d6_n76
+  d6_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n82 [shape=box, width=0, height=0, label=<b>]
+  d6_n81 -> d6_n82
+  d6_n80 -> d6_n81
+  d6_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n84 [shape=box, width=0, height=0, label=<b>]
+  d6_n83 -> d6_n84
+  d6_n80 -> d6_n83
+  d6_n79 -> d6_n80
+  d6_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n86 [shape=box, width=0, height=0, label=<b>]
+  d6_n85 -> d6_n86
+  d6_n79 -> d6_n85
+  d6_n78 -> d6_n79
+  d6_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n88 [shape=box, width=0, height=0, label=<b>]
+  d6_n87 -> d6_n88
+  d6_n78 -> d6_n87
+  d6_n75 -> d6_n78
+  d6_n72 -> d6_n75
+  d6_n51 -> d6_n72
+  d6_n9 -> d6_n51
+  d6_n8 -> d6_n9
+  d6_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n92 [shape=box, width=0, height=0, label=<b>]
+  d6_n91 -> d6_n92
+  d6_n90 -> d6_n91
+  d6_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n94 [shape=box, width=0, height=0, label=<b>]
+  d6_n93 -> d6_n94
+  d6_n90 -> d6_n93
+  d6_n89 -> d6_n90
+  d6_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n96 [shape=box, width=0, height=0, label=<b>]
+  d6_n95 -> d6_n96
+  d6_n89 -> d6_n95
+  d6_n8 -> d6_n89
+  d6_n7 -> d6_n8
+  d6_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n100 [shape=box, width=0, height=0, label=<b>]
+  d6_n99 -> d6_n100
+  d6_n98 -> d6_n99
+  d6_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n102 [shape=box, width=0, height=0, label=<b>]
+  d6_n101 -> d6_n102
+  d6_n98 -> d6_n101
+  d6_n97 -> d6_n98
+  d6_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n106 [shape=box, width=0, height=0, label=<b>]
+  d6_n105 -> d6_n106
+  d6_n104 -> d6_n105
+  d6_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n108 [shape=box, width=0, height=0, label=<b>]
+  d6_n107 -> d6_n108
+  d6_n104 -> d6_n107
+  d6_n103 -> d6_n104
+  d6_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n112 [shape=box, width=0, height=0, label=<b>]
+  d6_n111 -> d6_n112
+  d6_n110 -> d6_n111
+  d6_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n114 [shape=box, width=0, height=0, label=<b>]
+  d6_n113 -> d6_n114
+  d6_n110 -> d6_n113
+  d6_n109 -> d6_n110
+  d6_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n118 [shape=box, width=0, height=0, label=<b>]
+  d6_n117 -> d6_n118
+  d6_n116 -> d6_n117
+  d6_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n120 [shape=box, width=0, height=0, label=<b>]
+  d6_n119 -> d6_n120
+  d6_n116 -> d6_n119
+  d6_n115 -> d6_n116
+  d6_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n122 [shape=box, width=0, height=0, label=<b>]
+  d6_n121 -> d6_n122
+  d6_n115 -> d6_n121
+  d6_n109 -> d6_n115
+  d6_n103 -> d6_n109
+  d6_n97 -> d6_n103
+  d6_n7 -> d6_n97
+  d6_n1 -> d6_n7
+  d6_n0 -> d6_n1
+  d6_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n129 [shape=box, width=0, height=0, label=<b>]
+  d6_n128 -> d6_n129
+  d6_n127 -> d6_n128
+  d6_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n131 [shape=box, width=0, height=0, label=<b>]
+  d6_n130 -> d6_n131
+  d6_n127 -> d6_n130
+  d6_n126 -> d6_n127
+  d6_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n133 [shape=box, width=0, height=0, label=<b>]
+  d6_n132 -> d6_n133
+  d6_n126 -> d6_n132
+  d6_n125 -> d6_n126
+  d6_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n135 [shape=box, width=0, height=0, label=<b>]
+  d6_n134 -> d6_n135
+  d6_n125 -> d6_n134
+  d6_n124 -> d6_n125
+  d6_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n138 [shape=box, width=0, height=0, label=<b>]
+  d6_n137 -> d6_n138
+  d6_n136 -> d6_n137
+  d6_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n140 [shape=box, width=0, height=0, label=<b>]
+  d6_n139 -> d6_n140
+  d6_n136 -> d6_n139
+  d6_n124 -> d6_n136
+  d6_n123 -> d6_n124
+  d6_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n146 [shape=box, width=0, height=0, label=<b>]
+  d6_n145 -> d6_n146
+  d6_n144 -> d6_n145
+  d6_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n148 [shape=box, width=0, height=0, label=<b>]
+  d6_n147 -> d6_n148
+  d6_n144 -> d6_n147
+  d6_n143 -> d6_n144
+  d6_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n150 [shape=box, width=0, height=0, label=<b>]
+  d6_n149 -> d6_n150
+  d6_n143 -> d6_n149
+  d6_n142 -> d6_n143
+  d6_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n153 [shape=box, width=0, height=0, label=<b>]
+  d6_n152 -> d6_n153
+  d6_n151 -> d6_n152
+  d6_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n155 [shape=box, width=0, height=0, label=<b>]
+  d6_n154 -> d6_n155
+  d6_n151 -> d6_n154
+  d6_n142 -> d6_n151
+  d6_n141 -> d6_n142
+  d6_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n159 [shape=box, width=0, height=0, label=<b>]
+  d6_n158 -> d6_n159
+  d6_n157 -> d6_n158
+  d6_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n161 [shape=box, width=0, height=0, label=<b>]
+  d6_n160 -> d6_n161
+  d6_n157 -> d6_n160
+  d6_n156 -> d6_n157
+  d6_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n163 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d6_n164 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n165 [shape=box, width=0, height=0, label=<b>]
+  d6_n164 -> d6_n165
+  d6_n163 -> d6_n164
+  d6_n166 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n167 [shape=box, width=0, height=0, label=<b>]
+  d6_n166 -> d6_n167
+  d6_n163 -> d6_n166
+  d6_n168 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n169 [shape=box, width=0, height=0, label=<b>]
+  d6_n168 -> d6_n169
+  d6_n163 -> d6_n168
+  d6_n162 -> d6_n163
+  d6_n170 [shape=ellipse, width=0, height=0, label=<S>]
+  d6_n171 [shape=box, width=0, height=0, label=<b>]
+  d6_n170 -> d6_n171
+  d6_n162 -> d6_n170
+  d6_n156 -> d6_n162
+  d6_n141 -> d6_n156
+  d6_n123 -> d6_n141
+  d6_n0 -> d6_n123
+  { rank=same; d6_n4; d6_n6; d6_n14; d6_n17; d6_n20; d6_n23; d6_n25; d6_n30; d6_n32; d6_n34; d6_n37; d6_n41; d6_n43; d6_n46; d6_n48; d6_n50; d6_n55; d6_n58; d6_n61; d6_n63; d6_n66; d6_n69; d6_n71; d6_n74; d6_n77; d6_n82; d6_n84; d6_n86; d6_n88; d6_n92; d6_n94; d6_n96; d6_n100; d6_n102; d6_n106; d6_n108; d6_n112; d6_n114; d6_n118; d6_n120; d6_n122; d6_n129; d6_n131; d6_n133; d6_n135; d6_n138; d6_n140; d6_n146; d6_n148; d6_n150; d6_n153; d6_n155; d6_n159; d6_n161; d6_n165; d6_n167; d6_n169; d6_n171 }
+  d6_n4 -> d6_n6 [style=invis]
+  d6_n6 -> d6_n14 [style=invis]
+  d6_n14 -> d6_n17 [style=invis]
+  d6_n17 -> d6_n20 [style=invis]
+  d6_n20 -> d6_n23 [style=invis]
+  d6_n23 -> d6_n25 [style=invis]
+  d6_n25 -> d6_n30 [style=invis]
+  d6_n30 -> d6_n32 [style=invis]
+  d6_n32 -> d6_n34 [style=invis]
+  d6_n34 -> d6_n37 [style=invis]
+  d6_n37 -> d6_n41 [style=invis]
+  d6_n41 -> d6_n43 [style=invis]
+  d6_n43 -> d6_n46 [style=invis]
+  d6_n46 -> d6_n48 [style=invis]
+  d6_n48 -> d6_n50 [style=invis]
+  d6_n50 -> d6_n55 [style=invis]
+  d6_n55 -> d6_n58 [style=invis]
+  d6_n58 -> d6_n61 [style=invis]
+  d6_n61 -> d6_n63 [style=invis]
+  d6_n63 -> d6_n66 [style=invis]
+  d6_n66 -> d6_n69 [style=invis]
+  d6_n69 -> d6_n71 [style=invis]
+  d6_n71 -> d6_n74 [style=invis]
+  d6_n74 -> d6_n77 [style=invis]
+  d6_n77 -> d6_n82 [style=invis]
+  d6_n82 -> d6_n84 [style=invis]
+  d6_n84 -> d6_n86 [style=invis]
+  d6_n86 -> d6_n88 [style=invis]
+  d6_n88 -> d6_n92 [style=invis]
+  d6_n92 -> d6_n94 [style=invis]
+  d6_n94 -> d6_n96 [style=invis]
+  d6_n96 -> d6_n100 [style=invis]
+  d6_n100 -> d6_n102 [style=invis]
+  d6_n102 -> d6_n106 [style=invis]
+  d6_n106 -> d6_n108 [style=invis]
+  d6_n108 -> d6_n112 [style=invis]
+  d6_n112 -> d6_n114 [style=invis]
+  d6_n114 -> d6_n118 [style=invis]
+  d6_n118 -> d6_n120 [style=invis]
+  d6_n120 -> d6_n122 [style=invis]
+  d6_n122 -> d6_n129 [style=invis]
+  d6_n129 -> d6_n131 [style=invis]
+  d6_n131 -> d6_n133 [style=invis]
+  d6_n133 -> d6_n135 [style=invis]
+  d6_n135 -> d6_n138 [style=invis]
+  d6_n138 -> d6_n140 [style=invis]
+  d6_n140 -> d6_n146 [style=invis]
+  d6_n146 -> d6_n148 [style=invis]
+  d6_n148 -> d6_n150 [style=invis]
+  d6_n150 -> d6_n153 [style=invis]
+  d6_n153 -> d6_n155 [style=invis]
+  d6_n155 -> d6_n159 [style=invis]
+  d6_n159 -> d6_n161 [style=invis]
+  d6_n161 -> d6_n165 [style=invis]
+  d6_n165 -> d6_n167 [style=invis]
+  d6_n167 -> d6_n169 [style=invis]
+  d6_n169 -> d6_n171 [style=invis]
+  }
+
+  subgraph cluster_7 {
+    label="Derivation 8"; style=dashed
+  d7_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n4 [shape=box, width=0, height=0, label=<b>]
+  d7_n3 -> d7_n4
+  d7_n2 -> d7_n3
+  d7_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n6 [shape=box, width=0, height=0, label=<b>]
+  d7_n5 -> d7_n6
+  d7_n2 -> d7_n5
+  d7_n1 -> d7_n2
+  d7_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n14 [shape=box, width=0, height=0, label=<b>]
+  d7_n13 -> d7_n14
+  d7_n12 -> d7_n13
+  d7_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n17 [shape=box, width=0, height=0, label=<b>]
+  d7_n16 -> d7_n17
+  d7_n15 -> d7_n16
+  d7_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n20 [shape=box, width=0, height=0, label=<b>]
+  d7_n19 -> d7_n20
+  d7_n18 -> d7_n19
+  d7_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n23 [shape=box, width=0, height=0, label=<b>]
+  d7_n22 -> d7_n23
+  d7_n21 -> d7_n22
+  d7_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n25 [shape=box, width=0, height=0, label=<b>]
+  d7_n24 -> d7_n25
+  d7_n21 -> d7_n24
+  d7_n18 -> d7_n21
+  d7_n15 -> d7_n18
+  d7_n12 -> d7_n15
+  d7_n11 -> d7_n12
+  d7_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n30 [shape=box, width=0, height=0, label=<b>]
+  d7_n29 -> d7_n30
+  d7_n28 -> d7_n29
+  d7_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n32 [shape=box, width=0, height=0, label=<b>]
+  d7_n31 -> d7_n32
+  d7_n28 -> d7_n31
+  d7_n27 -> d7_n28
+  d7_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n34 [shape=box, width=0, height=0, label=<b>]
+  d7_n33 -> d7_n34
+  d7_n27 -> d7_n33
+  d7_n26 -> d7_n27
+  d7_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n37 [shape=box, width=0, height=0, label=<b>]
+  d7_n36 -> d7_n37
+  d7_n35 -> d7_n36
+  d7_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n41 [shape=box, width=0, height=0, label=<b>]
+  d7_n40 -> d7_n41
+  d7_n39 -> d7_n40
+  d7_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n43 [shape=box, width=0, height=0, label=<b>]
+  d7_n42 -> d7_n43
+  d7_n39 -> d7_n42
+  d7_n38 -> d7_n39
+  d7_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n46 [shape=box, width=0, height=0, label=<b>]
+  d7_n45 -> d7_n46
+  d7_n44 -> d7_n45
+  d7_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n48 [shape=box, width=0, height=0, label=<b>]
+  d7_n47 -> d7_n48
+  d7_n44 -> d7_n47
+  d7_n38 -> d7_n44
+  d7_n35 -> d7_n38
+  d7_n26 -> d7_n35
+  d7_n11 -> d7_n26
+  d7_n10 -> d7_n11
+  d7_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n50 [shape=box, width=0, height=0, label=<b>]
+  d7_n49 -> d7_n50
+  d7_n10 -> d7_n49
+  d7_n9 -> d7_n10
+  d7_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n55 [shape=box, width=0, height=0, label=<b>]
+  d7_n54 -> d7_n55
+  d7_n53 -> d7_n54
+  d7_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n58 [shape=box, width=0, height=0, label=<b>]
+  d7_n57 -> d7_n58
+  d7_n56 -> d7_n57
+  d7_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n61 [shape=box, width=0, height=0, label=<b>]
+  d7_n60 -> d7_n61
+  d7_n59 -> d7_n60
+  d7_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n63 [shape=box, width=0, height=0, label=<b>]
+  d7_n62 -> d7_n63
+  d7_n59 -> d7_n62
+  d7_n56 -> d7_n59
+  d7_n53 -> d7_n56
+  d7_n52 -> d7_n53
+  d7_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n66 [shape=box, width=0, height=0, label=<b>]
+  d7_n65 -> d7_n66
+  d7_n64 -> d7_n65
+  d7_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n69 [shape=box, width=0, height=0, label=<b>]
+  d7_n68 -> d7_n69
+  d7_n67 -> d7_n68
+  d7_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n71 [shape=box, width=0, height=0, label=<b>]
+  d7_n70 -> d7_n71
+  d7_n67 -> d7_n70
+  d7_n64 -> d7_n67
+  d7_n52 -> d7_n64
+  d7_n51 -> d7_n52
+  d7_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n74 [shape=box, width=0, height=0, label=<b>]
+  d7_n73 -> d7_n74
+  d7_n72 -> d7_n73
+  d7_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n77 [shape=box, width=0, height=0, label=<b>]
+  d7_n76 -> d7_n77
+  d7_n75 -> d7_n76
+  d7_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n82 [shape=box, width=0, height=0, label=<b>]
+  d7_n81 -> d7_n82
+  d7_n80 -> d7_n81
+  d7_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n84 [shape=box, width=0, height=0, label=<b>]
+  d7_n83 -> d7_n84
+  d7_n80 -> d7_n83
+  d7_n79 -> d7_n80
+  d7_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n86 [shape=box, width=0, height=0, label=<b>]
+  d7_n85 -> d7_n86
+  d7_n79 -> d7_n85
+  d7_n78 -> d7_n79
+  d7_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n88 [shape=box, width=0, height=0, label=<b>]
+  d7_n87 -> d7_n88
+  d7_n78 -> d7_n87
+  d7_n75 -> d7_n78
+  d7_n72 -> d7_n75
+  d7_n51 -> d7_n72
+  d7_n9 -> d7_n51
+  d7_n8 -> d7_n9
+  d7_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n92 [shape=box, width=0, height=0, label=<b>]
+  d7_n91 -> d7_n92
+  d7_n90 -> d7_n91
+  d7_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n94 [shape=box, width=0, height=0, label=<b>]
+  d7_n93 -> d7_n94
+  d7_n90 -> d7_n93
+  d7_n89 -> d7_n90
+  d7_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n96 [shape=box, width=0, height=0, label=<b>]
+  d7_n95 -> d7_n96
+  d7_n89 -> d7_n95
+  d7_n8 -> d7_n89
+  d7_n7 -> d7_n8
+  d7_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n100 [shape=box, width=0, height=0, label=<b>]
+  d7_n99 -> d7_n100
+  d7_n98 -> d7_n99
+  d7_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n102 [shape=box, width=0, height=0, label=<b>]
+  d7_n101 -> d7_n102
+  d7_n98 -> d7_n101
+  d7_n97 -> d7_n98
+  d7_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n106 [shape=box, width=0, height=0, label=<b>]
+  d7_n105 -> d7_n106
+  d7_n104 -> d7_n105
+  d7_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n108 [shape=box, width=0, height=0, label=<b>]
+  d7_n107 -> d7_n108
+  d7_n104 -> d7_n107
+  d7_n103 -> d7_n104
+  d7_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n112 [shape=box, width=0, height=0, label=<b>]
+  d7_n111 -> d7_n112
+  d7_n110 -> d7_n111
+  d7_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n114 [shape=box, width=0, height=0, label=<b>]
+  d7_n113 -> d7_n114
+  d7_n110 -> d7_n113
+  d7_n109 -> d7_n110
+  d7_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n118 [shape=box, width=0, height=0, label=<b>]
+  d7_n117 -> d7_n118
+  d7_n116 -> d7_n117
+  d7_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n120 [shape=box, width=0, height=0, label=<b>]
+  d7_n119 -> d7_n120
+  d7_n116 -> d7_n119
+  d7_n115 -> d7_n116
+  d7_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n122 [shape=box, width=0, height=0, label=<b>]
+  d7_n121 -> d7_n122
+  d7_n115 -> d7_n121
+  d7_n109 -> d7_n115
+  d7_n103 -> d7_n109
+  d7_n97 -> d7_n103
+  d7_n7 -> d7_n97
+  d7_n1 -> d7_n7
+  d7_n0 -> d7_n1
+  d7_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n129 [shape=box, width=0, height=0, label=<b>]
+  d7_n128 -> d7_n129
+  d7_n127 -> d7_n128
+  d7_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n131 [shape=box, width=0, height=0, label=<b>]
+  d7_n130 -> d7_n131
+  d7_n127 -> d7_n130
+  d7_n126 -> d7_n127
+  d7_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n133 [shape=box, width=0, height=0, label=<b>]
+  d7_n132 -> d7_n133
+  d7_n126 -> d7_n132
+  d7_n125 -> d7_n126
+  d7_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n135 [shape=box, width=0, height=0, label=<b>]
+  d7_n134 -> d7_n135
+  d7_n125 -> d7_n134
+  d7_n124 -> d7_n125
+  d7_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n138 [shape=box, width=0, height=0, label=<b>]
+  d7_n137 -> d7_n138
+  d7_n136 -> d7_n137
+  d7_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n140 [shape=box, width=0, height=0, label=<b>]
+  d7_n139 -> d7_n140
+  d7_n136 -> d7_n139
+  d7_n124 -> d7_n136
+  d7_n123 -> d7_n124
+  d7_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n146 [shape=box, width=0, height=0, label=<b>]
+  d7_n145 -> d7_n146
+  d7_n144 -> d7_n145
+  d7_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n148 [shape=box, width=0, height=0, label=<b>]
+  d7_n147 -> d7_n148
+  d7_n144 -> d7_n147
+  d7_n143 -> d7_n144
+  d7_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n150 [shape=box, width=0, height=0, label=<b>]
+  d7_n149 -> d7_n150
+  d7_n143 -> d7_n149
+  d7_n142 -> d7_n143
+  d7_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n153 [shape=box, width=0, height=0, label=<b>]
+  d7_n152 -> d7_n153
+  d7_n151 -> d7_n152
+  d7_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n155 [shape=box, width=0, height=0, label=<b>]
+  d7_n154 -> d7_n155
+  d7_n151 -> d7_n154
+  d7_n142 -> d7_n151
+  d7_n141 -> d7_n142
+  d7_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n159 [shape=box, width=0, height=0, label=<b>]
+  d7_n158 -> d7_n159
+  d7_n157 -> d7_n158
+  d7_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n161 [shape=box, width=0, height=0, label=<b>]
+  d7_n160 -> d7_n161
+  d7_n157 -> d7_n160
+  d7_n156 -> d7_n157
+  d7_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d7_n163 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n164 [shape=box, width=0, height=0, label=<b>]
+  d7_n163 -> d7_n164
+  d7_n162 -> d7_n163
+  d7_n165 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n166 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n167 [shape=box, width=0, height=0, label=<b>]
+  d7_n166 -> d7_n167
+  d7_n165 -> d7_n166
+  d7_n168 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n169 [shape=box, width=0, height=0, label=<b>]
+  d7_n168 -> d7_n169
+  d7_n165 -> d7_n168
+  d7_n162 -> d7_n165
+  d7_n170 [shape=ellipse, width=0, height=0, label=<S>]
+  d7_n171 [shape=box, width=0, height=0, label=<b>]
+  d7_n170 -> d7_n171
+  d7_n162 -> d7_n170
+  d7_n156 -> d7_n162
+  d7_n141 -> d7_n156
+  d7_n123 -> d7_n141
+  d7_n0 -> d7_n123
+  { rank=same; d7_n4; d7_n6; d7_n14; d7_n17; d7_n20; d7_n23; d7_n25; d7_n30; d7_n32; d7_n34; d7_n37; d7_n41; d7_n43; d7_n46; d7_n48; d7_n50; d7_n55; d7_n58; d7_n61; d7_n63; d7_n66; d7_n69; d7_n71; d7_n74; d7_n77; d7_n82; d7_n84; d7_n86; d7_n88; d7_n92; d7_n94; d7_n96; d7_n100; d7_n102; d7_n106; d7_n108; d7_n112; d7_n114; d7_n118; d7_n120; d7_n122; d7_n129; d7_n131; d7_n133; d7_n135; d7_n138; d7_n140; d7_n146; d7_n148; d7_n150; d7_n153; d7_n155; d7_n159; d7_n161; d7_n164; d7_n167; d7_n169; d7_n171 }
+  d7_n4 -> d7_n6 [style=invis]
+  d7_n6 -> d7_n14 [style=invis]
+  d7_n14 -> d7_n17 [style=invis]
+  d7_n17 -> d7_n20 [style=invis]
+  d7_n20 -> d7_n23 [style=invis]
+  d7_n23 -> d7_n25 [style=invis]
+  d7_n25 -> d7_n30 [style=invis]
+  d7_n30 -> d7_n32 [style=invis]
+  d7_n32 -> d7_n34 [style=invis]
+  d7_n34 -> d7_n37 [style=invis]
+  d7_n37 -> d7_n41 [style=invis]
+  d7_n41 -> d7_n43 [style=invis]
+  d7_n43 -> d7_n46 [style=invis]
+  d7_n46 -> d7_n48 [style=invis]
+  d7_n48 -> d7_n50 [style=invis]
+  d7_n50 -> d7_n55 [style=invis]
+  d7_n55 -> d7_n58 [style=invis]
+  d7_n58 -> d7_n61 [style=invis]
+  d7_n61 -> d7_n63 [style=invis]
+  d7_n63 -> d7_n66 [style=invis]
+  d7_n66 -> d7_n69 [style=invis]
+  d7_n69 -> d7_n71 [style=invis]
+  d7_n71 -> d7_n74 [style=invis]
+  d7_n74 -> d7_n77 [style=invis]
+  d7_n77 -> d7_n82 [style=invis]
+  d7_n82 -> d7_n84 [style=invis]
+  d7_n84 -> d7_n86 [style=invis]
+  d7_n86 -> d7_n88 [style=invis]
+  d7_n88 -> d7_n92 [style=invis]
+  d7_n92 -> d7_n94 [style=invis]
+  d7_n94 -> d7_n96 [style=invis]
+  d7_n96 -> d7_n100 [style=invis]
+  d7_n100 -> d7_n102 [style=invis]
+  d7_n102 -> d7_n106 [style=invis]
+  d7_n106 -> d7_n108 [style=invis]
+  d7_n108 -> d7_n112 [style=invis]
+  d7_n112 -> d7_n114 [style=invis]
+  d7_n114 -> d7_n118 [style=invis]
+  d7_n118 -> d7_n120 [style=invis]
+  d7_n120 -> d7_n122 [style=invis]
+  d7_n122 -> d7_n129 [style=invis]
+  d7_n129 -> d7_n131 [style=invis]
+  d7_n131 -> d7_n133 [style=invis]
+  d7_n133 -> d7_n135 [style=invis]
+  d7_n135 -> d7_n138 [style=invis]
+  d7_n138 -> d7_n140 [style=invis]
+  d7_n140 -> d7_n146 [style=invis]
+  d7_n146 -> d7_n148 [style=invis]
+  d7_n148 -> d7_n150 [style=invis]
+  d7_n150 -> d7_n153 [style=invis]
+  d7_n153 -> d7_n155 [style=invis]
+  d7_n155 -> d7_n159 [style=invis]
+  d7_n159 -> d7_n161 [style=invis]
+  d7_n161 -> d7_n164 [style=invis]
+  d7_n164 -> d7_n167 [style=invis]
+  d7_n167 -> d7_n169 [style=invis]
+  d7_n169 -> d7_n171 [style=invis]
+  }
+
+  subgraph cluster_8 {
+    label="Derivation 9"; style=dashed
+  d8_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n4 [shape=box, width=0, height=0, label=<b>]
+  d8_n3 -> d8_n4
+  d8_n2 -> d8_n3
+  d8_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n6 [shape=box, width=0, height=0, label=<b>]
+  d8_n5 -> d8_n6
+  d8_n2 -> d8_n5
+  d8_n1 -> d8_n2
+  d8_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n14 [shape=box, width=0, height=0, label=<b>]
+  d8_n13 -> d8_n14
+  d8_n12 -> d8_n13
+  d8_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n17 [shape=box, width=0, height=0, label=<b>]
+  d8_n16 -> d8_n17
+  d8_n15 -> d8_n16
+  d8_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n20 [shape=box, width=0, height=0, label=<b>]
+  d8_n19 -> d8_n20
+  d8_n18 -> d8_n19
+  d8_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n23 [shape=box, width=0, height=0, label=<b>]
+  d8_n22 -> d8_n23
+  d8_n21 -> d8_n22
+  d8_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n25 [shape=box, width=0, height=0, label=<b>]
+  d8_n24 -> d8_n25
+  d8_n21 -> d8_n24
+  d8_n18 -> d8_n21
+  d8_n15 -> d8_n18
+  d8_n12 -> d8_n15
+  d8_n11 -> d8_n12
+  d8_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n30 [shape=box, width=0, height=0, label=<b>]
+  d8_n29 -> d8_n30
+  d8_n28 -> d8_n29
+  d8_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n32 [shape=box, width=0, height=0, label=<b>]
+  d8_n31 -> d8_n32
+  d8_n28 -> d8_n31
+  d8_n27 -> d8_n28
+  d8_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n34 [shape=box, width=0, height=0, label=<b>]
+  d8_n33 -> d8_n34
+  d8_n27 -> d8_n33
+  d8_n26 -> d8_n27
+  d8_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n37 [shape=box, width=0, height=0, label=<b>]
+  d8_n36 -> d8_n37
+  d8_n35 -> d8_n36
+  d8_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n41 [shape=box, width=0, height=0, label=<b>]
+  d8_n40 -> d8_n41
+  d8_n39 -> d8_n40
+  d8_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n43 [shape=box, width=0, height=0, label=<b>]
+  d8_n42 -> d8_n43
+  d8_n39 -> d8_n42
+  d8_n38 -> d8_n39
+  d8_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n46 [shape=box, width=0, height=0, label=<b>]
+  d8_n45 -> d8_n46
+  d8_n44 -> d8_n45
+  d8_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n48 [shape=box, width=0, height=0, label=<b>]
+  d8_n47 -> d8_n48
+  d8_n44 -> d8_n47
+  d8_n38 -> d8_n44
+  d8_n35 -> d8_n38
+  d8_n26 -> d8_n35
+  d8_n11 -> d8_n26
+  d8_n10 -> d8_n11
+  d8_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n50 [shape=box, width=0, height=0, label=<b>]
+  d8_n49 -> d8_n50
+  d8_n10 -> d8_n49
+  d8_n9 -> d8_n10
+  d8_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n55 [shape=box, width=0, height=0, label=<b>]
+  d8_n54 -> d8_n55
+  d8_n53 -> d8_n54
+  d8_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n58 [shape=box, width=0, height=0, label=<b>]
+  d8_n57 -> d8_n58
+  d8_n56 -> d8_n57
+  d8_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n61 [shape=box, width=0, height=0, label=<b>]
+  d8_n60 -> d8_n61
+  d8_n59 -> d8_n60
+  d8_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n63 [shape=box, width=0, height=0, label=<b>]
+  d8_n62 -> d8_n63
+  d8_n59 -> d8_n62
+  d8_n56 -> d8_n59
+  d8_n53 -> d8_n56
+  d8_n52 -> d8_n53
+  d8_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n66 [shape=box, width=0, height=0, label=<b>]
+  d8_n65 -> d8_n66
+  d8_n64 -> d8_n65
+  d8_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n69 [shape=box, width=0, height=0, label=<b>]
+  d8_n68 -> d8_n69
+  d8_n67 -> d8_n68
+  d8_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n71 [shape=box, width=0, height=0, label=<b>]
+  d8_n70 -> d8_n71
+  d8_n67 -> d8_n70
+  d8_n64 -> d8_n67
+  d8_n52 -> d8_n64
+  d8_n51 -> d8_n52
+  d8_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n74 [shape=box, width=0, height=0, label=<b>]
+  d8_n73 -> d8_n74
+  d8_n72 -> d8_n73
+  d8_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n77 [shape=box, width=0, height=0, label=<b>]
+  d8_n76 -> d8_n77
+  d8_n75 -> d8_n76
+  d8_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n82 [shape=box, width=0, height=0, label=<b>]
+  d8_n81 -> d8_n82
+  d8_n80 -> d8_n81
+  d8_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n84 [shape=box, width=0, height=0, label=<b>]
+  d8_n83 -> d8_n84
+  d8_n80 -> d8_n83
+  d8_n79 -> d8_n80
+  d8_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n86 [shape=box, width=0, height=0, label=<b>]
+  d8_n85 -> d8_n86
+  d8_n79 -> d8_n85
+  d8_n78 -> d8_n79
+  d8_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n88 [shape=box, width=0, height=0, label=<b>]
+  d8_n87 -> d8_n88
+  d8_n78 -> d8_n87
+  d8_n75 -> d8_n78
+  d8_n72 -> d8_n75
+  d8_n51 -> d8_n72
+  d8_n9 -> d8_n51
+  d8_n8 -> d8_n9
+  d8_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n92 [shape=box, width=0, height=0, label=<b>]
+  d8_n91 -> d8_n92
+  d8_n90 -> d8_n91
+  d8_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n94 [shape=box, width=0, height=0, label=<b>]
+  d8_n93 -> d8_n94
+  d8_n90 -> d8_n93
+  d8_n89 -> d8_n90
+  d8_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n96 [shape=box, width=0, height=0, label=<b>]
+  d8_n95 -> d8_n96
+  d8_n89 -> d8_n95
+  d8_n8 -> d8_n89
+  d8_n7 -> d8_n8
+  d8_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n100 [shape=box, width=0, height=0, label=<b>]
+  d8_n99 -> d8_n100
+  d8_n98 -> d8_n99
+  d8_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n102 [shape=box, width=0, height=0, label=<b>]
+  d8_n101 -> d8_n102
+  d8_n98 -> d8_n101
+  d8_n97 -> d8_n98
+  d8_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n106 [shape=box, width=0, height=0, label=<b>]
+  d8_n105 -> d8_n106
+  d8_n104 -> d8_n105
+  d8_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n108 [shape=box, width=0, height=0, label=<b>]
+  d8_n107 -> d8_n108
+  d8_n104 -> d8_n107
+  d8_n103 -> d8_n104
+  d8_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n112 [shape=box, width=0, height=0, label=<b>]
+  d8_n111 -> d8_n112
+  d8_n110 -> d8_n111
+  d8_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n114 [shape=box, width=0, height=0, label=<b>]
+  d8_n113 -> d8_n114
+  d8_n110 -> d8_n113
+  d8_n109 -> d8_n110
+  d8_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n118 [shape=box, width=0, height=0, label=<b>]
+  d8_n117 -> d8_n118
+  d8_n116 -> d8_n117
+  d8_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n120 [shape=box, width=0, height=0, label=<b>]
+  d8_n119 -> d8_n120
+  d8_n116 -> d8_n119
+  d8_n115 -> d8_n116
+  d8_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n122 [shape=box, width=0, height=0, label=<b>]
+  d8_n121 -> d8_n122
+  d8_n115 -> d8_n121
+  d8_n109 -> d8_n115
+  d8_n103 -> d8_n109
+  d8_n97 -> d8_n103
+  d8_n7 -> d8_n97
+  d8_n1 -> d8_n7
+  d8_n0 -> d8_n1
+  d8_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n129 [shape=box, width=0, height=0, label=<b>]
+  d8_n128 -> d8_n129
+  d8_n127 -> d8_n128
+  d8_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n131 [shape=box, width=0, height=0, label=<b>]
+  d8_n130 -> d8_n131
+  d8_n127 -> d8_n130
+  d8_n126 -> d8_n127
+  d8_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n133 [shape=box, width=0, height=0, label=<b>]
+  d8_n132 -> d8_n133
+  d8_n126 -> d8_n132
+  d8_n125 -> d8_n126
+  d8_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n135 [shape=box, width=0, height=0, label=<b>]
+  d8_n134 -> d8_n135
+  d8_n125 -> d8_n134
+  d8_n124 -> d8_n125
+  d8_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n138 [shape=box, width=0, height=0, label=<b>]
+  d8_n137 -> d8_n138
+  d8_n136 -> d8_n137
+  d8_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n140 [shape=box, width=0, height=0, label=<b>]
+  d8_n139 -> d8_n140
+  d8_n136 -> d8_n139
+  d8_n124 -> d8_n136
+  d8_n123 -> d8_n124
+  d8_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n146 [shape=box, width=0, height=0, label=<b>]
+  d8_n145 -> d8_n146
+  d8_n144 -> d8_n145
+  d8_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n148 [shape=box, width=0, height=0, label=<b>]
+  d8_n147 -> d8_n148
+  d8_n144 -> d8_n147
+  d8_n143 -> d8_n144
+  d8_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n150 [shape=box, width=0, height=0, label=<b>]
+  d8_n149 -> d8_n150
+  d8_n143 -> d8_n149
+  d8_n142 -> d8_n143
+  d8_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n153 [shape=box, width=0, height=0, label=<b>]
+  d8_n152 -> d8_n153
+  d8_n151 -> d8_n152
+  d8_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n155 [shape=box, width=0, height=0, label=<b>]
+  d8_n154 -> d8_n155
+  d8_n151 -> d8_n154
+  d8_n142 -> d8_n151
+  d8_n141 -> d8_n142
+  d8_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n159 [shape=box, width=0, height=0, label=<b>]
+  d8_n158 -> d8_n159
+  d8_n157 -> d8_n158
+  d8_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n161 [shape=box, width=0, height=0, label=<b>]
+  d8_n160 -> d8_n161
+  d8_n157 -> d8_n160
+  d8_n156 -> d8_n157
+  d8_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d8_n163 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n164 [shape=box, width=0, height=0, label=<b>]
+  d8_n163 -> d8_n164
+  d8_n162 -> d8_n163
+  d8_n165 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n166 [shape=box, width=0, height=0, label=<b>]
+  d8_n165 -> d8_n166
+  d8_n162 -> d8_n165
+  d8_n167 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n168 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n169 [shape=box, width=0, height=0, label=<b>]
+  d8_n168 -> d8_n169
+  d8_n167 -> d8_n168
+  d8_n170 [shape=ellipse, width=0, height=0, label=<S>]
+  d8_n171 [shape=box, width=0, height=0, label=<b>]
+  d8_n170 -> d8_n171
+  d8_n167 -> d8_n170
+  d8_n162 -> d8_n167
+  d8_n156 -> d8_n162
+  d8_n141 -> d8_n156
+  d8_n123 -> d8_n141
+  d8_n0 -> d8_n123
+  { rank=same; d8_n4; d8_n6; d8_n14; d8_n17; d8_n20; d8_n23; d8_n25; d8_n30; d8_n32; d8_n34; d8_n37; d8_n41; d8_n43; d8_n46; d8_n48; d8_n50; d8_n55; d8_n58; d8_n61; d8_n63; d8_n66; d8_n69; d8_n71; d8_n74; d8_n77; d8_n82; d8_n84; d8_n86; d8_n88; d8_n92; d8_n94; d8_n96; d8_n100; d8_n102; d8_n106; d8_n108; d8_n112; d8_n114; d8_n118; d8_n120; d8_n122; d8_n129; d8_n131; d8_n133; d8_n135; d8_n138; d8_n140; d8_n146; d8_n148; d8_n150; d8_n153; d8_n155; d8_n159; d8_n161; d8_n164; d8_n166; d8_n169; d8_n171 }
+  d8_n4 -> d8_n6 [style=invis]
+  d8_n6 -> d8_n14 [style=invis]
+  d8_n14 -> d8_n17 [style=invis]
+  d8_n17 -> d8_n20 [style=invis]
+  d8_n20 -> d8_n23 [style=invis]
+  d8_n23 -> d8_n25 [style=invis]
+  d8_n25 -> d8_n30 [style=invis]
+  d8_n30 -> d8_n32 [style=invis]
+  d8_n32 -> d8_n34 [style=invis]
+  d8_n34 -> d8_n37 [style=invis]
+  d8_n37 -> d8_n41 [style=invis]
+  d8_n41 -> d8_n43 [style=invis]
+  d8_n43 -> d8_n46 [style=invis]
+  d8_n46 -> d8_n48 [style=invis]
+  d8_n48 -> d8_n50 [style=invis]
+  d8_n50 -> d8_n55 [style=invis]
+  d8_n55 -> d8_n58 [style=invis]
+  d8_n58 -> d8_n61 [style=invis]
+  d8_n61 -> d8_n63 [style=invis]
+  d8_n63 -> d8_n66 [style=invis]
+  d8_n66 -> d8_n69 [style=invis]
+  d8_n69 -> d8_n71 [style=invis]
+  d8_n71 -> d8_n74 [style=invis]
+  d8_n74 -> d8_n77 [style=invis]
+  d8_n77 -> d8_n82 [style=invis]
+  d8_n82 -> d8_n84 [style=invis]
+  d8_n84 -> d8_n86 [style=invis]
+  d8_n86 -> d8_n88 [style=invis]
+  d8_n88 -> d8_n92 [style=invis]
+  d8_n92 -> d8_n94 [style=invis]
+  d8_n94 -> d8_n96 [style=invis]
+  d8_n96 -> d8_n100 [style=invis]
+  d8_n100 -> d8_n102 [style=invis]
+  d8_n102 -> d8_n106 [style=invis]
+  d8_n106 -> d8_n108 [style=invis]
+  d8_n108 -> d8_n112 [style=invis]
+  d8_n112 -> d8_n114 [style=invis]
+  d8_n114 -> d8_n118 [style=invis]
+  d8_n118 -> d8_n120 [style=invis]
+  d8_n120 -> d8_n122 [style=invis]
+  d8_n122 -> d8_n129 [style=invis]
+  d8_n129 -> d8_n131 [style=invis]
+  d8_n131 -> d8_n133 [style=invis]
+  d8_n133 -> d8_n135 [style=invis]
+  d8_n135 -> d8_n138 [style=invis]
+  d8_n138 -> d8_n140 [style=invis]
+  d8_n140 -> d8_n146 [style=invis]
+  d8_n146 -> d8_n148 [style=invis]
+  d8_n148 -> d8_n150 [style=invis]
+  d8_n150 -> d8_n153 [style=invis]
+  d8_n153 -> d8_n155 [style=invis]
+  d8_n155 -> d8_n159 [style=invis]
+  d8_n159 -> d8_n161 [style=invis]
+  d8_n161 -> d8_n164 [style=invis]
+  d8_n164 -> d8_n166 [style=invis]
+  d8_n166 -> d8_n169 [style=invis]
+  d8_n169 -> d8_n171 [style=invis]
+  }
+
+  subgraph cluster_9 {
+    label="Derivation 10"; style=dashed
+  d9_n0 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n1 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n2 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n3 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n4 [shape=box, width=0, height=0, label=<b>]
+  d9_n3 -> d9_n4
+  d9_n2 -> d9_n3
+  d9_n5 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n6 [shape=box, width=0, height=0, label=<b>]
+  d9_n5 -> d9_n6
+  d9_n2 -> d9_n5
+  d9_n1 -> d9_n2
+  d9_n7 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n8 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n9 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n10 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n11 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n12 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n13 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n14 [shape=box, width=0, height=0, label=<b>]
+  d9_n13 -> d9_n14
+  d9_n12 -> d9_n13
+  d9_n15 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n16 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n17 [shape=box, width=0, height=0, label=<b>]
+  d9_n16 -> d9_n17
+  d9_n15 -> d9_n16
+  d9_n18 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n19 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n20 [shape=box, width=0, height=0, label=<b>]
+  d9_n19 -> d9_n20
+  d9_n18 -> d9_n19
+  d9_n21 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n22 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n23 [shape=box, width=0, height=0, label=<b>]
+  d9_n22 -> d9_n23
+  d9_n21 -> d9_n22
+  d9_n24 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n25 [shape=box, width=0, height=0, label=<b>]
+  d9_n24 -> d9_n25
+  d9_n21 -> d9_n24
+  d9_n18 -> d9_n21
+  d9_n15 -> d9_n18
+  d9_n12 -> d9_n15
+  d9_n11 -> d9_n12
+  d9_n26 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n27 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n28 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n29 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n30 [shape=box, width=0, height=0, label=<b>]
+  d9_n29 -> d9_n30
+  d9_n28 -> d9_n29
+  d9_n31 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n32 [shape=box, width=0, height=0, label=<b>]
+  d9_n31 -> d9_n32
+  d9_n28 -> d9_n31
+  d9_n27 -> d9_n28
+  d9_n33 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n34 [shape=box, width=0, height=0, label=<b>]
+  d9_n33 -> d9_n34
+  d9_n27 -> d9_n33
+  d9_n26 -> d9_n27
+  d9_n35 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n36 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n37 [shape=box, width=0, height=0, label=<b>]
+  d9_n36 -> d9_n37
+  d9_n35 -> d9_n36
+  d9_n38 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n39 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n40 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n41 [shape=box, width=0, height=0, label=<b>]
+  d9_n40 -> d9_n41
+  d9_n39 -> d9_n40
+  d9_n42 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n43 [shape=box, width=0, height=0, label=<b>]
+  d9_n42 -> d9_n43
+  d9_n39 -> d9_n42
+  d9_n38 -> d9_n39
+  d9_n44 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n45 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n46 [shape=box, width=0, height=0, label=<b>]
+  d9_n45 -> d9_n46
+  d9_n44 -> d9_n45
+  d9_n47 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n48 [shape=box, width=0, height=0, label=<b>]
+  d9_n47 -> d9_n48
+  d9_n44 -> d9_n47
+  d9_n38 -> d9_n44
+  d9_n35 -> d9_n38
+  d9_n26 -> d9_n35
+  d9_n11 -> d9_n26
+  d9_n10 -> d9_n11
+  d9_n49 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n50 [shape=box, width=0, height=0, label=<b>]
+  d9_n49 -> d9_n50
+  d9_n10 -> d9_n49
+  d9_n9 -> d9_n10
+  d9_n51 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n52 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n53 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n54 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n55 [shape=box, width=0, height=0, label=<b>]
+  d9_n54 -> d9_n55
+  d9_n53 -> d9_n54
+  d9_n56 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n57 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n58 [shape=box, width=0, height=0, label=<b>]
+  d9_n57 -> d9_n58
+  d9_n56 -> d9_n57
+  d9_n59 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n60 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n61 [shape=box, width=0, height=0, label=<b>]
+  d9_n60 -> d9_n61
+  d9_n59 -> d9_n60
+  d9_n62 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n63 [shape=box, width=0, height=0, label=<b>]
+  d9_n62 -> d9_n63
+  d9_n59 -> d9_n62
+  d9_n56 -> d9_n59
+  d9_n53 -> d9_n56
+  d9_n52 -> d9_n53
+  d9_n64 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n65 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n66 [shape=box, width=0, height=0, label=<b>]
+  d9_n65 -> d9_n66
+  d9_n64 -> d9_n65
+  d9_n67 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n68 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n69 [shape=box, width=0, height=0, label=<b>]
+  d9_n68 -> d9_n69
+  d9_n67 -> d9_n68
+  d9_n70 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n71 [shape=box, width=0, height=0, label=<b>]
+  d9_n70 -> d9_n71
+  d9_n67 -> d9_n70
+  d9_n64 -> d9_n67
+  d9_n52 -> d9_n64
+  d9_n51 -> d9_n52
+  d9_n72 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n73 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n74 [shape=box, width=0, height=0, label=<b>]
+  d9_n73 -> d9_n74
+  d9_n72 -> d9_n73
+  d9_n75 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n76 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n77 [shape=box, width=0, height=0, label=<b>]
+  d9_n76 -> d9_n77
+  d9_n75 -> d9_n76
+  d9_n78 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n79 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n80 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n81 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n82 [shape=box, width=0, height=0, label=<b>]
+  d9_n81 -> d9_n82
+  d9_n80 -> d9_n81
+  d9_n83 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n84 [shape=box, width=0, height=0, label=<b>]
+  d9_n83 -> d9_n84
+  d9_n80 -> d9_n83
+  d9_n79 -> d9_n80
+  d9_n85 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n86 [shape=box, width=0, height=0, label=<b>]
+  d9_n85 -> d9_n86
+  d9_n79 -> d9_n85
+  d9_n78 -> d9_n79
+  d9_n87 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n88 [shape=box, width=0, height=0, label=<b>]
+  d9_n87 -> d9_n88
+  d9_n78 -> d9_n87
+  d9_n75 -> d9_n78
+  d9_n72 -> d9_n75
+  d9_n51 -> d9_n72
+  d9_n9 -> d9_n51
+  d9_n8 -> d9_n9
+  d9_n89 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n90 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n91 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n92 [shape=box, width=0, height=0, label=<b>]
+  d9_n91 -> d9_n92
+  d9_n90 -> d9_n91
+  d9_n93 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n94 [shape=box, width=0, height=0, label=<b>]
+  d9_n93 -> d9_n94
+  d9_n90 -> d9_n93
+  d9_n89 -> d9_n90
+  d9_n95 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n96 [shape=box, width=0, height=0, label=<b>]
+  d9_n95 -> d9_n96
+  d9_n89 -> d9_n95
+  d9_n8 -> d9_n89
+  d9_n7 -> d9_n8
+  d9_n97 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n98 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n99 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n100 [shape=box, width=0, height=0, label=<b>]
+  d9_n99 -> d9_n100
+  d9_n98 -> d9_n99
+  d9_n101 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n102 [shape=box, width=0, height=0, label=<b>]
+  d9_n101 -> d9_n102
+  d9_n98 -> d9_n101
+  d9_n97 -> d9_n98
+  d9_n103 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n104 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n105 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n106 [shape=box, width=0, height=0, label=<b>]
+  d9_n105 -> d9_n106
+  d9_n104 -> d9_n105
+  d9_n107 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n108 [shape=box, width=0, height=0, label=<b>]
+  d9_n107 -> d9_n108
+  d9_n104 -> d9_n107
+  d9_n103 -> d9_n104
+  d9_n109 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n110 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n111 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n112 [shape=box, width=0, height=0, label=<b>]
+  d9_n111 -> d9_n112
+  d9_n110 -> d9_n111
+  d9_n113 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n114 [shape=box, width=0, height=0, label=<b>]
+  d9_n113 -> d9_n114
+  d9_n110 -> d9_n113
+  d9_n109 -> d9_n110
+  d9_n115 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n116 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n117 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n118 [shape=box, width=0, height=0, label=<b>]
+  d9_n117 -> d9_n118
+  d9_n116 -> d9_n117
+  d9_n119 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n120 [shape=box, width=0, height=0, label=<b>]
+  d9_n119 -> d9_n120
+  d9_n116 -> d9_n119
+  d9_n115 -> d9_n116
+  d9_n121 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n122 [shape=box, width=0, height=0, label=<b>]
+  d9_n121 -> d9_n122
+  d9_n115 -> d9_n121
+  d9_n109 -> d9_n115
+  d9_n103 -> d9_n109
+  d9_n97 -> d9_n103
+  d9_n7 -> d9_n97
+  d9_n1 -> d9_n7
+  d9_n0 -> d9_n1
+  d9_n123 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n124 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n125 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n126 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n127 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n128 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n129 [shape=box, width=0, height=0, label=<b>]
+  d9_n128 -> d9_n129
+  d9_n127 -> d9_n128
+  d9_n130 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n131 [shape=box, width=0, height=0, label=<b>]
+  d9_n130 -> d9_n131
+  d9_n127 -> d9_n130
+  d9_n126 -> d9_n127
+  d9_n132 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n133 [shape=box, width=0, height=0, label=<b>]
+  d9_n132 -> d9_n133
+  d9_n126 -> d9_n132
+  d9_n125 -> d9_n126
+  d9_n134 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n135 [shape=box, width=0, height=0, label=<b>]
+  d9_n134 -> d9_n135
+  d9_n125 -> d9_n134
+  d9_n124 -> d9_n125
+  d9_n136 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n137 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n138 [shape=box, width=0, height=0, label=<b>]
+  d9_n137 -> d9_n138
+  d9_n136 -> d9_n137
+  d9_n139 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n140 [shape=box, width=0, height=0, label=<b>]
+  d9_n139 -> d9_n140
+  d9_n136 -> d9_n139
+  d9_n124 -> d9_n136
+  d9_n123 -> d9_n124
+  d9_n141 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n142 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n143 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n144 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n145 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n146 [shape=box, width=0, height=0, label=<b>]
+  d9_n145 -> d9_n146
+  d9_n144 -> d9_n145
+  d9_n147 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n148 [shape=box, width=0, height=0, label=<b>]
+  d9_n147 -> d9_n148
+  d9_n144 -> d9_n147
+  d9_n143 -> d9_n144
+  d9_n149 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n150 [shape=box, width=0, height=0, label=<b>]
+  d9_n149 -> d9_n150
+  d9_n143 -> d9_n149
+  d9_n142 -> d9_n143
+  d9_n151 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n152 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n153 [shape=box, width=0, height=0, label=<b>]
+  d9_n152 -> d9_n153
+  d9_n151 -> d9_n152
+  d9_n154 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n155 [shape=box, width=0, height=0, label=<b>]
+  d9_n154 -> d9_n155
+  d9_n151 -> d9_n154
+  d9_n142 -> d9_n151
+  d9_n141 -> d9_n142
+  d9_n156 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n157 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n158 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n159 [shape=box, width=0, height=0, label=<b>]
+  d9_n158 -> d9_n159
+  d9_n157 -> d9_n158
+  d9_n160 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n161 [shape=box, width=0, height=0, label=<b>]
+  d9_n160 -> d9_n161
+  d9_n157 -> d9_n160
+  d9_n156 -> d9_n157
+  d9_n162 [shape=ellipse, width=0, height=0, label=<S>, color=red, penwidth=2.0]
+  d9_n163 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n164 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n165 [shape=box, width=0, height=0, label=<b>]
+  d9_n164 -> d9_n165
+  d9_n163 -> d9_n164
+  d9_n166 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n167 [shape=box, width=0, height=0, label=<b>]
+  d9_n166 -> d9_n167
+  d9_n163 -> d9_n166
+  d9_n162 -> d9_n163
+  d9_n168 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n169 [shape=box, width=0, height=0, label=<b>]
+  d9_n168 -> d9_n169
+  d9_n162 -> d9_n168
+  d9_n170 [shape=ellipse, width=0, height=0, label=<S>]
+  d9_n171 [shape=box, width=0, height=0, label=<b>]
+  d9_n170 -> d9_n171
+  d9_n162 -> d9_n170
+  d9_n156 -> d9_n162
+  d9_n141 -> d9_n156
+  d9_n123 -> d9_n141
+  d9_n0 -> d9_n123
+  { rank=same; d9_n4; d9_n6; d9_n14; d9_n17; d9_n20; d9_n23; d9_n25; d9_n30; d9_n32; d9_n34; d9_n37; d9_n41; d9_n43; d9_n46; d9_n48; d9_n50; d9_n55; d9_n58; d9_n61; d9_n63; d9_n66; d9_n69; d9_n71; d9_n74; d9_n77; d9_n82; d9_n84; d9_n86; d9_n88; d9_n92; d9_n94; d9_n96; d9_n100; d9_n102; d9_n106; d9_n108; d9_n112; d9_n114; d9_n118; d9_n120; d9_n122; d9_n129; d9_n131; d9_n133; d9_n135; d9_n138; d9_n140; d9_n146; d9_n148; d9_n150; d9_n153; d9_n155; d9_n159; d9_n161; d9_n165; d9_n167; d9_n169; d9_n171 }
+  d9_n4 -> d9_n6 [style=invis]
+  d9_n6 -> d9_n14 [style=invis]
+  d9_n14 -> d9_n17 [style=invis]
+  d9_n17 -> d9_n20 [style=invis]
+  d9_n20 -> d9_n23 [style=invis]
+  d9_n23 -> d9_n25 [style=invis]
+  d9_n25 -> d9_n30 [style=invis]
+  d9_n30 -> d9_n32 [style=invis]
+  d9_n32 -> d9_n34 [style=invis]
+  d9_n34 -> d9_n37 [style=invis]
+  d9_n37 -> d9_n41 [style=invis]
+  d9_n41 -> d9_n43 [style=invis]
+  d9_n43 -> d9_n46 [style=invis]
+  d9_n46 -> d9_n48 [style=invis]
+  d9_n48 -> d9_n50 [style=invis]
+  d9_n50 -> d9_n55 [style=invis]
+  d9_n55 -> d9_n58 [style=invis]
+  d9_n58 -> d9_n61 [style=invis]
+  d9_n61 -> d9_n63 [style=invis]
+  d9_n63 -> d9_n66 [style=invis]
+  d9_n66 -> d9_n69 [style=invis]
+  d9_n69 -> d9_n71 [style=invis]
+  d9_n71 -> d9_n74 [style=invis]
+  d9_n74 -> d9_n77 [style=invis]
+  d9_n77 -> d9_n82 [style=invis]
+  d9_n82 -> d9_n84 [style=invis]
+  d9_n84 -> d9_n86 [style=invis]
+  d9_n86 -> d9_n88 [style=invis]
+  d9_n88 -> d9_n92 [style=invis]
+  d9_n92 -> d9_n94 [style=invis]
+  d9_n94 -> d9_n96 [style=invis]
+  d9_n96 -> d9_n100 [style=invis]
+  d9_n100 -> d9_n102 [style=invis]
+  d9_n102 -> d9_n106 [style=invis]
+  d9_n106 -> d9_n108 [style=invis]
+  d9_n108 -> d9_n112 [style=invis]
+  d9_n112 -> d9_n114 [style=invis]
+  d9_n114 -> d9_n118 [style=invis]
+  d9_n118 -> d9_n120 [style=invis]
+  d9_n120 -> d9_n122 [style=invis]
+  d9_n122 -> d9_n129 [style=invis]
+  d9_n129 -> d9_n131 [style=invis]
+  d9_n131 -> d9_n133 [style=invis]
+  d9_n133 -> d9_n135 [style=invis]
+  d9_n135 -> d9_n138 [style=invis]
+  d9_n138 -> d9_n140 [style=invis]
+  d9_n140 -> d9_n146 [style=invis]
+  d9_n146 -> d9_n148 [style=invis]
+  d9_n148 -> d9_n150 [style=invis]
+  d9_n150 -> d9_n153 [style=invis]
+  d9_n153 -> d9_n155 [style=invis]
+  d9_n155 -> d9_n159 [style=invis]
+  d9_n159 -> d9_n161 [style=invis]
+  d9_n161 -> d9_n165 [style=invis]
+  d9_n165 -> d9_n167 [style=invis]
+  d9_n167 -> d9_n169 [style=invis]
+  d9_n169 -> d9_n171 [style=invis]
+  }
+
 }

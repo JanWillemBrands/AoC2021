@@ -510,7 +510,9 @@ class ApusParser {
         }
         do {
             // the token is a regex definition, try to initialize a Regex with it
-            let regex = try Regex<Substring>(String(token.stripped))
+            // Construct as AnyRegexOutput so regexes that include capturing groups (e.g. backreferences like `(#+)…\1`) don't fail the type check.
+            // We only ever need the whole-match boundary in the hot path; captures are not consulted by the lexer.
+            let regex = try Regex(String(token.stripped))
             grammar.terminals[name] = TokenPattern(String(token.image), regex, false, skip)
             grammar.registerTerminal(name)
             trace("regex name:", name, "image:", token.image)
@@ -661,4 +663,5 @@ class ApusParser {
             throw ApusParserError.unexpectedToken(explanation: "Failed to parse grammar from symbol \(grammar.startSymbol)")
         }
     }
+    
 }

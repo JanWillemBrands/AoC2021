@@ -14,7 +14,8 @@ grammar     = < production > { message } .
 production  = [ pragma ] identifier
                 ( ":" ( regex | literal ) "." [ follow ]
                 | "-" ( regex | literal ) "." [ follow ]
-                | "=" selection "."
+                | ":>" selection "."
+                | "->" selection "."
                 ) .
 
 selection   = sequence { "|" sequence } .

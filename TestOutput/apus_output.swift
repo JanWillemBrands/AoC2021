@@ -64,42 +64,43 @@ func expect(_ expected: String...) {
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"action":	("/\'(?:[^\'\\\\]|\\\\.)*\'/",	/'(?:[^'\\]|\\.)*'/,	false,	true),
-	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
+	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)+\\\"/",	/\"(?:[^\"\\]|\\.)+\"/,	false,	false),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
+	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
 	"identifier":	("/\\p{XID_Start}\\p{XID_Continue}*/",	/\p{XID_Start}\p{XID_Continue}*/,	false,	false),
 	"pragma":	("/@\\p{XID_Start}\\p{XID_Continue}*/",	/@\p{XID_Start}\p{XID_Continue}*/,	false,	false),
-	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
-	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)+\\\"/",	/\"(?:[^\"\\]|\\.)+\"/,	false,	false),
-	""--1"":	("--1",	Regex { "--1" },	true,	false),
-	""ε"":	("ε",	Regex { "ε" },	true,	false),
-	""\"\""":	("\"\"",	Regex { "\"\"" },	true,	false),
-	"">>|"":	(">>|",	Regex { ">>|" },	true,	false),
-	"":"":	(":",	Regex { ":" },	true,	false),
-	""}"":	("}",	Regex { "}" },	true,	false),
-	"">n<"":	(">n<",	Regex { ">n<" },	true,	false),
-	""["":	("[",	Regex { "[" },	true,	false),
-	""--2"":	("--2",	Regex { "--2" },	true,	false),
-	""|"":	("|",	Regex { "|" },	true,	false),
-	""*"":	("*",	Regex { "*" },	true,	false),
-	"">"":	(">",	Regex { ">" },	true,	false),
-	""++1"":	("++1",	Regex { "++1" },	true,	false),
-	""<"":	("<",	Regex { "<" },	true,	false),
-	""{"":	("{",	Regex { "{" },	true,	false),
-	""?"":	("?",	Regex { "?" },	true,	false),
+	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
+	"action":	("/\'(?:[^\'\\\\]|\\\\.)*\'/",	/'(?:[^'\\]|\\.)*'/,	false,	true),
 	""-"":	("-",	Regex { "-" },	true,	false),
-	"")"":	(")",	Regex { ")" },	true,	false),
-	""]"":	("]",	Regex { "]" },	true,	false),
-	""<n>"":	("<n>",	Regex { "<n>" },	true,	false),
-	""."":	(".",	Regex { "." },	true,	false),
-	""("":	("(",	Regex { "(" },	true,	false),
-	""+"":	("+",	Regex { "+" },	true,	false),
+	"">n<"":	(">n<",	Regex { ">n<" },	true,	false),
+	"":>"":	(":>",	Regex { ":>" },	true,	false),
+	""}"":	("}",	Regex { "}" },	true,	false),
+	""--1"":	("--1",	Regex { "--1" },	true,	false),
+	""?"":	("?",	Regex { "?" },	true,	false),
+	""{"":	("{",	Regex { "{" },	true,	false),
+	""<"":	("<",	Regex { "<" },	true,	false),
+	""ε"":	("ε",	Regex { "ε" },	true,	false),
+	""*"":	("*",	Regex { "*" },	true,	false),
 	"">s<"":	(">s<",	Regex { ">s<" },	true,	false),
-	""++2"":	("++2",	Regex { "++2" },	true,	false),
-	""="":	("=",	Regex { "=" },	true,	false),
-	""<s>"":	("<s>",	Regex { "<s>" },	true,	false),
-	""---"":	("---",	Regex { "---" },	true,	false),
+	""["":	("[",	Regex { "[" },	true,	false),
+	""+"":	("+",	Regex { "+" },	true,	false),
+	""\"\""":	("\"\"",	Regex { "\"\"" },	true,	false),
 	""|<<"":	("|<<",	Regex { "|<<" },	true,	false),
+	""++2"":	("++2",	Regex { "++2" },	true,	false),
+	""]"":	("]",	Regex { "]" },	true,	false),
+	""--2"":	("--2",	Regex { "--2" },	true,	false),
+	"":"":	(":",	Regex { ":" },	true,	false),
+	""---"":	("---",	Regex { "---" },	true,	false),
+	""++1"":	("++1",	Regex { "++1" },	true,	false),
+	""<s>"":	("<s>",	Regex { "<s>" },	true,	false),
+	""->"":	("->",	Regex { "->" },	true,	false),
+	""|"":	("|",	Regex { "|" },	true,	false),
+	"">"":	(">",	Regex { ">" },	true,	false),
+	"")"":	(")",	Regex { ")" },	true,	false),
+	""."":	(".",	Regex { "." },	true,	false),
+	"">>|"":	(">>|",	Regex { ">>|" },	true,	false),
+	""<n>"":	("<n>",	Regex { "<n>" },	true,	false),
+	""("":	("(",	Regex { "(" },	true,	false),
 ]
 func empty() throws {
 	expect("\"\\\"\\\"\"")
@@ -222,13 +223,18 @@ func production() throws {
 		if ["\"++1\"", "\"++2\"", "\"--1\"", "\"--2\""].contains(token.kind) {
 			try follow()
 		}
-	case "\"=\"":
+	case "\":>\"":
+		cI += 1
+		try selection()
+		expect("\".\"")
+		cI += 1
+	case "\"->\"":
 		cI += 1
 		try selection()
 		expect("\".\"")
 		cI += 1
 	default:
-		expect("\"-\"", "\":\"", "\"=\"")
+		expect("\"-\"", "\"->\"", "\":\"", "\":>\"")
 	}
 }
 func selection() throws {

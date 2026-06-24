@@ -244,7 +244,7 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
 
             let metrics = BaselineMetrics(
                 sourceLength: source.count,
-                tokenCount: parser.terminalCommitsByStart.count,
+                tokenCount: parser.commitsByStart.count,
                 descriptorCount: parser.descriptorCount,
                 duplicateDescriptorCount: parser.duplicateDescriptorCount,
                 suppressedDescriptorCount: parser.suppressedDescriptorCount,

@@ -165,7 +165,7 @@ enum TokenType: String, CustomStringConvertible, CaseIterable {
     var description: String {self.rawValue}
 }
 
-typealias TokenRegex = (kind: TokenType, regex: Regex<Substring>)
+typealias TokenRegex = (kind: TokenType, regex: Regex<Substring>)  // legacy / unused — keep as Substring to avoid wrapping every literal in this list
 
 let tokenRegexes: [TokenRegex] = [
     (.epsilon,                      /[εϵԐԑ𝛆𝛜𝜀𝜖𝜺𝝐𝝴𝞊𝞮𝟄]/ ),

@@ -9,17 +9,11 @@ import OSLog
 import Foundation
 
 trace = false
-let enableDiagrams = true
-
-// transform the APUS EBNF grammar from the input file into a grammar tree (Abstract Syntax Tree)
-// by using grammarParser, which is a hand-built recursive descent parser
-// then use the grammar tree as an interpretor to parse a message.
-// then generate a stand-alone parser
 
 let grammarFileURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-    .appendingPathComponent("apus grammars/charGLL")
-//    .appendingPathComponent("apus grammars/Swift")
+//    .appendingPathComponent("apus grammars/charGLL")
+    .appendingPathComponent("apus grammars/Swift")
 //    .appendingPathComponent("apus grammars/layout")
 //    .appendingPathComponent("apus grammars/apus")
 //    .appendingPathComponent("grammars/Python/Python")
@@ -86,10 +80,9 @@ for (mi, message) in grammar.messages.enumerated() {
     let cpuTime = Double(end - start) / Double(CLOCKS_PER_SEC)
 
     // Oracle: post-parse disambiguation (rules from grammar annotations)
-    Oracle(parser: messageParser, input: input).disambiguate()
+//    Oracle(parser: messageParser, input: input).disambiguate()
     var stats = "cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount\n"
     stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yieldCount)\n"
-    stats += "descriptor size: \(MemoryLayout<Descriptor>.size) bytes"
     Logger.ui.info("\(stats, privacy: .public)")
 //    print("tokenPatterns:")
 //    for tp in grammar.terminals {
@@ -133,10 +126,12 @@ for (mi, message) in grammar.messages.enumerated() {
 
 
 #if DEBUG
-    trace = false
-    var info = ""
+    let enableDiagrams = false
 
     if enableDiagrams && grammar.nonTerminals.count < 1000 && messageParser.crf.count < 1000 {
+
+        trace = true
+        var info = ""
 
         // MARK: - Generate New Parser
 
@@ -161,7 +156,6 @@ for (mi, message) in grammar.messages.enumerated() {
         let diagramGenerator = ASTDiagramGenerator(outputFile: diagramFile, grammar: grammar, messageParser: messageParser)
         try diagramGenerator.generate()
         info += "AST diagram written to \(diagramFile.lastPathComponent)\n"
-//    }
 
         // MARK: - Generate SPPF Diagram
         let sppfExtractor = SPPFExtractor(parser: messageParser, input: input)
@@ -189,9 +183,5 @@ for (mi, message) in grammar.messages.enumerated() {
     }
 #endif
 
-//    Logger.ui.debug("first/follow set size: \(GrammarNode.sizeofSets) terminals.count: \(grammar.terminals.count) nonTerminals.count: \(grammar.nonTerminals.count)")
-
-//    SwiftSyntaxASTTest()
 }
-//}
 

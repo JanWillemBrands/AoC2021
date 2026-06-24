@@ -156,8 +156,6 @@
 		4E8D05A92F701D560081C6D2 /* Derivations.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Derivations.svg; sourceTree = "<group>"; };
 		4E951C132D8874BD008B1012 /* Swift.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Swift.apus; sourceTree = "<group>"; };
 		4EBB87132F7F4EC100037029 /* Swift EBNF.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = "Swift EBNF.apus"; sourceTree = "<group>"; };
-		4EBB87152F81103800037029 /* CommentTest.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = CommentTest.apus; sourceTree = "<group>"; };
-		4EC5CE942BBC111E0045F751 /* apusUnicode.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; fileEncoding = 4; path = apusUnicode.apus; sourceTree = "<group>"; };
 		4ECF5BE62F3748DB008E692B /* claude.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = claude.md; sourceTree = "<group>"; };
 		4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "SwiftSyntax Mapping.md"; sourceTree = "<group>"; };
 		4EE2FCD72F77C38400105588 /* regex-operator.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = "regex-operator.apus"; sourceTree = "<group>"; };
@@ -338,9 +336,7 @@
 			children = (
 				4E2CAD3B2D9AB26D00C5F85F /* AfroozehHunt.apus */,
 				4E34DF7E2C08042C00B2881E /* apus.apus */,
-				4EC5CE942BBC111E0045F751 /* apusUnicode.apus */,
 				4E333D622629D5E400640821 /* apusWithAction.apus */,
-				4EBB87152F81103800037029 /* CommentTest.apus */,
 				4E7B09942FA735CC00E44E20 /* layout.apus */,
 				4EE2FCD72F77C38400105588 /* regex-operator.apus */,
 				4EBB87132F7F4EC100037029 /* Swift EBNF.apus */,
@@ -771,6 +767,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3A743G3S42;
@@ -794,6 +791,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3A743G3S42;
@@ -977,6 +975,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_DEBUG_DYLIB = YES;
@@ -994,6 +993,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_DEBUG_DYLIB = YES;

@@ -24,16 +24,24 @@ typealias CharPosition = String.Index
 /// One terminal match returned by the lexer.
 /// Empty result from `lex` means the terminal does not match at that position.
 ///
-/// `end` is the cursor position **after** trailing trivia skipping (where the
-/// parser resumes). `rawEnd` is the position right after the literal/regex
-/// content itself, **before** trivia skipping. The two differ exactly when the
-/// lexer skipped trivia after the match; `boundaryMatches` uses that delta to
-/// answer `<s>`/`>s<`/`<n>`/`>n<` without needing a scanner-produced token
-/// stream.
+/// Carries the three positions every consumer needs (mirrors swift-syntax's
+/// `positionAfterSkippingLeadingTrivia` / `endPositionBeforeTrailingTrivia`
+/// / `endPosition` — the fourth, "start of leading trivia", is just the `pos`
+/// argument the caller passed in):
+///
+///   - `start`      — content start (after leading-trivia skip)
+///   - `end`        — content end (before trailing-trivia skip)
+///   - `triviaEnd`  — cursor position after trailing-trivia skip; the parser
+///                    advances `cI` to this position so subsequent lex calls
+///                    sit at a token boundary
+///
+/// `boundaryMatches` uses `end` vs. `triviaEnd` to answer
+/// `<s>`/`>s<`/`<n>`/`>n<` from a single commit record.
 struct LexMatch: Hashable {
     let terminalID: Int
+    let start: CharPosition
     let end: CharPosition
-    let rawEnd: CharPosition
+    let triviaEnd: CharPosition
 }
 
 /// Key for the parser's `(pos, terminalID) → [LexMatch]` memoization table.
@@ -91,11 +99,11 @@ struct OnDemandLiteralLexer: LCNPLexer {
     let literalSourceByID: [Int: String]
     /// `terminalID → compiled regex` for every regex terminal (non-literal,
     /// non-skip). Answered from `input` directly via `prefixMatch`.
-    let regexByID: [Int: Regex<Substring>]
+    let regexByID: [Int: Regex<AnyRegexOutput>]
     /// Compiled `isSkip` patterns from the grammar, used to skip whitespace /
     /// comments / etc. between the parser's cursor and the next meaningful
     /// character.
-    let triviaRegexes: [Regex<Substring>]
+    let triviaRegexes: [Regex<AnyRegexOutput>]
     /// Recognisers for `=:` non-terminal trivia (Phase E Step 2). Each closure
     /// runs a recursive `MessageParser` sub-parse rooted at the `=:` non-
     /// terminal and returns the longest accepting end position at `pos`, or
@@ -117,28 +125,29 @@ struct OnDemandLiteralLexer: LCNPLexer {
         // Virtual zero-length match: registered at this position by the
         // layout-table precompute (e.g. INDENT/DEDENT in Python).
         if let virtuals = virtualTokensAt[scanStart], virtuals.contains(terminalID) {
-            return [LexMatch(terminalID: terminalID, end: scanStart, rawEnd: scanStart)]
+            return [LexMatch(terminalID: terminalID, start: scanStart, end: scanStart, triviaEnd: scanStart)]
         }
         if terminalID == eosID {
             // EOS matches at end of input (after any trailing trivia).
             guard scanStart == input.endIndex else { return [] }
-            return [LexMatch(terminalID: terminalID, end: scanStart, rawEnd: scanStart)]
+            return [LexMatch(terminalID: terminalID, start: scanStart, end: scanStart, triviaEnd: scanStart)]
         }
         if let literal = literalSourceByID[terminalID] {
-            // Bounds: only attempt the prefix check if there's room for it.
             guard scanStart < input.endIndex else { return [] }
             let remaining = input[scanStart...]
             guard remaining.hasPrefix(literal) else { return [] }
             let literalEnd = input.index(scanStart, offsetBy: literal.count)
             let cursorEnd = skipTrivia(from: literalEnd)
-            return [LexMatch(terminalID: terminalID, end: cursorEnd, rawEnd: literalEnd)]
+            return [LexMatch(terminalID: terminalID, start: scanStart, end: literalEnd, triviaEnd: cursorEnd)]
         }
         if let regex = regexByID[terminalID] {
             guard scanStart < input.endIndex else { return [] }
+            // m.range.upperBound is type-agnostic — works for any Regex<Output>, including AnyRegexOutput
+            // which is needed for regexes containing capturing groups (e.g. backreference forms like `(#+)…\1`).
             guard let m = input[scanStart...].prefixMatch(of: regex),
-                  m.0.endIndex > scanStart else { return [] }
-            let cursorEnd = skipTrivia(from: m.0.endIndex)
-            return [LexMatch(terminalID: terminalID, end: cursorEnd, rawEnd: m.0.endIndex)]
+                  m.range.upperBound > scanStart else { return [] }
+            let cursorEnd = skipTrivia(from: m.range.upperBound)
+            return [LexMatch(terminalID: terminalID, start: scanStart, end: m.range.upperBound, triviaEnd: cursorEnd)]
         }
         return []
     }
@@ -151,8 +160,8 @@ struct OnDemandLiteralLexer: LCNPLexer {
         var cursor = pos
         outer: while cursor < input.endIndex {
             for re in triviaRegexes {
-                if let m = input[cursor...].prefixMatch(of: re), m.0.endIndex > cursor {
-                    cursor = m.0.endIndex
+                if let m = input[cursor...].prefixMatch(of: re), m.range.upperBound > cursor {
+                    cursor = m.range.upperBound
                     continue outer
                 }
             }
@@ -185,6 +194,7 @@ extension CharPosition {
     }
 }
 
+// this is now back to 24 bytes (three 64-bit words)
 struct Descriptor: Hashable {
     let L: GrammarNode          // grammar slot
     let k: CharPosition         // cluster index
