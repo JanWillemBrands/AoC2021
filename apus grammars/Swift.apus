@@ -574,6 +574,12 @@ literalExpression = arrayLiteral | dictionaryLiteral | playgroundLiteral .
 arrayLiteral = "[" arrayLiteralItems? ","? "]" .
 arrayLiteralItems = arrayLiteralItem ","? | arrayLiteralItem "," arrayLiteralItems .
 arrayLiteralItem = expression .
+// Type-in-expression form: swift-syntax parseSequenceExpression handles `() -> T`
+// and `() throws(E) -> T` inside a `[...]` by treating `throws`/`->`/`async` as
+// pseudo-operators and wrapping the result in RawTypeExprSyntax (Expressions.swift:
+// 365-380). The narrow grammar fix is to allow `type` as an array element, which
+// covers `[() throws(any Error) -> Void]()` and similar `[FuncType]()` patterns.
+arrayLiteralItem = type . // TODO: varify
 
 dictionaryLiteral = "[" dictionaryLiteralItems ","? "]" | "[" ":" "]" .
 dictionaryLiteralItems = dictionaryLiteralItem ","? | dictionaryLiteralItem "," dictionaryLiteralItems .
@@ -585,13 +591,13 @@ playgroundLiteral = "#imageLiteral" "(" "resourceName" ":" expression ")" .
 
 selfExpression = "self" | selfMethodExpression | selfSubscriptExpression | selfInitializerExpression .
 
-selfMethodExpression = "self" "." identifier .
+selfMethodExpression = "self" "." softIdentifier .       // swift-syntax accepts any keyword as member name (see explicitMemberExpression note)
 selfSubscriptExpression = "self" "[" functionCallArgumentList? "]" .// TODO: functionsCallArgumentList is optional
 selfInitializerExpression = "self" "." "init" .
 
 superclassExpression = superclassMethodExpression | superclassSubscriptExpression | superclassInitializerExpression .
 
-superclassMethodExpression = "super" "." identifier .
+superclassMethodExpression = "super" "." softIdentifier .  // swift-syntax accepts any keyword as member name (see explicitMemberExpression note)
 superclassSubscriptExpression = "super" "[" functionCallArgumentList? "]" . // TODO: functionsCallArgumentList is optional
 superclassInitializerExpression = "super" "." "init" .
 
@@ -613,8 +619,14 @@ closureSignature = captureList "in" .
 
 closureParameterClause = "(" ")" | "(" closureParameterList ","? ")" | identifierList .
 closureParameterList = closureParameter | closureParameter "," closureParameterList .
-closureParameter = attributes? parameterDeclarationModifiers? closureParameterName parameterTypeAnnotation? .   // TODO: swift-syntax parseParameterModifiers(isClosure: true) — same modifier shape as func params
-closureParameter = attributes? parameterDeclarationModifiers? closureParameterName parameterTypeAnnotation "..." .
+
+//closureParameter = attributes? closureParameterName parameterTypeAnnotation? .
+//closureParameter = attributes? closureParameterName parameterTypeAnnotation "..." .
+// swift-syntax parseClosureParameter (Parameters.swift:194-200) uses parseParameterNames
+// which returns two names (firstName / secondName) — same `external? internal: Type` shape
+// as regular parameters. `_ x: Type` and `x y: Type` are both valid.
+closureParameter = attributes? parameterDeclarationModifiers? externalParameterName? closureParameterName parameterTypeAnnotation? .
+closureParameter = attributes? parameterDeclarationModifiers? externalParameterName? closureParameterName parameterTypeAnnotation "..." .
 closureParameterName = identifier .
 
 captureList = "[" captureListItems ","? "]" .
@@ -711,9 +723,16 @@ initializerExpression = postfixExpression "." "init" .
 initializerExpression = postfixExpression "." "init" "(" argumentNames ")" .
 
 explicitMemberExpression = postfixExpression "." decimalDigits .
-explicitMemberExpression = postfixExpression "." identifier .                          @unless(genericArgumentClause)
-explicitMemberExpression = postfixExpression "." identifier genericArgumentClause .
-explicitMemberExpression = postfixExpression "." identifier "(" argumentNames ")" .
+// swift-syntax parseDottedExpressionSuffix (Expressions.swift:699) calls
+// parseDeclReferenceExpr with `.keywords` flag (Names.swift:218-220), which accepts
+// any lexer-classified keyword as the member name (`x.default`, `x.deinit`,
+// `x.subscript`, `x.where`, `x.case`, …). softIdentifier (rawIdentifier minus
+// `let`/`var`/`inout`) covers all of these in one rule. The dedicated rules for
+// `x.init` (initializerExpression) and `x.self` (postfixSelfExpression) below
+// still match — GLL keeps the extra parses but they're harmless.
+explicitMemberExpression = postfixExpression "." softIdentifier .                      @unless(genericArgumentClause)
+explicitMemberExpression = postfixExpression "." softIdentifier genericArgumentClause .
+explicitMemberExpression = postfixExpression "." softIdentifier "(" argumentNames ")" .
 explicitMemberExpression = postfixExpression conditionalCompilationBlock .
 
 argumentNames = argumentName argumentNames? .
@@ -741,6 +760,7 @@ statement = deferStatement .
 statement = doStatement .
 statement = compilerControlStatement .
 statement = yieldStatement .
+statement = discardStatement .
 
 // swift-syntax parseYieldStatement (Statements.swift:737-783): `yield expr` or `yield ( expr, expr, ... )` with optional trailing comma; empty `yield()` also allowed.
 // 'yield' is not formally part of Swift yet, but it's the body shape for _read/_modify/read/modify/borrow/mutate coroutine accessors.
@@ -748,6 +768,12 @@ yieldStatement = "yield" expression .
 yieldStatement = "yield" "(" ")" .
 yieldStatement = "yield" "(" yieldedExpressionList ","? ")" .
 yieldedExpressionList = expression | expression "," yieldedExpressionList .
+
+// SE-0390 (discard) statement: swift-syntax parseDiscardStatement (Statements.swift:373-382).
+// Contextual keyword like consume/borrow/copy — same `<s> >n<` whitespace boundary
+// (Statements.swift:1052-1056 uses atContextualKeywordPrefixedSyntax(preferPostfixExpr: true)).
+// `discard self` → keyword form; `discard(self)` → function call on `discard` identifier.
+discardStatement = "discard" <s> >n< expression .
 
 //statements = statement statements? .
 statements = statement ";"? .
@@ -758,8 +784,15 @@ loopStatement = forInStatement .
 loopStatement = whileStatement .
 loopStatement = repeatWhileStatement .
 
-forInStatement = "for" "case" matchPattern "in" expression whereClause? codeBlock .
-forInStatement = "for" bindingPattern "in" expression whereClause? codeBlock .
+//forInStatement = "for" "case" matchPattern "in" expression whereClause? codeBlock .
+//forInStatement = "for" bindingPattern "in" expression whereClause? codeBlock .
+// swift-syntax parseForStatement (Statements.swift:554-589):
+// `for try? await? unsafe? case? pattern type-annotation? in expression where? body`.
+// `unsafe` is consumed as a modifier only when the next token isn't `in` or `:`
+// (Statements.swift:563) — so `for try await unsafe in e {}` parses with `unsafe`
+// as the loop pattern. GLL explores both interpretations via the optional `unsafe?`.
+forInStatement = "for" "try"? "await"? "unsafe"? "case" matchPattern "in" expression whereClause? codeBlock .
+forInStatement = "for" "try"? "await"? "unsafe"? bindingPattern "in" expression whereClause? codeBlock .
 
 whileStatement = "while" conditionList codeBlock .
 
@@ -795,7 +828,7 @@ whereExpression = expression .
 
 conditionalSwitchCase = switchIfDirectiveClause switchElseifDirectiveClauses? switchElseDirectiveClause? endifDirective .
 switchIfDirectiveClause = ifDirective compilationCondition switchCases? .
-switchElseifDirectiveClauses = elseifDirectiveClause switchElseifDirectiveClauses? .
+switchElseifDirectiveClauses = switchElseifDirectiveClause switchElseifDirectiveClauses? .
 switchElseifDirectiveClause = elseifDirective compilationCondition switchCases? .
 switchElseDirectiveClause = elseDirective switchCases? .
 
@@ -830,6 +863,10 @@ catchClauses = catchClause catchClauses? .
 catchClause = "catch" catchPatternList? codeBlock .
 catchPatternList = catchPattern | catchPattern "," catchPatternList .
 catchPattern = matchPattern whereClause? .
+// swift-syntax parseGuardedCatchPattern (Statements.swift:472-473): `catch {` or
+// `catch where ...` produces an implicit `let error` pattern, so the explicit
+// pattern is optional when a where-clause is present.
+catchPattern = whereClause .
 
 compilerControlStatement = conditionalCompilationBlock .
 compilerControlStatement = lineControlStatement .
@@ -1099,8 +1136,10 @@ protocolSubscriptDeclaration = subscriptHead subscriptResult genericWhereClause?
 // protocolAssociatedTypeDeclaration = attributes? accessLevelModifier? "associatedtype" typealiasName typeInheritanceClause? typealiasAssignment? genericWhereClause? .
 associatedTypeDeclaration = attributes? declarationModifiers? "associatedtype" typealiasName typeInheritanceClause? typealiasAssignment? genericWhereClause? .  // TODO: verify grammar fix
 
-initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? throwsClause? genericWhereClause? initializerBody .
-initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? "rethrows" genericWhereClause? initializerBody .
+// swift-syntax parseInitializerDeclaration (Declarations.swift:1269) uses
+// parseOptionalCodeBlock — body is syntactically optional, compiler enforces it.
+initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? throwsClause? genericWhereClause? initializerBody? .
+initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? "rethrows" genericWhereClause? initializerBody? .
 initializerHead = attributes? declarationModifiers? "init" .
 initializerHead = attributes? declarationModifiers? "init" "?" .
 initializerHead = attributes? declarationModifiers? "init" "!" .
@@ -1304,10 +1343,7 @@ genericArgumentList = genericArgument | genericArgument "," genericArgumentList 
 genericArgument = type | signedIntegerLiteral .
 
 ^^^
-class C {
-init() {
-#if true
-  init()
-#endif
-}
-}
+for try await unsafe x in e { }
+
+^^^
+for try await unsafe in e { }

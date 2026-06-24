@@ -119,7 +119,8 @@ let statementSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "StatementTests.testSwitch",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "$-prefixed attribute name — not in TSPL; swift-syntax only accepts it via error recovery (attribute-name → Self/Any/identifier/(/[/_), compiler rejects"
     ),
     SwiftSnippet(
         label: "testSwitch#3",
