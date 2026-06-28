@@ -198,11 +198,19 @@ class DerivationBuilder {
         diagnostics = []
         let n = input.endIndex
         let origin = input.startIndex
-        guard parser.yield(of: grammar.root).contains(where: { $0.i == origin && $0.j == n }) else {
+        // A yield ending at `y.j` also counts when only trivia separates `y.j` from
+        // input end — EOS lex trivia-skips and matches iff the scan reaches `n`.
+        // Mirrors the success criterion in MessageParser and SwiftSyntaxTests.runAdventOnce.
+        let acceptingYield = parser.yield(of: grammar.root).first { y in
+            guard y.i == origin else { return false }
+            if y.j == n { return true }
+            return !parser.lexer.lex(at: y.j, terminalID: grammar.eosID).isEmpty
+        }
+        guard let acceptingYield else {
             Logger.ui.warning("AST: no complete parse found")
             return nil
         }
-        let root = buildASTNode(grammar.root, from: origin, to: n)
+        let root = buildASTNode(grammar.root, from: origin, to: acceptingYield.j)
         if !diagnostics.isEmpty {
             Logger.ui.warning("AST: \(self.diagnostics.count, privacy: .public) residual ambiguities")
             for d in diagnostics {

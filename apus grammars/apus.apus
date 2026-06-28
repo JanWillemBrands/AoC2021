@@ -20,7 +20,7 @@ production  = [ pragma ] identifier
 
 selection   = sequence { "|" sequence } .
 
-sequence    = < layout | factor [ "?" | "*" | "+" ] > .
+sequence    = < factor [ "?" | "*" | "+" ] | layout > .
 
 factor      = terminal
             | "[" selection "]"

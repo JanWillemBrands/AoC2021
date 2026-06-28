@@ -536,7 +536,16 @@ class MessageParser {
         // For a full parse this counts root yields covering [origin..input.endIndex].
         // For a sub-parse (root != grammar.root), the caller will read yield(of: root)
         // directly to discover accepting end positions.
-        successfullParses = yield(of: currentParseRoot).filter { y in y.i == origin && y.j == input.endIndex }.count
+        // A yield ending at `y.j` also counts when only trivia separates `y.j` from
+        // `input.endIndex`: ask the lexer for EOS at `y.j`, which internally trivia-skips
+        // and returns a match iff the scan reaches `input.endIndex`. This makes
+        // comment-only / trailing-comment inputs succeed against rules like
+        // `topLevelDeclaration = statements?`.
+        successfullParses = yield(of: currentParseRoot).filter { y in
+            guard y.i == origin else { return false }
+            if y.j == input.endIndex { return true }
+            return !lexer.lex(at: y.j, terminalID: grammar.eosID).isEmpty
+        }.count
 //        trace = false
         // Skip the diagnostic prints for sub-parses (`=:` recogniser runs);
         // they fire at every trivia-skip position and drown out the console.
@@ -904,6 +913,15 @@ class MessageParser {
     /// Test whether some terminal in the bracket's FOLLOW set can be lexed at `cI`.
     /// Phase B Step 3: per-terminal LCNP iteration through the lex cache.
     func followCheck(bracket: GrammarNode) -> Bool {
+        // A standalone sub-parse root (e.g. a `=:` trivia recogniser like
+        // `multilineComment`) may legitimately complete at end-of-input — there is
+        // no "next token" requirement for a recogniser invoked by `skipTrivia`.
+        // Such non-terminals aren't referenced in any production, so their FOLLOW
+        // set never received `○` (EOS); without this allowance a comment whose
+        // closing `*/` lands exactly at EOF would fail to yield. Mirrors the EOF
+        // allowance in `boundaryMatches` and the parse-success criterion. The main
+        // parse root already carries `○` in its follow, so it's unaffected.
+        if bracket === currentParseRoot && cI == input.endIndex { return true }
         for fID in bracket.followBS {
             if fID == grammar.epsilonID { continue }
             if !cachedLex(at: cI, terminalID: fID).isEmpty { return true }

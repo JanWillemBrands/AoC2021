@@ -226,7 +226,14 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
 
             let extent = input.endIndex
             let origin = input.startIndex
-            let matched = parser.yield(of: parser.currentParseRoot).contains { $0.i == origin && $0.j == extent }
+            // Accept yields whose end is the input end OR is followed only by trivia —
+            // EOS lex at y.j does the trivia skip and matches iff scan reaches `extent`.
+            // This lets comment-only sources and trailing-comment sources pass.
+            let matched = parser.yield(of: parser.currentParseRoot).contains { y in
+                guard y.i == origin else { return false }
+                if y.j == extent { return true }
+                return !parser.lexer.lex(at: y.j, terminalID: grammar.eosID).isEmpty
+            }
 
             var oraclePruned = 0
             var parseResult: AdventParseResult? = nil

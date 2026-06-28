@@ -1076,7 +1076,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func f5<T>(x: T) where T : Equatable {} // no-warning
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere3",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "inline `where` in generic parameter clause (<T where T: P>) — deprecated pre-Swift 4 syntax, not in current TSPL"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere4#1",
@@ -1096,7 +1097,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func f34<T>(x: T) -> Int where T: Equatable { return 2 } // no-warning
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere4",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "inline `where` in generic parameter clause (<T where T: P>) — deprecated pre-Swift 4 syntax, not in current TSPL"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere5#1",
@@ -1110,7 +1112,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func f234<T where T: Womparable>(x: T) -> Int where T: Equatable { return 2 }
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere5",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "inline `where` in generic parameter clause (<T where T: P>) — deprecated pre-Swift 4 syntax, not in current TSPL"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere6#1",
@@ -1120,7 +1123,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func f1234<T: Mashable where T: Womparable>(x: T) -> Int where T: Equatable { return 2 }
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere6",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "inline `where` in generic parameter clause (<T where T: P>) — deprecated pre-Swift 4 syntax, not in current TSPL"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere7#1",
@@ -1143,7 +1147,8 @@ let translatedSnippets: [SwiftSnippet] = [
       struct S3<T> where T : Equatable {} // no-warning
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere8",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "inline `where` in generic parameter clause (<T where T: P>) — deprecated pre-Swift 4 syntax, not in current TSPL"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere9#1",
@@ -1157,7 +1162,8 @@ let translatedSnippets: [SwiftSnippet] = [
       struct S23<T where T: Womparable> where T: Equatable {}
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere9",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "inline `where` in generic parameter clause (<T where T: P>) — deprecated pre-Swift 4 syntax, not in current TSPL"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere10#1",
@@ -1167,7 +1173,8 @@ let translatedSnippets: [SwiftSnippet] = [
       struct S123<T: Mashable where T: Womparable> where T: Equatable {}
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere10",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "inline `where` in generic parameter clause (<T where T: P>) — deprecated pre-Swift 4 syntax, not in current TSPL"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere11#1",
@@ -1180,7 +1187,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func testCombinedConstraints<T: ProtoA & ProtoB where T: ProtoC>(x: T) where T: ProtoD {}
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere11",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "inline `where` in generic parameter clause (<T where T: P>) — deprecated pre-Swift 4 syntax, not in current TSPL"
     ),
     SwiftSnippet(
         label: "testDiagnoseAvailability1#1",
@@ -2773,7 +2781,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "EnumTests.testEnum83",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty associated-values clause `case foo()` — deprecated by SE-0155, accepted by swift-syntax for legacy code; compiler rejects"
     ),
     SwiftSnippet(
         label: "testEnum84#1",
@@ -3583,7 +3592,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func w() { _ = /]]][)]/ }
       """,
         origin: "ForwardSlashRegexSkippingTests.testForwardSlashRegexSkipping31",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "unbalanced closing brackets in regex body — plainRegularExpressionLiteral CFG balances ()/[] by design (see Regex CFG Discussion.md); swift-syntax uses a regex sub-lexer we deliberately don't replicate"
     ),
     SwiftSnippet(
         label: "testForwardSlashRegexSkipping32#1",
@@ -3607,7 +3617,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func z() { _ = /]/ }
       """,
         origin: "ForwardSlashRegexSkippingTests.testForwardSlashRegexSkipping34",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "unbalanced ']' in regex body — plainRegularExpressionLiteral CFG balances ()/[] by design (see Regex CFG Discussion.md); swift-syntax uses a regex sub-lexer we deliberately don't replicate"
     ),
     SwiftSnippet(
         label: "testForwardSlashRegexSkipping35#1",
@@ -3631,7 +3642,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func a3() { _ = /)/ }
       """,
         origin: "ForwardSlashRegexSkippingTests.testForwardSlashRegexSkipping37",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "unbalanced ')' in regex body — plainRegularExpressionLiteral CFG balances ()/[] by design (see Regex CFG Discussion.md); swift-syntax uses a regex sub-lexer we deliberately don't replicate"
     ),
     SwiftSnippet(
         label: "testForwardSlashRegexSkipping39#1",
@@ -4569,7 +4581,8 @@ let translatedSnippets: [SwiftSnippet] = [
       _ = /]]][)]/
       """,
         origin: "ForwardSlashRegexTests.testForwardSlashRegex138",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "unbalanced closing brackets in regex body — our plainRegularExpressionLiteral CFG balances ()/[] by design (rejects over-claim like (/E.e).foo(/0)); swift-syntax accepts via a regex sub-lexer we deliberately don't replicate (see Regex CFG Discussion.md)"
     ),
     SwiftSnippet(
         label: "testForwardSlashRegex141#1",
@@ -4673,7 +4686,8 @@ let translatedSnippets: [SwiftSnippet] = [
       _ = /)/
       """,
         origin: "ForwardSlashRegexTests.testForwardSlashRegex168",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "unbalanced ')' in regex body — plainRegularExpressionLiteral CFG balances ()/[] by design (see Regex CFG Discussion.md); swift-syntax uses a regex sub-lexer we deliberately don't replicate"
     ),
     SwiftSnippet(
         label: "testForwardSlashRegex169#1",
@@ -4697,7 +4711,8 @@ let translatedSnippets: [SwiftSnippet] = [
       _ = /]/
       """,
         origin: "ForwardSlashRegexTests.testForwardSlashRegex171",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "unbalanced ']' in regex body — plainRegularExpressionLiteral CFG balances ()/[] by design (see Regex CFG Discussion.md); swift-syntax uses a regex sub-lexer we deliberately don't replicate"
     ),
     SwiftSnippet(
         label: "testForwardSlashRegex172#1",
@@ -5131,7 +5146,8 @@ let translatedSnippets: [SwiftSnippet] = [
       _ = .́duh()
       """,
         origin: "IdentifiersTests.testIdentifiers4",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "identifier with leading combining char (U+0301) — swift-syntax lexes it leniently and emits only a warning (hasError=false); we follow Unicode TR31 (XID_Start excludes combining marks) and correctly reject"
     ),
     SwiftSnippet(
         label: "testIdentifiers5#1",
@@ -6837,7 +6853,8 @@ let translatedSnippets: [SwiftSnippet] = [
       protocol ClassConstrainedProto : class {}
       """,
         origin: "MetatypeObjectConversionTests.testMetatypeObjectConversion2",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "deprecated `: class` protocol constraint (replaced by `: AnyObject` in Swift 4) — not in current TSPL; swift-syntax accepts for back-compat. Same precedent as testDeprecatedWhere."
     ),
     SwiftSnippet(
         label: "testMetatypeObjectConversion3#1",
