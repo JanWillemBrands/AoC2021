@@ -254,7 +254,8 @@ let expressionSnippets: [SwiftSnippet] = [
       _ = ([S.Type]()).map(\.init)
       """#,
         origin: "ExpressionTests.testKeyPathMethodAndInitializers",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "key-path to initializer `\\.init` — compiler rejects (fails to produce a diagnostic / ICE); key paths cannot reference initializers. swift-syntax parses permissively."
     ),
     SwiftSnippet(
         label: "testKeyPathMethodAndInitializers#15",
@@ -641,7 +642,7 @@ let expressionSnippets: [SwiftSnippet] = [
         origin: "ExpressionTests.testMacroExpansionExpression",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testMacroExpansionExpressionWithKeywordName#1", source: "#case", origin: "ExpressionTests.testMacroExpansionExpressionWithKeywordName", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testMacroExpansionExpressionWithKeywordName#1", source: "#case", origin: "ExpressionTests.testMacroExpansionExpressionWithKeywordName", syntaxVersion: "603.0.1", disabledReason: "freestanding macro with a keyword name (`#case`) — compiler rejects (`no macro named 'case'`); a macro can never be declared with a keyword name. swift-syntax parses permissively; broadening `macroName` to keywords would clash with `#if`/`#warning`/etc."),
     SwiftSnippet(
         label: "testPostProcessMultilineStringLiteral#1",
         source: #"""

@@ -46,6 +46,8 @@ do {
 
 let messageParser = MessageParser(grammar: grammar)
 
+//let ball = 1 ⚽️ 2
+
 print("grammar: \(grammarFileURL.lastPathComponent), messages: \(grammar.messages.count)")
 if grammar.messages.isEmpty {
     print("no messages found (^^^ blocks). nothing to parse")

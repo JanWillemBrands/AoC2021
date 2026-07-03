@@ -48,7 +48,24 @@ multilineComment =: "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineCommen
 
 //IDENTIFIERS
 
-rawIdentifier               - /[\p{XID_Start}_\p{So}][\p{XID_Continue}\p{So}]*/ . // \p{So} includes emoji's. Standalone'_' produces a Schrödinger token: '_' ~ rawIdentifier
+// ACTIVE: Unicode-property identifier terminal. \p{So} includes emoji. Standalone
+// '_' produces a Schrödinger token: '_' ~ rawIdentifier.
+rawIdentifier               - /[\p{XID_Start}_\p{So}][\p{XID_Continue}\p{So}]*/ .
+//
+// COMMENTED ALTERNATIVE — explicit N1518 ranges, verbatim from swift-syntax
+// `isValidIdentifierStartCodePoint`/`isValidIdentifierContinuationCodePoint`
+// (SwiftParser/Lexer/UnicodeScalarExtensions.swift:14-94). This is the *faithful*
+// definition (disjoint from the operator ranges, no \p{So} spill), BUT it does NOT
+// COMPILE under Swift `Regex`: a canonically-decomposing scalar (e.g. U+F900 CJK
+// compat ideograph) is rejected as a character-class range BOUND, and variation
+// selectors (U+180B-180D, U+FE00-FE0F) fatal at *match* time under grapheme
+// semantics, with no run-time scalar-semantics escape (`(?u)` unsupported). Kept
+// here for when the terminal engine gains scalar-semantic matching (see TODO #8 /
+// the code-point-class primitive proposal). START = CONTINUE minus the four
+// "disallowed-initially" combining ranges (0300-036F,1DC0-1DFF,20D0-20FF,FE20-FE2F);
+// sole start-overlap with operators (U+3021-302F) resolves as identifier per
+// swift-syntax dispatch order (Cursor.swift:1056-1061).
+//rawIdentifier - /[A-Za-z_\u{00A8}\u{00AA}\u{00AD}\u{00AF}\u{00B2}-\u{00B5}\u{00B7}-\u{00BA}\u{00BC}-\u{00BE}\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{167F}\u{1681}-\u{180D}\u{180F}-\u{1DBF}\u{1E00}-\u{1FFF}\u{200B}-\u{200D}\u{202A}-\u{202E}\u{203F}-\u{2040}\u{2054}\u{2060}-\u{20CF}\u{2100}-\u{218F}\u{2460}-\u{24FF}\u{2776}-\u{2793}\u{2C00}-\u{2DFF}\u{2E80}-\u{2FFF}\u{3004}-\u{3007}\u{3021}-\u{302F}\u{3031}-\u{D7FF}\u{F900}-\u{FD3D}\u{FD40}-\u{FDCF}\u{FDF0}-\u{FE1F}\u{FE30}-\u{FE44}\u{FE47}-\u{FFF8}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E0000}-\u{EFFFD}][A-Za-z0-9_\u{00A8}\u{00AA}\u{00AD}\u{00AF}\u{00B2}-\u{00B5}\u{00B7}-\u{00BA}\u{00BC}-\u{00BE}\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{167F}\u{1681}-\u{180D}\u{180F}-\u{1FFF}\u{200B}-\u{200D}\u{202A}-\u{202E}\u{203F}-\u{2040}\u{2054}\u{2060}-\u{218F}\u{2460}-\u{24FF}\u{2776}-\u{2793}\u{2C00}-\u{2DFF}\u{2E80}-\u{2FFF}\u{3004}-\u{3007}\u{3021}-\u{302F}\u{3031}-\u{D7FF}\u{F900}-\u{FD3D}\u{FD40}-\u{FDCF}\u{FDF0}-\u{FE44}\u{FE47}-\u{FFF8}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E0000}-\u{EFFFD}]*/ .
                                                                         
 escapedIdentifier           - /`[^`\n\r\u{000B}\u{000C}\u{0085}\u{2028}\u{2029}]+`/ .       // 6.2 allows ` hello world `
 
@@ -183,7 +200,7 @@ regexAtom       = regexNonOperatorAtom
 //         "->" "..." "." "@" )
 //    ++2("try"), ++1("!")
 
-extendedRegularExpressionLiteral    - /#+\/(?:[^\/\\]|\\.)+\/#+/ .   // captures legal Swift regex already validated by the compiler
+extendedRegularExpressionLiteral    - /(#+)\/(?:[^\/]|\/(?!\1))*?\/\1/ .   // backref: closing #s must equal opening; no escapes in extended regex, `/` is body content, only `/#…` closes
     --1( "true" "false" "nil" "self" "Self" "super" "Any"
          "func" "operator"
          rawIdentifier escapedIdentifier implicitParameterName propertyWrapperProjection
@@ -396,14 +413,37 @@ integerLiteral = hexadecimalLiteral .
 //   alt 2 — head is `!`, `?`, or `=` (must be 2+ char so standalone `!`/`?`/`=`
 //           are NOT misclassified as operators — they have dedicated grammar)
 
+// Non-ASCII operator code points. Defined before first reference.
+//
+// ACTIVE: Unicode-property approximation. The faithful explicit ranges (commented
+// below) do NOT compile/run under Swift `Regex` — variation selectors (U+FE00-FE0F,
+// U+E0100-E01EF) fatal at match time as class-range bounds under grapheme semantics
+// (same wall as the identifier ranges). \p{Sm}∪\p{So} minus ASCII covers the symbol
+// operator heads (arrows, box-drawing, dingbats, ⚽ U+26BD ∈ \p{So}); combining
+// marks \p{Mn}∪\p{Me} cover the continuation (variation selectors are \p{Mn}). ASCII
+// is subtracted so we don't Schrödinger-collide with the literal ASCII heads below.
+// This over-approximates swift-syntax's exact ranges slightly (extra \p{Sm}/\p{So}
+// symbols) but is monotonic for acceptance; the exact set awaits the code-point-class
+// primitive (TODO #8).
+unicodeOperatorHead - /[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]]/ .
+unicodeOperatorContinuation - /[\p{Mn}\p{Me}]/ .
+//
+// COMMENTED ALTERNATIVE — faithful explicit ranges, verbatim from swift-syntax
+// `isOperatorStartCodePoint`/`isOperatorContinuationCodePoint`
+// (UnicodeScalarExtensions.swift:137-163). Head = isOperatorStartCodePoint MINUS
+// U+3021-302F (that overlap is lexed as identifier); continuation = combining +
+// variation selectors PLUS U+3021-302F. Does not compile/run under Swift Regex.
+//unicodeOperatorHead - /[\u{00A1}-\u{00A7}\u{00A9}\u{00AB}-\u{00AC}\u{00AE}\u{00B0}-\u{00B1}\u{00B6}\u{00BB}\u{00BF}\u{00D7}\u{00F7}\u{2016}-\u{2017}\u{2020}-\u{2027}\u{2030}-\u{203E}\u{2041}-\u{2053}\u{2055}-\u{205E}\u{2190}-\u{23FF}\u{2500}-\u{2775}\u{2794}-\u{2BFF}\u{2E00}-\u{2E7F}\u{3001}-\u{3003}\u{3008}-\u{3020}\u{3030}]/ .
+//unicodeOperatorContinuation - /[\u{0300}-\u{036F}\u{1DC0}-\u{1DFF}\u{20D0}-\u{20FF}\u{3021}-\u{302F}\u{FE00}-\u{FE0F}\u{FE20}-\u{FE2F}\u{E0100}-\u{E01EF}]/ .
+
 operator = operatorHead { >s< operatorCharacter } .
 operator = operatorSpecial >s< operatorCharacter { >s< operatorCharacter } .
 //operator = dotOperatorHead dotOperatorCharacters .
 operator = dotOperator .
 
-operatorHead      = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "~" | "<" | ">" .
+operatorHead      = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "~" | "<" | ">" | unicodeOperatorHead .
 operatorSpecial   = "!" | "?" | "=" .
-operatorCharacter = operatorHead | operatorSpecial .
+operatorCharacter = operatorHead | operatorSpecial | unicodeOperatorContinuation .
 
 //operator = operatorHead operatorCharacters? .
 //operator = dotOperatorHead dotOperatorCharacters .
@@ -458,6 +498,7 @@ postfixOperator = operator .
 
 type = functionType .
 type = arrayType .
+type = inlineArrayType .
 type = dictionaryType .
 type = typeIdentifier .
 type = tupleType .
@@ -475,8 +516,16 @@ type = anyType .
 // so `type = anyType` above is the single correct path and `Any` is intentionally not a typeName.)
 type = "(" tupleTypeElement ")" .   // TODO: swift-syntax: (T) parses as TupleTypeSyntax with one element; using tupleTypeElement here brings in parameterModifiers? support, so (sending T), (label: T), (label: sending T) all parse.
 type = "~" type . // TODO: SE-0390 suppressed/inverse type — swift-syntax parseSimpleType (Types.swift:194-212) RawSuppressedTypeSyntax
+// Type-position specifier / attribute prefix — the SINGLE source of truth (swift-syntax
+// parseTypeSpecifierList + parseTypeAttributeList, Types.swift:38/747). Applies to ANY type;
+// parameter/annotation/result positions delegate here rather than carrying their own slot, so
+// a specifier is never parsed twice (no duplicate derivations). `parameterModifier` already
+// encodes the full specifier set (inout/borrowing/consuming/sending/isolated/_const/__shared/
+// __owned/nonisolated[(nonsending)]/dependsOn(...)).
+type = parameterModifier type .
+type = attribute type .
 
-typeAnnotation = ":" attributes? type .
+typeAnnotation = ":" type .   // specifiers/attributes carried by `type` (single source of truth)
 
 // Type position uses `typeGenericArgumentClause` (no follow restriction): swift-syntax
 // parseTypeIdentifier (Types.swift:418-420) commits to generic args unconditionally on `<` —
@@ -491,20 +540,20 @@ typeName = selfType .           // TODO: verify fix for https://github.com/swift
 // and attribute names via typeIdentifier.
 typeName = moduleSelector rawIdentifier .
 
-tupleType = "(" ")" | "(" tupleTypeElement "," tupleTypeElementList ")" .
+tupleType = "(" ")" | "(" tupleTypeElement "," tupleTypeElementList ","? ")" .   // SE-0470 trailing comma
 tupleTypeElementList = tupleTypeElement | tupleTypeElement "," tupleTypeElementList .
 
-tupleTypeElement = elementName parameterTypeAnnotation | parameterModifiers? type .  // swift-syntax parseTupleTypeBody (Types.swift:601) calls parseType; parseTypeScalar (Types.swift:38) accepts type-position specifiers (sending/inout/borrowing/...) as a prefix on ANY type, including labeled tuple elements.
+tupleTypeElement = elementName typeAnnotation | type .  // element specifiers carried by `type`
 elementName = identifier .
 
 functionType = attributes? functionTypeArgumentClause "async"? throwsClause? "->" type .
 
 functionTypeArgumentClause = "(" ")" .
-functionTypeArgumentClause = "(" functionTypeArgumentList "..."? ")" .
+functionTypeArgumentClause = "(" functionTypeArgumentList "..."? ","? ")" .   // SE-0470 trailing comma
 
 functionTypeArgumentList = functionTypeArgument | functionTypeArgument "," functionTypeArgumentList .
 //functionTypeArgument = attributes? parameterModifier? type | argumentLabel typeAnnotation .
-functionTypeArgument = attributes? parameterModifiers? type | externalArgumentLabel? localArgumentLabel typeAnnotation . // TODO: grammar fix for e.g. typealias MyAlias = (_ a: Int, _ b: Double, _ c: Bool, _ d: String) -> Bool
+functionTypeArgument = type | externalArgumentLabel? localArgumentLabel typeAnnotation . // specifiers/attributes carried by `type`
 
 //argumentLabel = softIdentifier .
 externalArgumentLabel = softIdentifier .        // accept all keywords except let, var, inout
@@ -513,6 +562,11 @@ localArgumentLabel = softIdentifier .           // but references to the paramet
 throwsClause = "throws" | "throws" "(" type ")" .
 
 arrayType = "[" type "]" .
+
+// SE-0453 InlineArray sugar `[count of element]`. swift-syntax parseInlineArrayType
+// (Types.swift:699): both count and element are generic-argument positions (a type or
+// a value literal), `of` is a contextual keyword. `genericArgument = type | signedIntegerLiteral`.
+inlineArrayType = "[" genericArgument "of" genericArgument "]" .
 
 dictionaryType = "[" type ":" type "]" .
 
@@ -573,7 +627,7 @@ tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .           // disallow spac
 
 awaitOperator = "await" .
 
-infixExpression = infixOperator prefixExpression .
+infixExpression = infixOperator tryOperator? awaitOperator? prefixExpression .
 infixExpression = assignmentOperator tryOperator? awaitOperator? prefixExpression .
 infixExpression = conditionalOperator tryOperator? awaitOperator? prefixExpression .
 infixExpression = typeCastingOperator .
@@ -690,15 +744,16 @@ closureSignature = captureList "in" .
 closureParameterClause = "(" ")" | "(" closureParameterList ","? ")" | identifierList .
 closureParameterList = closureParameter | closureParameter "," closureParameterList .
 
-//closureParameter = attributes? closureParameterName parameterTypeAnnotation? .
-//closureParameter = attributes? closureParameterName parameterTypeAnnotation "..." .
+//closureParameter = attributes? closureParameterName typeAnnotation? .
+//closureParameter = attributes? closureParameterName typeAnnotation "..." .
 // swift-syntax parseClosureParameter (Parameters.swift:194-200) uses parseParameterNames
 // which returns two names (firstName / secondName) — same `external? internal: Type` shape
 // as regular parameters. `_ x: Type` and `x y: Type` are both valid.
-closureParameter = attributes? parameterDeclarationModifiers? externalParameterName? closureParameterName parameterTypeAnnotation? .
-closureParameter = attributes? parameterDeclarationModifiers? externalParameterName? closureParameterName parameterTypeAnnotation "..." .
+closureParameter = attributes? parameterDeclarationModifiers? externalParameterName? closureParameterName typeAnnotation? .
+closureParameter = attributes? parameterDeclarationModifiers? externalParameterName? closureParameterName typeAnnotation "..." .
 closureParameterName = identifier .
 
+captureList = "[" "]" .   // explicit empty capture clause `{ [] in … }` (swift-syntax parseClosureCaptureClause allows an empty list)
 captureList = "[" captureListItems ","? "]" .
 captureListItems = captureListItem | captureListItem "," captureListItems .
 captureListItem = captureSpecifier? identifier .
@@ -754,9 +809,9 @@ keyPathTail = >s< "!" keyPathTail? .
 // for tuple-typed paths, and the decl-name argument-label syntax (.method(_:), .method(label:), .method(a:b:))
 // which is swift-syntax's parseDottedExpressionSuffix function-reference form — NOT the experimental
 // keypathWithMethodMembers method-call form (that one stays out).
-keyPathMemberName = moduleSelector? rawIdentifier .                                 // SE-0491: .Module::member
+keyPathMemberName = moduleSelector? softIdentifier .                                 // softIdentifier (not bare rawIdentifier): with the optional moduleSelector? prefix, bare rawIdentifier fails to consume a keyword member (`.self`/`.extension`/…) — a Schrödinger/OPT interaction — whereas the `---`-annotated softIdentifier resolves it, matching every other member rule. SE-0491: .Module::member
 keyPathMemberName = decimalDigits .
-keyPathMemberName = moduleSelector? rawIdentifier "(" keyPathArgumentLabels ")" .    // .method(_:) / .method(arg:) / .method(a:b:)
+keyPathMemberName = moduleSelector? softIdentifier "(" keyPathArgumentLabels ")" .    // .method(_:) / .method(arg:) / .method(a:b:)
 keyPathArgumentLabels = keyPathArgumentLabel keyPathArgumentLabels? .
 keyPathArgumentLabel = rawIdentifier ":" .
 keyPathArgumentLabel = "_" ":" .
@@ -825,7 +880,7 @@ optionalChainingExpression = postfixExpression >s< "?" .                    // d
 
 
 // STATEMENTS
-
+ 
 statement = expression .
 statement = declaration .
 statement = loopStatement .
@@ -967,32 +1022,25 @@ compilationCondition = "(" compilationCondition ")" .
 compilationCondition = "!" >s< compilationCondition .                       // disallow space after the '!'
 compilationCondition = compilationCondition "&&" compilationCondition .
 compilationCondition = compilationCondition "||" compilationCondition .
-compilationCondition = "hasAttribute" "(" identifier ")" .     // ← Added in Swift 5.8
+// swift-syntax parses the whole `#if` condition as a general expression (Directives.swift:67), so
+// every `name(args)` is a function-call expression: os(macOS), arch(arm64), canImport(Foo),
+// targetEnvironment(simulator), hasAttribute(x), AND unknown ones like hasGreeble(blah). The
+// platform-condition argument shapes are NOT validated syntactically (compiler diagnoses misuse).
+// This generic call replaces the former per-condition rules; for any input at most one rule
+// matches (bare `FOO` → identifier; `FOO(x)` → call; `swift(>=5)` → versionComparison-special
+// below since `>=5` is not a general argument), so there is no added ambiguity.
+compilationCondition = identifier "(" functionCallArgumentList? ","? ")" .   // trailing comma allowed (e.g. canImport(A,))
 
-platformCondition = "os" "(" operatingSystem ")" .
-platformCondition = "arch" "(" architecture ")" .
-platformCondition = "swift" "(" ">=" swiftVersion ")" | "swift" "(" "<" swiftVersion ")" .
-platformCondition = "compiler" "(" ">=" swiftVersion ")" | "compiler" "(" "<" swiftVersion ")" .
-// swift-syntax _CanImportVersionInfoSyntax.LabelOptions (Parser+TokenSpecSet.swift:499-548)
-// accepts an optional `_version:` or `_underlyingVersion:` argument, with either a
-// version tuple or a string literal as the value.
-// swift-syntax parses the whole `#if` condition as a general expression (Directives.swift:67),
-// so `canImport(...)` is just a function-call expression — its argument shape is not validated
-// syntactically (swift-syntax accepts `canImport(A, unknown: 2.2)`, `canImport(A,)`,
-// `canImport(A, 2.2)`, `canImport(A, 2.2, 1.1)`, etc. and diagnoses misuse semantically).
-// We model that by accepting a general function-call argument list. The second alternate covers
-// the `_version:`/`_underlyingVersion:` comparison value (`>=`/`<`), which is version-spec syntax
-// (same family as swift()/compiler()) rather than a normal expression argument.
-platformCondition = "canImport" "(" functionCallArgumentList ","? ")" .
+// Version-comparison forms keep special handling — `>=X`/`<X` is version-spec syntax, not a
+// general expression argument. swift-syntax canImport `_version:`/`_underlyingVersion:` value
+// likewise takes a version comparison (Parser+TokenSpecSet.swift:499-548).
+platformCondition = "swift" "(" versionComparison ")" .
+platformCondition = "compiler" "(" versionComparison ")" .
 platformCondition = "canImport" "(" functionCallArgumentList "," softIdentifier ":" versionComparison ","? ")" .
 versionComparison = ">=" swiftVersion | "<" swiftVersion .
-platformCondition = "targetEnvironment" "(" environment ")" .
 
-operatingSystem = "macOS" | "iOS" | "watchOS" | "tvOS" | "visionOS" | "Linux" | "Windows" .
-architecture = "arm" | "arm64" | "i386" | "wasm32" | "x86_64" .
 swiftVersion = decimalDigits swiftVersionContinuation? .
 swiftVersionContinuation = "." decimalDigits swiftVersionContinuation? .
-environment = "simulator" | "macCatalyst" .
 
 //lineNumber = /0*[1-9][0-9]*/ .
 //lineNumber = decimalDigits .        // replace 'greater than zero' with parser post check'
@@ -1126,21 +1174,21 @@ functionName = softIdentifier | operator .
 
 functionSignature = parameterClause "async"? throwsClause? functionResult? .
 functionSignature = parameterClause "async"? "rethrows" functionResult? .
-functionResult = "->" attributes? type .
+functionResult = "->" type .   // result-type attributes carried by `type`
 functionBody = codeBlock .
 
 parameterClause = "(" ")" | "(" parameterList ","? ")" .
 parameterList = parameter | parameter "," parameterList .
 
 // TODO:  verify missing attributes? grammar error   https://github.com/swiftlang/swift-book/issues/294
-parameter = attributes? parameterDeclarationModifiers? externalParameterName? localParameterName parameterTypeAnnotation defaultArgumentClause? .
-parameter = attributes? parameterDeclarationModifiers? externalParameterName? localParameterName parameterTypeAnnotation . // TODO: isn't this redundant?
-parameter = attributes? parameterDeclarationModifiers? externalParameterName? localParameterName parameterTypeAnnotation "..." .
+parameter = attributes? parameterDeclarationModifiers? externalParameterName? localParameterName typeAnnotation defaultArgumentClause? .
+parameter = attributes? parameterDeclarationModifiers? externalParameterName? localParameterName typeAnnotation . // TODO: isn't this redundant?
+parameter = attributes? parameterDeclarationModifiers? externalParameterName? localParameterName typeAnnotation "..." .
 
 externalParameterName = softIdentifier .        // accept all keywords except let, var, inout
 localParameterName = softIdentifier .           // but references to the parameter in the function body must use backticks
 
-parameterTypeAnnotation = ":" attributes? parameterModifiers? type .   // TODO: swift-syntax allows multiple stacked specifiers (Types.swift:1256-1280 repeat loop)
+
 parameterModifiers = parameterModifier parameterModifiers? .   // TODO: swift-syntax Types.swift:1256-1280 repeat loop — multiple type-specifiers can stack
 parameterModifier = "inout" | "borrowing" | "consuming" | "isolated" | "_const" | "sending" | "__shared" | "__owned" .   // TODO: swift-syntax SimpleTypeSpecifierSyntax.SpecifierOptions (Parser+TokenSpecSet.swift:3570)
 parameterModifier = "nonisolated" | "nonisolated" "(" "nonsending" ")" .  // TODO: swift-syntax parseNonisolatedTypeSpecifier (Types.swift:1179)
@@ -1162,7 +1210,7 @@ unionStyleEnumMember = declaration ";"? | enumCaseDeclaration ";"? | compilerCon
 // NOT tuple-type elements (which only allow a single label per element).
 associatedValues = "(" enumCaseParameterList ")" .
 enumCaseParameterList = enumCaseParameter | enumCaseParameter "," enumCaseParameterList .
-enumCaseParameter = parameterModifiers? type defaultArgumentClause? .
+enumCaseParameter = type defaultArgumentClause? .   // specifiers carried by `type`
 enumCaseParameter = parameterModifiers? externalArgumentLabel? localArgumentLabel typeAnnotation defaultArgumentClause? .
 
 enumName = identifier .
@@ -1255,7 +1303,7 @@ subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? codeBlo
 subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterBlock .
 subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterKeywordBlock .
 subscriptHead = attributes? declarationModifiers? "subscript" genericParameterClause? parameterClause .
-subscriptResult = "->" attributes? type .
+subscriptResult = "->" type .   // result-type attributes carried by `type`
 
 macroDeclaration = macroHead identifier genericParameterClause? macroSignature macroDefinition? genericWhereClause? . // TODO: verify that genericWhereClause? is a correct grammar fix.
 macroHead = attributes? declarationModifiers? "macro" .
@@ -1273,7 +1321,7 @@ infixOperatorDeclaration = "infix" "operator" operator infixOperatorGroup? .
 
 //infixOperatorGroup = ":" precedenceGroupName .
 infixOperatorGroup = ":" precedenceGroupName designatedTypes? . // TODO: grammar fix
-designatedTypes = "," designatedType designatedTypes? .
+designatedTypes = "," | "," designatedType designatedTypes? .   // trailing comma allowed (swift-syntax tolerates `operator : Prec,`)
 designatedType = identifier | keywordMinusBrackets | literal | operator .   // TODO: swift-syntax consumes ANY token here (deprecated feature)
 
 precedenceGroupDeclaration = "precedencegroup" precedenceGroupName "{" precedenceGroupAttributes? "}" .
@@ -1325,7 +1373,7 @@ attribute = "@" >s< attributeName attributeArgumentClause? .        // TODO: no 
 // swift-syntax parseAttributeName = parseSimpleType(forAttributeName:) — the attribute name is a
 // type identifier: member-qualified (`@Foo.Bar`), generic (`@Foo<Int>`), or escaped (`@`name``).
 // `typeIdentifier` already builds on `typeName = identifier` (incl. escaped + propertyWrapperProjection).
-attributeName = typeIdentifier .
+attributeName = typeIdentifier | "rethrows" .   // @rethrows: `rethrows` keyword remapped to identifier attr-name (swift-syntax Attributes.swift:328-330)
 attributeArgumentClause = "(" balancedTokens? ")" .
 attributes = attribute attributes? .
 
@@ -1422,7 +1470,7 @@ expressionPattern = expression .
 
 // Closing '>' commits only when followed by a Swift-approved disambiguation token —
 // mirrors swift-syntax canParseAsGenericArgumentList. EOS is approved by default.
-genericParameterClause  = "<" attributes? genericParameterList ","? ">" >>1("(" ")" "[" "]" "{" "}" "," ";" ":" "." "?" "!" ">") .
+genericParameterClause  = "<" attributes? genericParameterList ","? ">" .   // declaration-position generic params are unambiguous — no follow-restriction (unlike expression-position genericArgumentClause)
 // TODO: verify attributes? added - error in Swift syntax
 
 genericParameterList = genericParameter | genericParameter "," genericParameterList .
@@ -1451,7 +1499,8 @@ sameTypeRequirement = typeIdentifier "==" signedIntegerLiteral .
 // Expression-position generic args: the `>>1(...)` follow-restriction is swift-syntax's
 // `isGenericTypeDisambiguatingToken` set (Types.swift:1478) — what may legally follow `>` for the
 // `<...>` to be read as generic args rather than comparison operators (`a < b > c`).
-genericArgumentClause   = "<" genericArgumentList ","? ">" >>1("(" ")" "[" "]" "{" "}" "," ";" ":" "." "?" "!" ">") .
+genericArgumentClause   = "<" genericArgumentList ","? ">"
+                        >>1("(" ")" "[" "]" "{" "}" "," ";" ":" "." "?" "!" ">") .
 // Type-position generic args: no follow-restriction (type position is unambiguous).
 typeGenericArgumentClause = "<" genericArgumentList ","? ">" .
 
@@ -1459,5 +1508,78 @@ genericArgumentList = genericArgument | genericArgument "," genericArgumentList 
 genericArgument = type | signedIntegerLiteral .
 
 ^^^
-_ = Swift::$foo
+      @rethrows
+      protocol P { }
+      
+^^^
+      S<[3 of
+             Int]>()
+      
+^^^
+      S<[
+        3 of Int
+      ]>()
+      
+^^^
+      protocol Baaz<
+        Foo,
+        Bar,
+      > {
+        associatedtype Foo
+        associatedtype Bar
+      }
+      
+^^^
+      struct Foo<
+        T1,
+        T2,
+        T3,
+      >: Baaz<
+        T1,
+        T2,
+      > {}
+      
+^^^
+      struct Foo<T1, T2, T3,> {}
 
+      typealias Bar<
+        T1,
+        T2,
+      > = Foo<
+        T1,
+        T2,
+        Bool,
+      >
+      
+^^^
+let _: nonisolated(nonsending) () async -> Void = {}
+^^^
+let _: [nonisolated(nonsending) () async -> Void]
+^^^
+      let x: nonisolated
+      (hello)
+      
+^^^
+      let x: nonisolated
+      (hello)
+      
+^^^
+      \TupleProperties.self
+      
+^^^
+      \Tuple<Int, Int>.self
+      
+^^^
+      \T.extension
+      
+^^^
+      { () throws(PosixError) -> Void in }
+      
+^^^
+      { () throws(PosixError) -> Void in }
+      
+^^^
+      simple { [] str in
+        print("closure with empty capture list")
+      }
+      

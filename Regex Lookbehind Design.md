@@ -2,6 +2,10 @@
 
 Scanner-level token lookbehind annotations (`++1`/`++2` positive, `--1`/`--2` negative) for disambiguating regex literals from division operators. Designed as a general APUS mechanism, with Swift as the primary use case.
 
+> **Status (Jul 1 2026).** The `<<1`/`<<2` naming used in some older notes is **superseded** by `--1`/`++1`/`--2`/`++2`; the resolved spec is stored **per-terminal** in `MessageParser.swift`.
+> The **plain** `/…/ ` regex is now a parser-level CFG (`plainRegularExpressionLiteral`, no annotations) — the previous-token disambiguation these annotations provided is subsumed by grammatical reachability + GLL parse viability. Only the **extended** `#/…/#` terminal still carries a `--1(...)` position guard (it's still a single scanner token).
+> **Do not re-add these annotations to the plain-regex CFG to fix residual ambiguity** — measured net-negative (fixes ~1, breaks 3 multiline-skipping acceptances). See `TODO.md` item 19 for the experiment and the reasoning: the residual regex ambiguity is *structural*, not previous-token, so it belongs to the Oracle.
+
 ## Problem
 
 Languages that use `/` both as a division operator and as regex literal delimiters (`/pattern/`) create a scanner-level ambiguity. The scanner's longest-match rule causes a regex pattern to greedily consume characters that may be intended as division:
