@@ -302,7 +302,7 @@ let expressionSnippets: [SwiftSnippet] = [
     ),
     SwiftSnippet(label: "testKeyPathSubscript#1", source: #"\Foo.Type.[2]"#, origin: "ExpressionTests.testKeyPathSubscript", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testKeyPathSubscript#2", source: #"\Foo.Bar.[2]"#, origin: "ExpressionTests.testKeyPathSubscript", syntaxVersion: "603.0.1"),
-    SwiftSnippet(label: "testKeyPathFollowedByOperator#1", source: #"\Foo?.?.bar.?.blah"#, origin: "ExpressionTests.testKeyPathFollowedByOperator", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testKeyPathFollowedByOperator#1", source: #"\Foo?.?.bar.?.blah"#, origin: "ExpressionTests.testKeyPathFollowedByOperator", syntaxVersion: "603.0.1", disabledReason: "swift-syntax accepts only via error recovery — a leading-dot `.?` after a prior postfix component is an unexpected period (mayBeAfterTypeName=false); see TODO #0 item 8"),
     SwiftSnippet(label: "testKeyPathFollowedByOperator#2", source: #"\Foo?.?.?.blah"#, origin: "ExpressionTests.testKeyPathFollowedByOperator", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testKeypathExpressionWithSugaredRoot#1", source: #"\X.y"#, origin: "ExpressionTests.testKeypathExpressionWithSugaredRoot", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testKeypathExpressionWithSugaredRoot#2", source: #"\X<T>.y"#, origin: "ExpressionTests.testKeypathExpressionWithSugaredRoot", syntaxVersion: "603.0.1"),

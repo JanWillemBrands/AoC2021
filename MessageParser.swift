@@ -369,10 +369,24 @@ class MessageParser {
                 bracketPairs: [("(", ")"), ("[", "]"), ("{", "}")]
             )
         }
+        // Maximal-munch default (longest-across; see TODO #0). The grammar
+        // declares its lexical classes with `@lexicalClass` (identifier,
+        // operator, …); a literal is suppressed when a class terminal has a
+        // strictly longer match at the same start. Collect the class terminal
+        // IDs; the runtime prefix-match lives in `OnDemandLiteralLexer.lex`.
+        var lexicalClassIDs: [Int] = []
+        var splitBeforeByID: [Int: Character] = [:]
+        for (name, pat) in grammar.terminals {
+            guard let id = grammar.symbolToID[name] else { continue }
+            if pat.isLexicalClass { lexicalClassIDs.append(id) }
+            if let sc = pat.splitBefore { splitBeforeByID[id] = sc }
+        }
         lexer = OnDemandLiteralLexer(
             input: input,
             literalSourceByID: literalSourceByID,
             regexByID: regexByID,
+            splitBeforeByID: splitBeforeByID,
+            lexicalClassIDs: lexicalClassIDs,
             triviaRegexes: triviaRegexes,
             triviaRecognisers: triviaRecognisers,
             eosID: grammar.eosID,

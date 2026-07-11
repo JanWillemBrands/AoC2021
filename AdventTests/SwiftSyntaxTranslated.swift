@@ -8212,7 +8212,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "OperatorsTests.testOperators3",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "TSPL reserves `&`: it can't be used to define a custom operator (`infix operator &`)"
     ),
     SwiftSnippet(
         label: "testOperators4#1",
@@ -8415,7 +8416,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func &(x : Man, y : Man) -> Man { return x } // forgive amp_prefix token
       """,
         origin: "OperatorsTests.testOperators24",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "TSPL reserves `&`: it can't be overloaded (`func &`). swift-syntax only accepts via error-recovery (\"forgive amp_prefix token\")"
     ),
     SwiftSnippet(
         label: "testOperators25#1",
@@ -9654,7 +9656,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "RecoveryTests.testRecovery169",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "crash-recovery test for malformed code (rdar://23719432 `&(Int:_)`); not valid Swift"
     ),
     SwiftSnippet(
         label: "testRegexParseError1#1",

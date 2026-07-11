@@ -186,10 +186,16 @@ class DerivationBuilder {
         let from: CharPosition
         let to: CharPosition
         let candidateCount: Int
+        /// Canonical, position-independent fingerprint of the competing alternates
+        /// (or the pivot body). Used by the ambiguity-harvest workflow to cluster
+        /// the many failing tests into a small set of distinct root-cause signatures.
+        let signature: String
 
         var description: String {
             "\(node) [\(from)..\(to)]: \(message) (\(candidateCount) candidates)"
         }
+        /// `node ⟪message⟫ signature` — stable across source positions.
+        var fingerprint: String { "\(node)\t\(message)\t\(signature)" }
     }
 
     private(set) var diagnostics: [Diagnostic] = []
@@ -248,11 +254,15 @@ class DerivationBuilder {
         }
 
         if candidates.count > 1 {
+            let sig = candidates
+                .map { "[" + $0.alt.bodySymbols.filter { $0.kind != .EPS }.map(\.name).joined(separator: " ") + "]" }
+                .sorted().joined(separator: " | ")
             diagnostics.append(Diagnostic(
                 message: "ambiguous alternate",
                 node: node.name,
                 from: from, to: to,
-                candidateCount: candidates.count
+                candidateCount: candidates.count,
+                signature: sig
             ))
         }
 
@@ -280,7 +290,8 @@ class DerivationBuilder {
                 message: "ambiguous pivot",
                 node: symbols.first?.name ?? "?",
                 from: from, to: to,
-                candidateCount: candidateCount
+                candidateCount: candidateCount,
+                signature: "body=[" + symbols.map(\.name).joined(separator: " ") + "]"
             ))
         }
 
@@ -328,7 +339,8 @@ class DerivationBuilder {
                     message: "ambiguous iteration extent",
                     node: bracket.name,
                     from: pos, to: to,
-                    candidateCount: ends.count
+                    candidateCount: ends.count,
+                    signature: "iter=\(bracket.name)"
                 ))
             }
 

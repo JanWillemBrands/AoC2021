@@ -83,6 +83,20 @@ for (mi, message) in grammar.messages.enumerated() {
 
     // Oracle: post-parse disambiguation (rules from grammar annotations)
 //    Oracle(parser: messageParser, input: input).disambiguate()
+
+    // Ambiguity-harvest driver (opt-in via APUS_SIG_DUMP=1). Runs the Oracle +
+    // AST build and emits one canonical signature line per residual ambiguity:
+    //   SIG <TAB> <messageIndex> <TAB> node <TAB> message <TAB> signature
+    // The Phase-1 harvester (harvest_ambiguity.py) feeds all failing snippets as
+    // `^^^` messages, runs this, and clusters the SIG lines into the signature table.
+    if ProcessInfo.processInfo.environment["APUS_SIG_DUMP"] == "1" {
+        Oracle(parser: messageParser, input: input).disambiguate()
+        let sigBuilder = DerivationBuilder(parser: messageParser, input: input)
+        _ = sigBuilder.buildAST()
+        for d in sigBuilder.diagnostics {
+            print("SIG\t\(mi)\t\(d.fingerprint)")
+        }
+    }
     var stats = "cpuTime, descriptorCount, crf.count, sizeOfSets, yieldCount\n"
     stats += "\(cpuTime), \(messageParser.descriptorCount), \(messageParser.crf.count), \(GrammarNode.sizeofSets), \(messageParser.yieldCount)\n"
     Logger.ui.info("\(stats, privacy: .public)")

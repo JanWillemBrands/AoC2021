@@ -48,6 +48,19 @@ struct TokenPattern {
     let isLiteral: Bool
     let isSkip: Bool
     var lookbehind: LookbehindSpec
+    /// `@lexicalClass` — this (regex) terminal is a lexical class (e.g. identifier,
+    /// operator). Maximal-munch default: a literal match is suppressed when a
+    /// lexical-class terminal has a strictly longer match at the same start
+    /// (`for` inside `foreach`). Grammar-declared; see TODO #0 / `Multiple
+    /// Lexicalisation` §4.1 (suffix-property longest-across).
+    var isLexicalClass: Bool = false
+    /// `@splitBefore("c")` — besides its maximal match, this (regex) terminal also
+    /// offers the prefix ending before each *internal* occurrence of `c`. Ports
+    /// swift-syntax's `lexOperatorIdentifier` regex-scan (Cursor.swift:2275): an
+    /// operator token is split before an internal `/` so a regex literal can follow
+    /// a prefix operator (`^^/regex/` → `^^` + `/regex/`). A leading `c` is not a
+    /// split point.
+    var splitBefore: Character? = nil
 
     // Accept any RegexComponent (e.g. Swift literal `/foo/` typed as Regex<Substring>) and wrap
     // to Regex<AnyRegexOutput> so the storage can also hold regexes that include capturing
