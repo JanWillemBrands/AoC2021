@@ -30,9 +30,13 @@ def load_snippets():
     out = {}
     for f in glob.glob(f"{ROOT}/AdventTests/SwiftSyntax*.swift"):
         t = open(f).read()
-        for m in re.finditer(r'SwiftSnippet\(', t):
-            i = m.start()
-            seg = t[i:i+2500]
+        starts = [m.start() for m in re.finditer(r'SwiftSnippet\(', t)]
+        for k, i in enumerate(starts):
+            # Bound each snippet's segment at the NEXT SwiftSnippet( so the source
+            # regex can't leak forward: a single-line `source: "…"` snippet would
+            # otherwise match a LATER multiline `"""…"""` source, mis-associating it.
+            end = starts[k + 1] if k + 1 < len(starts) else len(t)
+            seg = t[i:end]
             lbl = re.search(r'label:\s*"([^"]+)"', seg)
             if not lbl: continue
             src = re.search(r'source:\s*#*"""(.*?)"""#*', seg, re.S) or \

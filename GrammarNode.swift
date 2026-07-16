@@ -159,6 +159,13 @@ final class GrammarNode {
     /// bracket, so it needs no empty branch to key on (unlike `@prefer`).
     var isAvoided: Bool = false
 
+    /// `=|` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at lex
+    /// time and emitted as a SINGLE token (like `=:` trivia, but a token not trivia). References
+    /// to it in other productions resolve to a terminal (`.T`) — the outer parser never sees the
+    /// body characters, so they can't be re-read (e.g. a regex body can't alias an operator
+    /// sequence). Mirrors swift-syntax's lexer committing to one `/…/` token.
+    var isLexicalToken: Bool = false
+
     static var sizeofSets = 0
     
     /// Per-node LL(1) flag: true when this nonterminal or bracket has disjoint

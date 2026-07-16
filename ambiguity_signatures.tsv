@@ -1,59 +1,11 @@
 count	node	kind	signature	example_tests
-27	statements	ambiguous alternate	[statement ] | [statement statementSeparator statements]	testAccessorBlockAfterPatternBindingDeclWithAttribute#1,testClosureLiterals#3,testForwardSlashRegex35#1,testForwardSlashRegex69#1
-23	postfixExpression	ambiguous alternate	[functionCallExpression] | [primaryExpression]	testAvailabilityQuery11#1,testAvailabilityQuery23#1,testAvailabilityQuery24#1,testAvailabilityQueryUnavailability18#1
-16	prefixExpression	ambiguous pivot	body=[prefixExpression ]	testCompositionTypeExpr#3,testConventionAttributeInArrayType#1,testForwardSlashRegex100#1,testForwardSlashRegex19#1
-15	type	ambiguous alternate	[attribute type] | [functionType]	testAutoclosureAttribute#1,testClosureParameterWithAttribute#2,testClosureParameterWithAttribute#3,testConvention#1
-15	statement	ambiguous pivot	body=[statement statementSeparator statements]	testBasicLiterals#1,testIfconfigExpr10#1,testKeyPathFollowedByOperator#2,testKeypathExpressionWithSugaredRoot#1
-14	infixExpression	ambiguous pivot	body=[infixExpression ]	testCaseContext#1,testForwardSlashRegex11#1,testForwardSlashRegex14#1,testForwardSlashRegex31#1
-13	primaryExpression	ambiguous alternate	[identifier] | [implicitParameterName]	testClosureLiterals#3,testClosureWithDollarIdentifier#1,testClosureWithDollarIdentifier#2,testEscapedIdentifiers7#1
-13	subscriptDeclaration	ambiguous alternate	[subscriptHead subscriptResult  codeBlock] | [subscriptHead subscriptResult  getterSetterBlock]	testABIAttribute#16,testABIAttribute#7,testEnum18#1,testSubscripting19#1
-12	balancedToken	ambiguous alternate	[keywordMinusBrackets] | [operator]	testAccessorBlockAfterPatternBindingDeclWithAttribute#1,testBackDeployed#3,testDiagnoseAvailability10#1,testDiagnoseAvailability11#1
-12	arrayLiteralItem	ambiguous alternate	[expression] | [functionType]	testConventionAttributeInArrayType#1,testGenericDisambiguation8#1,testIsolatedTypeAttribute#5,testIsolatedTypeAttribute#6
-11		ambiguous pivot	body=[  "]"]	testBogusCaptureLists#1,testCollectionLiterals#1,testCollectionLiterals#2,testCollectionLiterals#3
-10	postfixExpression	ambiguous pivot	body=[postfixExpression  trailingClosures]	testAccessorBlockAfterPatternBindingDeclWithAttribute#1,testInitAccessorsWithDefaultValues#1,testInitDeinit21#1,testInitDeinit22#1
-9	primaryExpression	ambiguous alternate	["(" functionType ")"] | [parenthesizedExpression]	testFunctionTypeExpr#10,testFunctionTypeExpr#8,testFunctionTypeExpr#9,testGenericDisambiguation8#1
-7	postfixExpression	ambiguous pivot	body=[postfixExpression >s< postfixOperator]	testCaseContext#1,testForwardSlashRegex11#1,testForwardSlashRegex31#1,testForwardSlashRegex41#1
-7	type	ambiguous alternate	[metatypeType] | [typeIdentifier]	testKeyPathMethodAndInitializers#10,testKeyPathSubscript#1,testMetatypeObjectConversion5#1,testSuppressedImplicitConformance#3
-7	postfixExpression	ambiguous alternate	[explicitMemberExpression] | [primaryExpression]	testKeyPathMethodAndInitializers#10,testKeyPathMethodAndInitializers#15,testKeyPathMethodAndInitializers#17,testKeypathExpression#1
-6		ambiguous pivot	body=[  "let" patternInitializerList]	testAsync15#1,testAsyncLetInLocalContext#1,testSequenceExpressions#1,testSequenceExpressions#2
-6	variableDeclaration	ambiguous alternate	[variableDeclarationHead variableName typeAnnotation getterSetterBlock] | [variableDeclarationHead variableName typeAnnotation getterSetterKeywordBlock]	testEnum70#1,testEnum72#1,testRecovery165#1,testRecovery166#1
-5	statement	ambiguous alternate	[expression] | [yieldStatement]	testYield#3,testYield#4,testYield#5,testYield#6
-5		ambiguous pivot	body=[ keyPathComponents]	testKeyPathMethodAndInitializers#10,testKeyPathMethodAndInitializers#15,testKeyPathSubscript#1,testKeyPathSubscript#2
-5	infixOperator	ambiguous pivot	body=[infixOperator >s<   prefixExpression]	testForwardSlashRegex11#1,testForwardSlashRegex19#1,testForwardSlashRegex31#1,testForwardSlashRegex41#1
-5	compilationCondition	ambiguous alternate	[identifier "("   ")"] | [platformCondition]	testIfconfigExpr28#1,testUnknownPlatform2#1,testUnknownPlatform3#1,testUnknownPlatform4#1
-5	superclassExpression	ambiguous alternate	[superclassInitializerExpression] | [superclassMethodExpression]	testInvalid7#1,testSuper2a#1,testSuper2b#1,testSuper2d#1
-4		ambiguous pivot	body=[  localParameterName typeAnnotation ]	testModifiedParameter#5,testModifiedParameter#6,testModifiedParameter#7,testModifiedParameter#8
-4		ambiguous pivot	body=[ postfixExpression]	testForwardSlashRegex19#1,testForwardSlashRegex31#1,testForwardSlashRegex41#1,testForwardSlashRegex43#1
-3	variableDeclaration	ambiguous alternate	[variableDeclarationHead patternInitializerList] | [variableDeclarationHead variableName typeAnnotation initializer getterSetterBlock]	testClosureLiterals#3,testInitAccessorsWithDefaultValues#1,testTrailingClosures16#1
-3	primaryExpression	ambiguous alternate	[literalExpression] | [macroExpansionExpression]	testNestedTypeSpecialization#1,testObjectLiterals#1,testObjectLiterals#2
-3	prefixExpression	ambiguous alternate	[ postfixExpression] | ["unsafe" <s> >n< prefixExpression]	testUnsafeExpr#13,testUnsafeExpr#15,testUnsafeExpr#4
-3	statement	ambiguous alternate	[declaration] | [expression]	testInitCallInPoundIf#1,testInitDeinit21#1,testInitDeinit22#1
-3	functionCallArgumentList	ambiguous alternate	[functionCallArgument "," functionCallArgumentList] | [functionCallArgument]	testForwardSlashRegex108#2,testForwardSlashRegex110#2,testForwardSlashRegex112#1
-3	postfixExpression	ambiguous alternate	[explicitMemberExpression] | [initializerExpression]	testInitDeinit18#1,testModuleSelectorCorrectCode#10,testSuper2c#1
-2	yieldStatement	ambiguous alternate	["yield" "(" ")"] | ["yield" expression]	testYield#3,testYield#4
-2	attributes	ambiguous pivot	body=[attributes type]	testIsolatedTypeAttribute#5,testIsolatedTypeAttribute#6
-2	balancedToken	ambiguous alternate	[identifier] | [keywordMinusBrackets]	testABIAttribute#16,testABIAttribute#19
-2	functionCallArgument	ambiguous alternate	[expression] | [operator]	testForwardSlashRegex122#1,testForwardSlashRegex123#1
-1	yieldStatement	ambiguous alternate	["yield" "(" yieldedExpressionList  ")"] | ["yield" expression]	testYield#5
-1	type	ambiguous alternate	[functionType] | [optionalType]	testTypedThrows#4
-1	type	ambiguous alternate	[attribute type] | [functionType] | [optionalType]	testTypedThrows#4
-1	type	ambiguous alternate	["~" type] | [metatypeType]	testSuppressedImplicitConformance#3
-1	type	ambiguous alternate	["~" type] | [optionalType]	testSuppressedImplicitConformance#5
-1		ambiguous pivot	body=[   "}"]	testAccessorBlockAfterPatternBindingDeclWithAttribute#1
-1	variableDeclaration	ambiguous alternate	[variableDeclarationHead patternInitializerList] | [variableDeclarationHead variableName typeAnnotation  willSetDidSetBlock] | [variableDeclarationHead variableName typeAnnotation initializer getterSetterBlock]	testAccessorBlockAfterPatternBindingDeclWithAttribute#1
-1	postfixExpression	ambiguous alternate	[primaryExpression] | [subscriptExpression]	testKeypathExpression#11
-1	postfixExpression	ambiguous alternate	[forcedValueExpression] | [primaryExpression]	testKeypathExpression#12
-1	postfixExpression	ambiguous alternate	[optionalChainingExpression] | [primaryExpression]	testKeypathExpression#12
-1	postfixExpression	ambiguous alternate	[optionalChainingExpression] | [postfixExpression >s< postfixOperator] | [primaryExpression]	testKeypathExpression#12
+3	statement	ambiguous alternate	[expression] | [yieldStatement]	testYield#3,testYield#4,testYield#5
+2		ambiguous pivot	body=[ keyPathComponents]	testKeypathExpressionWithSugaredRoot#5,testKeypathExpressionWithSugaredRoot#6
+1	infixExpression	ambiguous pivot	body=[infixExpression ]	testIfHasSymbol#2
+1	tupleBindingElement	ambiguous alternate	[bindingPattern] | [softIdentifier ":" bindingPattern]	testUsing#10
+1	statements	ambiguous alternate	[statement ] | [statement statementSeparator statements]	testNonisolatedSpecifier#15
+1		ambiguous pivot	body=[  "]"]	testCollectionLiterals#8
 1	dictionaryLiteralItems	ambiguous pivot	body=[dictionaryLiteralItems  "]"]	testCollectionLiterals#9
-1	functionCallArgument	ambiguous alternate	[softIdentifier ":" expression] | [softIdentifier ":" operator]	testStringLiterals#7
-1	prefixExpression	ambiguous alternate	[ postfixExpression] | ["borrow" <s> >n< prefixExpression]	testBorrowNameFunctionCallStructure2#1
-1		ambiguous pivot	body=[  closureParameterName ]	testClosureParameterWithModifier#1
-1	condition	ambiguous alternate	[availabilityCondition] | [expression]	testAvailabilityQuery24#1
-1	postfixExpression	ambiguous alternate	[optionalChainingExpression] | [postfixExpression >s< postfixOperator]	testForwardSlashRegex41#1
-1	primaryExpression	ambiguous alternate	["("  operator ")"] | [parenthesizedExpression]	testForwardSlashRegex122#1
 1	matchPattern	ambiguous alternate	[typeCastingPattern] | [valueBindingPattern]	testMatchingPatterns32#1
 1	matchPattern	ambiguous alternate	[enumCasePattern] | [valueBindingPattern]	testBorrowingContextualParsing#8
 1	functionName	ambiguous alternate	[operatorName] | [softIdentifier]	testOperators26#1
-1	type	ambiguous alternate	[optionalType] | [parameterModifier type]	testTry8#1
-1	postfixExpression	ambiguous alternate	[forcedValueExpression] | [postfixExpression >s< postfixOperator]	testTry18#1

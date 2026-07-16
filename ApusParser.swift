@@ -293,16 +293,19 @@ class ApusParser {
             }
 
         } else {
-            // production rule — `=` for emit, `=:` for trivia (Phase E Step 2).
-            try expect(["=", "=:"])
+            // production rule — `=` for emit, `=:` for trivia (Phase E Step 2),
+            // `=|` for a lexical nonterminal (body recognized by a GLL sub-parse, emitted
+            // as one token; references to it resolve to a terminal — see GrammarNode.isLexicalToken).
+            try expect(["=", "=:", "=|"])
             let isTrivia = token.kind == "=:"
+            let isLexical = token.kind == "=|"
             // Collect signature actions (between nonterminal name and `=`/`=:`)
             let signatureActions = collectActions(at: cI)
             cI += 1
             // Actions between operator and body naturally land on the first ALT
             // node via sequence()'s collectActions(at: cI) — no separate locals
             // collection needed.
-            if !isTrivia, grammar.startSymbol == "" {
+            if !isTrivia, !isLexical, grammar.startSymbol == "" {
                 grammar.startSymbol = nonTerminalName
             }
             let node = try selection()
@@ -320,6 +323,18 @@ class ApusParser {
             }
             if isTrivia {
                 lhsNode.isTrivia = true
+            }
+            if isLexical {
+                lhsNode.isLexicalToken = true
+                // Register the name as a terminal so references in other productions resolve to
+                // `.T` (a single token) rather than expanding the body inline. The TokenPattern is
+                // a marker only — its match is computed by a GLL sub-parse (lexicalTokenRecognisers).
+                if grammar.terminals[nonTerminalName] == nil {
+                    var pat = TokenPattern(nonTerminalName, Regex { nonTerminalName }, false, false)
+                    pat.isLexicalToken = true
+                    grammar.terminals[nonTerminalName] = pat
+                    _ = grammar.registerTerminal(nonTerminalName)
+                }
             }
             if let sig = signatureActions.first {
                 lhsNode.signature = sig

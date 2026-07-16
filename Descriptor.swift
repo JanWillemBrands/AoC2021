@@ -120,6 +120,10 @@ struct OnDemandLiteralLexer: LCNPLexer {
     /// terminal and returns the longest accepting end position at `pos`, or
     /// `nil` if no match. Tried after `triviaRegexes` in `skipTrivia`.
     let triviaRecognisers: [(CharPosition) -> CharPosition?]
+    /// `=|` lexical-nonterminal recognisers, keyed by terminal kind ID. Each runs a GLL
+    /// sub-parse rooted at the `=|` nonterminal and returns its longest accept end at `pos`.
+    /// A terminal in this map is matched by its recogniser (one token) instead of a regex/literal.
+    let lexicalTokenRecognisers: [Int: (CharPosition) -> CharPosition?]
     /// Terminal ID of the synthetic EOS sentinel (`"○"`). Matched directly at
     /// `input.endIndex` (after trivia skip), since EOS isn't in
     /// `grammar.terminals` and wouldn't otherwise have a lex source.
@@ -142,6 +146,13 @@ struct OnDemandLiteralLexer: LCNPLexer {
             // EOS matches at end of input (after any trailing trivia).
             guard scanStart == input.endIndex else { return [] }
             return [LexMatch(terminalID: terminalID, start: scanStart, end: scanStart, triviaEnd: scanStart)]
+        }
+        // `=|` lexical nonterminal: match extent via the GLL sub-parse recogniser. One token
+        // spanning the sub-parse's longest accept from `scanStart`; no match → no token.
+        if let recognise = lexicalTokenRecognisers[terminalID] {
+            guard scanStart < input.endIndex, let end = recognise(scanStart), end > scanStart else { return [] }
+            let cursorEnd = skipTrivia(from: end)
+            return [LexMatch(terminalID: terminalID, start: scanStart, end: end, triviaEnd: cursorEnd)]
         }
         if let literal = literalSourceByID[terminalID] {
             guard scanStart < input.endIndex else { return [] }

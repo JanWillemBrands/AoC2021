@@ -87,6 +87,12 @@ class MessageParser {
     /// non-terminal recognisers) via `skipTrivia`.
     var lexer: LCNPLexer!
 
+    /// True when this parser instance is a recogniser sub-parser (a `=:` trivia or `=|` lexical
+    /// nonterminal, prepared with `isSubParser: true`). Such a root is a RECOGNISER: it may
+    /// complete at any position (the outer parser supplies the "next token" context), so its
+    /// root completion is not gated on FOLLOW/EOF. See `followCheck`.
+    var isSubParser = false
+
     // MARK: - Lex memoization
     /// `(pos, terminalID) → [LexMatch]` cache. Lex queries are pure given the
     /// input; the same (pos, terminalID) is asked many times during a parse
@@ -304,6 +310,7 @@ class MessageParser {
     /// sub-parsers) call this once per input and then `runGLL` many times
     /// against the prepared state.
     func prepareInput(input: String, isSubParser: Bool = false) {
+        self.isSubParser = isSubParser
         self.input = input
         // LCNP lex stack: `OnDemandLiteralLexer` only (Phase E Step 2d retired
         // `LegacyScannerLexAdapter`). All literals and regex terminals serve
@@ -316,6 +323,11 @@ class MessageParser {
         lookbehindByTerminalID.removeAll(keepingCapacity: true)
         for (name, pat) in grammar.terminals {
             guard let id = grammar.symbolToID[name] else { continue }
+            if pat.isLexicalToken {
+                // `=|` lexical nonterminal — match computed by a GLL sub-parse below, not a
+                // regex/literal. Skip the regex/literal registration.
+                continue
+            }
             if pat.isLiteral {
                 literalSourceByID[id] = pat.source
             } else if !pat.isSkip {
@@ -350,6 +362,23 @@ class MessageParser {
                     return ends.max()
                 }
                 triviaRecognisers.append(recogniser)
+            }
+        }
+        // Lexical-nonterminal recognisers for each `=|` LHS. Same sub-parse machinery as the
+        // `=:` trivia recognisers, but keyed by the terminal kind ID and used by the lexer to
+        // emit ONE token spanning the sub-parse's longest accept from `pos`. Skipped for
+        // sub-parsers (would recurse). The sub-parser strips no trivia (isSubParser), so the
+        // body is matched character-tight — right for whitespace-sensitive constructs like regex.
+        var lexicalTokenRecognisers: [Int: (CharPosition) -> CharPosition?] = [:]
+        if !isSubParser {
+            for (name, nt) in grammar.nonTerminals where nt.isLexicalToken {
+                guard let id = grammar.symbolToID[name] else { continue }
+                let sub = MessageParser(grammar: grammar)
+                sub.prepareInput(input: input, isSubParser: true)
+                lexicalTokenRecognisers[id] = { pos in
+                    sub.runGLL(root: nt, start: pos)
+                    return sub.yield(of: nt).lazy.filter { $0.i == pos }.map(\.j).max()
+                }
             }
         }
         // Phase G: synthetic layout tokens (Python INDENT/DEDENT, etc.) are
@@ -389,6 +418,7 @@ class MessageParser {
             lexicalClassIDs: lexicalClassIDs,
             triviaRegexes: triviaRegexes,
             triviaRecognisers: triviaRecognisers,
+            lexicalTokenRecognisers: lexicalTokenRecognisers,
             eosID: grammar.eosID,
             virtualTokensAt: virtualTokensAt
         )
@@ -935,7 +965,12 @@ class MessageParser {
         // closing `*/` lands exactly at EOF would fail to yield. Mirrors the EOF
         // allowance in `boundaryMatches` and the parse-success criterion. The main
         // parse root already carries `○` in its follow, so it's unaffected.
-        if bracket === currentParseRoot && cI == input.endIndex { return true }
+        // A recogniser sub-parse root (a `=:`/`=|` nonterminal) may complete at ANY position:
+        // it is a lexical recogniser and the OUTER parser supplies the following context. A
+        // lexical-token recogniser (`=|`) whose match ends mid-input (e.g. a `/regex/` followed
+        // by `.member`) would otherwise never yield, because its FOLLOW is empty (no productions
+        // reference it — they resolve to a terminal). The main parse root keeps the FOLLOW/EOF gate.
+        if bracket === currentParseRoot && (isSubParser || cI == input.endIndex) { return true }
         for fID in bracket.followBS {
             if fID == grammar.epsilonID { continue }
             if !cachedLex(at: cI, terminalID: fID).isEmpty { return true }
