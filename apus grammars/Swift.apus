@@ -893,7 +893,7 @@ wildcardExpression = "_" .
 // not argless-`#foo` + call `(bar)` (probe-verified: swift-syntax yields MacroExpansionExpr with
 // args, even when spaced `#foo (bar)`; `#foo(1)(2)` = macro `#foo(1)` then a call `(2)`). The two
 // readings give macroExpansionExpression different extents at the same start; keep the longest.
-@longest macroExpansionExpression = "#" >s< macroName genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+@longest macroExpansionExpression = macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
 
 // swift-syntax parseKeyPathExpression (Expressions.swift:1107+) — `mayBeAfterTypeName`:
 // leading-dot `.?` / `.!` / `.[` are only valid at the START (still in "type-name"
@@ -1082,13 +1082,7 @@ forInStatement = "for" "try"? "await"? "unsafe"? bindingPattern "in" expression 
 whileStatement = "while" conditionList codeBlock .
 
 conditionList = condition | condition "," conditionList .
-// @prefer availabilityCondition: `#available(*)` / `#unavailable(*)` parse both as an availability
-// condition AND as a `#available` macro-expansion expression (our macroName accepts any `#name`).
-// swift-syntax reserves these as pound-keywords, so availability always wins. Safe: availabilityCondition
-// only yields at `#available(`/`#unavailable(`, where the only competing sibling is that same-span macro
-// expression — caseCondition/optionalBindingCondition start with `case`/`let`/`var`, never pruned.
-// (Structural exclusion from macroName was tried and rejected — it introduced a worse #if-directive pivot.)
-condition = expression | @prefer availabilityCondition | caseCondition | optionalBindingCondition .
+condition = expression | availabilityCondition | caseCondition | optionalBindingCondition .   // `#available`/`#unavailable` are excluded from macroHead, so no spurious macro-call reading competes here — no @prefer needed
 
 caseCondition = "case" matchPattern initializer .
 optionalBindingCondition = "let" bindingPattern initializer? | "var" bindingPattern initializer? .
@@ -1202,7 +1196,7 @@ filePath = staticStringLiteral .
 availabilityCondition = "#available" "(" availabilityArguments ")" .
 availabilityCondition = "#unavailable" "(" availabilityArguments ")" .
 availabilityArguments = availabilityArgument | availabilityArgument "," availabilityArguments .
-availabilityArgument = platformName platformVersion .
+availabilityArgument = platformName platformVersion? .   // version optional: `#available(OSX)`, `#available(…, unavailable)` are bare identifiers (swift-syntax parses them syntactically, diagnoses the missing version later). Previously only accepted via the #available-macro reading, now removed.
 availabilityArgument = "*" .
 
 // swift-syntax parsePlatformVersion (Availability.swift:202) accepts any identifier
@@ -1258,16 +1252,20 @@ declaration = macroExpansionDeclaration .   // attributed/modified freestanding 
 // macroExpansionDeclaration REQUIRES a leading attribute or declaration-modifier (so a bare `#foo`
 // is not a decl at statement level — it's an expression). Two alternates: attributes (modifiers
 // optional), or modifiers alone. Reachable via `declaration` (statement + member).
-macroExpansionDeclaration = attributes declarationModifiers? "#" >s< macroName genericArgumentClause? functionCallArgumentClause? trailingClosures? .
-macroExpansionDeclaration = declarationModifiers "#" >s< macroName genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+macroExpansionDeclaration = attributes declarationModifiers? macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+macroExpansionDeclaration = declarationModifiers macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
 // Bare freestanding macro expansion (no attributes/modifiers) — a declaration only in MEMBER
 // position (added via memberDeclaration); at statement level the bare form is an expression.
-freestandingMacroExpansionDeclaration = "#" >s< macroName genericArgumentClause? functionCallArgumentClause? trailingClosures? .
-macroName = moduleSelector? macroBaseName .   // SE-0491: #Module::macro
-// Reserved pound-keywords are NOT macro names: `#available`/`#unavailable` (AvailabilityCondition),
-// `#if`/`#elseif`/`#else`/`#endif` (IfConfigDecl), `#sourceLocation` (PoundSourceLocation) — all have
-// dedicated rules, so excluding them here removes the spurious `#kw(...)` macro-call reading.
-macroBaseName = rawIdentifier ---("available" "unavailable" "if" "elseif" "else" "endif" "sourceLocation") .
+freestandingMacroExpansionDeclaration = macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+// A macro head is a SINGLE token `#name` (regex — `#` and the name are one lexeme). This is what
+// lets `---` exclude the RESERVED pound-keywords: the excluded literal (`#available`) co-matches the
+// exact same span as `poundName`, so the exclusion (same-position/same-end suppression) fires. With
+// the old `"#" + rawIdentifier` the name token started AFTER the `#`, so no reserved literal shared
+// its position and `---` was a silent no-op. Reserved keywords have dedicated rules (availability /
+// #if directives / #sourceLocation); everything else (`#foo`, `#selector`, `#colorLiteral`, …) is a macro.
+poundName - /#(?:[\p{XID_Start}\p{So}][\p{XID_Continue}\p{So}]*|_[\p{XID_Continue}\p{So}]+)/ .
+macroHead = poundName ---("#available" "#unavailable" "#if" "#elseif" "#else" "#endif" "#sourceLocation") .
+macroHead = "#" >s< moduleSelector rawIdentifier .   // SE-0491 #Module::macro (rare; keeps the module-qualified form)
 
 //  "#error" "#warning" "#fileLiteral" "#colorLiteral" "#imageLiteral" "#keyPath" "#selector"
 

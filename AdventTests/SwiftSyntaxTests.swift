@@ -343,20 +343,6 @@ struct SwiftSyntaxTests {
     @Suite("SwiftSyntax parser probe")
     struct ParserProbe {
 
-        @Test("PROBE availability expression reading")
-        func availExprProbe() throws {
-            let grammar = try loadGrammarFile(named: "Swift")
-            let src = "if #available(*) {}"
-            let mp = MessageParser(grammar: grammar)
-            mp.parse(input: src)
-            // NO Oracle.disambiguate() — show the RAW ambiguity and the full winning tree
-            let db = DerivationBuilder(parser: mp, input: src)
-            let tree = db.buildAST()
-            print("AEP accepted=\(tree != nil) diagnostics=\(db.diagnostics.count)")
-            for d in db.diagnostics { print("AEP   \(d.node) | \(d.message) | «\(src[d.from..<d.to])» | \(d.signature)") }
-            if let t = tree { print("AEP tree:\n" + t.dump(indent: 0).split(separator: "\n").prefix(40).joined(separator: "\n")) }
-        }
-
         @Test("pattern node shape differs between declaration and switch case")
         func patternNodeShapeProbe() {
             let illegal = Parser.parse(source: "let let x = 1")
