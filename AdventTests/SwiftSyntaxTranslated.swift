@@ -8212,7 +8212,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "OperatorsTests.testOperators3",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "TSPL reserves `&`: it can't be used to define a custom operator (`infix operator &`)"
     ),
     SwiftSnippet(
         label: "testOperators4#1",
@@ -8415,7 +8416,8 @@ let translatedSnippets: [SwiftSnippet] = [
       func &(x : Man, y : Man) -> Man { return x } // forgive amp_prefix token
       """,
         origin: "OperatorsTests.testOperators24",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "TSPL reserves `&`: it can't be overloaded (`func &`). swift-syntax only accepts via error-recovery (\"forgive amp_prefix token\")"
     ),
     SwiftSnippet(
         label: "testOperators25#1",
@@ -9454,7 +9456,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "RecoveryTests.testRecovery13",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "misplaced `static`/`class` modifiers (static func/struct/class/protocol/typealias at top level, `class var a = 42`) — compiler rejects; swift-syntax recovers. Error-recovery test on invalid input."
     ),
     SwiftSnippet(
         label: "testRecovery27#1",
@@ -9500,7 +9503,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "RecoveryTests.testRecovery113",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "bare `super` (no member access) in init body — compiler rejects ('super' cannot be used outside member access); swift-syntax recovers. Error-recovery test on invalid input."
     ),
     SwiftSnippet(
         label: "testRecovery115#1",
@@ -9652,7 +9656,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "RecoveryTests.testRecovery169",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "crash-recovery test for malformed code (rdar://23719432 `&(Int:_)`); not valid Swift"
     ),
     SwiftSnippet(
         label: "testRegexParseError1#1",
@@ -9660,7 +9665,8 @@ let translatedSnippets: [SwiftSnippet] = [
       _ = /(/
       """,
         origin: "RegexParseErrorTests.testRegexParseError1",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "unbalanced `(` in regex body `/(/` — our plainRegularExpressionLiteral CFG balances ()/[] by design (see Regex CFG Discussion.md); swift-syntax uses a regex sub-lexer we deliberately don't replicate. Same as testForwardSlashRegex138/168/171."
     ),
     SwiftSnippet(
         label: "testRegexParseError2#1",
@@ -9676,7 +9682,8 @@ let translatedSnippets: [SwiftSnippet] = [
       _ = /)/
       """,
         origin: "RegexParseErrorTests.testRegexParseError4",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "unbalanced `)` in regex body `/)/` — plainRegularExpressionLiteral CFG balances ()/[] by design (see Regex CFG Discussion.md); swift-syntax uses a regex sub-lexer we deliberately don't replicate. Identical to disabled testForwardSlashRegex168."
     ),
     SwiftSnippet(
         label: "testRegexParseError5#1",
@@ -10336,7 +10343,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SubscriptingTests.testSubscripting17",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "bodyless subscript in a struct — compiler rejects (`expected '{' in subscript to specify getter and setter implementation`); only protocols allow a bodyless subscript. swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSubscripting19#1",
@@ -10464,7 +10472,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """#,
         origin: "SuperTests.testSuper2g",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "bare `super(0)` (calling super) — compiler rejects ('super' is not callable); swift-syntax recovers. Recovery test on invalid input."
     ),
     SwiftSnippet(
         label: "testSuper2h#1",
@@ -10591,7 +10600,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch11",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch12#1",
@@ -10603,7 +10613,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch12",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch13#1",
@@ -10615,7 +10626,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch13",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch14#1",
@@ -10627,7 +10639,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch14",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch17#1",
@@ -10652,7 +10665,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch20",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch21#1",
@@ -10664,7 +10678,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch21",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch23#1",
@@ -10674,7 +10689,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch23",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch24#1",
@@ -10686,7 +10702,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch24",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch25#1",
@@ -10698,7 +10715,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch25",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch27#1",
@@ -10793,7 +10811,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch32",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch33#1",
@@ -10958,7 +10977,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """#,
         origin: "SwitchTests.testSwitch41",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case body (`case Whichever.alias:` directly followed by `default:`) — compiler requires ≥ 1 executable statement per case (`'case' label in a 'switch' must have at least one executable statement`); swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch42#1",
@@ -10970,7 +10990,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch42",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch43#1",
@@ -10982,7 +11003,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch43",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch44#1",
@@ -10994,7 +11016,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch44",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch45#1",
@@ -11006,7 +11029,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "SwitchTests.testSwitch45",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty case/default body (or default-not-last / duplicate default) — compiler requires ≥ 1 executable statement per case and `default` must be last; swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testSwitch46#1",
@@ -11892,7 +11916,8 @@ let translatedSnippets: [SwiftSnippet] = [
       _ = try "\() \(1)"
       """#,
         origin: "TryTests.testTry26",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "empty string interpolation `\\()` — compiler rejects (`missing argument for parameter #1 in call`); TSPL requires an expression inside `\\(...)`. swift-syntax parses permissively. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testTry27#1",
@@ -12035,7 +12060,8 @@ let translatedSnippets: [SwiftSnippet] = [
       protocol Dummy : class {}
       """,
         origin: "TryTests.testTry40",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "deprecated `: class` protocol constraint (replaced by `: AnyObject`) — not in current TSPL; compiler rejects. Same as testMetatypeObjectConversion2."
     ),
     SwiftSnippet(
         label: "testTry41#1",
@@ -12676,7 +12702,8 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "TypeExprTests.testTypeExpr27",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "unparenthesized function type in expression position (`P1 & P2 throws -> P3 & P1`) — compiler rejects (`single argument function types require parentheses`); requires `(P1 & P2) throws -> ...`. swift-syntax parses permissively as a type_expr. Compiler-invalid."
     ),
     SwiftSnippet(
         label: "testTypeExpr29#1",

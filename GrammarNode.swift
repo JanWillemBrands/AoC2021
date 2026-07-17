@@ -143,6 +143,29 @@ final class GrammarNode {
     var unlessTargetName: String?
     var unlessTarget:     GrammarNode?
 
+    /// Alternate-level `@prefer` annotation. Captured at parse time on the `.ALT`
+    /// node heading the alternate (prefix, right after `=` or `|`). Resolved by the
+    /// Oracle (`PreferRule`): among the alternates of one nonterminal that derive
+    /// the same parent node (same `(i,j)` span), the preferred alternate(s) win and
+    /// the non-preferred siblings' yields are pruned. Positive replacement for
+    /// `@unless(X)`.
+    var isPreferred: Bool = false
+
+    /// Bracket-level `@avoid` annotation. Captured at parse time on an OPT/KLN/POS
+    /// bracket (prefix, right before the factor). The negative dual of `@prefer`:
+    /// the annotated optional is a fallback — when SKIPPING it still yields a complete
+    /// parse, that skip wins. The Oracle compiles it to a pivot preference (keep the
+    /// smallest pivot = "optional skipped") on the symbol immediately following the
+    /// bracket, so it needs no empty branch to key on (unlike `@prefer`).
+    var isAvoided: Bool = false
+
+    /// `=|` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at lex
+    /// time and emitted as a SINGLE token (like `=:` trivia, but a token not trivia). References
+    /// to it in other productions resolve to a terminal (`.T`) — the outer parser never sees the
+    /// body characters, so they can't be re-read (e.g. a regex body can't alias an operator
+    /// sequence). Mirrors swift-syntax's lexer committing to one `/…/` token.
+    var isLexicalToken: Bool = false
+
     static var sizeofSets = 0
     
     /// Per-node LL(1) flag: true when this nonterminal or bracket has disjoint

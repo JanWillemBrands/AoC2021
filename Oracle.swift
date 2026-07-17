@@ -77,6 +77,51 @@ struct UnlessPredicateRule: DisambiguationRule {
     }
 }
 
+/// Alternate-level `@prefer` — the positive dual of `@unless(X)`, with equivalent
+/// semantics. Only the *preferred* alternate is annotated in the grammar; the
+/// Oracle registers this rule on each NON-preferred sibling's last body symbol and
+/// prunes its yields `(i…·)` wherever a preferred sibling also yields from the same
+/// START `i`. A preferred alternate yields from `i` exactly when its extra suffix
+/// (e.g. `genericArgumentClause`) followed the shared prefix — the same condition
+/// `@unless` tested via "target starts at my end". Keying on the start (not the
+/// span) is what lets a shorter fallback `(i…k)` be pruned in favour of a longer
+/// preferred `(i…j)`, without needing to know the losers' lengths.
+struct PreferRule: DisambiguationRule {
+    let preferredLastSymbols: [GrammarNode]
+    let yieldsOf: (GrammarNode) -> Set<BinarySpan>
+    func prune(_ yields: inout Set<BinarySpan>) -> Int {
+        var preferredStarts = Set<CharPosition>()
+        for sym in preferredLastSymbols {
+            for y in yieldsOf(sym) { preferredStarts.insert(y.i) }
+        }
+        var pruned = 0
+        for span in yields where preferredStarts.contains(span.i) {
+            yields.remove(span)
+            pruned += 1
+        }
+        return pruned
+    }
+}
+
+/// Bracket-level `@avoid` — the negative dual of `@prefer`, for an optional that
+/// should be SKIPPED whenever skipping still yields a complete parse. Registered on
+/// the body symbol immediately following the annotated OPT/KLN/POS: that symbol's
+/// yields `(i, k, j)` carry the bracket boundary as their pivot `k` (k = i ⟺ the
+/// optional was skipped). Among yields sharing an `(i, j)` span, keep the smallest
+/// pivot (skip) and prune the larger ones (optional taken).
+///
+/// This is why `@avoid` needs no empty branch to key on (the flaw that forced a
+/// manual rule split for `@prefer`): it keys on the *following* symbol's pivot, and
+/// "skip" is simply the pivot at the bracket's own start. When skipping does not
+/// lead to a complete parse, phase-1 has already removed the `k = i` yield, so the
+/// lone "taken" pivot survives untouched (e.g. `-x`, where `postfixExpression`
+/// cannot start at the `-`).
+struct AvoidOptionalRule: DisambiguationRule {
+    func prune(_ yields: inout Set<BinarySpan>) -> Int {
+        pruneByPivot(yields: &yields, keep: { $0.min()! })
+    }
+}
+
 private func pruneByExtent(
     yields: inout Set<BinarySpan>,
     keep: ([CharPosition]) -> CharPosition
@@ -165,7 +210,44 @@ class Oracle {
                 }
                 alt = a.alt
             }
+
+            // Alternate-level @prefer. Collect preferred alternates' last body
+            // symbols; register a PreferRule on every NON-preferred alternate's
+            // last body symbol so its completion yields are pruned wherever a
+            // preferred sibling derives the same parent node (same (i,j) span).
+            var preferredLast: [GrammarNode] = []
+            var scan: GrammarNode? = nt.alt
+            while let a = scan {
+                if a.isPreferred, let last = a.bodySymbols.last { preferredLast.append(last) }
+                scan = a.alt
+            }
+            if !preferredLast.isEmpty {
+                let p = parser
+                var b: GrammarNode? = nt.alt
+                while let a = b {
+                    if !a.isPreferred, let last = a.bodySymbols.last {
+                        rules.append((last, PreferRule(preferredLastSymbols: preferredLast,
+                                                       yieldsOf: { p.yield(of: $0) })))
+                    }
+                    b = a.alt
+                }
+            }
         }
+
+        // Bracket-level @avoid. Walk the full node graph (the pragma lives on a
+        // nested OPT/KLN/POS, not a top-level alternate) and register an
+        // AvoidOptionalRule on the symbol immediately following each @avoid bracket.
+        var seen = Set<ObjectIdentifier>()
+        func walk(_ node: GrammarNode?) {
+            guard let node, seen.insert(ObjectIdentifier(node)).inserted else { return }
+            if node.kind.isBracket, node.isAvoided,
+               let next = node.seq, next.kind != .END {
+                rules.append((next, AvoidOptionalRule()))
+            }
+            if node.kind != .END { walk(node.seq) }
+            walk(node.alt)
+        }
+        for nt in grammar.nonTerminals.values { walk(nt) }
     }
 
     @discardableResult

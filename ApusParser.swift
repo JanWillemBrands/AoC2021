@@ -182,6 +182,24 @@ class ApusParser {
             disambiguationAnnotation = d
             cI += 1
         }
+        // `@lexicalClass` — marks a regex terminal as a lexical class for the
+        // maximal-munch (longest-across) default. See TODO #0.
+        var isLexicalClassAnnotation = false
+        if token.kind == "pragma", token.stripped == "lexicalClass" {
+            isLexicalClassAnnotation = true
+            cI += 1
+        }
+        // `@splitBefore("c")` — regex terminal also offers prefixes ending before
+        // each internal `c` (ports swift-syntax's operator regex-split). See TODO #0.
+        var splitBeforeChar: Character? = nil
+        if token.kind == "pragma", token.stripped == "splitBefore" {
+            cI += 1
+            try expect(["("]); cI += 1
+            try expect(["literal"])
+            splitBeforeChar = token.stripped.escapesRemoved.first
+            cI += 1
+            try expect([")"]); cI += 1
+        }
         try expect(["identifier"])
         let nonTerminalName = String(token.image)
         cI += 1
@@ -196,6 +214,8 @@ class ApusParser {
                 // assign the name of the production to the regex
                 terminalAlias = nonTerminalName
                 terminal = try regex()
+                if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
+                if let sc = splitBeforeChar { grammar.terminals[nonTerminalName]?.splitBefore = sc }
             case "literal":
                 terminal = literal()
                 literalAliases[nonTerminalName] = terminal.name
@@ -273,16 +293,19 @@ class ApusParser {
             }
 
         } else {
-            // production rule — `=` for emit, `=:` for trivia (Phase E Step 2).
-            try expect(["=", "=:"])
+            // production rule — `=` for emit, `=:` for trivia (Phase E Step 2),
+            // `=|` for a lexical nonterminal (body recognized by a GLL sub-parse, emitted
+            // as one token; references to it resolve to a terminal — see GrammarNode.isLexicalToken).
+            try expect(["=", "=:", "=|"])
             let isTrivia = token.kind == "=:"
+            let isLexical = token.kind == "=|"
             // Collect signature actions (between nonterminal name and `=`/`=:`)
             let signatureActions = collectActions(at: cI)
             cI += 1
             // Actions between operator and body naturally land on the first ALT
             // node via sequence()'s collectActions(at: cI) — no separate locals
             // collection needed.
-            if !isTrivia, grammar.startSymbol == "" {
+            if !isTrivia, !isLexical, grammar.startSymbol == "" {
                 grammar.startSymbol = nonTerminalName
             }
             let node = try selection()
@@ -300,6 +323,18 @@ class ApusParser {
             }
             if isTrivia {
                 lhsNode.isTrivia = true
+            }
+            if isLexical {
+                lhsNode.isLexicalToken = true
+                // Register the name as a terminal so references in other productions resolve to
+                // `.T` (a single token) rather than expanding the body inline. The TokenPattern is
+                // a marker only — its match is computed by a GLL sub-parse (lexicalTokenRecognisers).
+                if grammar.terminals[nonTerminalName] == nil {
+                    var pat = TokenPattern(nonTerminalName, Regex { nonTerminalName }, false, false)
+                    pat.isLexicalToken = true
+                    grammar.terminals[nonTerminalName] = pat
+                    _ = grammar.registerTerminal(nonTerminalName)
+                }
             }
             if let sig = signatureActions.first {
                 lhsNode.signature = sig
@@ -359,7 +394,15 @@ class ApusParser {
         trace("sequence", token)
         let startOfSequence = GrammarNode(kind: .ALT, name: "")
         var termNode = startOfSequence
-        
+
+        // `@prefer` prefix: marks this alternate as higher-priority than its
+        // siblings (Oracle prunes non-preferred siblings where this one yields).
+        // Placed at the alternate's start — right after `=` or `|`.
+        if token.kind == "pragma" && token.stripped == "prefer" {
+            startOfSequence.isPreferred = true
+            cI += 1
+        }
+
         // leading actions (before first factor)
         termNode.actions = collectActions(at: cI)
         
@@ -377,7 +420,7 @@ class ApusParser {
                     let miniSeq = GrammarNode(kind: .ALT, name: "")
                     miniSeq.seq = factorNode
                     miniSeq.seq?.seq = GrammarNode(kind: .END, name: "")
-                    
+
                     switch token.kind {
                     case "?":
                         factorNode = GrammarNode(kind: .OPT, name: "", alt: miniSeq)
@@ -393,7 +436,7 @@ class ApusParser {
                 default:
                     break
                 }
-                
+
                 termNode.seq = factorNode
                 termNode = factorNode
                 termNode.actions = collectActions(at: cI)
@@ -556,6 +599,17 @@ class ApusParser {
         return GrammarNode(kind: .EPS, name: "ε")
     }
     
+    /// `@avoid` as the first token inside a bracket (`[ @avoid X ]`, `{ @avoid X }`,
+    /// `< @avoid X >`): marks the optional/repetition as a fallback. Consumes the
+    /// pragma and returns true when present. See `AvoidOptionalRule` in Oracle.swift.
+    func consumeAvoid() -> Bool {
+        if token.kind == "pragma" && token.stripped == "avoid" {
+            cI += 1
+            return true
+        }
+        return false
+    }
+
     func factor() throws -> GrammarNode {
         trace("factor", token)
         let node: GrammarNode
@@ -586,17 +640,23 @@ class ApusParser {
             cI += 1
         case "[":
             cI += 1
+            let avoid = consumeAvoid()
             node = GrammarNode(kind: .OPT, name: "", alt: try selection())
+            node.isAvoided = avoid
             try expect(["]"])
             cI += 1
         case "{":
             cI += 1
+            let avoid = consumeAvoid()
             node = GrammarNode(kind: .KLN, name: "", alt: try selection())
+            node.isAvoided = avoid
             try expect(["}"])
             cI += 1
         case "<":
             cI += 1
+            let avoid = consumeAvoid()
             node = GrammarNode(kind: .POS, name: "", alt: try selection())
+            node.isAvoided = avoid
             try expect([">"])
             cI += 1
         default:

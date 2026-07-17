@@ -26,6 +26,7 @@ let apusTerminals: [String:TokenPattern] = [
     ".":            TokenPattern(".",                       Regex { "." },                      true,  false),
     ":":            TokenPattern(":",                       Regex { ":" },                      true,  false),
     "=:":           TokenPattern("=:",                      Regex { "=:" },                     true,  false),
+    "=|":           TokenPattern("=|",                      Regex { "=|" },                     true,  false),   // lexical-nonterminal: body recognized by a GLL sub-parse, emitted as one token
     "=":            TokenPattern("=",                       Regex { "=" },                      true,  false),
     "-":            TokenPattern("-",                       Regex { "-" },                      true,  false),
     "|":            TokenPattern("|",                       Regex { "|" },                      true,  false),

@@ -100,6 +100,17 @@ struct OnDemandLiteralLexer: LCNPLexer {
     /// `terminalID → compiled regex` for every regex terminal (non-literal,
     /// non-skip). Answered from `input` directly via `prefixMatch`.
     let regexByID: [Int: Regex<AnyRegexOutput>]
+    /// `@splitBefore("c")` per terminal: besides the maximal match, also offer the
+    /// prefix ending before each internal `c`. Ports swift-syntax's operator
+    /// regex-scan (`^^/regex/` → `^^` + `/regex/`). See TODO #0.
+    let splitBeforeByID: [Int: Character]
+    /// Terminal IDs of `@lexicalClass` regex terminals (identifier, operator, …).
+    /// Maximal-munch (default, longest-across): a literal match is suppressed when
+    /// any lexical-class terminal has a strictly longer match at the same start
+    /// (`for` inside `foreach`, `_` inside `_foo`, `&` inside `&&`). The check is
+    /// a runtime prefix-match of the class regex — the ground truth, not a
+    /// derived extension class. See TODO #0 / `Multiple Lexicalisation` §4.1.
+    let lexicalClassIDs: [Int]
     /// Compiled `isSkip` patterns from the grammar, used to skip whitespace /
     /// comments / etc. between the parser's cursor and the next meaningful
     /// character.
@@ -109,6 +120,10 @@ struct OnDemandLiteralLexer: LCNPLexer {
     /// terminal and returns the longest accepting end position at `pos`, or
     /// `nil` if no match. Tried after `triviaRegexes` in `skipTrivia`.
     let triviaRecognisers: [(CharPosition) -> CharPosition?]
+    /// `=|` lexical-nonterminal recognisers, keyed by terminal kind ID. Each runs a GLL
+    /// sub-parse rooted at the `=|` nonterminal and returns its longest accept end at `pos`.
+    /// A terminal in this map is matched by its recogniser (one token) instead of a regex/literal.
+    let lexicalTokenRecognisers: [Int: (CharPosition) -> CharPosition?]
     /// Terminal ID of the synthetic EOS sentinel (`"○"`). Matched directly at
     /// `input.endIndex` (after trivia skip), since EOS isn't in
     /// `grammar.terminals` and wouldn't otherwise have a lex source.
@@ -132,11 +147,29 @@ struct OnDemandLiteralLexer: LCNPLexer {
             guard scanStart == input.endIndex else { return [] }
             return [LexMatch(terminalID: terminalID, start: scanStart, end: scanStart, triviaEnd: scanStart)]
         }
+        // `=|` lexical nonterminal: match extent via the GLL sub-parse recogniser. One token
+        // spanning the sub-parse's longest accept from `scanStart`; no match → no token.
+        if let recognise = lexicalTokenRecognisers[terminalID] {
+            guard scanStart < input.endIndex, let end = recognise(scanStart), end > scanStart else { return [] }
+            let cursorEnd = skipTrivia(from: end)
+            return [LexMatch(terminalID: terminalID, start: scanStart, end: end, triviaEnd: cursorEnd)]
+        }
         if let literal = literalSourceByID[terminalID] {
             guard scanStart < input.endIndex else { return [] }
             let remaining = input[scanStart...]
             guard remaining.hasPrefix(literal) else { return [] }
             let literalEnd = input.index(scanStart, offsetBy: literal.count)
+            // Maximal munch (longest-across): suppress this literal if any declared
+            // `@lexicalClass` terminal has a strictly longer match at the same
+            // start — `for` inside `foreach`, `_` inside `_foo`. Runtime prefix-
+            // match of the class regex is the faithful test (no extension-class
+            // extraction, no probes). TODO #0.
+            for classID in lexicalClassIDs where classID != terminalID {
+                guard let rx = regexByID[classID] else { continue }
+                if let rm = remaining.prefixMatch(of: rx), rm.range.upperBound > literalEnd {
+                    return []
+                }
+            }
             let cursorEnd = skipTrivia(from: literalEnd)
             return [LexMatch(terminalID: terminalID, start: scanStart, end: literalEnd, triviaEnd: cursorEnd)]
         }
@@ -146,8 +179,24 @@ struct OnDemandLiteralLexer: LCNPLexer {
             // which is needed for regexes containing capturing groups (e.g. backreference forms like `(#+)…\1`).
             guard let m = input[scanStart...].prefixMatch(of: regex),
                   m.range.upperBound > scanStart else { return [] }
-            let cursorEnd = skipTrivia(from: m.range.upperBound)
-            return [LexMatch(terminalID: terminalID, start: scanStart, end: m.range.upperBound, triviaEnd: cursorEnd)]
+            let maxEnd = m.range.upperBound
+            let cursorEnd = skipTrivia(from: maxEnd)
+            var results = [LexMatch(terminalID: terminalID, start: scanStart, end: maxEnd, triviaEnd: cursorEnd)]
+            // @splitBefore("c"): besides the maximal match, offer the prefix ending
+            // before each internal `c` — ports swift-syntax lexOperatorIdentifier's
+            // regex-scan (Cursor.swift:2275), letting `^^/regex/` split into `^^`
+            // + `/regex/`. A leading `c` is not a split point. No trivia sits before
+            // the split char, so end == triviaEnd.
+            if let splitChar = splitBeforeByID[terminalID] {
+                var i = input.index(after: scanStart)
+                while i < maxEnd {
+                    if input[i] == splitChar {
+                        results.append(LexMatch(terminalID: terminalID, start: scanStart, end: i, triviaEnd: i))
+                    }
+                    i = input.index(after: i)
+                }
+            }
+            return results
         }
         return []
     }

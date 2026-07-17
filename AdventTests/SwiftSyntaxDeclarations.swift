@@ -90,7 +90,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testProtocolParsing",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1", disabledReason: "bodyless `subscript` in a protocol without `{ get }` — compiler rejects (`subscript in protocol must have explicit { get } or { get set } specifier`). Same family as testSubscripting17."
     ),
     SwiftSnippet(
         label: "testVariableDeclarations#1",
@@ -721,7 +721,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testMacroExpansionDeclarationWithKeywordName",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1", disabledReason: "freestanding macro with a keyword name (`#case`) in a decl context — compiler rejects (`no macro named 'case'`). See testMacroExpansionExpressionWithKeywordName."
     ),
     SwiftSnippet(
         label: "testAttributedMacroExpansionDeclaration#1",
@@ -828,7 +828,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testAttributedMacroExpansionDeclaration",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1", disabledReason: "attributed freestanding macro with keyword name (`@attrib #class`) — compiler rejects (unnameable macro). See testMacroExpansionDeclarationWithKeywordName."
     ),
     SwiftSnippet(
         label: "testAttributedMacroExpansionDeclaration#12",
@@ -838,7 +838,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testAttributedMacroExpansionDeclaration",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1", disabledReason: "freestanding macro with keyword name (`#struct`) — compiler rejects (unnameable macro). See testMacroExpansionDeclarationWithKeywordName."
     ),
     SwiftSnippet(
         label: "testVariableGetSetNextLine#1",
