@@ -588,6 +588,14 @@ type = "~" type . // TODO: SE-0390 suppressed/inverse type — swift-syntax pars
 // __owned/nonisolated[(nonsending)]/dependsOn(...)).
 type = parameterModifier type .
 type = attribute type .
+// Bare `nonisolated` type specifier binds a FUNCTION type only (SE-0461): `let x: nonisolated
+// (Int) async -> Void`. swift-syntax rejects bare `nonisolated` on a same-line `(` and treats
+// `nonisolated⏎(hello)` as two statements (probe: hasError). Restricting the operand to
+// `functionType` (which requires `->`) reproduces both: #17 binds the arrow type, while `(hello)`
+// (no `->`) can't bind, leaving `nonisolated` a bare typeIdentifier + a separate `(hello)` statement
+// — resolving the residual `let x: nonisolated⏎(hello)` ambiguity. The `nonisolated(nonsending)`
+// arg form stays on parameterModifier (type = parameterModifier type, above).
+type = "nonisolated" functionType .
 
 typeAnnotation = ":" type .   // specifiers/attributes carried by `type` (single source of truth)
 
@@ -608,7 +616,7 @@ tupleType = "(" ")" | "(" tupleTypeElement "," tupleTypeElementList ","? ")" .  
 tupleTypeElementList = tupleTypeElement | tupleTypeElement "," tupleTypeElementList .
 
 tupleTypeElement = elementName typeAnnotation | type .  // element specifiers carried by `type`
-elementName = identifier .
+elementName = identifier | "_" .   // `_` = wildcard tuple-type label, e.g. `(_: Int, y: Int)` (swiftc -parse accepts; single label only — two labels is a tuple-type error)
 
 // Leading attributes on a function type are carried by `type = attribute type`
 // (swift-syntax always nests `AttributedTypeSyntax > FunctionTypeSyntax`), so functionType
@@ -623,8 +631,8 @@ functionTypeArgumentList = functionTypeArgument | functionTypeArgument "," funct
 functionTypeArgument = type | externalArgumentLabel? localArgumentLabel typeAnnotation . // specifiers/attributes carried by `type`
 
 //argumentLabel = softIdentifier .
-externalArgumentLabel = softIdentifier .        // accept all keywords except let, var, inout
-localArgumentLabel = softIdentifier .           // but references to the parameter in the function body must use backticks
+externalArgumentLabel = softIdentifier | "_" .  // accept all keywords except let, var, inout; `_` = wildcard name in function-type params
+localArgumentLabel = softIdentifier | "_" .     // but references to the parameter in the function body must use backticks
 
 throwsClause = "throws" | "throws" "(" type ")" .
 
@@ -674,7 +682,7 @@ typeInheritanceClause = ":" typeInheritanceList .
 //typeInheritanceList = attributes? "~"? typeIdentifier | attributes? "~"? typeIdentifier "," typeInheritanceList .
 // TODO: only "~" (SE-0390 suppressed conformance) and "nonisolated"/"nonisolated(...)" (SE-0414 nonisolated conformance) are allowed here per the compiler.
 typeInheritanceList = attributes? "~"? nonisolatedSpecifier? typeIdentifier | attributes? "~"? nonisolatedSpecifier? typeIdentifier "," typeInheritanceList .
-nonisolatedSpecifier = "nonisolated" | "nonisolated" "(" identifier ")" .   // swift-syntax parseNonisolatedTypeSpecifier (Types.swift:1179) — bare or with argument
+nonisolatedSpecifier = "nonisolated" .   // SE-0414 nonisolated conformance is BARE only — swift-syntax rejects `struct S: nonisolated(unsafe) P` (probe: hasError). The `(arg)` form belongs to the decl modifier / type specifier, not conformance.
 
 
 
@@ -797,19 +805,23 @@ literalExpression = literal .
 literalExpression = arrayLiteral | dictionaryLiteral .
 
 arrayLiteral = "[" arrayLiteralItems? ","? "]" .
-arrayLiteralItems = arrayLiteralItem ","? | arrayLiteralItem "," arrayLiteralItems .
-arrayLiteralItem = @prefer expression .   // @prefer over `functionType` (below): swift-syntax parses an arrow element `(Int,Double) -> Bool` as a SequenceExpr(TupleExpr, `->`, …) — NOT a FunctionType (probe-verified). The expression/`->`-operator route is faithful; functionType survives only for inout/throws/async arrows the sequence route can't reach.
-// Arrow-type array element fallback. swift-syntax parses a SIMPLE arrow element
-// (`[() -> T]`, `[(Int,Double) -> Bool]`) as a SequenceExpr(TupleExpr, `->`, …) via the
-// `expression` route above (probe-verified — NOT a FunctionType/TypeExpr). This `functionType`
-// alternate is kept ONLY for arrows with type-only pieces the sequence route can't produce —
-// `inout` args, `throws`/`async` arrows (`[(inout Int) -> Bool]`, `[() throws -> T]`). It stays
-// narrow (`functionType`, not the broad `type`, which made `[X]`/`[X] & [Y]` parse as types too).
-arrayLiteralItem = functionType .
+arrayLiteralItems = arrayLiteralItem | arrayLiteralItem "," arrayLiteralItems .   // no trailing `","?` here — arrayLiteral owns the trailing comma (else it has two homes → the `⋯ "]"` pivot)
+arrayLiteralItem = @prefer expression .   // @prefer over `typeExpression` (below): swift-syntax parses an arrow element `(Int,Double) -> Bool` as a SequenceExpr(TupleExpr, `->`, …) — NOT a FunctionType/TypeExpr (probe-verified). The expression/`->`-operator route is faithful; typeExpression survives only for type-only elements the expression route can't reach.
+// TypeExpr array element (swift-syntax `TypeExprSyntax`). A collection element that is a
+// TYPE the expression route can't produce — a specifier/attribute-prefixed or arrow function
+// type (`[() throws -> T]`, `[nonisolated(nonsending) () async -> Void]`, `[@escaping () -> Void]`),
+// or an optional/paren'd type thereof (`[(… )?]`). swift-syntax parses these as an array_expr
+// whose element is a type_expr (probe: `swiftc -dump-parse`). `@prefer expression` above keeps the
+// literal reading for `[Int]`/`[X & Y]` where both parse; the type reading survives only where
+// the expression route fails.
+arrayLiteralItem = typeExpression .
+typeExpression = type .   // swift-syntax TypeExprSyntax: a type used in expression position
 
 dictionaryLiteral = "[" dictionaryLiteralItems ","? "]" | "[" ":" "]" .
-dictionaryLiteralItems = dictionaryLiteralItem ","? | dictionaryLiteralItem "," dictionaryLiteralItems .
-dictionaryLiteralItem = expression ":" expression .
+dictionaryLiteralItems = dictionaryLiteralItem | dictionaryLiteralItem "," dictionaryLiteralItems .   // trailing comma owned by dictionaryLiteral (see arrayLiteralItems)
+dictionaryLiteralItem = dictionaryLiteralElement ":" dictionaryLiteralElement .
+dictionaryLiteralElement = @prefer expression .   // @prefer over typeExpression, same rationale as arrayLiteralItem
+dictionaryLiteralElement = typeExpression .        // TypeExpr key/value, e.g. `[String: (nonisolated(nonsending) () async -> Void)?]`
 
 // playgroundLiteral rules removed: swift-syntax has no object-literal node — `#colorLiteral(…)`,
 // `#fileLiteral(…)`, `#imageLiteral(…)` are plain MacroExpansionExpr (probe-verified), already
@@ -859,7 +871,7 @@ closureParameterList = closureParameter | closureParameter "," closureParameterL
 closureParameter = attributes? [ @avoid parameterDeclarationModifiers ] closureParameterNames typeAnnotation? .
 closureParameter = attributes? [ @avoid parameterDeclarationModifiers ] closureParameterNames typeAnnotation "..." .
 closureParameterNames = externalParameterName closureParameterName | closureParameterName .
-closureParameterName = identifier .
+closureParameterName = identifier | "_" .       // `_` = wildcard closure param (e.g. `{ _ in }`, `{ (_ x: Int) in }`)
 
 captureList = "[" "]" .   // explicit empty capture clause `{ [] in … }` (swift-syntax parseClosureCaptureClause allows an empty list)
 captureList = "[" captureListItems ","? "]" .
@@ -867,7 +879,7 @@ captureListItems = captureListItem | captureListItem "," captureListItems .
 captureListItem = captureSpecifier? identifier .
 captureListItem = captureSpecifier? identifier "=" expression .
 captureListItem = captureSpecifier? selfExpression .
-captureSpecifier = "weak" | "unowned" | "unowned" >s< "(" "safe" ")" | "unowned" >s< "(" "unsafe" ")" . // TODO: verify no space allowed before "("
+captureSpecifier = "weak" | "unowned" | "unowned" "(" "safe" ")" | "unowned" "(" "unsafe" ")" . // no >s<: swift-syntax accepts `unowned (safe)`/`unowned (unsafe)` with a space (probe: hasError=false). Only type specifiers and @attribute arg clauses require a tight `(`.
 
 implicitMemberExpression = "." moduleSelector? softIdentifier .          // allows e.g. '.public', '.Swift::min' (SE-0491)
 implicitMemberExpression = "." moduleSelector? softIdentifier "." postfixExpression .
@@ -955,8 +967,8 @@ postfixExpression = subscriptExpression .
 // `@prefer`: a run of `!`/`?` (`x!!` — maximal-munch also lexes it as ONE postfix operatorToken)
 // is nested force-unwraps / optional-chains per swift-syntax (probe: two ForceUnwrapExpr, no
 // PostfixOperatorExpr). Genuine custom postfix operators (`x++`) have no force/chain reading.
-postfixExpression = @prefer forcedValueExpression .
-postfixExpression = @prefer optionalChainingExpression .
+postfixExpression = forcedValueExpression .
+postfixExpression = optionalChainingExpression .
 
 functionCallExpression = postfixExpression >n< functionCallArgumentClause .   // >n<: a call `(` may not start a new line (swift-syntax `allowAtStartOfLine:false`) — `g()⏎(x)` is two statements, not `g()(x)`
 @longest functionCallExpression = postfixExpression functionCallArgumentClause? trailingClosures .   // @longest: a trailing closure attaches greedily — `f() { a }` is a call-with-trailing-closure, not `f()` + a separate `{ a }` (swift-syntax always attaches). Resolves the postfixExpression⋯trailingClosures pivot.
@@ -1373,14 +1385,14 @@ parameter = attributes? [ @avoid parameterDeclarationModifiers ] parameterNames 
 parameter = attributes? [ @avoid parameterDeclarationModifiers ] parameterNames typeAnnotation "..." .
 
 parameterNames = externalParameterName localParameterName | localParameterName .
-externalParameterName = softIdentifier .        // accept all keywords except let, var, inout
-localParameterName = softIdentifier .           // but references to the parameter in the function body must use backticks
+externalParameterName = softIdentifier | "_" .  // accept all keywords except let, var, inout; `_` = wildcard name (swift-syntax firstName/secondName allow .wildcard)
+localParameterName = softIdentifier | "_" .     // but references to the parameter in the function body must use backticks
 
 
 parameterModifiers = parameterModifier parameterModifiers? .   // TODO: swift-syntax Types.swift:1256-1280 repeat loop — multiple type-specifiers can stack
 parameterModifier = "inout" | "borrowing" | "consuming" | "isolated" | "_const" | "sending" | "__shared" | "__owned" .   // TODO: swift-syntax SimpleTypeSpecifierSyntax.SpecifierOptions (Parser+TokenSpecSet.swift:3570)
-parameterModifier = "nonisolated" | "nonisolated" "(" "nonsending" ")" .  // TODO: swift-syntax parseNonisolatedTypeSpecifier (Types.swift:1179)
-parameterModifier = "dependsOn" "(" "scoped"? identifierList ")" .        // TODO: swift-syntax parseLifetimeTypeSpecifier (Types.swift:1121): SE-0432 lifetime dependencies
+parameterModifier = "nonisolated" >s< "(" "nonsending" ")" .  // TYPE specifier form ONLY — swift-syntax rejects a bare `nonisolated` type specifier (`nonisolated Int`, `nonisolated () -> Void` all hasError). Bare `nonisolated` is a DECL modifier (actorIsolationModifier), not a type specifier. Dropping the bare alternate also removes the `let x: nonisolated⏎(hello)` residual ambiguity (reading B was bare-nonisolated + `(hello)` as a parenthesized type). swift-syntax parseNonisolatedTypeSpecifier (Types.swift:1179)
+parameterModifier = "dependsOn" >s< "(" "scoped"? identifierList ")" .        // TODO: swift-syntax parseLifetimeTypeSpecifier (Types.swift:1121): SE-0432 lifetime dependencies
 parameterDeclarationModifiers = parameterDeclarationModifier parameterDeclarationModifiers? .   // TODO: swift-syntax stacks them in a while-loop
 parameterDeclarationModifier = "_const" | "isolated" .    // TODO: verify parameter-declaration modifiers (swift-syntax ParameterModifier, TokenSpecSet.swift:814)
 defaultArgumentClause = "=" expression .
@@ -1561,7 +1573,7 @@ accessLevelModifier = "open" | "open" "(" "set" ")" .
 
 mutationModifier = "mutating" | "nonmutating" .
 
-actorIsolationModifier = "nonisolated" | "nonisolated" "(" identifier ")" .   // TODO: swift-syntax parseNonisolatedModifier (Modifiers.swift:233-264): bare or with any identifier (unsafe/nonsending/...). Bare 'isolated' decl modifier is experimental (.nonescapableTypes) and skipped per policy.
+actorIsolationModifier = "nonisolated" | "nonisolated" "(" "unsafe" ")" | "nonisolated" "(" "nonsending" ")" .   // swift-syntax parseNonisolatedModifier (Modifiers.swift): decl-modifier arg is exactly {unsafe, nonsending} (probe: safe/sending/mutating/foo all reject), and a space before `(` is allowed (no >s<, unlike the TYPE specifier at parameterModifier). Bare 'isolated' decl modifier is experimental (.nonescapableTypes) and skipped per policy.
 
 
 
@@ -1599,7 +1611,7 @@ elseDirectiveAttributes = elseDirective attributes? .
 // Single-char operators `< > | ^ ~ % * + - /` are caught by the `operator` sibling alternate.
 nonWordToken = "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "#" | "&" | "?" | "!" | "_" | "@".
 
-balancedToken = rawIdentifier | escapedIdentifier | nonWordToken | literal | operator .
+balancedToken = @prefer rawIdentifier | escapedIdentifier | nonWordToken | literal | operator .   // @prefer rawIdentifier over literal: `true`/`false`/`nil` are keyword-shaped and match BOTH; in attribute token-soup (`@_specialize(exported: true, …)`) they are raw keyword tokens, so take the identifier reading. Numbers/strings match only `literal`, so they're unaffected.
 //balancedToken = Any identifier, keyword, literal, or operator .
 //balancedToken = Any punctuation except (, ), [, ], {, or } .
 
@@ -1628,7 +1640,13 @@ bindingPattern = tupleBindingPattern typeAnnotation? .
 
 tupleBindingPattern = "(" tupleBindingElementList? ")" .
 tupleBindingElementList = tupleBindingElement | tupleBindingElement "," tupleBindingElementList .
-tupleBindingElement = bindingPattern | softIdentifier ":" bindingPattern .
+tupleBindingElement = bindingSubpattern | softIdentifier ":" bindingSubpattern .
+// Tuple sub-patterns carry NO type annotation — swift-syntax forbids typed sub-patterns
+// (`((x): Int, y)` is rejected; only the top-level binding is annotated). Reusing the annotated
+// `bindingPattern` here made `x: Int` parse BOTH as label `x` + pattern `Int` AND as pattern `x`
+// + annotation `: Int` — the residual `tupleBindingElement` ambiguity. This structural split
+// (annotation-free sub-pattern) removes the spurious typed reading without an @prefer.
+bindingSubpattern = wildcardPattern | identifierPattern | tupleBindingPattern .
 
 // Match patterns — case labels, if/guard/for case, catch clauses.
 // No `typeAnnotation?` here (unlike bindingPattern): in match context swift-syntax parses
@@ -1683,9 +1701,9 @@ enumCasePattern = typeIdentifier? "." enumCaseName tupleMatchPattern? .
 // a bare `Name(args)` form when the enum type is inferable from context; the compiler validates.
 enumCasePattern = enumCaseName tupleMatchPattern .
 
-typeCastingPattern = isPattern | asPattern .
+typeCastingPattern = isPattern .   // asPattern removed: `x as T` in a pattern is a SequenceExpr → already covered by `@prefer expressionPattern` (probe: dump-parse shows sequence_expr). The dedicated `asPattern = matchPattern "as" type` only ever added the spurious `(let x) as T` reading (let binds outermost) — a residual matchPattern ambiguity — and was never the faithful shape.
 isPattern = "is" type .
-asPattern = matchPattern "as" type .
+//asPattern = matchPattern "as" type .   // redundant with expressionPattern; see above
 
 expressionPattern = expression .
 

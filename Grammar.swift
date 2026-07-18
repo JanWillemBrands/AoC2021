@@ -25,6 +25,10 @@ class Grammar {
     var epilogue: [String] = []
     var root: GrammarNode = GrammarNode(kind: .EOS, name: "○")
     var isLL1: Bool = true
+    /// Number of grammar nodes numbered during `resolveGrammarNodeLinks`; node
+    /// numbers are compact per grammar ([0, nodeCount)). Used to size per-parse
+    /// arrays (e.g. `MessageParser.yields`) to this grammar rather than a global.
+    var nodeCount: Int = 0
     /// True when unquoted synthetic layout terminals (>>| / |<<) are used in productions.
     var usesInjectedLayoutTokens: Bool = false
     

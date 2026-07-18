@@ -42,6 +42,14 @@ enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KL
 
 enum Disambiguation: String { case shortest, longest, left, right }
 
+/// Per-grammar-build scratch state, created fresh for each grammar load and
+/// threaded through `resolveGrammarNodeLinks`. Each load owns its own instance,
+/// so numbering is isolated by construction — no shared static to race on under
+/// concurrent loads, and node numbers stay compact per grammar ([0, nodeCounter)).
+final class GrammarBuild {
+    var nodeCounter = 0
+}
+
 extension GrammarNodeKind {
     var isTerminal: Bool { self == .T || self == .TI || self == .C || self == .B }
     var isBracket:  Bool { self == .DO || self == .OPT || self == .KLN || self == .POS }
@@ -51,8 +59,6 @@ extension GrammarNodeKind {
 
 final class GrammarNode {
 
-    static var count = 0
-    
     // this is to give GrammarNodes access to the grammar
     static weak var grammar: Grammar?
     
@@ -290,28 +296,28 @@ extension GrammarNode: CustomStringConvertible {
 extension GrammarNode {
     // sets the .seq and .alt links for END nodes
     // sets the .prv links for all nodes (except LHS nonTerminals that have neither valid .seq nor .prv)
-    func resolveGrammarNodeLinks(parent: GrammarNode?, alternate: GrammarNode?) {
-        number = GrammarNode.count
-        GrammarNode.count += 1
+    func resolveGrammarNodeLinks(parent: GrammarNode?, alternate: GrammarNode?, build: GrammarBuild) {
+        number = build.nodeCounter
+        build.nodeCounter += 1
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
-            seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate)
+            seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate, build: build)
             seq?.prv = self
         case .N:
             if isRHS {
-                seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate)
+                seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate, build: build)
                 seq?.prv = self
             } else {
-                alt?.resolveGrammarNodeLinks(parent: self, alternate: alternate)
+                alt?.resolveGrammarNodeLinks(parent: self, alternate: alternate, build: build)
             }
         case .ALT:
-            seq?.resolveGrammarNodeLinks(parent: parent, alternate: self)
+            seq?.resolveGrammarNodeLinks(parent: parent, alternate: self, build: build)
             seq?.prv = self
-            alt?.resolveGrammarNodeLinks(parent: parent, alternate: alternate)
+            alt?.resolveGrammarNodeLinks(parent: parent, alternate: alternate, build: build)
             prv = parent
         case .DO, .POS, .OPT, .KLN:
-            alt?.resolveGrammarNodeLinks(parent: self, alternate: alternate)
-            seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate)
+            alt?.resolveGrammarNodeLinks(parent: self, alternate: alternate, build: build)
+            seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate, build: build)
             seq?.prv = self
         case .END:
             seq = parent

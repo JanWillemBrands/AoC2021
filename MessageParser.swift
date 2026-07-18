@@ -439,13 +439,14 @@ class MessageParser {
         failedParses = 0; successfullParses = 0
         descriptorCount = 0; duplicateDescriptorCount = 0; suppressedDescriptorCount = 0
         crf = [:]; yieldCount = 0
-        // Size the BSR yields array to the global node count (each grammar's
-        // node numbers are unique in `GrammarNode.count`'s monotonic counter,
-        // so this is large enough to index any node in the current grammar).
+        // Size the BSR yields array to THIS grammar's node count. Node numbers
+        // are compact per grammar ([0, nodeCount)), assigned by a per-load
+        // `GrammarBuild` counter, so this array is exactly large enough to index
+        // any node in `grammar` and never grows with the number of grammars loaded.
         // Reset to empty sets — cheaper than reallocating every parse since
         // `Set<BinarySpan>.removeAll(keepingCapacity:)` retains backing buffers.
-        if yields.count < GrammarNode.count {
-            yields = Array(repeating: [], count: GrammarNode.count)
+        if yields.count < grammar.nodeCount {
+            yields = Array(repeating: [], count: grammar.nodeCount)
         } else {
             for i in yields.indices { yields[i].removeAll(keepingCapacity: true) }
         }

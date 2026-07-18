@@ -343,6 +343,24 @@ struct SwiftSyntaxTests {
     @Suite("SwiftSyntax parser probe")
     struct ParserProbe {
 
+        @Test("TEMP ifconfig canImport probe")
+        func ifconfigProbe() throws {
+            let cases = [
+                "#if canImport(A)\nlet a = 1\n#endif",
+                "#if canImport(A, _version: 2)\nlet a = 1\n#endif",
+                "#if canImport(A, _version: 2.2)\nlet a = 1\n#endif",
+                "#if canImport(A, _version: 2.2.2)\nlet a = 1\n#endif",
+                "#if canImport(A, _underlyingVersion: 4)\nlet a = 1\n#endif",
+                "let x = canImport(A, foo: 2)",
+                "f(a, foo: 2)",
+                "f(a, foo: 2.2.2)",
+            ]
+            for src in cases {
+                let r = (try? adventParse(src)) ?? nil
+                print("IFPROBE \(r != nil ? "ACCEPT" : "reject")  \(src.replacingOccurrences(of: "\n", with: "⏎"))")
+            }
+        }
+
         @Test("pattern node shape differs between declaration and switch case")
         func patternNodeShapeProbe() {
             let illegal = Parser.parse(source: "let let x = 1")

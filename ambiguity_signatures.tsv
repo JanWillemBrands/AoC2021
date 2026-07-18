@@ -2,10 +2,5 @@ count	node	kind	signature	example_tests
 3	statement	ambiguous alternate	[expression] | [yieldStatement]	testYield#3,testYield#4,testYield#5
 2		ambiguous pivot	body=[ keyPathComponents]	testKeypathExpressionWithSugaredRoot#5,testKeypathExpressionWithSugaredRoot#6
 1	infixExpression	ambiguous pivot	body=[infixExpression ]	testIfHasSymbol#2
-1	tupleBindingElement	ambiguous alternate	[bindingPattern] | [softIdentifier ":" bindingPattern]	testUsing#10
-1	statements	ambiguous alternate	[statement ] | [statement statementSeparator statements]	testNonisolatedSpecifier#15
-1		ambiguous pivot	body=[  "]"]	testCollectionLiterals#8
-1	dictionaryLiteralItems	ambiguous pivot	body=[dictionaryLiteralItems  "]"]	testCollectionLiterals#9
-1	matchPattern	ambiguous alternate	[typeCastingPattern] | [valueBindingPattern]	testMatchingPatterns32#1
 1	matchPattern	ambiguous alternate	[enumCasePattern] | [valueBindingPattern]	testBorrowingContextualParsing#8
 1	functionName	ambiguous alternate	[operatorName] | [softIdentifier]	testOperators26#1

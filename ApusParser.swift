@@ -104,11 +104,13 @@ class ApusParser {
         }
         grammar.root = root
         
+        let build = GrammarBuild()
         for (name, node) in grammar.nonTerminals.sorted(by: { $0.key > $1.key }) {      // a fixed ordering with 'S' appearing first in small test grammars
             trace("Processing END nodes for:", name)
-            node.resolveGrammarNodeLinks(parent: node, alternate: node.alt)
+            node.resolveGrammarNodeLinks(parent: node, alternate: node.alt, build: build)
         }
-        
+        grammar.nodeCount = build.nodeCounter
+
         grammar.root.follow.insert("○")
         grammar.finalizeSymbolTable()
         grammar.assignNameIDs()
