@@ -90,12 +90,18 @@ struct PreferRule: DisambiguationRule {
     let preferredLastSymbols: [GrammarNode]
     let yieldsOf: (GrammarNode) -> Set<BinarySpan>
     func prune(_ yields: inout Set<BinarySpan>) -> Int {
-        var preferredStarts = Set<CharPosition>()
+        // Flavor-3 (same-span) ONLY: prune a non-preferred loser `(i, j)` iff a preferred sibling
+        // covers the EXACT same span `(i, j)`. `@prefer` chooses among alternates that tile the same
+        // extent — it is NOT an extent tool. Different-extent preference ("prefer the longer
+        // alternate") is `@longest`'s job. Keying on start alone (the old behaviour) conflated the
+        // two and wrongly pruned genuinely LONGER same-start neighbours (broke `a?.b`, multi-arg
+        // subscripts, etc.). `span.i` = alternate start, `span.j` = alternate end.
+        var preferredSpans = Set<SpanKey>()
         for sym in preferredLastSymbols {
-            for y in yieldsOf(sym) { preferredStarts.insert(y.i) }
+            for y in yieldsOf(sym) { preferredSpans.insert(SpanKey(i: y.i, j: y.j)) }
         }
         var pruned = 0
-        for span in yields where preferredStarts.contains(span.i) {
+        for span in yields where preferredSpans.contains(SpanKey(i: span.i, j: span.j)) {
             yields.remove(span)
             pruned += 1
         }

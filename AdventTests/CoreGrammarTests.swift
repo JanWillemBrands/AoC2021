@@ -517,6 +517,50 @@ struct CoreGrammarTests {
             #expect(matches)
             // Longest keeps only the maximum extent for each start position
         }
+
+        // A `@prefer` alternate nested inside an `?` OPT must NOT over-prune: the
+        // multi-element reading has to survive disambiguation. (Regression: a Swift.apus
+        // subscript `a[0, 1]` was thought to hit a `@prefer`+OPT engine limitation; a
+        // minimal repro proved `@prefer` under an OPT is sound — this locks that in.)
+        @Test("@prefer under an OPT keeps empty / single / multi (flat)")
+        func preferUnderOptFlat() throws {
+            let g = #"item - /[a-z]/ . S = "[" list? "]" . list = @prefer item | item "," list ."#
+            for msg in ["[]", "[a]", "[a, b]", "[a, b, c]"] {
+                let r = try parsePostOracle(grammar: g, message: msg)
+                #expect(r.postMatch, "@prefer under OPT dropped a valid parse for '\(msg)'")
+            }
+        }
+
+        @Test("@prefer under an OPT keeps multi under left recursion")
+        func preferUnderOptLeftRecursive() throws {
+            let g = #"atom - /[a-z]/ . S = atom | S "[" list? "]" . list = @prefer item | item "," list . item = atom ."#
+            for msg in ["a[]", "a[b]", "a[b, c]", "a[b][c, d]"] {
+                let r = try parsePostOracle(grammar: g, message: msg)
+                #expect(r.postMatch, "@prefer under left-recursive OPT dropped a valid parse for '\(msg)'")
+            }
+        }
+
+        // `@avoid` is the pivot-keyed dual of `@prefer` for an OPT that should be SKIPPED
+        // whenever skipping still yields a complete parse. Here `m` is BOTH the modifier `mod`
+        // and an `id`, so `m x` parses two ways: take-mod (`mod=m`, `id=x`) or skip (`id=m`,
+        // `id=x`). `@avoid` must keep the SKIP reading.
+        @Test("@avoid skips the optional when skipping still parses")
+        func avoidSkipsOptional() throws {
+            let g = #"mod - /m/ . id - /[a-z]/ . S = [ @avoid mod ] id id? ."#
+            let r = try parsePostOracle(grammar: g, message: "m x")
+            #expect(r.postMatch, "@avoid grammar should still parse 'm x'")
+            #expect(r.pruned > 0, "@avoid should prune the take-modifier reading")
+        }
+
+        // Edge case (Oracle.swift:116-118): when skipping the @avoid'd optional does NOT lead
+        // to a complete parse, the lone "taken" reading must survive. Here `id` can't start at
+        // the leading `-`, so the `op` prefix is forced.
+        @Test("@avoid keeps the taken reading when skipping cannot parse")
+        func avoidKeepsTakenWhenSkipFails() throws {
+            let g = #"op - /-/ . id - /[a-z]+/ . S = [ @avoid op ] id ."#
+            let r = try parsePostOracle(grammar: g, message: "-x")
+            #expect(r.postMatch, "@avoid must keep the forced 'op' reading for '-x'")
+        }
     }
 
     // MARK: - Self-parsing (APUS grammar)

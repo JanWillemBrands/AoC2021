@@ -482,6 +482,15 @@ unicodeOperatorContinuation - /[\p{Mn}\p{Me}]/ .
 operator = operatorToken .
 operator = dotOperator .
 
+// Postfix-operator token. Swift forbids a prefix/postfix operator from BEGINNING with `!` or `?`
+// (those are reserved: force / optional-chain / ternary); only INFIX may (`!=`, `??`). swift-syntax
+// splits a trailing `!`/`?` run into individual force/optional postfix tokens — `x!!` is two nested
+// ForceUnwrap, never a `!!` operator (probe-verified). So this terminal drops operatorToken's
+// `[!?=&]`-led alternative (all infix-only), leaving only `[-+*/%|^~<>]`- or symbol-led runs. This
+// is what removes the spurious `x!!`/`x??` postfix-operator reading — no @prefer needed, so keypath
+// `?`/`!` Frankenstein components are untouched.
+@splitBefore("/") postfixOperatorToken - /(?![!?])(?:(?:[-+*\/%|^~<>]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])(?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])*|[!?=&](?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+)/ .
+
 // Operator FUNCTION name (`func %%%%<T,U>`). Same run as operatorToken but split
 // before a generic `<` (swift-syntax peels the `<` off the operator name in decl
 // context — SwiftParser). Scoped to functionName only, so the `<`-split can't
@@ -554,7 +563,8 @@ forceMark    - /!/ .
 infixOperator = operator .
 infixOperator = "&" .                    // reserved bitwise-and; bare "&" is not in the overloadable operator set
 prefixOperator = operator .
-postfixOperator = operator .
+postfixOperator = postfixOperatorToken .   // postfix ops cannot begin with `!`/`?` (those split into force/optional)
+postfixOperator = dotOperator .            // postfix ranges: `1...`, `1..<5`
 
 
 
@@ -750,13 +760,17 @@ typeCastingOperator = "as" type .
 typeCastingOperator = "as" >s< "?" type .                       // disallow space before '?'
 typeCastingOperator = "as" >s< "!" type .                       // disallow space before '!'
 
-primaryExpression = identifier .
-primaryExpression = @prefer identifier genericArgumentClause .
+primaryExpression = genericIdentifier .
+// `@longest`: `A<B>` (identifier + genericArgumentClause) vs bare `A` is an EXTENT choice — keep the
+// longer generic form. (Was `@prefer identifier genericArgumentClause`, a prefer-longer misuse of
+// the now-same-span @prefer.) Where no `<…>` follows, only the bare identifier parses, so @longest
+// is a no-op.
+@longest genericIdentifier = identifier | identifier genericArgumentClause .
 // SE-0491 module-qualified reference. After `::` any keyword is a name (Names.swift:218), so the
 // qualified name is `rawIdentifier` (covers Swift::foo, Swift::nil, Swift::self, Swift::Self,
 // Swift::Any, Swift::super, Swift::init, Swift::do, …). Subsumes `moduleSelector identifier`.
-primaryExpression = moduleSelector rawIdentifier .
-primaryExpression = @prefer moduleSelector rawIdentifier genericArgumentClause .
+primaryExpression = moduleGenericIdentifier .
+@longest moduleGenericIdentifier = moduleSelector rawIdentifier | moduleSelector rawIdentifier genericArgumentClause .
 // `$foo` (property-wrapper projection) lexes as `.identifier` in swift-syntax (Cursor.swift:2343-2346),
 // so it's a valid qualified name too: `Swift::$foo`.
 primaryExpression = moduleSelector propertyWrapperProjection .
@@ -959,19 +973,35 @@ postfixExpression = primaryExpression .
 // (swift-syntax `classifyOperatorToken`: postfix ⟺ leftBound && !rightBound). `>s<`
 // forbids a space before the operator, so a spaced operator (`repr == .none`, `P & Q`)
 // cannot be eaten as postfix and is left for infixExpression to classify.
-postfixExpression = postfixExpression >s< postfixOperator .
+// Postfix operator ⟺ leftBound && !rightBound (swift-syntax classifyOperatorToken). `>s<` before = leftBound.
+// !rightBound = the operator is NOT tight-followed by an operand. Two encodings, because the trivia-sensitive
+// `<s>` and the (trivia-insensitive, terminal-anchored) `>>1` each cover one half:
+//   • `<s>` after — whitespace/newline follows (covers `a° + b`, `God()^`⏎). Trivia-sensitive.
+//   • `>>1(…)` on the operator TERMINAL — a tight closing delimiter or EOF follows (covers `f(a°)`, `/x/...`,
+//     `(/x)/`). `>>1` must anchor on the terminal (postfixOperatorToken/dotOperator); on a nonterminal or the
+//     epsilon `""` it is a no-op. The delimiter set is swift-syntax's !rightBound char set minus whitespace/EOF.
+postfixExpression = postfixExpression >s< postfixOperator <s> .
+postfixExpression = postfixExpression >s< postfixOperatorToken >>1("." ")" "]" "}" "," ";" ":") .
+postfixExpression = postfixExpression >s< dotOperator         >>1("." ")" "]" "}" "," ";" ":") .
 postfixExpression = functionCallExpression .
 postfixExpression = initializerExpression .
 postfixExpression = explicitMemberExpression .
 postfixExpression = subscriptExpression .
-// `@prefer`: a run of `!`/`?` (`x!!` — maximal-munch also lexes it as ONE postfix operatorToken)
-// is nested force-unwraps / optional-chains per swift-syntax (probe: two ForceUnwrapExpr, no
-// PostfixOperatorExpr). Genuine custom postfix operators (`x++`) have no force/chain reading.
+// No @prefer needed. The `x!!`/`x??` ambiguity (nested-force vs `!!` postfix-operator) is removed at
+// the source: `postfixOperatorToken` can't begin with `!`/`?`, so there IS no `!!` operator reading
+// (matching swift-syntax, which splits trailing `!`/`?` into individual force/optional tokens). This
+// also avoids the keypath `?!`-component conflict a @prefer here would cause.
 postfixExpression = forcedValueExpression .
 postfixExpression = optionalChainingExpression .
 
 functionCallExpression = postfixExpression >n< functionCallArgumentClause .   // >n<: a call `(` may not start a new line (swift-syntax `allowAtStartOfLine:false`) — `g()⏎(x)` is two statements, not `g()(x)`
-@longest functionCallExpression = postfixExpression functionCallArgumentClause? trailingClosures .   // @longest: a trailing closure attaches greedily — `f() { a }` is a call-with-trailing-closure, not `f()` + a separate `{ a }` (swift-syntax always attaches). Resolves the postfixExpression⋯trailingClosures pivot.
+// A trailing closure belongs to the SAME call as the argument clause: `f() { a }` = call `f` with args
+// `()` AND trailing closure `{a}` (base = `f`), NOT `(f()) { a }` (base = `f()`). Both span `f(){a}`, so
+// it's a same-span/different-alternate (flavor-3) choice → `@prefer` the args+closure reading. (The old
+// `@longest` here pruned the shorter `f()` functionCallExpression globally, which ALSO killed the inner
+// call of every chain `f()()`/`a[0](5)(4)` — @prefer is same-span so it can't touch those sub-derivations.)
+functionCallExpression = @prefer postfixExpression functionCallArgumentClause trailingClosures    // f(args){closure} — preferred over base=`f()` (same span)
+                       | postfixExpression trailingClosures .                                      // f{closure} (no parens)
 
 functionCallArgumentClause = "(" ")" | "(" functionCallArgumentList ","? ")" .
 // `@prefer` the single-argument alternate: the two can only compete when ONE argument spans a
@@ -979,18 +1009,35 @@ functionCallArgumentClause = "(" ")" | "(" functionCallArgumentList ","? ")" .
 // the operator-pair split `/` , `/` is the spurious reading). Ordinary lists (`f(a, b)`) have
 // no single-arg parse over the whole span, so the preference never fires there. A spaced
 // `baz(/, /)` can't lex as a regex (tight `>s<` closing) and stays two operator args.
-functionCallArgumentList = @prefer functionCallArgument | functionCallArgument "," functionCallArgumentList .
+// NO @prefer here. It was once added to prefer the single-arg reading of `baz(/,/)` (regex `/,/`
+// as one arg) over the operator-pair split `/`,`/`. But `@prefer` is start-keyed and extent-blind
+// (it's designed to prefer a LONGER same-start alternate, e.g. `foo<T>` over `foo`); used to prefer
+// the SHORTER single-arg it pruned the legitimate multi-arg TAIL of every list whose start matched
+// a single-arg start — which broke multi-arg subscripts `a[0, 1]` under the `?` OPT (the call path
+// masked it; the OPT path didn't). The regex-vs-operator ambiguity it targeted is now resolved
+// lexically (probe: `baz(/,/)`, `quxqux(/^/)` are unambiguous WITHOUT this @prefer), so it's obsolete.
+functionCallArgumentList = functionCallArgument | functionCallArgument "," functionCallArgumentList .
 // `@prefer expression`: an argument that lexes as BOTH a regex literal and one operator token
 // (`quxqux(/^/)` — maximal-munch `/^/` is a single operatorToken) is the regex per swift-syntax
 // (probe: RegexLiteralExpr). Bare operator args (`reduce(0, +)`) have no expression reading, so
 // the preference never fires for them.
-functionCallArgument = @prefer expression | @prefer softIdentifier ":" expression .   // labeled form also preferred: `format: 📆` — emoji lex as BOTH identifier and operator (So overlap), swift-syntax reads an identifier expression
-functionCallArgument = operator | softIdentifier ":" operator .
-functionCallArgument = moduleSelector operator | softIdentifier ":" moduleSelector operator .   // SE-0491: reduce(0, Swift::+)
+// `@longest`: a regex-vs-operator arg (`baz(/,/)`: regex `/,/` spans MORE than the operator `/`
+// that would begin a 2-arg split) is an EXTENT choice — keep the longest arg, which drops the
+// operator reading and kills the spurious split. `@prefer` (same-span) still resolves the emoji
+// label case (`format: 📆` — identifier vs operator, same span). Ordinary args have one extent, so
+// @longest is a no-op for them.
+@longest functionCallArgument = @prefer expression | @prefer argumentLabel ":" expression .
+functionCallArgument = operator | argumentLabel ":" operator .
+functionCallArgument = moduleSelector operator | argumentLabel ":" moduleSelector operator .   // SE-0491: reduce(0, Swift::+)
+
+// Call-site argument label: an identifier OR `_` (swift-syntax LabeledExpr.label allows .wildcard,
+// e.g. `#Color(_: 1)`, and `_:` unlabeled additional trailing closures). `f(_)` (wildcard VALUE) is
+// unaffected — that goes through `expression`; the `:` distinguishes label from value.
+argumentLabel = softIdentifier | "_" .
 
 trailingClosures = closureExpression labeledTrailingClosures? .
 labeledTrailingClosures = labeledTrailingClosure labeledTrailingClosures? .
-labeledTrailingClosure = softIdentifier ":" closureExpression .
+labeledTrailingClosure = argumentLabel ":" closureExpression .
 
 // `x.init` / `A.Module::init` / `x.init(a:b:)` need NO dedicated postfix rules: swift-syntax has
 // no initializer-expression node — `super.init()` is FunctionCall(MemberAccess(…, init)) — and
@@ -1024,7 +1071,16 @@ argumentName = softIdentifier ":" .
 // explicitMemberExpression (softIdentifier matches `self`). The separate production was
 // redundant and produced the `[explicitMemberExpression]|[postfixSelfExpression]` ambiguity.
 
-subscriptExpression = postfixExpression >n< "[" functionCallArgumentList? "]" . // >n<: a subscript `[` may not start a new line (swift-syntax `allowAtStartOfLine:false`) — `x⏎[0]` is two statements. TODO: functionCallArgumentList is optional
+// Split empty vs non-empty (NOT `functionCallArgumentList?`): the `?` OPT wrapping the
+// `@prefer functionCallArgument` list breaks multi-arg subscripts (`a[0, 1]`, `data[position,
+// default: 0]`), while an empty subscript `a[]` IS valid — so both alternates are needed. Mirrors
+// functionCallArgumentClause's `"(" ")" | "(" list ")"`. >n<: a subscript `[` may not start a new line.
+// Split empty vs non-empty (NOT `functionCallArgumentList?`): in the FULL grammar the `?` OPT
+// form fails multi-arg subscripts (`a[0, 1]`, `data[position, default: 0]`) — a deep interaction
+// with the full expression grammar (NOT a general @prefer/OPT flaw: minimal @prefer-under-OPT,
+// even left-recursive, is proven sound in CoreGrammarTests/OracleDisambiguation). Empty `a[]` is
+// valid, so both alternates are needed. Mirrors functionCallArgumentClause's `"(" ")" | "(" list ")"`.
+subscriptExpression = postfixExpression >n< "[" functionCallArgumentList? "]" .   // clean OPT (empty `a[]` + multi `a[0,1]`); works now that the obsolete @prefer on functionCallArgumentList is gone. >n<: a subscript `[` may not start a new line.
 
 forcedValueExpression = postfixExpression >s< forceMark .                         // disallow space before '!'
 
@@ -1192,11 +1248,10 @@ compilationCondition = compilationCondition "||" compilationCondition .
 // `canImport(A, _version: >=2.2)` parse via this generic call with `>=5` as a tight-prefix
 // operator expression — exactly swift-syntax's reading. (The former versionComparison specials
 // duplicated it once prefix operators became rightBound → the [identifier-call]|[platformCondition] dual.)
-compilationCondition = identifier "(" functionCallArgumentList? ","? ")" .   // trailing comma allowed (e.g. canImport(A,))
+compilationCondition = identifier functionCallArgumentClause .   // reuse the general call-argument clause (handles multi-arg + labels + trailing comma); the inline "(" functionCallArgumentList? ","? ")" form failed on multi-arg conditions like canImport(A, _version: 2)
 
-//lineNumber = /0*[1-9][0-9]*/ .
-//lineNumber = decimalDigits .        // replace 'greater than zero' with parser post check'
-lineNumber = /0*[1-9][0-9]*/ .        // replace 'greater than zero' with parser post check'
+//lineNumber = decimalDigits .
+lineNumber = /0*[1-9][0-9]*/ .
 lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .
 lineControlStatement = "#sourceLocation" "(" ")" .
 
@@ -1307,7 +1362,7 @@ variableDeclaration = variableDeclarationHead variableName typeAnnotation initia
 variableDeclaration = variableDeclarationHead variableName typeAnnotation initializer getterSetterBlock .   // TODO: SE-0400 init accessors with default value (swift-syntax: PatternBindingSyntax accepts initializer + accessorBlock, Declarations.swift:1622-1644)
 
 variableDeclarationHead = attributes? declarationModifiers? "var" .
-variableName = identifier .
+variableName = identifier | "_" .   // `_` = wildcard-named computed property, e.g. `static var _: Int { 0 }` (swift-syntax accepts; stored `var _ = 0` goes via bindingPattern)
 
 getterSetterBlock = codeBlock .
 //getterSetterBlock = "{" getterClause setterClause? "}" .
@@ -9801,4 +9856,4 @@ A & B -> C & D -> X
       
 ^^^
       let mid = "pete"
-      
+

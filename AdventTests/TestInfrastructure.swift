@@ -253,3 +253,25 @@ func parseAndDisambiguate(grammar grammarString: String, message: String) throws
         return (matches, pruned)
     }
 }
+
+/// Parse, run the Oracle, and report whether a full-span parse SURVIVES disambiguation.
+/// Unlike `parseAndDisambiguate` (which reports the pre-Oracle match), this checks the
+/// root's full-span yield BOTH before and after the Oracle — the only way to catch an
+/// over-pruning disambiguation rule that removes the sole valid derivation.
+func parsePostOracle(grammar grammarString: String, message: String) throws -> (rawMatch: Bool, postMatch: Bool, pruned: Int) {
+    try withParserIsolation {
+        trace = false
+        traceIndent = 0
+        let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammarString
+        let parser = try ApusParser(fromString: grammarWithWhitespace)
+        let grammar = try parser.parse(explicitStartSymbol: "")
+        let mp = MessageParser(grammar: grammar)
+        mp.parse(input: message)
+        func fullSpan() -> Bool {
+            mp.yield(of: mp.currentParseRoot).contains { $0.i == message.startIndex && $0.j == message.endIndex }
+        }
+        let raw = fullSpan()
+        let pruned = Oracle(parser: mp, input: message).disambiguate()
+        return (raw, fullSpan(), pruned)
+    }
+}

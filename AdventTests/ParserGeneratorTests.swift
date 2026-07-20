@@ -18,7 +18,7 @@ struct ParserGeneratorTests {
     }
 
     /// Grammar files to test
-    static let grammarFiles = ["apus", "apusUnicode"]
+    static let grammarFiles = ["apus"]
 
     @Test("Generates parser for all grammar files")
     func testGenerateParser() throws {

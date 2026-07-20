@@ -177,11 +177,11 @@ mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
 mincross: pass 2 iter 0 trying 0 cur_cross 0 best_cross 0
-mincross Derivations: 0 crossings, 0.00 secs.
+mincross Derivations: 0 crossings, 0.02 secs.
 network simplex:  4878 nodes 7835 edges maxiter=3450 balance=2
 network simplex: 100 200 300 400 500 600 700 800 900 1000 
 network simplex: 1100 1200 1300 1400 1500 1600 1700 1800 
-network simplex: 4878 nodes 7835 edges 1821 iter 0.03 sec
+network simplex: 4878 nodes 7835 edges 1821 iter 0.02 sec
 routesplines: 1765 edges, 6379 boxes 0.02 sec
 Using render: svg:core
 Using device: svg:svg:core
