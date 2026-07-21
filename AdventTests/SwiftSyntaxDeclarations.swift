@@ -1130,7 +1130,8 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testCoroutineAccessors",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "swift-syntax negative/error-recovery fixture: mixing underscored `_read`/`_modify` with SE-0474 `read`/`modify` is a duplicate-accessor error under swift-syntax 603.0.1 (parsed cleanly under the old 600.0.1 pin — the dep bump introduced the diagnostic). Not valid Swift."
     ),
     SwiftSnippet(
         label: "testBorrowAndMutateAccessors#1",

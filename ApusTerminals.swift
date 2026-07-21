@@ -44,12 +44,13 @@ let apusTerminals: [String:TokenPattern] = [
     "---":          TokenPattern("---",                     Regex { "---" },                    true,  false),
     ">>|":          TokenPattern(">>|",                     Regex { ">>|" },                    true,  false),
     "|<<":          TokenPattern("|<<",                     Regex { "|<<" },                    true,  false),
-    "++1":          TokenPattern("++1",                     Regex { "++1" },                    true,  false),
-    "++2":          TokenPattern("++2",                     Regex { "++2" },                    true,  false),
-    "--1":          TokenPattern("--1",                     Regex { "--1" },                    true,  false),
-    "--2":          TokenPattern("--2",                     Regex { "--2" },                    true,  false),
-    ">>1":          TokenPattern(">>1",                     Regex { ">>1" },                    true,  false),
-    ">>2":          TokenPattern(">>2",                     Regex { ">>2" },                    true,  false),
+    // Directional-polarity lookahead/lookbehind annotations (unified scheme):
+    //   >…>  forward (lookahead)   <…<  backward (lookbehind)   middle +/- = polarity.
+    // Single-token distance only (the earlier `…2` two-token variants were dropped, unused).
+    ">+>":          TokenPattern(">+>",                     Regex { ">+>" },                    true,  false),   // positive lookahead:  next token MUST be in set
+    ">->":          TokenPattern(">->",                     Regex { ">->" },                    true,  false),   // negative lookahead:  next token MUST NOT be in set
+    "<+<":          TokenPattern("<+<",                     Regex { "<+<" },                    true,  false),   // positive lookbehind: prev token MUST be in set
+    "<-<":          TokenPattern("<-<",                     Regex { "<-<" },                    true,  false),   // negative lookbehind: prev token MUST NOT be in set
     ",":            TokenPattern(",",                       Regex { "," },                      true,  false),
     ">n<":          TokenPattern(">n<",                     Regex { ">n<" },                    true,  false),
     ">s<":          TokenPattern(">s<",                     Regex { ">s<" },                    true,  false),

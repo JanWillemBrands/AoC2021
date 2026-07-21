@@ -894,7 +894,19 @@ class MessageParser {
         // terminal has no lookbehind (most do not).
         if let lookbehind = lookbehindByTerminalID[cL.nameID],
            !lookbehindAllows(lookbehind, at: cI) {
-            return []
+            // On a `@splitBefore` terminal, a failing lookbehind gates the SPLIT matches
+            // ONLY — it does not block the terminal. The operand-ender predecessor means
+            // this operator is in infix position (swift-syntax `preferRegexOverBinaryOperator`
+            // = false), so maximal-munch wins and the "operator ends before `/`" split
+            // (which would expose a competing regex) is dropped. The maximal base match
+            // survives — operators legitimately follow operands. For a non-split terminal,
+            // a failing lookbehind blocks it entirely (the regex-vs-division case).
+            if grammar.terminals[cL.name]?.splitBefore != nil {
+                let maxEnd = matches.map(\.end).max()!
+                matches = matches.filter { $0.end == maxEnd }
+            } else {
+                return []
+            }
         }
 
         // Exclude: `---(…)` — for each candidate end, if any excluded terminal
@@ -938,6 +950,23 @@ class MessageParser {
                     if !cachedLex(at: m.triviaEnd, terminalID: fID).isEmpty { return true }
                 }
                 return false
+            }
+            if matches.isEmpty { return [] }
+        }
+
+        // Negative forward lookahead — `>->(…)` followAheadExclude. Drop a match
+        // whose NEXT token (past trailing trivia, i.e. at `triviaEnd`) is one of the
+        // excluded terminals. Mirrors swift-syntax's `preferPostfixExpr` gate: the
+        // `yield`/`discard` contextual keywords do NOT introduce a statement when
+        // followed by a postfix suffix (`(`/`[`/`.`) — that reading is a call /
+        // subscript / member instead. EOS (past end of input) is always allowed.
+        if !cL.followAheadExcludeBS.isEmpty {
+            matches = matches.filter { m in
+                if m.triviaEnd >= input.endIndex { return true }
+                for eID in cL.followAheadExcludeBS where eID != grammar.epsilonID {
+                    if !cachedLex(at: m.triviaEnd, terminalID: eID).isEmpty { return false }
+                }
+                return true
             }
             if matches.isEmpty { return [] }
         }

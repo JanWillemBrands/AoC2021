@@ -76,7 +76,7 @@ struct SpecialTokenTests {
         }
     }
 
-    // MARK: - Regex Lookbehind (++N/--N annotations)
+    // MARK: - Regex Lookbehind (<+</<-< annotations)
 
     @Suite("Regex Lookbehind", .serialized)
     struct RegexLookbehind {
@@ -90,7 +90,7 @@ struct SpecialTokenTests {
 
             // Negative lookbehind blocks regex after 'a' so scanner falls back to single chars.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1("a") S = "a" "/" "b" "/" ."#,
+                grammar: #"slash - /\/[a-z]+\// . <-<("a") S = "a" "/" "b" "/" ."#,
                 pass: ["a /b/"],
                 label: "--1 blocks regex after 'a', scanner emits single '/'"
             ),
@@ -98,7 +98,7 @@ struct SpecialTokenTests {
             // Same grammar as above but with slash in production — should now FAIL because
             // the regex is blocked and the alternative path doesn't exist.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1("a") S = "a" slash ."#,
+                grammar: #"slash - /\/[a-z]+\// . <-<("a") S = "a" slash ."#,
                 pass: [],
                 fail: ["a /b/"],
                 label: "--1 blocks regex, grammar has no fallback → fail"
@@ -106,56 +106,42 @@ struct SpecialTokenTests {
 
             // Default allow: '(' is not in the deny list so the regex matches.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1("a") S = "(" slash ")" ."#,
+                grammar: #"slash - /\/[a-z]+\// . <-<("a") S = "(" slash ")" ."#,
                 pass: ["( /b/ )"],
                 label: "default allow: '(' not in deny list"
             ),
 
             // Multiple operands in a single --1: each blocks independently.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1("a" "b" "c") S = "a" "/" "x" "/" | "b" "/" "x" "/" | "c" "/" "x" "/" ."#,
+                grammar: #"slash - /\/[a-z]+\// . <-<("a" "b" "c") S = "a" "/" "x" "/" | "b" "/" "x" "/" | "c" "/" "x" "/" ."#,
                 pass: ["a /x/", "b /x/", "c /x/"],
                 label: "multiple deny operands all block"
             ),
 
             // Identifier operand: deny list can reference a named terminal by name.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1(id) id - /[a-z]+/. S = id "/" id "/" ."#,
+                grammar: #"slash - /\/[a-z]+\// . <-<(id) id - /[a-z]+/. S = id "/" id "/" ."#,
                 pass: ["x /b/", "hello /world/"],
                 label: "identifier operand blocks after named terminal"
             ),
 
-            // Compound positive override: ++2("try"), ++1("!") overrides --1("!").
-            TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1("!") ++2("try"), ++1("!") S = "try" "!" slash ."#,
-                pass: ["try ! /a/"],
-                label: "compound ++2/++1 overrides --1('!') for try!"
-            ),
-
-            // Override does NOT apply when prev2 is not 'try': regex stays blocked.
-            TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1("!") ++2("try"), ++1("!") S = "x" "!" "/" "y" "/" ."#,
-                pass: ["x ! /y/"],
-                label: "compound override does not fire when prev2 != 'try'"
-            ),
-
             // At start of input there is no previous token — deny list cannot match → allow.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1("a") S = slash ."#,
+                grammar: #"slash - /\/[a-z]+\// . <-<("a") S = slash ."#,
                 pass: ["/a/"],
                 label: "start of input: lookbehind cannot block"
             ),
 
             // Whitespace is trivia — lookbehind sees only visible tokens.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1("a") S = "a" "/" "b" "/" ."#,
+                grammar: #"slash - /\/[a-z]+\// . <-<("a") S = "a" "/" "b" "/" ."#,
                 pass: ["a    /b/"],
                 label: "lookbehind skips whitespace trivia"
             ),
 
             // Multiple lines OR'd: each --1 line independently blocks.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . --1("a") --1("b") S = "a" "/" "x" "/" | "b" "/" "x" "/" ."#,
+                grammar: #"slash - /\/[a-z]+\// . <-<("a") <-<("b") S = "a" "/" "x" "/" | "b" "/" "x" "/" ."#,
                 pass: ["a /x/", "b /x/"],
                 label: "multiple --1 lines OR'd together"
             ),

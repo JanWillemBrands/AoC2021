@@ -128,18 +128,28 @@ final class GrammarNode {
     /// When non-empty, this terminal only matches if the token AFTER the
     /// matched one has a kindID in `followAheadBS` (or is the EOS sentinel,
     /// which is always treated as approved).
-    /// Populated by `>>1("(" ")" ...)` annotations in APUS grammar rules.
+    /// Populated by `>+>("(" ")" ...)` annotations in APUS grammar rules.
     /// Mirrors Swift's `canParseAsGenericArgumentList` follow-set commit:
     /// generic-clause `>` only matches when the next token closes an expression.
     var followAhead: Set<String> = []
+
+    /// Negative forward-1-token lookahead set for this grammar slot.
+    /// When non-empty, this terminal only matches if the token AFTER the matched
+    /// one does NOT have a kindID in `followAheadExcludeBS` (EOS is always allowed).
+    /// Populated by `>->("(" "[" ".")` annotations. The negation of `followAhead`;
+    /// mirrors swift-syntax's `preferPostfixExpr` gate — e.g. the `yield`/`discard`
+    /// contextual keywords introduce a statement only when NOT followed by a postfix
+    /// suffix (`(`/`[`/`.`), which would make them a call/subscript/member instead.
+    var followAheadExclude: Set<String> = []
 
     /// BitSet mirrors of first/follow/ambiguous/exclude/followAhead, populated by `Grammar.populateBitSets()`.
     /// Used by `testSelect()` and the follow check on the hot path for O(1) membership tests.
     var firstBS:        BitSet = []
     var followBS:       BitSet = []
     var ambiguousBS:    BitSet = []
-    var excludeBS:      BitSet = []
-    var followAheadBS:  BitSet = []
+    var excludeBS:          BitSet = []
+    var followAheadBS:      BitSet = []
+    var followAheadExcludeBS: BitSet = []
 
     /// Alternate-level `@unless(X)` predicate annotation.
     /// Captured at parse time on the `.ALT` node that heads the alternate;

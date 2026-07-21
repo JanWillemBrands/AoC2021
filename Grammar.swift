@@ -341,6 +341,10 @@ class Grammar {
         for s in node.followAhead {
             if let id = symbolToID[s] { node.followAheadBS.insert(id) }
         }
+        node.followAheadExcludeBS = BitSet()
+        for s in node.followAheadExclude {
+            if let id = symbolToID[s] { node.followAheadExcludeBS.insert(id) }
+        }
         if node.kind != .END {
             if let seq = node.seq { populateBitSetsRecursive(seq) }
         }

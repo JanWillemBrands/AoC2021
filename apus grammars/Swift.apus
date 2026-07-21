@@ -155,33 +155,59 @@ moduleSelector = identifier "::" .
 
 
 // ──────────────────────────────────────────────────────────────────────────
-// Plain slash-regex literal — parser-level CFG.
+// Plain slash-regex literal — parser-level CFG, position-gated at the opening `/`.
 //
-// Replaces the older scanner-level terminal (kept commented below for reference).
-// The CFG enforces delimiter balance inside the body, so over-claim cases like
-// `(/E.e).foo(/0)` fail at parse time — the stray `)` is not a regexAtom and
-// can only appear inside a balanced regexGroup. The `>s<` annotations forbid
-// whitespace adjacent to either `/`, which subsumes the empty-regex and
-// leading/trailing-space rejections the old scanner regex performed inline.
+// The CFG body (regexBody/regexItem/regexGroup/regexCharacterClass) correctly balances
+// groups `(…)` and classes `[…]` — genuinely context-free structure a flat scanner
+// terminal cannot express. Regex-body atoms reach the body through the SAME operator
+// terminals (regexOperatorChar etc.), so `/^/`, `/(.*?)/` parse cleanly.
 //
-// Operator overlap: atom characters like `^`, `*`, `+`, etc. reach the regex
-// body via the existing operator terminals (`operatorHead`, `operatorSpecial`)
-// rather than via a competing anonymous regex terminal, so `/^/` parses cleanly.
-//
-// See `Regex CFG Discussion.md` for the design rationale.
+// Regex-vs-operator disambiguation (mirrors swift-syntax's lexer):
+//   • Position gate — `regexOpenSlash` carries the `<-<` operand-ender exclusion list:
+//     the `preferRegexOverBinaryOperator` analog (Cursor.swift:2255). A regex may start
+//     only when NOT preceded by an operand-ender; in infix position a leading `/` stays
+//     division/operator. The CLOSING slash (`regexCloseSlash`) is ungated — a regex body
+//     may legitimately end in `)`/`]`, which would wrongly trip the operand-ender list.
+//   • Operator maximal-munch — `@lexicalClass operatorToken` (no `@splitBefore`) makes
+//     `=/`, `+/`, `.../` single operators and suppresses the lone `+`/`=`/`.`, so no
+//     `op` + `/regex/` split survives in infix position (`/x/+/y/`, `_=/0/`, `0 /^/ 1`).
+//   • regexOpenSlash/regexCloseSlash are REGEX terminals → exempt from operator
+//     maximal-munch, so a regex's own `/` is never eaten as an operator char.
 // ──────────────────────────────────────────────────────────────────────────
 
 regexEscape          - /\\[^\r\n]/ .
 regexNonOperatorAtom - /[^\/\\\[\]\(\)\r\n\+\-\*%&\|\^~<>=!\?\.#;:,]/ .
 regexClassAtom       - /[^\\\]\r\n]/ .
-// A single operator character inside a regex body. A REGEX terminal (not the
-// shared operator literals) so it is exempt from operatorToken maximal munch —
-// otherwise `/^/`'s `^` would be eaten as the operator `^/`, and `/(.*?)/`'s
-// `*?` would fuse. Excludes `/` (the regex delimiter, matched by regexSlash).
+// A single operator character inside a regex body. A REGEX terminal (not the shared
+// operator literals) so it is exempt from operatorToken maximal munch — otherwise
+// `/^/`'s `^` would be eaten as the operator `^/`, and `/(.*?)/`'s `*?` would fuse.
+// Excludes `/` (the regex delimiter, matched by regexOpenSlash/regexCloseSlash).
 regexOperatorChar    - /[-+*%|^~<>=!?&.]/ .
 
-regexSlash - /\// .
-plainRegularExpressionLiteral = regexSlash >s< regexBody >s< regexSlash .   // regexSlash is a REGEX terminal → exempt from operatorToken maximal munch, so `/^/`'s opening `/` isn't eaten as the operator `/^`
+// Opening slash — position-gated. `<-<` (negative lookbehind) blocks a regex start right
+// after an operand-ender, the `preferRegexOverBinaryOperator` analog.
+regexOpenSlash  - /\// .
+    <-<( "true" "false" "nil" "self" "Self" "super" "Any"
+         "func" "operator"
+         rawIdentifier escapedIdentifier implicitParameterName propertyWrapperProjection
+         binaryLiteral octalLiteral decimalNumber hexadecimalLiteral
+         decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
+         regexCloseSlash extendedRegularExpressionLiteral
+         ")" "]" "}" ">"
+         "!"
+         "->" "..." "." "@" )
+regexCloseSlash - /\// .
+// Ungated opening slash for a NEWLINE-leading regex. A `/…/ ` that starts a new line after a
+// complete expression is a regex, not infix division (`_ = 2 ⏎ /x}/` → RegexLiteral, probe-
+// confirmed hasError=false). The newline resets to prefix position, so the operand-ender gate
+// must NOT apply — hence a separate ungated slash. The spaced continuation `⏎/ 1` is still
+// excluded by `>s<` (no space after the opening `/`), matching swift's line-leading operator rule.
+regexOpenSlashNL - /\// .
+// Two mutually-exclusive productions (`>n<` = no newline before, `<n>` = newline before):
+//   same line  → gated opening slash (operand-ender lookbehind blocks `0 /^/ 1`)
+//   new line   → ungated opening slash (line-leading `/x}/` is a regex)
+plainRegularExpressionLiteral = >n< regexOpenSlash   >s< regexBody >s< regexCloseSlash .
+plainRegularExpressionLiteral = <n> regexOpenSlashNL >s< regexBody >s< regexCloseSlash .
 
 regexBody       = regexItem | regexItem regexBody .
 regexItem       = regexEscape | regexCharacterClass | regexGroup | regexAtom .
@@ -195,21 +221,8 @@ regexAtom       = regexNonOperatorAtom
                 | regexOperatorChar
                 | "#" | ":" | ";" | "," .
 
-// ── Previous scanner-level terminal (kept for quick revert if needed) ──
-//plainRegularExpressionLiteral       - /\/(?![\s*])(?:[^\/\\\n]|\\.)*(?:[^\/\\\n\s]|\\.)\// .
-//    --1( "true" "false" "nil" "self" "Self" "super" "Any"
-//         "func" "operator"
-//         rawIdentifier escapedIdentifier implicitParameterName propertyWrapperProjection
-//         binaryLiteral octalLiteral decimalNumber hexadecimalLiteral
-//         decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
-//         plainRegularExpressionLiteral extendedRegularExpressionLiteral
-//         ")" "]" "}" ">"
-//         "!"
-//         "->" "..." "." "@" )
-//    ++2("try"), ++1("!")
-
 extendedRegularExpressionLiteral    - /(#+)\/(?:[^\/]|\/(?!\1))*?\/\1/ .   // backref: closing #s must equal opening; no escapes in extended regex, `/` is body content, only `/#…` closes
-    --1( "true" "false" "nil" "self" "Self" "super" "Any"
+    <-<( "true" "false" "nil" "self" "Self" "super" "Any"
          "func" "operator"
          rawIdentifier escapedIdentifier implicitParameterName propertyWrapperProjection
          binaryLiteral octalLiteral decimalNumber hexadecimalLiteral
@@ -236,7 +249,7 @@ singleLineStringLiteral         - /"(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"
 extendedSinglelineStringLiteral - /(#+)"(?:[^"\n\r]|"(?!\1))*?"\1/ .   // backref: closing #s must equal opening
 
 multilineStringLiteral          - /"""(?![\s\S]*\\\()(?:[^"\\]|\\[\s\S]|"(?!""))*"""/ . // start """ end """; body's `\<x>` uses `[\s\S]` so `\<NL>` (multiline line-continuation per swift-syntax Cursor.swift:1766) is body content; lookahead uses `[\s\S]` so it crosses newlines
-extendedMultilineStringLiteral  - /(#+)"""(?s:.)*?"""\1/ .             // backref: closing #s must equal opening
+extendedMultilineStringLiteral  - /(#+)"""[ \t]*\r?\n(?s:.)*?"""\1/ .   // backref: closing #s must equal opening. `[ \t]*\r?\n` after the opening `#"""`: swift requires a multiline opener to be followed by a newline (Cursor.swift advanceIfMultilineDelimiter). Without it, `#"""…"""#` is a SINGLE-line raw string with `"` content ("false delimiters" — probe: `#""""""#` → stringQuote, not multilineStringQuote), which resolves the extendedSingleline-vs-extendedMultiline ambiguity on quote-only raw bodies.
 
 staticStringLiteral             = singleLineStringLiteral
                                 | extendedSinglelineStringLiteral
@@ -470,15 +483,29 @@ unicodeOperatorContinuation - /[\p{Mn}\p{Me}]/ .
 //         via `infixOperator = "&"`, prefix `&` via inOutExpression). `.`-operators
 //         remain the separate char-level `dotOperator`.
 // `/` IS included (division, `/=`, and `/`-containing operator names like `/^/`).
-// `@splitBefore("/")` additionally offers the prefix ending before an internal `/`,
-// so a regex can follow a prefix operator (`^^/regex/` → `^^` + `/regex/`) — this is
-// swift-syntax's operator regex-scan (SwiftParser Cursor.swift:2275 tryLexOperatorAsRegexLiteral).
-@lexicalClass @splitBefore("/") operatorToken - /(?:[-+*\/%|^~<>]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])(?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])*|[!?=&](?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+/ .
+// Maximal-munch is the WHOLE regex-vs-operator disambiguator on the operator side:
+// `=/`, `+/`, `.../`, `/^/` lex as single operator tokens and the lone `+`/`=`/`.`
+// are suppressed. `@splitBefore("/")` offers the "operator ends before an internal `/`"
+// prefix so a regex can follow a prefix operator (`^^/regex/` → `^^` + `/regex/`), porting
+// swift-syntax's `tryLexOperatorAsRegexLiteral` (Cursor.swift:2275). It is GATED by the
+// `<-<` operand-ender lookbehind = swift-syntax's `preferRegexOverBinaryOperator`: the split
+// is offered ONLY when the operator is in PREFIX position (not preceded by an operand-ender).
+// In INFIX position (`/x/+/y/`, `_=/0/`, `0 /^/ 1` — operator preceded by an operand) the
+// split is suppressed and maximal-munch wins (`+/`, `=/`, `/^/`), so no `op` + `/regex/`
+// reading competes. (Engine: a failing `<-<` on a `@splitBefore` terminal drops the split
+// matches only, never the maximal base match — operators legitimately follow operands.)
+@lexicalClass @splitBefore("/") operatorToken -/(?:[-+*\/%|^~<>]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])(?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])*|[!?=&](?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+/ .
+    <-<( "true" "false" "nil" "self" "Self" "super" "Any"
+         rawIdentifier escapedIdentifier implicitParameterName propertyWrapperProjection
+         binaryLiteral octalLiteral decimalNumber hexadecimalLiteral
+         decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
+         regexCloseSlash extendedRegularExpressionLiteral
+         "_" ")" "]" "}" ">" "!" )
 // Dot-operator: a `.`-led operator (`...`, `..<`, `.+.`). Greedy @lexicalClass terminal
 // — was char-assembled (`"." { dotOperatorCharacter }`), which let `...` split into
 // `.`+`.`+`.` and produced range/operator pivots. A `.`-led operator may contain `.`;
 // a lone `.` (member access) is the literal `"."`, not this (needs >=1 continuation).
-@lexicalClass @splitBefore("/") dotOperator - /\.(?:[.\-+*\/%|^~<>=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+/ .
+@lexicalClass dotOperator - /\.(?:[.\-+*\/%|^~<>=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+/ .
 operator = operatorToken .
 operator = dotOperator .
 
@@ -489,7 +516,7 @@ operator = dotOperator .
 // `[!?=&]`-led alternative (all infix-only), leaving only `[-+*/%|^~<>]`- or symbol-led runs. This
 // is what removes the spurious `x!!`/`x??` postfix-operator reading — no @prefer needed, so keypath
 // `?`/`!` Frankenstein components are untouched.
-@splitBefore("/") postfixOperatorToken - /(?![!?])(?:(?:[-+*\/%|^~<>]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])(?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])*|[!?=&](?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+)/ .
+postfixOperatorToken - /(?![!?])(?:(?:[-+*\/%|^~<>]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])(?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])*|[!?=&](?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+)/ .
 
 // Operator FUNCTION name (`func %%%%<T,U>`). Same run as operatorToken but split
 // before a generic `<` (swift-syntax peels the `<` off the operator name in decl
@@ -744,7 +771,13 @@ awaitOperator = "await" .
 // the second checks the gap after. Both-tight (`a+b`) or both-loose (`a + b`, incl. `a +⏎b`)
 // are infix; asymmetric (`a +b`, `a+ b`, `a⏎-b`) match neither, so the operator is forced
 // prefix/postfix — killing the newline-vs-continuation ambiguity. See TODO #22.
-infixExpression = >s< infixOperator >s< tryOperator? awaitOperator? prefixExpression .
+// `@longest`: a `typeCastingOperator` (`as`/`as?`/`as!`/`is` + type) whose type has two valid
+// extents (`as ()` vs `as () -> ()`; the empty-tuple type vs the function type `() -> ()`) is an
+// EXTENT choice — swift-syntax takes the LONGEST cast type (the whole `() -> ()`), leaving no
+// spurious `-> ()` tail to re-parse as infix. Same shape as `@longest genericIdentifier` (`A` vs
+// `A<B>`). No-op for ordinary operator chains: each infixExpression is one operator + one operand,
+// so it has a single extent and shares no start with a longer sibling.
+@longest infixExpression = >s< infixOperator >s< tryOperator? awaitOperator? prefixExpression .
 infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
 infixExpression = assignmentOperator tryOperator? awaitOperator? prefixExpression .
 infixExpression = conditionalOperator tryOperator? awaitOperator? prefixExpression .
@@ -929,15 +962,25 @@ wildcardExpression = "_" .
 // (components `.?`, `.foo`), not `\.?` + a `.foo` member access on it (swift-syntax parses the
 // whole run as keypath components). The two readings share a start but differ in extent of the
 // keyPathExpression (`\.?` vs `\.?.foo`), so keeping the longest prunes the early-stop base.
-@longest keyPathExpression = "\\" keyPathRootType? keyPathComponents .      // escape needed for apus literals (Swift string syntax)
+// Split from `"\\" keyPathRootType? keyPathComponents` so the root-bearing reading can be @prefer'd:
+// a leading `[…]`/`[…:…]` is BOTH a valid root type (Array/Dictionary type) AND a bare-subscript
+// first component. swift-syntax commits to the ROOT TYPE (`\[X].y` → root ArrayType, `\[X:Y].y` →
+// root DictionaryType; probe-confirmed), falling back to a subscript component only when the `[…]`
+// is not a valid type (`\[0].y` → `0` is no type → subscript). `@prefer` on the root-bearing
+// alternate prunes the root-absent sibling ONLY where both cover the same span (i.e. the `[…]` parses
+// as a type); where the type fails, only the root-absent alternate yields, so the preference is inert.
+@longest keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents .   // escape needed for apus literals (Swift string syntax)
+@longest keyPathExpression =         "\\" keyPathComponents .
 
-// Keypath root is the full `type` (so every sugared root works — `\(X).y`, `\Any.y`, `\[X].y`,
-// `\Foo<Int>.bar`), but @shortest: swift-syntax parses `\a.b.c` as root `a` + components `.b`,`.c`
-// (probe: root is a single leading type, never a `.member` chain). @shortest keeps the minimal
-// root so `.member` runs fall to keyPathComponents instead of being eaten as member-types — the
-// root-vs-component pivot. (Where only one root length yields a complete parse, e.g. `Foo<Int>`,
-// @shortest is a no-op.)
-@shortest keyPathRootType = type .
+// Keypath root = swift-syntax `parseSimpleType(allowMemberTypes: false)` (Expressions.swift:1118):
+// a SIMPLE type with the `.member` chain structurally EXCLUDED, so `\a.b.c` = root `a` + components
+// `.b`,`.c` (root is never a `.member` chain — probe-confirmed). Excluding the member recursion here
+// is what makes the root-vs-`.member` overlap vanish — NO `@shortest` needed (the old full-`type`
+// root pruned it after the fact; this prevents it structurally). Covers `\Foo<Int>.bar`, `\[X].y`,
+// `\[X:Y].y`, `\(X).y`, `\Any.y`. Postfix `?`/`!` and `.Type` are keyPathComponents, not root, so the
+// optional/IUO/metatype simple-type forms are (correctly) absent here.
+keyPathRootType = typeName typeGenericArgumentClause?
+                | tupleType | arrayType | inlineArrayType | dictionaryType | anyType | "(" tupleTypeElement ")" .
 
 // A keypath is a flat run of components. swift-syntax accepts every combination (probe battery,
 // all err=false) — a leading-dot postfix `.?`/`.!`/`.[` is valid ANYWHERE, not just at the start
@@ -980,9 +1023,13 @@ postfixExpression = primaryExpression .
 //   • `>>1(…)` on the operator TERMINAL — a tight closing delimiter or EOF follows (covers `f(a°)`, `/x/...`,
 //     `(/x)/`). `>>1` must anchor on the terminal (postfixOperatorToken/dotOperator); on a nonterminal or the
 //     epsilon `""` it is a no-op. The delimiter set is swift-syntax's !rightBound char set minus whitespace/EOF.
-postfixExpression = postfixExpression >s< postfixOperator <s> .
-postfixExpression = postfixExpression >s< postfixOperatorToken >>1("." ")" "]" "}" "," ";" ":") .
-postfixExpression = postfixExpression >s< dotOperator         >>1("." ")" "]" "}" "," ";" ":") .
+// `@prefer` the whitespace-after (`<s>`) reading: `>>1` is trivia-INSENSITIVE (checks the next token
+// past trailing trivia), so for `postfixOp <whitespace> <delimiter>` (e.g. `*!*`⏎`}`) BOTH the `<s>` alt
+// and a `>>1` alt match the same span. They're same-span, so @prefer collapses the dual to the `<s>`
+// reading; the `>>1` alts still uniquely cover the TIGHT delimiter / EOF cases where `<s>` can't match.
+postfixExpression = @prefer postfixExpression >s< postfixOperator <s>
+                  | postfixExpression >s< postfixOperatorToken >+>("." ")" "]" "}" "," ";" ":")
+                  | postfixExpression >s< dotOperator          >+>("." ")" "]" "}" "," ";" ":") .
 postfixExpression = functionCallExpression .
 postfixExpression = initializerExpression .
 postfixExpression = explicitMemberExpression .
@@ -1115,18 +1162,21 @@ statement = discardStatement .
 // `<s> >n<`: the yielded expression must be on the SAME line (swift-syntax atContextualKeyword,
 // Statements.swift). `yield⏎expr` does NOT yield — `yield` is then a plain identifier and `expr`
 // a separate statement (probe: YieldStmt=false). Mirrors discardStatement's contextual-keyword gate.
-yieldStatement = "yield" <s> >n< expression .
-// `>s<`: the multi-value paren form needs a TIGHT `(` — `yield()` / `yield(a, b)`. A spaced
-// `yield (…)` is a call on the identifier `yield`, not a yield (probe: YieldStmt=false).
-yieldStatement = "yield" >s< "(" ")" .
-yieldStatement = "yield" >s< "(" yieldedExpressionList ","? ")" .
-yieldedExpressionList = expression | expression "," yieldedExpressionList .
+// `>->("(" "[" ".")`: negative forward lookahead reproducing swift-syntax's `preferPostfixExpr: true`
+// gate (atStartOfStatement → atContextualKeywordPrefixedSyntax, Statements.swift:1052 for both
+// `yield` and `discard`). When `yield` is followed by a postfix suffix `(`/`[`/`.`, swift-syntax reads
+// it as a CALL/subscript/member on the identifier `yield`, NOT a yield statement (spacing irrelevant:
+// `yield(x)` and `yield (x)` are both calls; `yield ()`/`yield[0]`/`yield.f` likewise). The gate kills
+// the yieldStatement reading exactly there, leaving the expression-statement (call) reading unopposed.
+// Non-suffix operands (`yield foo`, `yield 5`, `yield &x`) have no call reading, so they stay yields.
+// A pure CFG can't express this 1-token peek; this is swift-syntax's own mechanism, in grammar form.
+yieldStatement = "yield" >->("(" "[" ".") <s> >n< expression .
 
 // SE-0390 (discard) statement: swift-syntax parseDiscardStatement (Statements.swift:373-382).
-// Contextual keyword like consume/borrow/copy — same `<s> >n<` whitespace boundary
-// (Statements.swift:1052-1056 uses atContextualKeywordPrefixedSyntax(preferPostfixExpr: true)).
-// `discard self` → keyword form; `discard(self)` → function call on `discard` identifier.
-discardStatement = "discard" <s> >n< expression .
+// Contextual keyword like consume/borrow/copy — same `<s> >n<` whitespace boundary AND the same
+// `preferPostfixExpr: true` gate as yield (Statements.swift:1052-1056). `discard self` → keyword form;
+// `discard(self)`/`discard (self)` → call on the `discard` identifier — hence the same `>->` suffix gate.
+discardStatement = "discard" >->("(" "[" ".") <s> >n< expression .
 
 //statements = statement statements? .
 statements = statement ";"? .
@@ -1798,7 +1848,7 @@ sameTypeRequirement = typeIdentifier "==" signedIntegerLiteral .
 // `isGenericTypeDisambiguatingToken` set (Types.swift:1478) — what may legally follow `>` for the
 // `<...>` to be read as generic args rather than comparison operators (`a < b > c`).
 genericArgumentClause   = openAngle genericArgumentList ","? closeAngle
-                        >>1("(" ")" "[" "]" "{" "}" "," ";" ":" "." "?" "!" ">") .
+                        >+>("(" ")" "[" "]" "{" "}" "," ";" ":" "." "?" "!" ">") .
 // Type-position generic args: no follow-restriction (type position is unambiguous).
 typeGenericArgumentClause = openAngle genericArgumentList ","? closeAngle .
 

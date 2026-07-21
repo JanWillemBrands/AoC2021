@@ -343,6 +343,22 @@ struct SwiftSyntaxTests {
     @Suite("SwiftSyntax parser probe")
     struct ParserProbe {
 
+        @Test("TEMP ambiguity probe")
+        func ambiguityProbe() throws {
+            let cases: [(String, String)] = [
+                ("Closure3", "func f(x:[Void])\n{\n  var y:[[Void]] = x.map { [$0] }\n  {\n    $0.reserveCapacity(1)\n  } (&y[0])\n}"),
+            ]
+            for (n, s) in cases {
+                print("PROBE ================ \(n): \(s.replacingOccurrences(of: "\n", with: "⏎"))")
+                let r = try adventParse(s)
+                let amb = (r != nil && !r!.isUnambiguous) ? "AMBIGUOUS" : "unambig"
+                print("PROBE advent accept=\(r != nil) \(amb)")
+                let ref = Parser.parse(source: s)
+                print("PROBE swift-syntax hasError=\(ref.hasError)")
+                print("PROBE swift-syntax reference:\n\(ref.debugDescription)")
+            }
+        }
+
         @Test("pattern node shape differs between declaration and switch case")
         func patternNodeShapeProbe() {
             let illegal = Parser.parse(source: "let let x = 1")

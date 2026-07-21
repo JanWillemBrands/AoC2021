@@ -237,17 +237,17 @@ class ApusParser {
             // `TokenPattern.transitions` are gone; LCNP per-terminal lex
             // makes mode gating unnecessary.
 
-            // handle parser-side lookbehind: ++N(...) / --N(...)
+            // handle parser-side lookbehind: <+<(...) / <-<(...)
             // Each line is a comma-separated chain of rules (AND); polarity must be uniform within a line.
-            // Multiple lines on the same terminal accumulate (OR).
-            let lookbehindHeads: Set<String> = ["++1", "++2", "--1", "--2"]
+            // Multiple lines on the same terminal accumulate (OR). Single-token distance only.
+            let lookbehindHeads: Set<String> = ["<+<", "<-<"]
             while lookbehindHeads.contains(token.kind) {
                 var rules: [LookbehindRule] = []
                 var linePolarity: LookbehindPolarity?
                 repeat {
                     let head = token.kind
-                    let polarity: LookbehindPolarity = head.hasPrefix("+") ? .positive : .negative
-                    let distance = head.hasSuffix("1") ? 1 : 2
+                    let polarity: LookbehindPolarity = head == "<+<" ? .positive : .negative
+                    let distance = 1
                     if let lp = linePolarity, lp != polarity {
                         Logger.parse.error("lookbehind line mixes polarities: \(head, privacy: .public) cannot follow opposite polarity in the same comma chain")
                         throw ApusParserError.unexpectedToken(explanation: "mixed-polarity lookbehind chain")
@@ -685,18 +685,22 @@ class ApusParser {
             cI += 1
         }
 
-        // check for positive forward lookahead annotation: >>1("(" ")" ...)
-        // Mirrors `---` shape but checks the NEXT token at parse time, not duals.
-        // EOS sentinel ("○") is treated as approved automatically — matches Swift's
-        // canParseAsGenericArgumentList rule where EOF closes the generic clause.
-        if token.kind == ">>1" {
+        // Forward 1-token lookahead annotations. Checks the NEXT token at parse time
+        // (trivia-insensitive: the token past trailing trivia), not duals.
+        //   >+>("(" ")" ...)  positive — next token MUST be in the set (EOS always approved,
+        //                     matching Swift's canParseAsGenericArgumentList where EOF closes `<…>`).
+        //   >->("(" "[" ".")  negative — next token MUST NOT be in the set (EOS approved),
+        //                     mirroring swift-syntax's preferPostfixExpr gate.
+        if token.kind == ">+>" || token.kind == ">->" {
+            let negated = token.kind == ">->"
             cI += 1
             try expect(["("])
             cI += 1
             while token.kind == "literal" {
                 let approved = String(token.image)
                 if !token.stripped.isEmpty {
-                    node.followAhead.insert(approved)
+                    if negated { node.followAheadExclude.insert(approved) }
+                    else       { node.followAhead.insert(approved) }
                 }
                 cI += 1
             }
