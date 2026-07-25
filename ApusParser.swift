@@ -154,6 +154,11 @@ class ApusParser {
     private var skip = false
     private var terminalAlias: String?
     private var literalAliases: [String: String] = [:]
+    /// `@scalar` — compile this regex terminal with `.matchingSemantics(.unicodeScalar)`
+    /// so explicit code-point ranges (`\u{…}-\u{…}`) mean scalar-value intervals and
+    /// combining marks / variation selectors are matched per-scalar (not grapheme-clustered).
+    /// Set by the `@scalar` pragma in `production()`, consumed in `regex()`.
+    private var scalarSemantics = false
     
     func parseApusGrammar() throws {
         trace("parseApusGrammar", token)
@@ -202,6 +207,11 @@ class ApusParser {
             cI += 1
             try expect([")"]); cI += 1
         }
+        // `@scalar` — unicode-scalar matching semantics for this regex terminal.
+        if token.kind == "pragma", token.stripped == "scalar" {
+            scalarSemantics = true
+            cI += 1
+        }
         try expect(["identifier"])
         let nonTerminalName = String(token.image)
         cI += 1
@@ -228,6 +238,7 @@ class ApusParser {
             // reset
             terminalAlias = nil
             skip = false
+            scalarSemantics = false
             
             try expect(["."])
             cI += 1
@@ -557,7 +568,11 @@ class ApusParser {
             // the token is a regex definition, try to initialize a Regex with it
             // Construct as AnyRegexOutput so regexes that include capturing groups (e.g. backreferences like `(#+)…\1`) don't fail the type check.
             // We only ever need the whole-match boundary in the hot path; captures are not consulted by the lexer.
-            let regex = try Regex(String(token.stripped))
+            var regex = try Regex(String(token.stripped))
+            // `@scalar`: match one Unicode scalar at a time so `\u{…}-\u{…}` ranges compare by
+            // code-point value (not grapheme-cluster order) and variation selectors / combining
+            // marks are ordinary scalars. Without this, code-point ranges silently mis-behave.
+            if scalarSemantics { regex = regex.matchingSemantics(.unicodeScalar) }
             grammar.terminals[name] = TokenPattern(String(token.image), regex, false, skip)
             grammar.registerTerminal(name)
             trace("regex name:", name, "image:", token.image)
@@ -685,8 +700,8 @@ class ApusParser {
             cI += 1
         }
 
-        // Forward 1-token lookahead annotations. Checks the NEXT token at parse time
-        // (trivia-insensitive: the token past trailing trivia), not duals.
+        // Forward 1-token lookahead annotations (operand may be a literal OR a named terminal).
+        // Checks the NEXT token at parse time (trivia-insensitive: the token past trailing trivia), not duals.
         //   >+>("(" ")" ...)  positive — next token MUST be in the set (EOS always approved,
         //                     matching Swift's canParseAsGenericArgumentList where EOF closes `<…>`).
         //   >->("(" "[" ".")  negative — next token MUST NOT be in the set (EOS approved),
@@ -696,8 +711,19 @@ class ApusParser {
             cI += 1
             try expect(["("])
             cI += 1
-            while token.kind == "literal" {
-                let approved = String(token.image)
+            while token.kind == "literal" || token.kind == "identifier" {
+                // Operand resolves to a Token.kind matched against the next token:
+                //   quoted "X"  → the full quoted form `"X"` (matches literal terminals)
+                //   alias name  → literalAliases lookup (already quoted form)
+                //   bare name   → a named (regex) terminal kind, used as-is
+                // Same resolution as the `<-<`/`<+<` lookbehind and `---` exclusion loops.
+                let approved: String
+                if token.kind == "literal" {
+                    approved = String(token.image)
+                } else {
+                    let id = token.stripped
+                    approved = literalAliases[id] ?? id
+                }
                 if !token.stripped.isEmpty {
                     if negated { node.followAheadExclude.insert(approved) }
                     else       { node.followAhead.insert(approved) }
