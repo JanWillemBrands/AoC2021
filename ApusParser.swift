@@ -231,6 +231,14 @@ class ApusParser {
             case "literal":
                 terminal = literal()
                 literalAliases[nonTerminalName] = terminal.name
+            case "pragma" where token.stripped == "builder":
+                // `@builder` — the terminal's scanner regex comes from the Swift
+                // RegexBuilder library (GrammarRegexLibrary.swift), keyed by name.
+                //   name - @builder .          → ApusRegexLibrary.patterns["name"]
+                //   name - @builder(key) .     → ApusRegexLibrary.patterns["key"]
+                terminal = try regexBuilder(name: nonTerminalName)
+                if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
+                if let sc = splitBeforeChar { grammar.terminals[nonTerminalName]?.splitBefore = sc }
             default:
                 try expect(["regex", "literal"])
             }
@@ -585,6 +593,32 @@ class ApusParser {
         return GrammarNode(kind: .T, name: name)
     }
     
+    /// `@builder` terminal — resolve the scanner regex from `ApusRegexLibrary`
+    /// (GrammarRegexLibrary.swift). Current token is the `@builder` pragma; an
+    /// optional `(key)` overrides the default lookup key (= the terminal name).
+    func regexBuilder(name: String) throws -> GrammarNode {
+        cI += 1   // consume `@builder`
+        var key = name
+        if token.kind == "(" {
+            cI += 1
+            switch token.kind {
+            case "literal":    key = token.stripped
+            case "identifier": key = String(token.image)
+            default:           try expect(["identifier", "literal"])
+            }
+            cI += 1
+            try expect([")"]); cI += 1
+        }
+        guard let regex = ApusRegexLibrary.patterns[key] else {
+            Logger.parse.error("@builder terminal \(name, privacy: .public) references unknown RegexBuilder '\(key, privacy: .public)' in ApusRegexLibrary.patterns")
+            throw ApusParserError.unexpectedToken(explanation: "unknown @builder key '\(key)' for terminal '\(name)'")
+        }
+        grammar.terminals[name] = TokenPattern(name, regex, false, skip)
+        grammar.registerTerminal(name)
+        trace("regexBuilder name:", name, "key:", key)
+        return GrammarNode(kind: .T, name: name)
+    }
+
     func literal() -> GrammarNode {
         trace("literal", token, token.stripped)
 

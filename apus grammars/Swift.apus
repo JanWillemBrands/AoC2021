@@ -53,7 +53,7 @@ multilineComment =: "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineCommen
 //rawIdentifier               - /[\p{XID_Start}_\p{So}][\p{XID_Continue}\p{So}]*/ .
 
 @lexicalClass
-identifier - /[\p{XID_Start}_\p{So}][\p{XID_Continue}\p{So}]*/ . // `_` in head → single continuation class (deduped, no `|_[…]+` alt). Bare `_` is the wildcard, so every NAME-CONSUMING use excludes it via `---("_")`: hardIdentifier, softIdentifier, typeName, moduleGenericIdentifier, keyPathArgumentLabel, macroHead. \p{So} includes emoji; @lexicalClass = keywords longest-matched.
+identifier - @builder . // regex defined in GrammarRegexLibrary.swift (ApusRegexLibrary.identifier) = /[\p{XID_Start}_\p{So}][\p{XID_Continue}\p{So}]*/. Bare `_` is the wildcard, so every NAME-CONSUMING use excludes it via `---("_")`: hardIdentifier, softIdentifier, typeName, moduleGenericIdentifier, keyPathArgumentLabel, macroHead. \p{So} includes emoji; @lexicalClass = keywords longest-matched.
 //
 // COMMENTED ALTERNATIVE — explicit N1518 ranges, verbatim from swift-syntax
 // `isValidIdentifierStartCodePoint`/`isValidIdentifierContinuationCodePoint`
@@ -495,7 +495,7 @@ unicodeOperatorContinuation - /[\p{Mn}\p{Me}]/ .
 // split is suppressed and maximal-munch wins (`+/`, `=/`, `/^/`), so no `op` + `/regex/`
 // reading competes. (Engine: a failing `<-<` on a `@splitBefore` terminal drops the split
 // matches only, never the maximal base match — operators legitimately follow operands.)
-@lexicalClass @splitBefore("/") operatorToken -/(?:[-+*\/%|^~<>]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])(?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])*|[!?=&](?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+/ .
+@lexicalClass @splitBefore("/") operatorToken - @builder .   // regex = ApusRegexLibrary.operatorBody (GrammarRegexLibrary.swift): (head|unicode)(cont)* | special(cont)+
     <-<( "true" "false" "nil" "self" "Self" "super" "Any"
          identifier escapedIdentifier implicitParameterName propertyWrapperProjection
          binaryLiteral octalLiteral decimalNumber hexadecimalLiteral
@@ -506,7 +506,7 @@ unicodeOperatorContinuation - /[\p{Mn}\p{Me}]/ .
 // — was char-assembled (`"." { dotOperatorCharacter }`), which let `...` split into
 // `.`+`.`+`.` and produced range/operator pivots. A `.`-led operator may contain `.`;
 // a lone `.` (member access) is the literal `"."`, not this (needs >=1 continuation).
-@lexicalClass dotOperator - /\.(?:[.\-+*\/%|^~<>=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+/ .
+@lexicalClass dotOperator - @builder .   // regex = ApusRegexLibrary.dotOperator (GrammarRegexLibrary.swift): `.` (dotCont)+
 operator = operatorToken .
 operator = dotOperator .
 
@@ -517,14 +517,14 @@ operator = dotOperator .
 // `[!?=&]`-led alternative (all infix-only), leaving only `[-+*/%|^~<>]`- or symbol-led runs. This
 // is what removes the spurious `x!!`/`x??` postfix-operator reading — no @prefer needed, so keypath
 // `?`/`!` Frankenstein components are untouched.
-postfixOperatorToken - /(?![!?])(?:(?:[-+*\/%|^~<>]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])(?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])*|[!?=&](?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+)/ .
+postfixOperatorToken - @builder .   // regex = ApusRegexLibrary.postfixOperatorToken (GrammarRegexLibrary.swift): (?![!?]) then the shared operator body
 
 // Operator FUNCTION name (`func %%%%<T,U>`). Same run as operatorToken but split
 // before a generic `<` (swift-syntax peels the `<` off the operator name in decl
 // context — SwiftParser). Scoped to functionName only, so the `<`-split can't
 // reach expressions (where it would re-create the operator/operand pivots). Not
 // @lexicalClass — it does not drive maximal munch.
-@splitBefore("<") operatorName - /(?:[-+*\/%|^~<>]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])(?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])*|[!?=&](?:[-+*\/%|^~<>!?=&]|[\p{Mn}\p{Me}]|[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]])+/ .
+@splitBefore("<") operatorName - @builder .   // regex = ApusRegexLibrary.operatorBody (GrammarRegexLibrary.swift), same body as operatorToken
 
 // Generic close-angle. A REGEX terminal (not the literal `">"`), so it is exempt
 // from the operator maximal-munch: it matches a single `>` even inside `>>`,
@@ -1074,9 +1074,21 @@ functionCallArgumentList = functionCallArgument | functionCallArgument "," funct
 // operator reading and kills the spurious split. `@prefer` (same-span) still resolves the emoji
 // label case (`format: 📆` — identifier vs operator, same span). Ordinary args have one extent, so
 // @longest is a no-op for them.
-@longest functionCallArgument = @prefer expression | @prefer argumentLabel ":" expression .
-functionCallArgument = operator | argumentLabel ":" operator .
-functionCallArgument = moduleSelector operator | argumentLabel ":" moduleSelector operator .   // SE-0491: reduce(0, Swift::+)
+@longest
+functionCallArgument = @prefer expression
+                     | @prefer argumentLabel ":" expression .
+functionCallArgument = operator
+                     | argumentLabel ":" operator .
+functionCallArgument = moduleSelector operator
+                     | argumentLabel ":" moduleSelector operator .   // SE-0491: reduce(0, Swift::+)
+
+//@longest
+//functionCallArgument = @prefer expression
+//                     | @prefer argumentLabel ":" expression .
+//functionCallArgument = operator
+//                     | argumentLabel ":" operator .
+//functionCallArgument = moduleSelector operator
+//                     | argumentLabel ":" moduleSelector operator .   // SE-0491: reduce(0, Swift::+)
 
 // Call-site argument label: an identifier OR `_` (swift-syntax LabeledExpr.label allows .wildcard,
 // e.g. `#Color(_: 1)`, and `_:` unlabeled additional trailing closures). `f(_)` (wildcard VALUE) is
@@ -1381,8 +1393,8 @@ freestandingMacroExpansionDeclaration = macroHead genericArgumentClause? functio
 // the old `"#" + rawIdentifier` the name token started AFTER the `#`, so no reserved literal shared
 // its position and `---` was a silent no-op. Reserved keywords have dedicated rules (availability /
 // #if directives / #sourceLocation); everything else (`#foo`, `#selector`, `#colorLiteral`, …) is a macro.
-poundName - /#(?:[\p{XID_Start}\p{So}][\p{XID_Continue}\p{So}]*|_[\p{XID_Continue}\p{So}]+)/ .
-macroHead = poundName ---("#available" "#unavailable" "#if" "#elseif" "#else" "#endif" "#sourceLocation") .
+poundName - /#[\p{XID_Start}_\p{So}][\p{XID_Continue}\p{So}]*/ .   // `#` + identifier-body, deduped like `identifier` (`_` in head, single continuation class). Bare `#_` is not a valid macro name, clawed back at the sole use site (macroHead) below.
+macroHead = poundName ---("#_" "#available" "#unavailable" "#if" "#elseif" "#else" "#endif" "#sourceLocation") .
 macroHead = "#" >s< moduleSelector identifier ---("_") .   // SE-0491 #Module::macro (rare; keeps the module-qualified form)
 
 //  "#error" "#warning" "#fileLiteral" "#colorLiteral" "#imageLiteral" "#keyPath" "#selector"

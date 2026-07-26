@@ -176,28 +176,16 @@ extension MessageParser {
             }
 
             if bracket.kind.isClosure {
-                let nextKey = ParsePosition(slot: bracket, index: cI)
-
-                if let existingCluster = crf[nextKey] {
-                    for returnEdge in cluster.returns {
-                        if existingCluster.returns.insert(returnEdge).inserted {
-                            for pop in existingCluster.pops {
-                                if continuationViable(continuation: returnEdge.slot.seq!, at: pop) {
-                                    addYield(L: returnEdge.slot, i: returnEdge.index, k: cI, j: pop)
-                                    addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: pop)
-                                } else {
-                                    recordSuppressedContinuation(returnEdge.slot.seq!, at: pop)
-                                    suppressedDescriptorCount += 1
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    let newCluster = ParseCluster(slot: bracket, index: cI)
-                    crf[nextKey] = newCluster
-                    newCluster.returns = cluster.returns
-                    addDecscriptorsForAlternates(X: bracket, k: cI, i: cI)
-                }
+                // KLN/POS re-entry: iterate the body from `cI`, returning to the SAME
+                // cluster (`k = cU`, the closure's start). One CRF node per closure —
+                // the native-EBNF model (GLL Syntax Analysers for EBNF Grammars §4.3:
+                // a single GSS node, looped, `pop` offered each iteration). Replaces
+                // the old per-iteration cluster + `returns` snapshot, which cost O(N)
+                // CRF nodes AND was order-dependent (the snapshot missed return edges
+                // that arrived after it). The DerivationBuilder reconstructs iteration
+                // boundaries by re-tiling the BODY yields, so it never reads the
+                // closure node's own yields — this change is tree-invariant.
+                addDecscriptorsForAlternates(X: bracket, k: cU, i: cI)
             }
         }
     }

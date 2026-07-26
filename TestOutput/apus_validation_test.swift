@@ -63,44 +63,44 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"pragma":	("/@\\p{XID_Start}\\p{XID_Continue}*/",	/@\p{XID_Start}\p{XID_Continue}*/,	false,	false),
+	"identifier":	("/[_\\p{XID_Start}][-\\p{XID_Continue}]*/",	/[_\p{XID_Start}][-\p{XID_Continue}]*/,	false,	false),
+	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
+	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"action":	("/\'(?:[^\'\\\\]|\\\\.)*\'/",	/'(?:[^'\\]|\\.)*'/,	false,	true),
 	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
-	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
 	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)+\\\"/",	/\"(?:[^\"\\]|\\.)+\"/,	false,	false),
-	"identifier":	("/[_\\p{XID_Start}][-\\p{XID_Continue}]*/",	/[_\p{XID_Start}][-\p{XID_Continue}]*/,	false,	false),
-	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	""|<<"":	("|<<",	Regex { "|<<" },	true,	false),
-	""*"":	("*",	Regex { "*" },	true,	false),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
+	"pragma":	("/@\\p{XID_Start}\\p{XID_Continue}*/",	/@\p{XID_Start}\p{XID_Continue}*/,	false,	false),
+	""ε"":	("ε",	Regex { "ε" },	true,	false),
+	""<n>"":	("<n>",	Regex { "<n>" },	true,	false),
 	"">n<"":	(">n<",	Regex { ">n<" },	true,	false),
-	""++2"":	("++2",	Regex { "++2" },	true,	false),
-	"">s<"":	(">s<",	Regex { ">s<" },	true,	false),
+	""<"":	("<",	Regex { "<" },	true,	false),
+	""}"":	("}",	Regex { "}" },	true,	false),
 	""|"":	("|",	Regex { "|" },	true,	false),
-	""?"":	("?",	Regex { "?" },	true,	false),
+	"":"":	(":",	Regex { ":" },	true,	false),
+	""---"":	("---",	Regex { "---" },	true,	false),
 	"">>|"":	(">>|",	Regex { ">>|" },	true,	false),
 	""{"":	("{",	Regex { "{" },	true,	false),
-	""="":	("=",	Regex { "=" },	true,	false),
-	"">"":	(">",	Regex { ">" },	true,	false),
+	"">+>"":	(">+>",	Regex { ">+>" },	true,	false),
 	""."":	(".",	Regex { "." },	true,	false),
 	""-:"":	("-:",	Regex { "-:" },	true,	false),
-	"":"":	(":",	Regex { ":" },	true,	false),
-	""+"":	("+",	Regex { "+" },	true,	false),
+	""|<<"":	("|<<",	Regex { "|<<" },	true,	false),
+	""<-<"":	("<-<",	Regex { "<-<" },	true,	false),
+	"">->"":	(">->",	Regex { ">->" },	true,	false),
+	""="":	("=",	Regex { "=" },	true,	false),
 	"")"":	(")",	Regex { ")" },	true,	false),
 	""<s>"":	("<s>",	Regex { "<s>" },	true,	false),
-	""--1"":	("--1",	Regex { "--1" },	true,	false),
-	""--2"":	("--2",	Regex { "--2" },	true,	false),
-	""}"":	("}",	Regex { "}" },	true,	false),
-	""["":	("[",	Regex { "[" },	true,	false),
-	""ε"":	("ε",	Regex { "ε" },	true,	false),
-	""++1"":	("++1",	Regex { "++1" },	true,	false),
 	""\"\""":	("\"\"",	Regex { "\"\"" },	true,	false),
-	""<n>"":	("<n>",	Regex { "<n>" },	true,	false),
-	""]"":	("]",	Regex { "]" },	true,	false),
-	""("":	("(",	Regex { "(" },	true,	false),
-	""---"":	("---",	Regex { "---" },	true,	false),
 	""-"":	("-",	Regex { "-" },	true,	false),
-	""<"":	("<",	Regex { "<" },	true,	false),
+	"">s<"":	(">s<",	Regex { ">s<" },	true,	false),
+	""<+<"":	("<+<",	Regex { "<+<" },	true,	false),
+	""*"":	("*",	Regex { "*" },	true,	false),
+	""+"":	("+",	Regex { "+" },	true,	false),
+	""("":	("(",	Regex { "(" },	true,	false),
+	"">"":	(">",	Regex { ">" },	true,	false),
+	""]"":	("]",	Regex { "]" },	true,	false),
+	""["":	("[",	Regex { "[" },	true,	false),
+	""?"":	("?",	Regex { "?" },	true,	false),
 ]
 func empty() throws {
 	expect("\"\\\"\\\"\"")
@@ -140,16 +140,16 @@ func factor() throws {
 }
 func follow() throws {
 	switch token.kind {
-	case "\"++1\"":
+	case "\"<+<\"":
 		cI += 1
-	case "\"++2\"":
+	case "\"<-<\"":
 		cI += 1
-	case "\"--1\"":
+	case "\">+>\"":
 		cI += 1
-	case "\"--2\"":
+	case "\">->\"":
 		cI += 1
 	default:
-		expect("\"++1\"", "\"++2\"", "\"--1\"", "\"--2\"")
+		expect("\"<+<\"", "\"<-<\"", "\">+>\"", "\">->\"")
 	}
 	expect("\"(\"")
 	cI += 1
@@ -205,7 +205,7 @@ func production() throws {
 		}
 		expect("\".\"")
 		cI += 1
-		if ["\"++1\"", "\"++2\"", "\"--1\"", "\"--2\""].contains(token.kind) {
+		if ["\"<+<\"", "\"<-<\"", "\">+>\"", "\">->\""].contains(token.kind) {
 			try follow()
 		}
 	case "\"-\"":
@@ -220,7 +220,7 @@ func production() throws {
 		}
 		expect("\".\"")
 		cI += 1
-		if ["\"++1\"", "\"++2\"", "\"--1\"", "\"--2\""].contains(token.kind) {
+		if ["\"<+<\"", "\"<-<\"", "\">+>\"", "\">->\""].contains(token.kind) {
 			try follow()
 		}
 	case "\"-:\"":

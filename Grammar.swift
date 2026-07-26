@@ -183,19 +183,115 @@ class Grammar {
 
     /// Entry point: propagate `exclude` sets from seed terminals upward through the grammar.
     /// Call after FIRST/FOLLOW have converged and before `populateBitSets`.
+    ///
+    /// The exclude at a node is an INTERSECTION over the alternates/paths that can
+    /// reach an excluded terminal (a token is suppressed only if EVERY reading
+    /// excludes it — if any path allows it, the parent must allow it). Intersection
+    /// is NON-monotonic (more information shrinks the set), so this MUST be computed
+    /// as a GREATEST fixpoint: every non-terminal node starts at TOP (the universe of
+    /// excluded terminals) and shrinks via intersection until stable, with a
+    /// genuinely-empty contributing alternate forcing ∅. Terminals are pinned to
+    /// their `---` seed.
+    ///
+    /// An earlier version accumulated with `formUnion` (a LEAST fixpoint) and
+    /// skipped alternates whose exclude was still empty — conflating "unresolved"
+    /// with "resolved to ∅". That made the result depend on the order in which
+    /// `nonTerminals` (a Dictionary) was iterated: whichever alternate resolved
+    /// first was unioned in and could never shrink. With a shared/cached grammar
+    /// that non-confluence surfaced as a per-process (hash-seeded) parse flake
+    /// (e.g. `for:` argument labels intermittently rejected). The greatest fixpoint
+    /// is order-independent by construction.
     func propagateExcludeSets() {
-        var excludedTerminals: Set<String> = []
+        var universe: Set<String> = []
         for (_, nt) in nonTerminals {
-            collectExcludedTerminals(nt, into: &excludedTerminals)
+            collectExcludedTerminals(nt, into: &universe)
         }
-        guard !excludedTerminals.isEmpty else { return }
+        guard !universe.isEmpty else { return }
 
+        // Deterministic enumeration of every reachable node (for the fixpoint sweep).
+        var allNodes: [GrammarNode] = []
+        var seen: Set<ObjectIdentifier> = []
+        func gather(_ n: GrammarNode) {
+            guard seen.insert(ObjectIdentifier(n)).inserted else { return }
+            allNodes.append(n)
+            walkChildren(n) { gather($0) }
+        }
+        for (_, nt) in nonTerminals.sorted(by: { $0.key < $1.key }) { gather(nt) }
+
+        // Computed exclude for non-terminal nodes; terminals read their `---` seed.
+        // Unresolved non-terminals default to TOP (`universe`) — the greatest-fixpoint
+        // start point — so an as-yet-uncomputed alternate contributes nothing to an
+        // intersection (∩ universe = no-op) rather than a spurious ∅.
+        var exc: [ObjectIdentifier: Set<String>] = [:]
+        func cur(_ n: GrammarNode) -> Set<String> {
+            if n.kind.isTerminal { return n.exclude }
+            return exc[ObjectIdentifier(n)] ?? universe
+        }
+
+        func intersectAlts(_ node: GrammarNode) -> Set<String> {
+            var result: Set<String>? = nil
+            var alt = node.alt
+            while let a = alt {
+                if !a.first.isDisjoint(with: universe) {   // this alternate can reach an excluded terminal
+                    let e = cur(a)
+                    result = (result == nil) ? e : result!.intersection(e)
+                }
+                alt = a.alt
+            }
+            return result ?? []
+        }
+
+        func seqChainExc(_ start: GrammarNode?) -> Set<String> {
+            var node = start
+            while let n = node {
+                if n.kind == .END { break }
+                if ownFirstContains(n, excludedTerminals: universe) {
+                    if n.isNullable {
+                        let cont = seqChainExc(n.seq)
+                        let own = cur(n)
+                        return cont.isEmpty ? own : own.intersection(cont)
+                    }
+                    return cur(n)
+                }
+                guard n.isNullable else { break }
+                node = n.seq
+            }
+            return []
+        }
+
+        func recompute(_ node: GrammarNode) -> Set<String> {
+            // Only nodes whose FIRST can reach an excluded terminal participate.
+            if node.first.isDisjoint(with: universe) { return [] }
+            switch node.kind {
+            case .N where node.seq != nil:            // RHS nonterminal → inherit its LHS
+                return node.alt.map(cur) ?? []
+            case .N:                                   // LHS nonterminal → ∩ over alternates
+                return intersectAlts(node)
+            case .ALT:                                 // alternate → first contributing seq element
+                return seqChainExc(node.seq)
+            case .DO, .OPT, .KLN, .POS:                // bracket → ∩ over alternates
+                return intersectAlts(node)
+            default:
+                return []
+            }
+        }
+
+        // Greatest fixpoint: values start at TOP and only shrink, so this terminates.
         var changed = true
         while changed {
             changed = false
-            for (_, nt) in nonTerminals {
-                changed = propagateExcludeRecursive(nt, excludedTerminals: excludedTerminals) || changed
+            for n in allNodes where !n.kind.isTerminal {
+                let newExc = recompute(n)
+                if cur(n) != newExc {
+                    exc[ObjectIdentifier(n)] = newExc
+                    changed = true
+                }
             }
+        }
+
+        // Publish computed excludes onto the nodes (terminals keep their seed).
+        for n in allNodes where !n.kind.isTerminal {
+            n.exclude = exc[ObjectIdentifier(n)] ?? []
         }
     }
 
@@ -204,69 +300,6 @@ class Grammar {
             result.insert(node.name)
         }
         walkChildren(node) { collectExcludedTerminals($0, into: &result) }
-    }
-
-    private func propagateExcludeRecursive(_ node: GrammarNode, excludedTerminals: Set<String>) -> Bool {
-        var changed = false
-
-        guard !node.first.isDisjoint(with: excludedTerminals) else {
-            return walkChildrenChanged(node, excludedTerminals: excludedTerminals)
-        }
-
-        if !node.kind.isTerminal && node.kind != .EPS {
-            let newExclude: Set<String>
-            switch node.kind {
-            case .N where node.seq != nil:
-                newExclude = node.alt?.exclude ?? []
-            case .N:
-                newExclude = intersectExcludesFromAlts(node, excludedTerminals: excludedTerminals)
-            case .ALT:
-                newExclude = excludeFromSeqChain(node.seq, excludedTerminals: excludedTerminals)
-            case .DO, .OPT, .KLN, .POS:
-                newExclude = intersectExcludesFromAlts(node, excludedTerminals: excludedTerminals)
-            default:
-                newExclude = []
-            }
-            if !newExclude.isEmpty && !newExclude.isSubset(of: node.exclude) {
-                node.exclude.formUnion(newExclude)
-                changed = true
-            }
-        }
-
-        return walkChildrenChanged(node, excludedTerminals: excludedTerminals) || changed
-    }
-
-    private func intersectExcludesFromAlts(_ node: GrammarNode, excludedTerminals: Set<String>) -> Set<String> {
-        var result: Set<String>? = nil
-        var alt = node.alt
-        while let a = alt {
-            if !a.first.isDisjoint(with: excludedTerminals) && !a.exclude.isEmpty {
-                if let current = result {
-                    result = current.intersection(a.exclude)
-                } else {
-                    result = a.exclude
-                }
-            }
-            alt = a.alt
-        }
-        return result ?? []
-    }
-
-    private func excludeFromSeqChain(_ start: GrammarNode?, excludedTerminals: Set<String>) -> Set<String> {
-        var node = start
-        while let n = node {
-            if n.kind == .END { break }
-            if ownFirstContains(n, excludedTerminals: excludedTerminals) {
-                if n.isNullable {
-                    let contExclude = excludeFromSeqChain(n.seq, excludedTerminals: excludedTerminals)
-                    return contExclude.isEmpty ? n.exclude : n.exclude.intersection(contExclude)
-                }
-                return n.exclude
-            }
-            guard n.isNullable else { break }
-            node = n.seq
-        }
-        return []
     }
 
     /// Does this node's OWN content (not continuation) contribute an excluded terminal to FIRST?
@@ -299,15 +332,6 @@ class Grammar {
         } else if node.kind != .END {
             if let alt = node.alt { visit(alt) }
         }
-    }
-
-    /// Recurse into children for exclude propagation, returning whether anything changed.
-    private func walkChildrenChanged(_ node: GrammarNode, excludedTerminals: Set<String>) -> Bool {
-        var changed = false
-        walkChildren(node) {
-            changed = propagateExcludeRecursive($0, excludedTerminals: excludedTerminals) || changed
-        }
-        return changed
     }
 
     /// Convert each node's string-based first/follow/ambiguous `Set<String>`
