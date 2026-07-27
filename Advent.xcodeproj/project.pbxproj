@@ -19,8 +19,8 @@
 		4E4E48CC2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */; };
 		4E6933482FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6933472FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift */; };
 		4E6933492FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6933472FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift */; };
-		4E95A4EC30151FFC000C251E /* GrammarRegexLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E95A4EB30151FC6000C251E /* GrammarRegexLibrary.swift */; };
-		4E95A4ED30151FFC000C251E /* GrammarRegexLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E95A4EB30151FC6000C251E /* GrammarRegexLibrary.swift */; };
+		4E95A4EC30151FFC000C251E /* SwiftGrammarRegexLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E95A4EB30151FC6000C251E /* SwiftGrammarRegexLibrary.swift */; };
+		4E95A4ED30151FFC000C251E /* SwiftGrammarRegexLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E95A4EB30151FC6000C251E /* SwiftGrammarRegexLibrary.swift */; };
 		4ED1186C2FA9E4C10055DAC7 /* SwiftParser in Frameworks */ = {isa = PBXBuildFile; productRef = 4ED1186B2FA9E4C10055DAC7 /* SwiftParser */; };
 		4ED1186E2FA9E4D00055DAC7 /* SwiftSyntax in Frameworks */ = {isa = PBXBuildFile; productRef = 4ED1186D2FA9E4D00055DAC7 /* SwiftSyntax */; };
 		4ED118702FA9E4D90055DAC7 /* SwiftSyntaxBuilder in Frameworks */ = {isa = PBXBuildFile; productRef = 4ED1186F2FA9E4D90055DAC7 /* SwiftSyntaxBuilder */; };
@@ -157,7 +157,7 @@
 		4E8D05A82F701CDD0081C6D2 /* Derivations.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = Derivations.gv; sourceTree = "<group>"; };
 		4E8D05A92F701D560081C6D2 /* Derivations.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Derivations.svg; sourceTree = "<group>"; };
 		4E951C132D8874BD008B1012 /* Swift.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Swift.apus; sourceTree = "<group>"; };
-		4E95A4EB30151FC6000C251E /* GrammarRegexLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarRegexLibrary.swift; sourceTree = "<group>"; };
+		4E95A4EB30151FC6000C251E /* SwiftGrammarRegexLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftGrammarRegexLibrary.swift; sourceTree = "<group>"; };
 		4EBB87132F7F4EC100037029 /* Swift EBNF.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = "Swift EBNF.apus"; sourceTree = "<group>"; };
 		4ECF5BE62F3748DB008E692B /* claude.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = claude.md; sourceTree = "<group>"; };
 		4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "SwiftSyntax Mapping.md"; sourceTree = "<group>"; };
@@ -546,7 +546,7 @@
 				4EEBC9FE2F9EF35000E838A7 /* grammars */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 				4E2CC1402FD4AC2200719D65 /* Regex CFG Discussion.md */,
-				4E95A4EB30151FC6000C251E /* GrammarRegexLibrary.swift */,
+				4E95A4EB30151FC6000C251E /* SwiftGrammarRegexLibrary.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -719,7 +719,7 @@
 				4E6933492FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift in Sources */,
 				4EEBC99D2F9DECF000E838A7 /* GenerateParser.swift in Sources */,
 				4EEBC99E2F9DECF000E838A7 /* OutputTools.swift in Sources */,
-				4E95A4ED30151FFC000C251E /* GrammarRegexLibrary.swift in Sources */,
+				4E95A4ED30151FFC000C251E /* SwiftGrammarRegexLibrary.swift in Sources */,
 				4EEBC99F2F9DECF000E838A7 /* Descriptor.swift in Sources */,
 				4EEBC9A02F9DECF000E838A7 /* LayoutTokenInjection.swift in Sources */,
 				4EEBC9A12F9DECF000E838A7 /* SPPF.swift in Sources */,
@@ -750,7 +750,7 @@
 				4EEBC9A92F9DECF000E838A7 /* CallReturnForest.swift in Sources */,
 				4EEBC9AB2F9DECF000E838A7 /* Grammar.swift in Sources */,
 				4EEBC9AC2F9DECF000E838A7 /* ApusTerminals.swift in Sources */,
-				4E95A4EC30151FFC000C251E /* GrammarRegexLibrary.swift in Sources */,
+				4E95A4EC30151FFC000C251E /* SwiftGrammarRegexLibrary.swift in Sources */,
 				4EEBC9AD2F9DECF000E838A7 /* GenerateDiagrams.swift in Sources */,
 				4E4E48CA2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */,
 				4EEBC9AE2F9DECF000E838A7 /* ApusParser.swift in Sources */,

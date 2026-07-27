@@ -461,8 +461,8 @@ integerLiteral = hexadecimalLiteral .
 // This over-approximates swift-syntax's exact ranges slightly (extra \p{Sm}/\p{So}
 // symbols) but is monotonic for acceptance; the exact set awaits the code-point-class
 // primitive (TODO #8).
-unicodeOperatorHead - /[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]]/ .
-unicodeOperatorContinuation - /[\p{Mn}\p{Me}]/ .
+//unicodeOperatorHead - /[[\p{Sm}\p{So}]--[\u{0}-\u{7F}]]/ .
+//unicodeOperatorContinuation - /[\p{Mn}\p{Me}]/ .
 //
 // COMMENTED ALTERNATIVE — faithful explicit ranges, verbatim from swift-syntax
 // `isOperatorStartCodePoint`/`isOperatorContinuationCodePoint`
@@ -495,7 +495,9 @@ unicodeOperatorContinuation - /[\p{Mn}\p{Me}]/ .
 // split is suppressed and maximal-munch wins (`+/`, `=/`, `/^/`), so no `op` + `/regex/`
 // reading competes. (Engine: a failing `<-<` on a `@splitBefore` terminal drops the split
 // matches only, never the maximal base match — operators legitimately follow operands.)
-@lexicalClass @splitBefore("/") operatorToken - @builder .   // regex = ApusRegexLibrary.operatorBody (GrammarRegexLibrary.swift): (head|unicode)(cont)* | special(cont)+
+@lexicalClass
+@splitBefore("/")
+operatorToken - @builder .   // regex = ApusRegexLibrary.operatorBody (GrammarRegexLibrary.swift): (head|unicode)(cont)* | special(cont)+
     <-<( "true" "false" "nil" "self" "Self" "super" "Any"
          identifier escapedIdentifier implicitParameterName propertyWrapperProjection
          binaryLiteral octalLiteral decimalNumber hexadecimalLiteral
@@ -506,7 +508,8 @@ unicodeOperatorContinuation - /[\p{Mn}\p{Me}]/ .
 // — was char-assembled (`"." { dotOperatorCharacter }`), which let `...` split into
 // `.`+`.`+`.` and produced range/operator pivots. A `.`-led operator may contain `.`;
 // a lone `.` (member access) is the literal `"."`, not this (needs >=1 continuation).
-@lexicalClass dotOperator - @builder .   // regex = ApusRegexLibrary.dotOperator (GrammarRegexLibrary.swift): `.` (dotCont)+
+@lexicalClass
+dotOperator - @builder .   // regex = ApusRegexLibrary.dotOperator (GrammarRegexLibrary.swift): `.` (dotCont)+
 operator = operatorToken .
 operator = dotOperator .
 
@@ -524,7 +527,8 @@ postfixOperatorToken - @builder .   // regex = ApusRegexLibrary.postfixOperatorT
 // context — SwiftParser). Scoped to functionName only, so the `<`-split can't
 // reach expressions (where it would re-create the operator/operand pivots). Not
 // @lexicalClass — it does not drive maximal munch.
-@splitBefore("<") operatorName - @builder .   // regex = ApusRegexLibrary.operatorBody (GrammarRegexLibrary.swift), same body as operatorToken
+@splitBefore("<")
+operatorName - @builder .   // regex = ApusRegexLibrary.operatorBody (GrammarRegexLibrary.swift), same body as operatorToken
 
 // Generic close-angle. A REGEX terminal (not the literal `">"`), so it is exempt
 // from the operator maximal-munch: it matches a single `>` even inside `>>`,
@@ -590,7 +594,9 @@ forceMark    - /!/ .
 
 infixOperator = operator .
 infixOperator = "&" .                    // reserved bitwise-and; bare "&" is not in the overloadable operator set
+
 prefixOperator = operator .
+
 postfixOperator = postfixOperatorToken .   // postfix ops cannot begin with `!`/`?` (those split into force/optional)
 postfixOperator = dotOperator .            // postfix ranges: `1...`, `1..<5`
 
@@ -1368,7 +1374,7 @@ declaration = associatedTypeDeclaration .  // TODO: verify grammar fix.
 // stays in the statement-shared `declaration`; the BARE form (freestandingMacroExpansionDeclaration)
 // is added only in `memberDeclaration`. This removes the bare-`#foo` `[declaration] | [expression]`
 // ambiguity at statement level while keeping `@attr #foo` (a decl) and member `#foo` (a decl) intact.
-memberDeclaration = declaration | freestandingMacroExpansionDeclaration | bodylessInitializerDeclaration .
+memberDeclaration = declaration | freestandingMacroExpansionDeclaration | bodylessInitializerDeclaration | bodylessFunctionDeclaration .
 // swift-syntax parseDecl recognizes `case` as the start of an EnumCaseDeclSyntax in any member
 // context; the compiler enforces the semantic constraint that cases only live in enum bodies.
 // NB: not in TSPL (which reaches the case clause only via enum members). We keep it so
@@ -1475,7 +1481,12 @@ typealiasDeclaration = attributes? accessLevelModifier? "typealias" typealiasNam
 typealiasName = hardIdentifier .
 typealiasAssignment = "=" type .
 
-functionDeclaration = functionHead functionName genericParameterClause? functionSignature genericWhereClause? functionBody? .
+// Body REQUIRED here: at statement/declaration position `func f(…)⏎{…}` must read as ONE
+// func-with-body, not a BODILESS decl followed by a separate `{…}(…)` IIFE statement — the fork
+// that produced testClosureLiterals#3. Mirrors initializerDeclaration exactly: the bodyless form
+// (protocol requirement `func f()`) is member-only, see bodylessFunctionDeclaration in memberDeclaration.
+functionDeclaration = functionHead functionName genericParameterClause? functionSignature genericWhereClause? functionBody .
+bodylessFunctionDeclaration = functionHead functionName genericParameterClause? functionSignature genericWhereClause? .
 
 functionHead = attributes? declarationModifiers? "func" .
 // swift-syntax parseFuncDeclaration (Declarations.swift:1384) uses expectIdentifier(keywordRecovery: true)
