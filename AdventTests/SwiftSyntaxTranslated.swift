@@ -12775,7 +12775,7 @@ let translatedSnippets: [SwiftSnippet] = [
 
 // MARK: - Test Suite
 
-@Suite("SwiftSyntax - Translated — SwiftSyntax comparison", .serialized)
+@Suite("SwiftSyntax - Translated — SwiftSyntax comparison")
 struct TranslatedSyntaxTests {
 
     @Test("SwiftSyntax accepts", .tags(.swiftSyntaxReference), arguments: translatedSnippets)

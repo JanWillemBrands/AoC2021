@@ -1255,7 +1255,7 @@ let expressionSnippets: [SwiftSnippet] = [
 
 // MARK: - Test Suite
 
-@Suite("SwiftSyntax - Expressions — SwiftSyntax comparison", .serialized)
+@Suite("SwiftSyntax - Expressions — SwiftSyntax comparison")
 struct ExpressionSyntaxTests {
 
     @Test("SwiftSyntax accepts", .tags(.swiftSyntaxReference), arguments: expressionSnippets)

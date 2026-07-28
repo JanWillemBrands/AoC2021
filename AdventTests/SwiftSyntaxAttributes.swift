@@ -943,7 +943,7 @@ let attributeSnippets: [SwiftSnippet] = [
 
 // MARK: - Test Suite
 
-@Suite("SwiftSyntax - Attributes — SwiftSyntax comparison", .serialized)
+@Suite("SwiftSyntax - Attributes — SwiftSyntax comparison")
 struct AttributeSyntaxTests {
 
     @Test("SwiftSyntax accepts", .tags(.swiftSyntaxReference), arguments: attributeSnippets)

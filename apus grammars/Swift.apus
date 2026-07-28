@@ -1374,7 +1374,7 @@ declaration = associatedTypeDeclaration .  // TODO: verify grammar fix.
 // stays in the statement-shared `declaration`; the BARE form (freestandingMacroExpansionDeclaration)
 // is added only in `memberDeclaration`. This removes the bare-`#foo` `[declaration] | [expression]`
 // ambiguity at statement level while keeping `@attr #foo` (a decl) and member `#foo` (a decl) intact.
-memberDeclaration = declaration | freestandingMacroExpansionDeclaration | bodylessInitializerDeclaration | bodylessFunctionDeclaration .
+memberDeclaration = declaration | freestandingMacroExpansionDeclaration | bodylessInitializerDeclaration .
 // swift-syntax parseDecl recognizes `case` as the start of an EnumCaseDeclSyntax in any member
 // context; the compiler enforces the semantic constraint that cases only live in enum bodies.
 // NB: not in TSPL (which reaches the case clause only via enum members). We keep it so
@@ -1481,12 +1481,15 @@ typealiasDeclaration = attributes? accessLevelModifier? "typealias" typealiasNam
 typealiasName = hardIdentifier .
 typealiasAssignment = "=" type .
 
-// Body REQUIRED here: at statement/declaration position `func f(…)⏎{…}` must read as ONE
-// func-with-body, not a BODILESS decl followed by a separate `{…}(…)` IIFE statement — the fork
-// that produced testClosureLiterals#3. Mirrors initializerDeclaration exactly: the bodyless form
-// (protocol requirement `func f()`) is member-only, see bodylessFunctionDeclaration in memberDeclaration.
-functionDeclaration = functionHead functionName genericParameterClause? functionSignature genericWhereClause? functionBody .
-bodylessFunctionDeclaration = functionHead functionName genericParameterClause? functionSignature genericWhereClause? .
+// `functionBody?` is optional — swift-syntax parses funcs with `parseOptionalCodeBlock`, so a
+// bodiless `func f()` is syntactically valid EVERYWHERE (top-level too; a missing body is a
+// semantic, not syntactic, error — e.g. `@objc func f(_: Int)`, `@abi(func fn()) func fn()`).
+// `@longest` reproduces swift's greedy body capture: when a `{` follows the signature it IS the
+// body, so the longest functionDeclaration (body taken) wins over the bodiless reading. That
+// prunes the testClosureLiterals#3 fork (bodiless func + a separate `{…}(…)` IIFE statement)
+// post-parse on the BSR — the same safe maximal-munch as `@longest numericLiteral` — WITHOUT
+// rejecting genuine bodiless funcs.
+@longest functionDeclaration = functionHead functionName genericParameterClause? functionSignature genericWhereClause? functionBody? .
 
 functionHead = attributes? declarationModifiers? "func" .
 // swift-syntax parseFuncDeclaration (Declarations.swift:1384) uses expectIdentifier(keywordRecovery: true)
@@ -1715,16 +1718,18 @@ actorIsolationModifier = "nonisolated" | "nonisolated" "(" "unsafe" ")" | "nonis
 // like `@derivative(of: x)` alone is a MissingDecl error, not an expression), so prefer the
 // longest attribute. Safe because the arg clause only matches a TIGHT `(` (see >s< below).
 @longest attribute = "@" >s< attributeName attributeArgumentClause? .
+
 // swift-syntax parseAttributeName = parseSimpleType(forAttributeName:) — the attribute name is a
 // type identifier: member-qualified (`@Foo.Bar`), generic (`@Foo<Int>`), or escaped (`@`name``).
 // `typeIdentifier` already builds on `typeName = identifier` (incl. escaped + propertyWrapperProjection).
 attributeName = typeIdentifier | "rethrows" .   // @rethrows: `rethrows` keyword remapped to identifier attr-name (swift-syntax Attributes.swift:328-330)
+
 // `>s<`: the argument-clause `(` must be tight (no space after the attribute name). swift-syntax
 // requires this — `@available (macOS 11, *)` (space) is an error, `@available(macOS 11, *)` is not
 // (probe-verified). So a spaced `(` after an attribute belongs to a following type, not the args.
 attributeArgumentClause = >s< "(" balancedTokens? ")" .
-attributes = attribute attributes? .
 
+attributes = attribute attributes? .
 attributes = conditionalCompilationAttributes attributes? .    // TODO: SE-0367
 conditionalCompilationAttributes = ifDirectiveAttributes elseifDirectiveAttributes? elseDirectiveAttributes? endifDirective .
 ifDirectiveAttributes = ifDirective compilationCondition attributes? .
@@ -1885,17 +1890,20 @@ genericArgumentList = genericArgument | genericArgument "," genericArgumentList 
 genericArgument = type | signedIntegerLiteral .
 
 ^^^
-func f(x:[Void])
-{
-  var y:[[Void]] = x.map { [$0] }
-  {
-    $0.reserveCapacity(1)
-  } (&y[0])
-}
-^^^
-let 📆 = "today"
-let x = 📆
-^^^
-"Founded: \(Date.appleFounding, format: 📆)"
+//testObjCAttribute#2
+@objc(_:)
+func f(_: Int)
 
+^^^
+//testABIAttribute#5
+@abi(func fn())
+func fn()
 
+^^^
+//testABIAttribute#14
+@abi(func fn() {})
+func fn()
+
+^^^
+//testNonisolatedSpecifier#6"
+func foo(test: nonisolated(nonsending) () async -> Void)

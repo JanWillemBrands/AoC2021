@@ -403,77 +403,75 @@ extension GrammarNode {
 
 
 extension GrammarNode {
-    static var containingNonterminal: GrammarNode?          // will be set to the containing N (lhs) node
-    static var toplevelAlternate: GrammarNode?              // will be set to the toplevel ALT node
-    static var dottedSlot: GrammarNode?                     // will be set to the dotted GrammarNode slot
-    static var dottedEBNF = ""                              // will be set to the dotted EBNF production
+    // EBNF dotted-slot rendering (diagnostics only). This used to keep four
+    // process-global statics as recursion scratch, which was a data race once
+    // tests run in parallel. State is now threaded locally, so `emit`/`ebnfDot`
+    // are pure and reentrant — safe to call from any thread.
     enum Exit: Error { case endOfToplevel }
-    
-    func emit() throws {
+
+    func emit(into ebnf: inout String, dottedSlot: GrammarNode) throws {
         let middleDot = "\u{00B7}"
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
-            GrammarNode.dottedEBNF += name
-            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
-            if let seq { try seq.emit() }
+            ebnf += name
+            if self == dottedSlot { ebnf += middleDot }
+            if let seq { try seq.emit(into: &ebnf, dottedSlot: dottedSlot) }
         case .N:
             if let seq { // rhs
-                GrammarNode.dottedEBNF += name
-                if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
-                try seq.emit()
+                ebnf += name
+                if self == dottedSlot { ebnf += middleDot }
+                try seq.emit(into: &ebnf, dottedSlot: dottedSlot)
             } else { // lhs
-                GrammarNode.dottedEBNF += name
+                ebnf += name
             }
         case .ALT:
-            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
-            if let seq { try seq.emit() }
+            if self == dottedSlot { ebnf += middleDot }
+            if let seq { try seq.emit(into: &ebnf, dottedSlot: dottedSlot) }
             if let alt {
-                GrammarNode.dottedEBNF +=  "|"
-                try alt.emit()
+                ebnf +=  "|"
+                try alt.emit(into: &ebnf, dottedSlot: dottedSlot)
             }
         case .END:
-            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
+            if self == dottedSlot { ebnf += middleDot }
             if seq?.kind == .N {
                 // this is the end of the top level alternate
-                GrammarNode.containingNonterminal = seq
-                GrammarNode.toplevelAlternate = alt
                 throw Exit.endOfToplevel
             }
         case .DO:
             if let alt {
-                GrammarNode.dottedEBNF += "("
-                try alt.emit()
-                GrammarNode.dottedEBNF += ")"
+                ebnf += "("
+                try alt.emit(into: &ebnf, dottedSlot: dottedSlot)
+                ebnf += ")"
             }
-            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
-            if let seq { try seq.emit() }
+            if self == dottedSlot { ebnf += middleDot }
+            if let seq { try seq.emit(into: &ebnf, dottedSlot: dottedSlot) }
         case .OPT:
             if let alt {
-                GrammarNode.dottedEBNF += "["
-                try alt.emit()
-                GrammarNode.dottedEBNF += "]"
+                ebnf += "["
+                try alt.emit(into: &ebnf, dottedSlot: dottedSlot)
+                ebnf += "]"
             }
-            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
-            if let seq { try seq.emit() }
+            if self == dottedSlot { ebnf += middleDot }
+            if let seq { try seq.emit(into: &ebnf, dottedSlot: dottedSlot) }
         case .POS:
             if let alt {
-                GrammarNode.dottedEBNF += "<"
-                try alt.emit()
-                GrammarNode.dottedEBNF += ">"
+                ebnf += "<"
+                try alt.emit(into: &ebnf, dottedSlot: dottedSlot)
+                ebnf += ">"
             }
-            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
-            if let seq { try seq.emit() }
+            if self == dottedSlot { ebnf += middleDot }
+            if let seq { try seq.emit(into: &ebnf, dottedSlot: dottedSlot) }
         case .KLN:
             if let alt {
-                GrammarNode.dottedEBNF += "{"
-                try alt.emit()
-                GrammarNode.dottedEBNF += "}"
+                ebnf += "{"
+                try alt.emit(into: &ebnf, dottedSlot: dottedSlot)
+                ebnf += "}"
             }
-            if self == GrammarNode.dottedSlot { GrammarNode.dottedEBNF += middleDot }
-            if let seq { try seq.emit() }
+            if self == dottedSlot { ebnf += middleDot }
+            if let seq { try seq.emit(into: &ebnf, dottedSlot: dottedSlot) }
         }
     }
-    
+
     func toplevels() -> (GrammarNode?, GrammarNode?) {
         // returns the the highest level alternate and the containing nonterminal
         var node = self
@@ -500,14 +498,13 @@ extension GrammarNode {
             return name
         } else {
             // construct the ebnf for the toplevel alternate production containing the dot
-            GrammarNode.dottedEBNF = ""
-            GrammarNode.dottedSlot = self
-            (GrammarNode.toplevelAlternate, GrammarNode.containingNonterminal) = toplevels()
-            if let tla = GrammarNode.toplevelAlternate, let cnt = GrammarNode.containingNonterminal {
-                try? tla.emit()
-                return cnt.name + "=" + GrammarNode.dottedEBNF
+            var ebnf = ""
+            let (toplevelAlternate, containingNonterminal) = toplevels()
+            if let tla = toplevelAlternate, let cnt = containingNonterminal {
+                try? tla.emit(into: &ebnf, dottedSlot: self)
+                return cnt.name + "=" + ebnf
             } else {
-                return GrammarNode.dottedEBNF
+                return ebnf
             }
         }
     }

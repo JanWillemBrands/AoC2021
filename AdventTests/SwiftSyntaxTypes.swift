@@ -270,7 +270,7 @@ let typeSnippets: [SwiftSnippet] = [
 
 // MARK: - Test Suite
 
-@Suite("SwiftSyntax - Types — SwiftSyntax comparison", .serialized)
+@Suite("SwiftSyntax - Types — SwiftSyntax comparison")
 struct TypeSyntaxTests {
 
     @Test("SwiftSyntax accepts", .tags(.swiftSyntaxReference), arguments: typeSnippets)

@@ -80,7 +80,7 @@ let patternSnippets: [SwiftSnippet] = [
 
 // MARK: - Test Suite
 
-@Suite("SwiftSyntax - Patterns — SwiftSyntax comparison", .serialized)
+@Suite("SwiftSyntax - Patterns — SwiftSyntax comparison")
 struct PatternSyntaxTests {
 
     @Test("SwiftSyntax accepts", .tags(.swiftSyntaxReference), arguments: patternSnippets)

@@ -217,7 +217,13 @@ private let metricSink = MetricSink()
 /// each unique source pays the grammar-load cost exactly once.
 private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot {
     parseCache.value(for: source) {
-        withParserIsolation {
+        // No `withParserIsolation` here: this path uses the shared, load-time
+        // immutable `cachedSwiftGrammar` and builds a fresh `MessageParser` per
+        // call. The core parser types carry no static mutable state, and
+        // `ebnfDot()` no longer uses process-global scratch, so parses run
+        // safely in parallel — the whole point of un-`.serialized`ing the
+        // SwiftSyntax suites.
+        do {
             let grammar = loadFreshSwiftGrammar()
             let input = source
 
@@ -260,7 +266,12 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
                 matched: matched,
                 oraclePruned: oraclePruned
             )
-            metricSink.record(label: label, source: source, metrics: metrics)
+            // Only write the baseline CSV when explicitly requested — under parallel
+            // execution the row order is nondeterministic, which would churn this
+            // tracked file on every run. Set APUS_BASELINE_CSV=1 to regenerate it.
+            if ProcessInfo.processInfo.environment["APUS_BASELINE_CSV"] == "1" {
+                metricSink.record(label: label, source: source, metrics: metrics)
+            }
             return AdventRunSnapshot(result: parseResult, swiftSyntaxTree: swiftSyntax, metrics: metrics)
         }
     }
