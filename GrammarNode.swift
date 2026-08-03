@@ -151,20 +151,11 @@ final class GrammarNode {
     var followAheadBS:      BitSet = []
     var followAheadExcludeBS: BitSet = []
 
-    /// Alternate-level `@unless(X)` predicate annotation.
-    /// Captured at parse time on the `.ALT` node that heads the alternate;
-    /// resolved to a `GrammarNode` pointer by `Grammar.resolveUnlessTargets()`.
-    /// At Oracle phase 2, this alternate's yield is pruned when `unlessTarget`
-    /// has a yield starting at the same end position.
-    var unlessTargetName: String?
-    var unlessTarget:     GrammarNode?
-
     /// Alternate-level `@prefer` annotation. Captured at parse time on the `.ALT`
     /// node heading the alternate (prefix, right after `=` or `|`). Resolved by the
     /// Oracle (`PreferRule`): among the alternates of one nonterminal that derive
     /// the same parent node (same `(i,j)` span), the preferred alternate(s) win and
-    /// the non-preferred siblings' yields are pruned. Positive replacement for
-    /// `@unless(X)`.
+    /// the non-preferred siblings' yields are pruned.
     var isPreferred: Bool = false
 
     /// Bracket-level `@avoid` annotation. Captured at parse time on an OPT/KLN/POS

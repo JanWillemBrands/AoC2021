@@ -148,9 +148,60 @@ Source: Jun 19 2026 diagnostic investigation around `Swift.apus` macro declarati
     Two fixes (`_` lexer + redundant `parameter`) target ~55% of the 1058. Workflow: harvest → classify by shape → per-node swift-syntax oracle → apply → re-harvest. Do NOT reach for `@prefer` first — several top signatures are lexer/redundancy, not priority.
     Source: Jul 4 2026 `harvest_ambiguity.py` run (Phase 0–1 of `Ambiguity Workflow.md`).
 
-21. **Replace `@unless(X)` with a `@prefer` annotation (design).** `@unless(genericArgumentClause)` is used 3× in `Swift.apus` (primaryExpression `identifier`, `moduleSelector rawIdentifier`; explicitMemberExpression `.softIdentifier`) to suppress the plain-member alternate when the generic-args alternate also matches. It's an awkward negative/lookahead form. Proposed: a `@prefer`-style priority annotation placed on the more-specific alternate, resolved by the Oracle (drop the losing derivation when both cover the same span). Evaluate whether a general alternate-priority mechanism (i) cleanly replaces the 3 `@unless` uses and (ii) is the right tool for classification class **B** (`primaryExpression` alternate overlap). See analysis under this session's `@unless`/`@prefer` discussion.
-    Source: Jul 3 2026 `@unless` review.
+21. **✅ DONE / RETIRED (2026-07-30).** `@unless(X)` has been removed entirely. Its 3
+    original `@unless(genericArgumentClause)` uses were superseded by
+    `@longest genericIdentifier`/`moduleGenericIdentifier` (extent) during the
+    `@prefer`→`@longest` cleanup, leaving it used by no grammar. All engine scaffolding
+    (GrammarNode fields, ApusParser parse block, `Grammar.resolveUnlessTargets`,
+    `Oracle.UnlessPredicateRule`) deleted; verified no acceptance/ambiguity change. The
+    surviving on-the-term annotations are `@prefer` (same-span), `@longest`/`@shortest`
+    (extent), `@avoid` (optional-skip). See *The rise and fall of Schrödinger,
+    Frankenstein and other dead-ends.md*.
+    Source: Jul 3 2026 `@unless` review; retired 2026-07-30.
 
+
+## Testing infrastructure & speed
+
+See `TESTING.md` for the full testing approach; these are the open improvement
+options.
+
+- **T1. Push test parallelism further / measure the ceiling.** The 7 SwiftSyntax
+  comparison suites are un-`.serialized` and the global `withParserIsolation` lock
+  was dropped from `runAdventOnce` (2026-07-27): test-run phase ~43s→~16s (~2.6×),
+  deterministic, TSan-clean. Gains are below the core count — profile where the
+  remaining time goes (swift-syntax reference `Parser.parse`, `treesMatch` dump
+  compare, `parseCache` `NSLock` contention). Consider un-`.serialized`ing the
+  grammar-building suites too, once their `GrammarNode.sizeofSets` write is made
+  reentrant (move it off the static, or keep those builds behind the retained lock).
+- **T2. Build time dominates wall time.** After a core `.swift` edit the giant test
+  files recompile (`SwiftSyntaxTranslated.swift` ≈ 12.8k lines of `SwiftSnippet`
+  literals). Options: split Translated into several files for parallel compile;
+  move snippet arrays into a resource/JSON loaded at runtime (kills the literal
+  compile cost, at the price of losing compile-time checking); or precompile the
+  test target. Biggest lever for iterative speed.
+- **T3. Make `SWIFT_DETERMINISTIC_HASHING=1` the default for test runs.** Bake it
+  into the scheme's test-action environment (with the `TEST_RUNNER_` forwarding) so
+  every run is order-deterministic without remembering the flag. Prevents the
+  per-process load-order flakes (see the dollar-closure story in `TESTING.md` §7).
+- **T4. Track the `treesMatch` frontier as a number, not red/green.** ~1660
+  Translated cases fail `treesMatch` by design, which drowns real regressions. Add a
+  tiny harness that records the failing-`treesMatch` **set** to a committed baseline
+  and asserts *no new* failures (delta test), so `accepts`/`unambiguous` regressions
+  and treesMatch *additions* surface immediately instead of hiding in a big red run.
+- **T5. Unify the two snippet harnesses.** Retire the `^^^`-in-`Swift.apus` corpus in
+  favour of the Swift Testing suites once ambiguity-harvest (`harvest_ambiguity.py`,
+  `main.swift`) is ported to drive off `SwiftSnippet` arrays. Removes the
+  escaping/whitespace/criterion mismatches documented in `TESTING.md` §1b/§7. Until
+  then, at least give `loadLanguageFixture`/`accept_dump` the same `unescape` step as
+  harvest so their non-accept counts stop being false (kills the "104 issues"
+  artifact).
+- **T6. Periodic ThreadSanitizer gate.** A full-suite TSan run is slow but a
+  small high-concurrency subset (Expressions+Attributes) is cheap; run it whenever
+  parser/parallelism internals change to keep the reentrancy guarantee honest.
+- **T7. Reliable full-count reporting.** MCP `RunSomeTests` smart-reruns and
+  `RunAllTests` truncates; document/standardize the `xcodebuild … > log; grep -oE
+  'Test "…" recorded an issue'` flow (in `TESTING.md` §3) as the canonical count, or
+  wrap it in a script.
 
 ## Design Note: Swift.apus grammar acceptance policy
 
@@ -177,3 +228,38 @@ Source: Jun 21 2026 review of widened grammar acceptance; user preference for co
 
 - Add new markdown TODOs here and link back to source context when needed.
 - `Advent/codex.md` and `Advent/claude.md` should reference this file instead of maintaining separate TODO lists.
+
+## Engine / grammar status notes (consolidated from agent memory, 2026-07-30)
+
+- **`yield` accessor-scoping (low priority; checked SE-0474 "Yielding Accessors",
+  2026-07-13).** SE-0474 is accepted but experimental
+  (`-enable-experimental-feature CoroutineAccessors`); corpus pins swift-syntax
+  603.0.1 (≈6.3), stable surface still `_read`/`_modify`. New accessor keywords are
+  `yielding borrow`/`yielding mutate` (two-word — a feature GAP we lack, not an
+  ambiguity). `yield` stays contextual inside accessor bodies. Residual
+  `statement [expression]|[yieldStatement]` (testYield#3/#4/#5) is low priority;
+  prefer **dropping** the multi-value paren-yield forms (`yield(a,b)`/`yield()`,
+  not in SE-0474) over disambiguating them. Accessor-context scoping would fix #4/#5
+  but not #3 (`_read { yield () }` spaced-paren is a call even in swift-syntax).
+
+- **RegexBuilder terminals (landed).** `SwiftGrammarRegexLibrary.swift`
+  (`enum ApusRegexLibrary`) factors shared `CharacterClass`/regex components; `.apus`
+  form `name - @builder .` resolves `patterns["name"]` (KEY == terminal name),
+  `@builder(key)` overrides. `identifier` + the operator terminals migrated.
+  **GOTCHA:** a NEW repo-root `.swift` is NOT auto-added to compile targets, and
+  `project.pbxproj` must NOT be edited directly (Xcode-open crash risk) — create the
+  file, then ASK the user to tick Target Membership for both `Advent` and
+  `AdventTests` (mirror `ApusParser.swift`).
+
+- **EBNF single-cluster closures (landed 2026-07-26).** KLN/POS re-entry reuses ONE
+  CRF cluster keyed by the closure start (native-EBNF §4.3), replacing the old
+  per-iteration cluster + `returns` snapshot (which cost O(N) CRF nodes and was
+  order-dependent). Tree-invariant — `DerivationBuilder` re-tiles from BODY yields, so
+  it never reads the closure node's own yields.
+
+- **Reentrancy (partial).** Node numbering was moved off a never-reset global
+  `GrammarNode.count` to a per-load `GrammarBuild` object; `MessageParser.yields` is
+  sized to `grammar.nodeCount`. `ebnfDot()`'s four statics were removed (2026-07-27,
+  for parallel tests). Still un-migrated build-time scratch statics on `GrammarNode`:
+  `sizeofSets`, the weak `grammar` back-ref (these are why the grammar-building test
+  suites stay `.serialized` — see `TESTING.md` §5 / T1).

@@ -1087,7 +1087,7 @@ let declarationSnippets: [SwiftSnippet] = [
         origin: "DeclarationTests.testEnumCaseWithGenericParameter",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testLiteralInitializerWithTrailingClosure#1", source: "let foo = 1 { return 1 }", origin: "DeclarationTests.testLiteralInitializerWithTrailingClosure", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testLiteralInitializerWithTrailingClosure#1", source: "let foo = 1 { return 1 }", origin: "DeclarationTests.testLiteralInitializerWithTrailingClosure", syntaxVersion: "603.0.1", disabledReason: "compiler error — `1` is not callable; swift-syntax accepts without hasError but B1 grammar correctly rejects (we follow compiler)"),
     SwiftSnippet(label: "testInitializerWithReturnType#1", source: "init(_ ptr: UnsafeRawBufferPointer, _ a: borrowing Array<Int>) -> dependsOn(a) Self", origin: "DeclarationTests.testInitializerWithReturnType", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
     SwiftSnippet(label: "testInitializerWithReturnType#2", source: "public init() -> Int", origin: "DeclarationTests.testInitializerWithReturnType", syntaxVersion: "603.0.1", disabledReason: "compiler error — initializers can't have a return type; swift-syntax accepts via parseFunctionSignature for error recovery (Declarations.swift:1260) but the compiler rejects (we follow compiler)"),
     SwiftSnippet(label: "testSendingTypeSpecifier#1", source: "func testVarDeclTupleElt() -> (sending String, String) {}", origin: "DeclarationTests.testSendingTypeSpecifier", syntaxVersion: "603.0.1"),

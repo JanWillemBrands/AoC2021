@@ -1250,6 +1250,7 @@ let expressionSnippets: [SwiftSnippet] = [
         origin: "ExpressionTests.testSubscriptDeinitMembers",
         syntaxVersion: "603.0.1"
     ),
+    SwiftSnippet(label: "testNonBreakingSpace#1", source: "a \u{a0}+ 2", origin: "ExpressionTests.testNonBreakingSpace", syntaxVersion: "603.0.1"),
 ]
 
 

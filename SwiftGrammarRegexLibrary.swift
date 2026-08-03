@@ -27,7 +27,7 @@
 //  decomposable (e.g. U+F900 豈 → U+8C48) is rejected by Swift's regex engine as
 //  an "invalid bound for character class range" in EVERY form (string, literal,
 //  `CharacterClass` scalar or grapheme). The identifier ranges below work around
-//  the one such bound (F900 → F8FF) plus carry one other small deviation from
+//  the one such bound (F900 → F8FF) plus carry two other deviations from
 //  TSPL — all documented at `identifierHead`.
 //
 
@@ -49,6 +49,10 @@ enum ApusRegexLibrary {
     //   2. `1681…1DBF` (head) / `1681…1FFF` (continuation) merged across the TSPL
     //      gap `…180D` / `180F…`. Consequence: WRONGLY INCLUDES U+180E (Mongolian
     //      vowel separator), which TSPL excludes.
+    //   3. Upper bound `FFF8` instead of TSPL's `FFFD`. swift-syntax
+    //      (UnicodeScalarExtensions.swift) uses `FE47–FFF8` — U+FFF9–U+FFFD are
+    //      excluded (FFF9 = Interlinear Annotation Anchor, FFFC = Object Replacement
+    //      Character, FFFD = Replacement Character, etc.).
     //
     // `_` is folded into the head; bare `_` is the wildcard, excluded at
     // name-consuming sites in Swift.apus via `---("_")`. Unlike coarse `\p{So}`,
@@ -65,7 +69,7 @@ enum ApusRegexLibrary {
         "\u{2460}"..."\u{24FF}", "\u{2776}"..."\u{2793}", "\u{2C00}"..."\u{2DFF}",
         "\u{2E80}"..."\u{2FFF}", "\u{3004}"..."\u{3007}", "\u{3021}"..."\u{302F}",
         "\u{3031}"..."\u{D7FF}", "\u{F8FF}"..."\u{FD3D}", "\u{FD40}"..."\u{FDCF}",
-        "\u{FDF0}"..."\u{FE1F}", "\u{FE30}"..."\u{FE44}", "\u{FE47}"..."\u{FFFD}",
+        "\u{FDF0}"..."\u{FE1F}", "\u{FE30}"..."\u{FE44}", "\u{FE47}"..."\u{FFF8}",  // swift-syntax uses FE47–FFF8 (TSPL says FE47–FFFD; FFF9–FFFD excluded)
         "\u{10000}"..."\u{1FFFD}", "\u{20000}"..."\u{2FFFD}", "\u{30000}"..."\u{3FFFD}",
         "\u{40000}"..."\u{4FFFD}", "\u{50000}"..."\u{5FFFD}", "\u{60000}"..."\u{6FFFD}",
         "\u{70000}"..."\u{7FFFD}", "\u{80000}"..."\u{8FFFD}", "\u{90000}"..."\u{9FFFD}",
@@ -83,7 +87,7 @@ enum ApusRegexLibrary {
         "\u{2460}"..."\u{24FF}", "\u{2776}"..."\u{2793}", "\u{2C00}"..."\u{2DFF}",
         "\u{2E80}"..."\u{2FFF}", "\u{3004}"..."\u{3007}", "\u{3021}"..."\u{302F}",
         "\u{3031}"..."\u{D7FF}", "\u{F8FF}"..."\u{FD3D}", "\u{FD40}"..."\u{FDCF}",
-        "\u{FDF0}"..."\u{FE44}", "\u{FE47}"..."\u{FFFD}",
+        "\u{FDF0}"..."\u{FE44}", "\u{FE47}"..."\u{FFF8}",  // swift-syntax uses FE47–FFF8
         "\u{10000}"..."\u{1FFFD}", "\u{20000}"..."\u{2FFFD}", "\u{30000}"..."\u{3FFFD}",
         "\u{40000}"..."\u{4FFFD}", "\u{50000}"..."\u{5FFFD}", "\u{60000}"..."\u{6FFFD}",
         "\u{70000}"..."\u{7FFFD}", "\u{80000}"..."\u{8FFFD}", "\u{90000}"..."\u{9FFFD}",

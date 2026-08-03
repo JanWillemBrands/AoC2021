@@ -811,7 +811,21 @@ class MessageParser {
     /// newline.
     func boundaryMatches(_ boundary: String, at position: CharPosition) -> Bool {
         if boundary == "<n>", position == input.endIndex { return true }
-        guard let idxs = commitsByEnd[position] else { return false }
+        guard let idxs = commitsByEnd[position], !idxs.isEmpty else {
+            // No prior commit has advanced the cursor to this position yet
+            // (e.g. at the very start of input or the first token of a fresh
+            // clause). Use the *departing* trivia — the gap the lexer would
+            // skip FROM this position to reach the next token's content start.
+            let contentStart = lexer.triviaSkipEnd(from: position)
+            let gap = input[position..<contentStart]
+            switch boundary {
+            case "<s>": return !gap.isEmpty
+            case ">s<": return gap.isEmpty
+            case "<n>": return gap.contains(where: isLineBreak)
+            case ">n<": return !gap.contains(where: isLineBreak)
+            default: fatalError("\(#function): unexpected boundary \(boundary)")
+            }
+        }
         for i in idxs {
             let c = commits[i]
             let gap = input[c.end..<position]

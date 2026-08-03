@@ -49,43 +49,12 @@ struct RightAssocRule: DisambiguationRule {
     }
 }
 
-/// Alternate-level `@unless(X)` predicate: prune yields of this slot whose
-/// end position is also the start of a yield of nonterminal `target`.
-///
-/// Encodes Swift's `canParseAsXxx` pattern at the grammar level — when a
-/// "fallback" alternate competes with a "richer" alternate that uses `target`,
-/// suppress the fallback whenever the richer interpretation is structurally
-/// available.
-///
-/// Implementation: a yield triple `(i, k, j)` of the annotated slot is pruned
-/// iff `target` has a yield with `i == j` — i.e. the richer alternate could
-/// have parsed starting where this fallback ended.
-struct UnlessPredicateRule: DisambiguationRule {
-    let target: GrammarNode
-    /// Closure that returns the current yields of an arbitrary grammar node.
-    /// Injected by the `Oracle` so the rule can read the *target*'s yields
-    /// without coupling to either `MessageParser` or the old `node.yield` field.
-    let yieldsOf: (GrammarNode) -> Set<BinarySpan>
-    func prune(_ yields: inout Set<BinarySpan>) -> Int {
-        let targetStarts = Set(yieldsOf(target).map(\.i))
-        var pruned = 0
-        for span in yields where targetStarts.contains(span.j) {
-            yields.remove(span)
-            pruned += 1
-        }
-        return pruned
-    }
-}
-
-/// Alternate-level `@prefer` — the positive dual of `@unless(X)`, with equivalent
-/// semantics. Only the *preferred* alternate is annotated in the grammar; the
-/// Oracle registers this rule on each NON-preferred sibling's last body symbol and
-/// prunes its yields `(i…·)` wherever a preferred sibling also yields from the same
-/// START `i`. A preferred alternate yields from `i` exactly when its extra suffix
-/// (e.g. `genericArgumentClause`) followed the shared prefix — the same condition
-/// `@unless` tested via "target starts at my end". Keying on the start (not the
-/// span) is what lets a shorter fallback `(i…k)` be pruned in favour of a longer
-/// preferred `(i…j)`, without needing to know the losers' lengths.
+/// Alternate-level `@prefer` — same-span (flavor-3) preference. Only the *preferred*
+/// alternate is annotated in the grammar; the Oracle registers this rule on each
+/// NON-preferred sibling's last body symbol and prunes its completion yield `(i, j)`
+/// wherever a preferred sibling covers the EXACT same span `(i, j)`. `@prefer` chooses
+/// among alternates that tile the same extent — it is NOT an extent tool. Prefer-the-
+/// longer is `@longest`'s job (see the note in `prune`).
 struct PreferRule: DisambiguationRule {
     let preferredLastSymbols: [GrammarNode]
     let yieldsOf: (GrammarNode) -> Set<BinarySpan>
@@ -201,22 +170,6 @@ class Oracle {
                     }
                 }
             }
-            // Alternate-level @unless(X) predicates.
-            // The annotation is captured on the .ALT node, but yields live on body symbols.
-            // Register the rule on the LAST body symbol of the alternate — its yield's `j` is
-            // where the alternate ended, which is where `X` would speculatively start.
-            var alt: GrammarNode? = nt.alt
-            while let a = alt {
-                if let target = a.unlessTarget {
-                    if let last = a.bodySymbols.last {
-                        let p = parser  // capture for the closure
-                        rules.append((last, UnlessPredicateRule(target: target,
-                                                                yieldsOf: { p.yield(of: $0) })))
-                    }
-                }
-                alt = a.alt
-            }
-
             // Alternate-level @prefer. Collect preferred alternates' last body
             // symbols; register a PreferRule on every NON-preferred alternate's
             // last body symbol so its completion yields are pruned wherever a
@@ -274,9 +227,9 @@ class Oracle {
             changed = false
             for (node, rule) in rules {
                 // Copy out / write back instead of `&parser.yields[node.number]`
-                // — UnlessPredicateRule's closure reads `parser.yields[target.number]`,
-                // and Swift's law of exclusivity forbids a read and a modify on
-                // the same parent (the `yields` array) at the same time.
+                // — a rule's `yieldsOf` closure reads other nodes' yields out of the
+                // same `parser.yields` array, and Swift's law of exclusivity forbids a
+                // read and a modify on the same parent at the same time.
                 var spans = parser.yields[node.number]
                 let pruned = rule.prune(&spans)
                 parser.yields[node.number] = spans

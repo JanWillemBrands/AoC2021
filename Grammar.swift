@@ -120,26 +120,6 @@ class Grammar {
         }
     }
 
-    // MARK: - @unless(X) Target Resolution
-
-    /// Resolve `unlessTargetName` strings (captured at parse time) to GrammarNode
-    /// pointers. Walks every alternate chain under each nonterminal. Call after
-    /// `assignNameIDs()` and before `populateBitSets()`.
-    func resolveUnlessTargets() throws {
-        for (_, nt) in nonTerminals {
-            var alt: GrammarNode? = nt.alt
-            while let a = alt {
-                if let name = a.unlessTargetName {
-                    guard let target = nonTerminals[name] else {
-                        throw ApusParserError.undefinedNonTerminal(name: name, definedAsTerminal: terminals[name] != nil)
-                    }
-                    a.unlessTarget = target
-                }
-                alt = a.alt
-            }
-        }
-    }
-
     // MARK: - Schrödinger Exclusion Set Propagation
     //
     // Background: the scanner produces Schrödinger tokens when multiple patterns

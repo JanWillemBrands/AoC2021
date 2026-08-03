@@ -5,25 +5,31 @@ digraph SPPF {
   edge [arrowsize = 0.4]
   rankdir = "TB"
   ordering = out
-  n0 [shape = box, style = rounded, width=0.0, height=0.0, label = <S,0[any],Optional(5[utf8])>]
-  n1 [shape = rectangle, width=0.0, height=0.0, label = "S={"x"}·,0[any]"]
-  n2 [shape = rectangle, width=0.0, height=0.0, label = <S={"x"·},0[any],Optional(5[utf8])>]
-  n3 [shape = rectangle, width=0.0, height=0.0, label = "S={"x"·},3[utf8]"]
-  n4 [shape = box, style = rounded, width=0.0, height=0.0, label = <""x"",3[utf8],Optional(5[utf8])>]
-  n5 [shape = rectangle, width=0.0, height=0.0, label = <S={"x"·},0[any],Optional(3[utf8])>]
-  n6 [shape = rectangle, width=0.0, height=0.0, label = "S={"x"·},2[utf8]"]
-  n7 [shape = box, style = rounded, width=0.0, height=0.0, label = <""x"",2[utf8],Optional(3[utf8])>]
-  n8 [shape = rectangle, width=0.0, height=0.0, label = <S={"x"·},0[any],Optional(2[utf8])>]
-  n9 [shape = rectangle, width=0.0, height=0.0, label = "S={"x"·},0[any]"]
-  n10 [shape = box, style = rounded, width=0.0, height=0.0, label = <""x"",0[any],Optional(2[utf8])>]
+  n0 [shape = box, style = rounded, width=0.0, height=0.0, label = <file,0[any],Optional(43[utf8])>]
+  n1 [shape = rectangle, width=0.0, height=0.0, label = "file=&lt;statement&gt;·,0[any]"]
+  n2 [shape = rectangle, width=0.0, height=0.0, label = <file=&lt;statement·&gt;,0[any],Optional(43[utf8])>]
+  n3 [shape = rectangle, width=0.0, height=0.0, label = "file=&lt;statement·&gt;,0[any]"]
+  n4 [shape = box, style = rounded, width=0.0, height=0.0, label = <statement,0[any],Optional(43[utf8])>]
+  n5 [shape = rectangle, width=0.0, height=0.0, label = "statement=compound_stmt·,0[any]"]
+  n6 [shape = box, style = rounded, width=0.0, height=0.0, label = <compound_stmt,0[any],Optional(43[utf8])>]
+  n7 [shape = rectangle, width=0.0, height=0.0, label = "compound_stmt=if_stmt·,0[any]"]
+  n8 [shape = box, style = rounded, width=0.0, height=0.0, label = <if_stmt,0[any],Optional(43[utf8])>]
+  n9 [shape = rectangle, width=0.0, height=0.0, label = "if_stmt="if"named_expression":"block{"elif"named_expression":"block}["else"":"block]·,43[utf8]"]
+  n10 [shape = rectangle, width=0.0, height=0.0, label = <if_stmt="if"named_expression":"block{"elif"named_expression":"block}["else"":"block·],43[utf8],Optional(43[utf8])>]
+  n11 [shape = rectangle, width=0.0, height=0.0, label = <if_stmt="if"named_expression":"block{"elif"named_expression":"block}·["else"":"block],0[any],Optional(43[utf8])>]
+  n12 [shape = rectangle, width=0.0, height=0.0, label = "if_stmt="if"named_expression":"block{"elif"named_expression":"block}["else"":"block·],43[utf8]"]
+  n13 [shape = box, style = "rounded, dashed", width=0.0, height=0.0, label = <ε,43[utf8],Optional(43[utf8])>]
   n0 -> n1
   n1 -> n2
   n2 -> n3
-  n3 -> n5
   n3 -> n4
+  n4 -> n5
   n5 -> n6
-  n6 -> n8
   n6 -> n7
+  n7 -> n8
   n8 -> n9
+  n9 -> n11
   n9 -> n10
+  n10 -> n12
+  n12 -> n13
 }

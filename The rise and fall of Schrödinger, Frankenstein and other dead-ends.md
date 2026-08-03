@@ -1,4 +1,4 @@
-# The decline and fall of Schrödinger, Frankenstein and other dead-ends
+# The rise and fall of Schrödinger, Frankenstein and other dead-ends
 
 A short obituary of mechanisms this project invented, shipped, and later retired or
 superseded. Kept so we don't re-invent them. (Absorbs the old `Schrodinger Tokens.md`
@@ -58,6 +58,53 @@ cases migrated to `@longest genericIdentifier`/`moduleGenericIdentifier`, leavin
 **What replaced it.** `@longest` / `@shortest` (extent), `@prefer` (same-span),
 `@avoid` (optional-skip) — all placed **directly on the affected term**.
 
+## Scanner-mode annotations `>>>` / `<<<` / `===` — *two rises, two falls*
+
+Scanner modes are a stack of lexer states (à la ANTLR modes / Flex start conditions):
+a terminal can be gated to fire only in a given mode, and can push/pop the stack after
+it matches. The point was context-sensitive lexing — most famously **nested multiline
+comments** (`/* … /* … */ … */`), where a flat regex can't count depth.
+
+**Rise 1 — bare `>>>` / `<<<` (ungated push/pop).** The first form was just
+`>>> "mode"` (push) and `<<<` (pop) hung on a terminal, with mode membership implied.
+**Fall 1.** This **conflated the pre-filter with the post-action**: whether a terminal
+was *eligible* in the current mode and what it *did* to the stack were tangled
+together, so when `multilineCommentText`'s regex won longest-match but its state check
+failed there was no fallback → **19 test regressions**, needing try/rollback.
+
+**Rise 2 — gated transitions `===` (the current form).** The fix (2026-04-28) made the
+annotation a structured triple `(gate, pop, push)` and cleanly **separated pre-filter
+from post-action** — see `apus.md` and `Scanner Mode Design.md`:
+
+| Syntax | Meaning |
+|--------|---------|
+| `=== "X"` | eligible only in mode X (pre-filter — regex never even runs otherwise) |
+| `=== "X" >>> "Y"` | eligible in X, **push** Y after match |
+| `=== "X" <<<` | eligible in X, **pop** after match |
+| `=== "X" <<< >>> "Y"` | eligible in X, **replace** X with Y |
+
+The gate is checked *before* matching, so the post-action's pop/push is unconditional
+(the stack was already verified) — no rollback. `>>>`/`<<<` survive, but only ever as
+the post-action half of a `===`-gated triple; the **bare, ungated** forms are gone.
+This mechanism is alive and correct, and is how f-string-style mode switching would be
+expressed.
+
+**Fall 2 — Swift stopped using scanner modes at all.** For the flagship case (nested
+multiline comments), even the gated-transition version — *three* mode terminals +
+*six* `===` annotations — was **retired (Jun 13 2026)** in favour of a single recursive
+trivia non-terminal that lets the ordinary GLL machinery count the nesting:
+
+```apus
+multilineComment =: "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineComment } "*/" .
+```
+
+Recognised as trivia during `OnDemandLiteralLexer.skipTrivia`. So `Swift.apus` no longer
+carries a single scanner-mode annotation. **Lesson:** if the only reason you reach for
+a lexer mode is *recursive nesting*, a recursive grammar rule is simpler and needs no
+lexer state at all. Modes still earn their keep for genuinely *non-recursive* state
+switches (string ↔ interpolation-expression ↔ format-spec), which is why the mechanism
+stays.
+
 ---
 
 ## Shorter obituaries
@@ -67,7 +114,6 @@ cases migrated to `@longest genericIdentifier`/`moduleGenericIdentifier`, leavin
 | **Distance-2 lookahead** `>>2` `++2` `--2` | two-token lookahead/behind | nothing used it; scheme is distance-1 only |
 | **Old spellings** `>>1`, `++1`/`--1` | pre-unification lookahead/behind | → `>+> >-> <+< <-<` (see `Structured Lookahead Design.md`) |
 | **Start-keyed `@prefer`** | prune any loser sharing start `i` (extent-blind) | broke `a?.b`, multi-arg subscripts → narrowed to strictly same-span; prefer-longer → `@longest` |
-| **Bare mode annotations** `>>>` / `<<<` | scanner push/pop | conflated pre-filter & post-action (19 regressions) → gated transitions `(gate,pop,push)` |
 | **`@greedy(class)` / `<suffix>`** | opt-in maximal munch | dropped for always-on default munch via `@lexicalClass` |
 | **Probe-alphabet / `regexExtenders`** | space-boundary munch heuristic | replaced by running the faithful `@lexicalClass` regex directly |
 | **Explicit Unicode-range regex classes** | faithful ident/operator code-point ranges in a Swift `Regex` | Swift `Regex` rejects canonically-decomposable range bounds → `\p{…}` approximation now; interval-table primitive is the endgame (`TODO.md` #8) |

@@ -352,3 +352,37 @@ where precedence is structural, not a parsing ambiguity.
 - `Oracle.swift` — implementation
 - `GenerateDerivationDiagram.swift` — derivation tree visualization
   (ambiguous nodes shown with red outline)
+
+---
+
+## Consolidated learnings (from agent memory, 2026-07-30)
+
+**Two-phase model.** `Oracle.swift` disambiguates post-parse on BSR yield sets:
+(1) prune unreachable yields via a top-down BSR walk; (2) apply grammar-annotated
+rules auto-discovered from `grammar.nonTerminals` at init. Rules live on
+`GrammarNode.disambiguation` (`enum Disambiguation`), written in `.apus` as
+`@longest`/`@shortest` (LHS rule prefixes) and `@prefer` (RHS alternate prefix).
+Three ambiguity flavors: different extent `j`, different pivot `k`, alternate
+ambiguity. Extent is handled by `@longest`/`@shortest`; pivot/alternate are the
+`@prefer` / precedence / associativity cases.
+
+**`@prefer` is STRICTLY same-span (flavor-3 only).** A misused `@prefer` on a
+*shorter* alternate silently prunes genuinely *longer* neighbours that merely share
+the start `i` — `PreferRule.prune` collected the start `i` of every preferred yield
+and was **extent-blind** (`span.i` = alternate start, `span.j` = end). This broke
+optional chaining (`@prefer optionalChainingExpression` `a?` pruned the longer
+`a?.b`) and multi-arg subscripts. Fix: `@prefer` now prunes only exact `(i,j)`
+matches; every prefer-**longer** use migrated to `@longest` (`functionCallArgument`
+for `baz(/,/)`, `genericIdentifier`/`moduleGenericIdentifier` for `A<B>.c()`, and
+`functionDeclaration` for the bodiless-func/IIFE fork). `@prefer`/`@avoid` under an
+OPT are otherwise sound — the earlier breakages were grammar-specific, not an engine
+bug (proven with `parsePostOracle` regression tests).
+
+**APUS gotcha:** `@prefer` is valid ONLY as an RHS alternate prefix
+(`= @prefer A | B`); an LHS `@prefer` fails grammar parse. Only `@longest`/`@shortest`
+work as LHS rule prefixes.
+
+**`x!!` / `x??`** stay a real same-span flavor-3 residual (nested force vs `!!`
+postfix operator). Postfix operators can't *begin* with `!`/`?` — encoded as
+`postfixOperatorToken` = the `operatorToken` regex wrapped in `(?![!?])` (do NOT drop
+operatorToken's `[=&]`-led second alternative — that regressed `_=/0/` regex lexing).

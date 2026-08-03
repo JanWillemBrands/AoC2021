@@ -169,6 +169,103 @@ swift-syntax sets `hasError` for placeholders.
 
 ---
 
+### Resolved: C13a — Missing Space Around `=` in Declarations
+
+**Test cases:** `testRecovery163#1`, `testRecovery164#1`
+
+| Label | Source |
+|-------|--------|
+| `testRecovery163#1` | `let _= 5` and `let _ =5` |
+| `testRecovery164#1` | `let _: Int= 5` and `let _: Array<Int>= []` |
+
+**Root cause:** Swift's lexer (`classifyOperatorToken` in `Cursor.swift`) rejects `=` with
+inconsistent surrounding whitespace universally — in declarations and expressions alike.
+Advent had no spacing enforcement on declaration-initializer `=`.
+
+**Fix (2026-08-02):** Introduced `assignmentOperator` nonterminal with symmetric spacing:
+```
+assignmentOperator = <s> "=" <s> | >s< "=" >s< .
+```
+All production-rule `"="` tokens replaced: `initializer`, `infixExpression`, `captureListItem`,
+`typealiasAssignment`, `defaultArgumentClause`, `enumCaseRawValueInitializer`, `macroDefinition`. ✓
+
+---
+
+### Resolved: C13b — Invalid Unicode in identifiers
+
+**Test cases:** `testRecovery160#1`
+
+| Label | Source |
+|-------|--------|
+| `testRecovery160#1` | `let ￼tryx = 123` (U+FFFC Object Replacement Character before identifier) |
+
+**Root cause:** The `identifierHead` / `identifierCharacter` regex classes in
+`SwiftGrammarRegexLibrary.swift` used `FE47–FFFD` as the upper Unicode range, but
+swift-syntax (`UnicodeScalarExtensions.swift`) uses `FE47–FFF8` — U+FFF9–FFFD are excluded
+(FFF9 = Interlinear Annotation Anchor, FFFC = Object Replacement Character, FFFD = Replacement
+Character).
+
+**Fix (2026-08-02):** Changed both `identifierHead` and `identifierCharacter` upper bounds from
+`\u{FFFD}` to `\u{FFF8}` in `SwiftGrammarRegexLibrary.swift`. ✓
+
+---
+
+### Resolved: C13b — Consecutive member declarations without separator
+
+**Test cases (9):** `testConsecutiveStatements4a/4b`, `5a/5b`, `6a/6b`, `8`, `testTrailingSemi4a/4b`
+
+**Root cause:** All 6 member list types (`enumMembers`, `structMembers`, `classMembers`,
+`actorMembers`, `protocolMembers`, `extensionMembers`) used `xMembers = xMember xMembers?` —
+no separator required between consecutive members. The `statements` grammar already enforced
+this correctly via `statementSeparator = <n> | ";"`.
+
+**Fix (2026-08-03):** Mirrored the `statements` pattern for all 6 member list types.
+Removed `";"?` from each `xMember` definition; replaced `xMembers = xMember xMembers?` with:
+```
+xMembers = xMember ";"? .
+xMembers = xMember statementSeparator xMembers .
+```
+Reuses the existing `statementSeparator` non-terminal — no new rules needed. ✓
+
+---
+
+### Resolved: C13c — Assignment expression in condition position
+
+**Test cases:** `testRecovery153#1`
+
+| Label | Source |
+|-------|--------|
+| `testRecovery153#1` | `if var y = x, z = x { z = y; y = z }` |
+
+**Root cause:** `condition = expression` allowed any `expression` in condition position,
+including assignment expressions (`z = x` via `infixExpression = assignmentOperator ...`).
+Swift assignment returns `Void` — it is never a valid condition expression — but Advent's grammar
+accepted it without error.
+
+**Fix (2026-08-03):** Introduced `conditionExpression` and `conditionInfixExpression` in
+`Swift.apus`. `conditionInfixExpression` mirrors `infixExpression` but omits the
+`assignmentOperator` alternative. Three usage sites updated to use `conditionExpression`:
+`condition`, `repeatWhileStatement`, and `whereExpression`. ✓
+
+---
+
+### Resolved: C11 (partial) — Invalid Backtick-Escaped Identifiers: Null Byte and Backslash
+
+**Test cases:** `testEscapedIdentifiers18#1`, `testEscapedIdentifiers21#1`
+
+| Label | Source | Violation |
+|-------|--------|-----------|
+| `testEscapedIdentifiers18#1` | `` `null\u{0000}is not allowed` `` | Null byte inside backtick identifier |
+| `testEscapedIdentifiers21#1` | `` `\\starting` ``, `` `mid\\dle` `` | Backslash inside backtick identifier |
+
+**Fix (2026-08-02):** The `escapedIdentifier` regex was corrected to exclude control characters
+(`\u{0000}-\u{001F}`) and backslash (`\\`). Also fixed `\u{2000}-\u{200A}` range (invalid as
+Swift regex range bounds) → `\u{2000}\u{2001}\u{2002}-\u{200A}`. ✓
+
+**Residual:** `testEscapedIdentifiers16#1` (operators inside backticks) remains open — see C11 below.
+
+---
+
 ### Resolved: B7 — Reserved Keyword as Trailing Closure Label
 
 **Test cases:** `testTrailingClosures14a#1`, `testTrailingClosures14b#1`
@@ -219,9 +316,9 @@ excludes `default`. The exclusion set is `---("_" "let" "var" "inout" "default")
 | `testRecovery23#1` | `while { true } {}` |
 | `testRecovery24#1` | `while { true }() {}` |
 | `testRecovery28#1` | `repeat {} while { true }()` |
-| `testRecovery50#1` | `switch { 42 } { case _: return }` |
-| `testRecovery51a#1` | `switch { 42 }() { case _: return }` |
-| `testRecovery51b#1` | `switch { 42 }() { case _: return }` (duplicate) |
+| `testRecovery50#1` | `switch { 42 } { case _: return }` — closure as switch subject |
+| `testRecovery51a#1` | `switch { 42 }() { case _: return }` — called-closure as switch subject |
+| `testRecovery51b#1` | (same source, duplicate) |
 | Swift.apus fixture | `if [1,2,3].filter { $0 % 2 == 0 }.isEmpty { print("accepts") }` |
 
 **Note:** `testRecovery28#1` was previously Parked (P1) believing Advent rejected it, but
@@ -338,9 +435,12 @@ These are scanner-level (not grammar-level) checks.
 
 ## Open: C4 — Module Selector Invalid Forms
 
-**Test cases:** `testModuleSelectorImports#3/#4`, `testModuleSelectorIncorrectAttrNames#1`,
-`testModuleSelectorIncorrectBindingDecls#7/#8/#9`, `testModuleSelectorWhitespace#1/#2/#3`,
-`testModuleSelectorAttrs#2`, `testModuleSelectorExpr#1`
+**Test cases:** `testModuleSelectorImports#3`, `testModuleSelectorImports#4`,
+`testModuleSelectorIncorrectAttrNames#1`,
+`testModuleSelectorIncorrectBindingDecls#7`, `testModuleSelectorIncorrectBindingDecls#8`,
+`testModuleSelectorIncorrectBindingDecls#9`,
+`testModuleSelectorWhitespace#1`, `testModuleSelectorWhitespace#2`, `testModuleSelectorWhitespace#3`,
+`testModuleSelectorAttrs#2`, `testModuleSelectorExpr#1` (11 tests)
 
 **Root cause:** The module selector grammar (`#module(...)` or equivalent) accepts forms
 that swift-syntax marks as errors. The exact malformed patterns have not been investigated;
@@ -480,20 +580,21 @@ as a single compound postfix operator, allowing `foo!!foo` to parse without erro
 
 ---
 
-## Open: C11 — Invalid Backtick-Escaped Identifiers
+## Open: C11 — Invalid Backtick-Escaped Identifiers (residual)
 
 **Test cases:**
 
 | Label | Source | Violation |
 |-------|--------|-----------|
 | `` testEscapedIdentifiers16#1 `` | `` let `+` = 0 ``, `` let `.` = 0 `` | Operator tokens inside backticks |
-| `` testEscapedIdentifiers18#1 `` | `` `null\u{0000}is not allowed` `` | Null byte inside backtick identifier |
-| `` testEscapedIdentifiers21#1 `` | `` `\\starting` ``, `` `mid\\dle` `` | Backslash inside backtick identifier |
 
-**Root cause:** Advent's backtick-identifier scanner accepts any token sequence between
-backticks. Swift restricts backtick identifiers: they must be valid Swift identifiers
-(no operators, no null bytes, no backslashes, no newlines, no non-printable characters).
-The scanner must validate identifier content character-by-character inside backticks.
+**Root cause:** Advent's backtick-identifier scanner accepts operator tokens between
+backticks. Swift restricts backtick identifiers to valid Swift identifiers — operators
+(e.g. `+`, `.`) are not permitted. The `escapedIdentifier` regex already excludes
+non-printable characters, control characters, and backslashes (fixed 2026-08-02); the
+remaining gap is that operator characters need to be excluded from the content class.
+
+*(Null byte and backslash cases fixed — see Resolved: C11 partial above.)*
 
 ---
 
@@ -509,67 +610,15 @@ conditions in invalid positions.
 
 ---
 
-## Open: C13 — Error Recovery: Advent Accepts What Swift Marks as Error
+## Open: C13 — Error Recovery: Miscellaneous
 
-A large group of tests where swift-syntax performs error recovery (accepting the snippet but
-setting `hasError = true`) while Advent accepts cleanly (no error). These indicate places
-where Advent's grammar is too permissive for syntactically invalid constructs.
-
-**Sub-groups:**
-
-### C13a — Missing space around `=` in declarations
-
-| Label | Source |
-|-------|--------|
-| `testRecovery163#1` | `let _= 5` and `let _ =5` |
-| `testRecovery164#1` | `let _: Int= 5` and `let _: Array<Int>= []` |
-
-Advent's scanner / grammar does not enforce spacing requirements around `=` in declarations.
-
-### C13b — Invalid Unicode in identifiers
-
-| Label | Source |
-|-------|--------|
-| `testRecovery160#1` | `let ￼tryx = 123` (U+FFFC Object Replacement Character before identifier) |
-
-Advent's identifier scanner accepts code points that Swift rejects.
-
-### C13b — Consecutive statements without separator
-
-| Label | Source |
-|-------|--------|
-| `testConsecutiveStatements4a#1` | `var i: Int { get {a b} set {c d} }` |
-| `testConsecutiveStatements4b#1` | (same source, different test context) |
-| `testConsecutiveStatements5a#1` | Similar pattern |
-| `testConsecutiveStatements5b#1` | Similar pattern |
-| `testConsecutiveStatements6a#1` | Similar pattern |
-| `testConsecutiveStatements6b#1` | Similar pattern |
-| `testConsecutiveStatements8#1` | Similar pattern |
-
-Two expressions on the same line without `;` inside accessor bodies. Swift requires a
-statement separator; Advent's layout-sensitive grammar doesn't enforce this in all contexts.
-
-### C13c — Optional binding without repeated `let`/`var`
-
-| Label | Source |
-|-------|--------|
-| `testRecovery153#1` | `if var y = x, z = x { z = y; y = z }` |
-
-The second binding (`z = x`) is missing `var`/`let`. Swift-syntax accepts with error;
-Advent accepts cleanly.
-
-### C13d — Miscellaneous grammar/recovery
-
-The following tests require individual source inspection to determine root cause:
+Tests where swift-syntax performs error recovery (`hasError = true`) but Advent accepts cleanly.
+Require individual source inspection to determine root cause:
 
 `testEnum11#1`, `testSwitch64#1`, `testSwitch67#1`, `testSelfRebinding2#1`,
 `testRegexParseError17#1`, `testConflictMarkers12#1`, `testIfconfigExpr8#1`,
 `testIfconfigExpr9#1`, `testIdentifiers6#1`, `testInitDeinit11#1`,
-`testInvalid17#1`, `testInvalid21#1`, `testRecovery50#1`\*,
-`testRecovery51a#1`\*, `testRecovery51b#1`\*
-
-\* `testRecovery50/51` — `switch { 42 } { case _: return }` — closure as switch subject.
-This is also a B2 variant (see above) but for `switch` specifically.
+`testInvalid17#1`, `testInvalid21#1`
 
 ---
 

@@ -145,8 +145,6 @@ class ApusParser {
         grammar.isLL1 = isLL1
         grammar.propagateExcludeSets()
         grammar.populateBitSets()
-        
-        try grammar.resolveUnlessTargets()
 
         return grammar
     }
@@ -365,20 +363,6 @@ class ApusParser {
             }
             try expect(["."])
             cI += 1
-
-            // Trailing @unless(X) annotation on this alternate.
-            // Attached to the `.ALT` node returned by `selection()` for this production line.
-            // Resolved to a GrammarNode pointer by Grammar.resolveUnlessTargets().
-            if token.kind == "pragma" && token.stripped == "unless" {
-                cI += 1
-                try expect(["("])
-                cI += 1
-                try expect(["identifier"])
-                node.unlessTargetName = String(token.image)
-                cI += 1
-                try expect([")"])
-                cI += 1
-            }
         }
     }
     

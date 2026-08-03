@@ -74,3 +74,28 @@
 - Scanner performance and correctness are critical; preserve longest-token correctness in regex/scanner work.
 - Prefer parser-owned mutable state over shared static state for reentrancy/concurrency safety.
 
+### Testing & Execution Workflow
+
+See `TESTING.md` for the full approach. Non-negotiable rules distilled from prior sessions:
+
+- **Source of truth for "does Advent accept X?"** is the SwiftSyntax Swift Testing
+  suites (`AdventTests/SwiftSyntax*.swift`, `adventParse`), NOT the `^^^`-messages
+  path in `Swift.apus` — the two disagree on identical input.
+- **Split test results by `@Test`.** Only `Advent accepts` and `no residual ambiguity`
+  failures are correctness signals; `trees match` is an aspirational frontier (~1660
+  Translated cases fail it by design — not regressions). "Passes as a message but fails
+  as a test" = acceptance passes, `treesMatch` fails.
+- **Always set `SWIFT_DETERMINISTIC_HASHING=1`** on test runs — the grammar is loaded
+  once and cached/shared, so any load-time hash-order dependence becomes a per-process
+  flake. Pin flakes with it, then diff descriptors/yields PASS vs FAIL.
+- **Always build before running a DerivedData binary** (stale products persist);
+  `main.swift`/CLI diagnostics go to OSLog (`com.magenta.apusParser`), not stdout — an
+  empty stdout with exit 1 is usually a grammar-load failure.
+- **Probe swift-syntax truth with `Parser.parse(source:).hasError`**, not `swiftc -parse`
+  (they diverge on trivia).
+- **MCP `RunSomeTests` smart-reruns** only previously-failing args after the first call
+  (and a `.apus` edit isn't a "changed input"); use `xcodebuild` directly for true
+  full-parameter counts.
+- **Fix by root cause, not per-test**; prefer structural `.apus` fixes over
+  `@prefer`/oracle hacks; re-harvest ambiguity + run the affected suite after each change.
+

@@ -60,10 +60,27 @@ def collect_rejects(filepath):
     return out
 
 
+def raw_wrap(lit):
+    """Re-emit a verbatim Swift string literal so it performs NO interpolation:
+    bump its raw-string pound count until `\\(…)` is inert (e.g. `"a.\\(x)"` →
+    `#"a.\\(x)"#`). Preserves the snippet instead of dropping it — the source
+    references test-local vars we can't resolve, so we keep it as literal text."""
+    n = 0
+    while n < len(lit) and lit[n] == "#":
+        n += 1
+    p = n
+    while ("\\" + "#" * p + "(") in lit:   # interpolation marker for p pounds
+        p += 1
+    if p == n:
+        return lit
+    body = lit if n == 0 else lit[n:-n]     # inner literal incl. its quotes
+    return "#" * p + body + "#" * p
+
+
 def fmt_array(snippets, name):
     lines = [f"let {name}: [SwiftSnippet] = ["]
     for s in snippets:
-        lit, disabled = s["literal"], s["underscored"]
+        lit, disabled = raw_wrap(s["literal"]), s["underscored"]
         dis = ', disabledReason: "underscore attribute"' if disabled else ""
         if "\n" in lit:
             lines += [
@@ -105,12 +122,13 @@ HEADER = '''//
 //  stripped, leaving the malformed source.
 //
 //  Two categories (see TESTING.md):
-//    • "SwiftSyntax rejects" — baseline, asserts swift-syntax flags an error.
-//    • "Advent rejects"      — asserts Advent produces NO full-span parse, wrapped in
-//      `withKnownIssue` (xfail): Advent's compiler-faithful grammar still accepts many
-//      syntactically-shaped-but-invalid inputs, so these are KNOWN failures. When a case
-//      starts rejecting correctly, `withKnownIssue` flags "known issue was not recorded"
-//      — the signal to promote it. This is the reject-parity frontier.
+//    • "SwiftSyntax rejects" — baseline, asserts swift-syntax flags an error. A failure
+//      here = a mis-harvested non-error case (warnings-only / valid) → prune candidate.
+//    • "Advent rejects"      — asserts Advent produces NO full-span parse. Advent's
+//      compiler-faithful grammar correctly rejects most of this negative corpus (GREEN);
+//      the remaining RED cases are the reject-parity frontier — inputs Advent still
+//      wrongly ACCEPTS (e.g. trailing-closure-in-condition and the other ~32 `.basic`
+//      predicates). Track the red count against a baseline, like `treesMatch`.
 //
 
 import Testing
@@ -137,16 +155,15 @@ struct RejectSyntaxTests {
         #expect(parsed.hasError, "Expected swift-syntax to flag an error: \\(snippet.source)")
     }
 
-    // Advent SHOULD reject (no full-span parse). Known frontier: it often doesn't yet,
-    // so the expectation is wrapped in withKnownIssue. A case that unexpectedly PASSES
-    // (Advent correctly rejects) is surfaced as "known issue was not recorded".
+    // Advent SHOULD reject (no full-span parse). GREEN when it does; the RED cases are
+    // the reject-parity frontier — invalid inputs Advent still wrongly accepts (the
+    // `.basic`/`atValidTrailingClosure` family and other predicate gaps). Track red
+    // against a baseline.
     @Test("Advent rejects", arguments: allRejectSnippets)
     func adventRejects(_ snippet: SwiftSnippet) throws {
         guard snippet.disabledReason == nil else { return }
-        withKnownIssue("Advent does not yet reject '\\(snippet.label)'") {
-            let result = try adventParse(snippet)
-            #expect(result == nil, "Advent accepted invalid input: \\(snippet.source)")
-        }
+        let result = try adventParse(snippet)
+        #expect(result == nil, "Advent wrongly accepted invalid input '\\(snippet.label)': \\(snippet.source)")
     }
 }
 '''

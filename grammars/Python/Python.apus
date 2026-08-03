@@ -147,7 +147,8 @@ compound_stmt = function_def | if_stmt | class_def | with_stmt
 //   >n< simple_stmts — one-liner on the same line as the colon
 //   <n> >>| ... |<<  — indented multi-line block on a new line
 // `>>|` and `|<<` are virtual INDENT/DEDENT tokens; blank lines vanish as trivia.
-block = >n< simple_stmts | <n> >>| <statement> |<< .
+block = >n< simple_stmts
+      | <n> >>| <statement> |<< .
 
 decorator = "@" named_expression <n> .
 

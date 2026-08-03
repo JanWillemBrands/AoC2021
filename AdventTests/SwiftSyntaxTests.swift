@@ -357,7 +357,7 @@ struct SwiftSyntaxTests {
         @Test("pattern node shape differs between declaration and switch case")
         func patternNodeShapeProbe() {
             let illegal = Parser.parse(source: "let let x = 1")
-            #expect(!illegal.hasError)
+            #expect(illegal.hasError)
 
             let tupleDecl = Parser.parse(source: "let (x, y) = (1, 2)")
             let tupleDeclTree = dumpSwiftSyntaxNode(Syntax(tupleDecl), indent: 0)

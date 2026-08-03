@@ -145,3 +145,45 @@ plainRegularExpressionLiteral = "/" >s< regexBody >s< "/" .
 with regex body rules that reuse existing operator/literal terminals to avoid scanner overlap.
 
 If the solution must remain scanner-level, APUS needs one additional generic mechanism: a grammar-declared lexical subgrammar or candidate validator. Without that, a scanner terminal can only be a regex or literal, and cannot perform CFG-style delimiter balancing before tokenization commits.
+
+---
+
+## Consolidated design (from agent memory, 2026-07-30) — the completed, gated handling
+
+The whole problem is that `/` is both a regex delimiter and an operator character;
+swift-syntax resolves it in its lexer (maximal-munch operators +
+`tryLexRegexLiteral` gated by `preferRegexOverBinaryOperator`). Our design mirrors it.
+
+**Plain `/…/` — a parser-level CFG, position-gated.**
+`plainRegularExpressionLiteral` is a CFG (`regexBody`/`regexItem`/`regexGroup`/
+`regexCharacterClass` + atoms), NOT a flat terminal, because the CFG **balances**
+nested `(…)`/`[…]` so malformed spans like `(/E.e).foo(/` are rejected (a flat regex
+can't balance → over-claims). The CFG was never the ambiguity source; two missing
+gates were. Delimiter `/` are regex terminals (`/\//`), exempt from operator munch.
+Opening-slash position gate = `preferRegexOverBinaryOperator`, two productions on the
+newline boundary: same-line `>n< regexOpenSlash …` and newline-leading
+`<n> regexOpenSlashNL …`. `regexOpenSlash` carries `<-<(operand-enders)` (identifiers,
+literals, `)]}>!.` `...` `->` `@`, value keywords, and **`regexCloseSlash`**), so
+`0 /^/ 1` is operators but `2 ⏎ /x}/` is a regex. **CRITICAL:** since the regex is now
+a CFG nonterminal, the token before a following operator is `regexCloseSlash` (the
+closing `/` terminal), NOT `plainRegularExpressionLiteral` — any "after a regex"
+operand-ender list must name `regexCloseSlash`.
+
+**Extended `#/…/#` — a scanner terminal, NOT a CFG.** Its delimiters are unambiguous
+by construction (opening `#`-count fixes the close via backreference `\1`; inside, `/`
+is plain content). Rule of thumb: **CFG for the ambiguous delimiter (`/`), scanner
+terminal for the unambiguous one (`#/…/#`).**
+
+**Operator side — maximal-munch + prefix-gated split.** `@lexicalClass operatorToken`
+(includes `/`) munches `=/`, `.../`, `/^/` as single operators (kills the infix-op +
+`/regex/` reading). `@splitBefore("/")` additionally offers "operator ends before an
+internal `/`" so a regex can follow a **prefix** operator (`^^/regex/` → `^^` +
+`/regex/`), gated to prefix position by `<-<(operand-enders)`. Engine rule: a failing
+`<-<` on a `@splitBefore` terminal drops the SPLIT matches only (keep the maximal base
+match — operators legitimately follow operands). `@splitBefore("/")` is on
+`operatorToken` only; `@splitBefore("<")` on `operatorName` is the generic-`<` peel
+(unrelated to regex). Outcome: Translated regex ambiguity 8→4, zero acceptance
+regressions.
+
+(Superseded note: the old `<<1/<<2` / `--1/++1` scanner-lookbehind naming — see
+`Structured Lookahead Design.md` for the current `>+> >-> <+< <-<` scheme.)

@@ -113,3 +113,47 @@ Each step: fix → re-harvest → confirm the cluster cleared and nothing regres
 - `harvest_ambiguity.py` — the harvester (re-run any time; `ALL` harvests every snippet).
 - `ambiguity_signatures.tsv` — the current signature table (the map + progress tracker).
 - `APUS_SIG_DUMP=1` + `DerivationBuilder.Diagnostic.fingerprint` — the Phase-0 primitive.
+
+---
+
+## Current ambiguity status (consolidated from agent memory, 2026-07-30)
+
+Corpus residuals were driven down from ~11 signatures. Key resolutions:
+- **yield/discard stmt-vs-call (×3)** — swift-syntax's rule is a local 1-token peek
+  (`atContextualKeywordPrefixedSyntax(preferPostfixExpr:)`), reproduced with the
+  negative-forward `>->("(" "[" ".")` gate on the `yield`/`discard` terminal-use
+  (slot-local, so the identifier reading elsewhere is untouched).
+- **infix-pivot** (`as () -> ()`, `as?…??`) via `@longest infixExpression`;
+  **regex-vs-operator ×4** via the gated regex CFG (see `Regex CFG Discussion.md`);
+  **string-delimiter ×3** by requiring a newline after a multiline `#"""` opener;
+  **keyPath root-vs-component ×2** by member-free simple-type root + `@prefer` on the
+  root-bearing alternate.
+- **`testOperators26#1`** (`func ⚽️`) — was NOT context-sensitivity; the coarse
+  `\p{So}` shortcut made `⚽` match both identifier and operator. Fixed by faithful,
+  disjoint code-point `CharacterClass` ranges under `.matchingSemantics(.unicodeScalar)`
+  (in `SwiftGrammarRegexLibrary.swift`). Three tiny identifier deviations remain,
+  forced by a hard Swift-`Regex` limitation: a canonically-decomposable code point
+  (e.g. U+F900) is rejected as a character-class range **bound** in every form — so
+  the faithful ranges dodge it (F8FF for F900, etc.). The 100%-faithful endgame is a
+  code-point-class interval-table scanner primitive (see `TODO.md` #8, ~157× faster
+  than regex for identifier lexing).
+- **`testClosureLiterals#3`** (RESOLVED 2026-07-28) — the fork was the optional
+  **function body** (`func f(…)⏎{…}` reading as a *bodiless* decl + a separate
+  `{…}(…)` IIFE statement), NOT a trailing closure. Fixed with
+  `@longest functionDeclaration = … functionBody? .`: the body stays optional
+  (swift-syntax `parseOptionalCodeBlock` — bodiless `func f()` is valid everywhere,
+  incl. top-level; a missing body is a *semantic* error), and `@longest` greedily
+  prefers the body-taken reading — safe post-parse maximal-munch on the BSR, same as
+  `@longest numericLiteral`. **WRONG first attempt (don't repeat):** making the body
+  required + a member-only `bodylessFunctionDeclaration` (mirroring `init`) rejected
+  top-level bodiless funcs (`@objc func f(_:Int)`, `@abi(func fn()) func fn()`). The
+  `init` analogy is false — `func` is a hard keyword, so top-level `func f()` is an
+  unambiguous bodiless decl. And the `>->("{")` gate can't help: `followAheadExclude`
+  fires only on TERMINAL lex, never on an OPT/`?`/epsilon; and `factor()` consumes
+  `>->` before `sequence()` applies the `?` postfix, so `…genericWhereClause? >->("{")`
+  won't even load.
+
+**Load-time flakes are ambiguity-adjacent:** the old `testClosureWithDollarIdentifier`
+"flake" was a non-confluent exclude-set fixpoint at grammar load (fixed as a greatest
+fixpoint) — see `TESTING.md` §7. A shared cached grammar turns any load-time
+hash-order dependence into a per-process flake.

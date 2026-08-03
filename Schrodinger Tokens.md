@@ -1,5 +1,11 @@
 # Schrodinger Tokens (Caveman Notes)
 
+> **Superseded (2026-07-30).** The runtime dual-linked Schrödinger *token* is gone —
+> LCNP/multi-lex returns multiple matches per position instead. The concept now lives
+> only as the `detectSchrödingerConflict` load-time diagnostic + the `---(…)` exclusion.
+> See *The rise and fall of Schrödinger, Frankenstein and other dead-ends.md*. Below is
+> the original design, kept for history.
+
 ## Problem
 
 Scanner does longest match.

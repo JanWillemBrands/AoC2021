@@ -64,12 +64,18 @@ protocol LCNPLexer {
     /// Optimisation step — `lex` remains the semantic base. Default impl just
     /// delegates to `lex`; adapters/recognizers may override to prune.
     func lexLKH(at pos: CharPosition, terminalID: Int, predict: BitSet) -> [LexMatch]
+
+    /// Returns the cursor position after skipping all leading trivia from `pos`,
+    /// without matching any visible terminal. Used by `boundaryMatches` when no
+    /// prior commit exists at `pos` (e.g. at the very start of input).
+    func triviaSkipEnd(from pos: CharPosition) -> CharPosition
 }
 
 extension LCNPLexer {
     func lexLKH(at pos: CharPosition, terminalID: Int, predict: BitSet) -> [LexMatch] {
         lex(at: pos, terminalID: terminalID)
     }
+    func triviaSkipEnd(from pos: CharPosition) -> CharPosition { pos }
 }
 
 /// On-demand `LCNPLexer` covering literal terminals (Phase B Step 2) and regex
@@ -205,6 +211,8 @@ struct OnDemandLiteralLexer: LCNPLexer {
     /// regex trivia first (fast path), then `=:` non-terminal recognisers
     /// (heavier, for nested constructs that regex can't express). Stops as
     /// soon as nothing advances the cursor.
+    func triviaSkipEnd(from pos: CharPosition) -> CharPosition { skipTrivia(from: pos) }
+
     private func skipTrivia(from pos: CharPosition) -> CharPosition {
         var cursor = pos
         outer: while cursor < input.endIndex {

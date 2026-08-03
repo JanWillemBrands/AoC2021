@@ -439,3 +439,21 @@ if let t = winningTransition {
   Scanner timings/events are routed through `ScannerTelemetry`; release behavior uses no-op telemetry.
 - **Swift key-path lexical edge case retained intentionally.**  
   `\\.` may be consumed as one longest token, so the explicit `keyPathExpression = "\\." ...` fallback remains useful.
+
+---
+
+## Consolidated learnings (from agent memory, 2026-07-30)
+
+**Gated transitions (implemented 2026-04-28).** Scanner modes use structured triples
+`GatedTransition(gate: String, pops: Bool, push: String?)` on
+`TokenPattern.transitions`. **Core principle: separate the pre-filter (mode
+membership, *before* matching) from the post-action (mode transition, *after*
+matching)** — modelled on ANTLR lexer modes / Flex start conditions. The old
+annotation system conflated the two and caused 19 regressions (when
+`multilineCommentText` won longest-match but its `===` check failed with no
+fallback). Gated transitions avoid try/rollback entirely.
+
+- Pre-filter: `guard pattern.transitions.isEmpty || pattern.transitions.contains { $0.gate == mode }` — patterns whose gate ≠ current mode are skipped (regex never runs).
+- Post-action: after longest-match wins, the matching transition's pop/push runs unconditionally.
+- APUS syntax: `=== "gate"` (gate only), `=== "gate" >>> "push"` (gated push), `=== "gate" <<<` (gated pop), `=== "gate" <<< >>> "push"` (gated replace). `=== ""` gates on the empty (default) stack. Multiple transitions per terminal allowed.
+- Files: `Scanner.swift` (struct + pre-filter + post-action), `ApusParser.swift` (transition parse loop), `Swift.apus` / Python.apus (migrated annotations).

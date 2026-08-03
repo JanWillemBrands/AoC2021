@@ -1,6 +1,36 @@
 # Structured Lookahead Design
 
-Grammar-level speculative parsing for APUS — an Oracle-rule primitive (`@unless(X)`) that lets one alternate suppress itself when another nonterminal `X` could have parsed at the same position. Mirrors Swift's `canParseAsXxx` family of decisions, PEG's `&E` / `!E` operators, and ANTLR's syntactic predicates — implemented as post-parse BSR pruning rather than mid-parse sub-parsing. Designed to live alongside `<<1` lookbehind and `>>1` follow-set checks as the third disambiguation primitive in APUS.
+> ## Status (authoritative, 2026-07-30) — what is ACTUALLY implemented
+>
+> The lookahead/lookbehind primitive that shipped is a **directional-polarity,
+> distance-1** family — NOT the `@unless(X)` design that most of this document explores:
+>
+> | Token | Meaning | Direction | Polarity | Fires where |
+> |-------|---------|-----------|----------|-------------|
+> | `>+>(set)` | next token MUST be in set | forward | positive | on a terminal-use, in `MessageParser.tokenMatch()` (predict-set override) |
+> | `>->(set)` | next token MUST NOT be in set | forward | negative | on a terminal-use, in `tokenMatch()` (drop match if an excluded terminal lexes at `triviaEnd`) |
+> | `<+<(set)` | prev token MUST be in set | backward | positive | scanner-side, on a terminal *definition* |
+> | `<-<(set)` | prev token MUST NOT be in set | backward | negative | scanner-side, on a terminal *definition* |
+>
+> `>…>` = forward, `<…<` = backward; middle `+`/`-` = polarity. These replaced the old
+> `>>1`→`>+>` and `++1`/`--1`→`<+<`/`<-<`; the distance-2 variants (`>>2`/`++2`/`--2`)
+> were dropped (unused). Forward gates are **slot-local** (one terminal-use in one
+> production) and **fire only on a real TERMINAL** — on a nonterminal or epsilon they
+> are a silent no-op (see the postfix `!rightBound` example in "Consolidated learnings"
+> at the end of this file, and `Structured Lookahead Design` there for the anchoring
+> rule).
+>
+> **`@unless(X)` was implemented, then RETIRED (2026-07-30).** It was used by no grammar
+> by the end — its "prefer the reading that continues with X" job is covered by
+> `@longest` (extent) and its same-span cousin by `@prefer`, both placed *directly on
+> the affected term*. The sections below (`## APUS Design: @unless(X)` onward) are
+> **historical design exploration**, kept for the predicate background (PEG/ANTLR/GLL)
+> and the `Array<Array<Int>>` / `a < b > c` worked examples. See
+> *The rise and fall of Schrödinger, Frankenstein and other dead-ends.md*.
+>
+> The "≈32 `canParseAsXxx` predicates" goal (Pillar 2 in `SwiftSyntax Mapping.md`)
+> remains — but it is being met with the directional lookahead above + structural
+> grammar fixes, NOT with `@unless`.
 
 ## Problem
 
@@ -150,6 +180,12 @@ Adoption of predicate-like mechanisms in adjacent general parsers:
 APUS's Oracle-based approach is most similar to Elkhound's post-parse filters, applied as a declarative annotation rather than a user-written hook.
 
 ## APUS Design: `@unless(X)` as an Oracle Rule
+
+> **RETIRED 2026-07-30 — historical.** Everything from here to "Alternative:
+> Parser-Level `?(X)` / `!(X)`" describes the `@unless(X)` mechanism that was built,
+> shipped, and then removed (used by no grammar). Read it for the predicate background
+> and worked examples only; it does not reflect the current engine. See the Status
+> banner at the top.
 
 ### Syntax
 
@@ -498,3 +534,53 @@ External:
 - Parr, *The Definitive ANTLR Reference*, Pragmatic Bookshelf 2007 (§11.3 on predicates).
 - Parr, *LL(\*): The Foundation of the ANTLR Parser Generator*, PLDI 2011.
 - swift-syntax `SwiftParser/Lookahead.swift` and the 32 `canParseAsXxx` / `atStartOfXxx` predicates listed above.
+
+---
+
+## Consolidated learnings (from agent memory, 2026-07-30)
+
+**Unified directional-polarity annotations (adopted 2026-07-21), distance-1 only:**
+
+| Token | Meaning | Direction | Polarity |
+|-------|---------|-----------|----------|
+| `>+>(set)` | next token MUST be in set | forward (lookahead) | positive |
+| `>->(set)` | next token MUST NOT be in set | forward (lookahead) | negative |
+| `<+<(set)` | prev token MUST be in set | backward (lookbehind) | positive |
+| `<-<(set)` | prev token MUST NOT be in set | backward (lookbehind) | negative |
+
+Mnemonic: `>…>` forward, `<…<` backward; middle `+`/`-` = polarity. Replaced the old
+`>>1`→`>+>` and lookbehind `++1/--1`→`<+</<-<`; the distance-2 variants were dropped
+(unused). Forward forms are **per-slot** on the terminal-use node
+(`GrammarNode.followAhead[Exclude]` + BS mirrors), evaluated in
+`MessageParser.tokenMatch()` (positive = predict-set override; negative = drop a match
+whose next terminal lexes at `m.triviaEnd`). Lookbehind stays scanner-side on terminal
+*definitions*.
+
+**Slot-local vs terminal-global (the choice that matters):**
+- `>->` (negative forward) is **slot-local** — gates ONE terminal-use in ONE
+  production (e.g. the `yield` in `yieldStatement`) without touching the same lexeme's
+  identifier reading elsewhere. This is why it fixes yield/discard stmt-vs-call
+  (`preferPostfixExpr`) without breaking the call `yield(x)`.
+- `<-<` (negative lookbehind) is **terminal-global** and backward — gates whether a
+  terminal lexes at all based on the previous token; can't see grammatical context.
+  Used for regex-vs-division.
+
+**`>+>`/`>->` only fire on a real TERMINAL** (checked in `tokenMatch` at lex time).
+On a nonterminal or the epsilon `""` they are a silent no-op → the restriction
+vanishes. This is why the postfix `!rightBound` fix anchors on
+`postfixOperatorToken`/`dotOperator`, not on the `postfixOperator` nonterminal:
+```
+postfixExpression = postfixExpression >s< postfixOperator <s> .                                  // spaced/newline after
+postfixExpression = postfixExpression >s< postfixOperatorToken >+>("." ")" "]" "}" "," ";" ":") . // tight delim / EOF
+postfixExpression = postfixExpression >s< dotOperator         >+>("." ")" "]" "}" "," ";" ":") . // postfix range at delim/EOF
+```
+(`<s>` covers whitespace-after but fails at bare EOF; the `>+>` alternate covers the
+tight-delimiter/EOF case. Without `!rightBound`, `a+` was a spurious postfixExpression
+that `@longest prefixExpression` then preferred, breaking tight infix `a+b`/`x*x`.)
+
+**DEFERRED engine task:** make `>+>` fire at nonterminal COMPLETION (CRF pop/return
+replay) so it can annotate a nonterminal — would collapse the two terminal-specific
+postfix rules into one on `postfixOperator`. A negative *parse-time* lookahead in a
+production is the likely next primitive; consolidate the meta-token surface then
+(direction can be implied by position — after a terminal `.` = scanner-time backward,
+after a literal in a production = parse-time forward, like `---`/`~~~` already do).

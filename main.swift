@@ -142,7 +142,7 @@ for (mi, message) in grammar.messages.enumerated() {
 
 
 #if DEBUG
-    let enableDiagrams = false
+    let enableDiagrams = true
 
     if enableDiagrams && grammar.nonTerminals.count < 1000 && messageParser.crf.count < 1000 {
 

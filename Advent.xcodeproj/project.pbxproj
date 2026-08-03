@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4E12037D2FA8B07C0061BD96 /* Oracle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E12037C2FA8B07C0061BD96 /* Oracle.swift */; };
 		4E12037E2FA8B07C0061BD96 /* Oracle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E12037C2FA8B07C0061BD96 /* Oracle.swift */; };
 		4E12037F2FA8B07C0061BD96 /* Oracle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E12037C2FA8B07C0061BD96 /* Oracle.swift */; };
 		4E2C80812F729E88004365DD /* BitCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 4E2C80802F729E88004365DD /* BitCollections */; };
@@ -69,6 +68,7 @@
 		4EEBC9B42F9DECF000E838A7 /* Descriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97C2F9DECF000E838A7 /* Descriptor.swift */; };
 		4EEBC9B52F9DECF000E838A7 /* LayoutTokenInjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9832F9DECF000E838A7 /* LayoutTokenInjection.swift */; };
 		4EEBC9B62F9DECF000E838A7 /* SPPF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC98B2F9DECF000E838A7 /* SPPF.swift */; };
+		4EF57BB43020ACB800549D7B /* ApusToHTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF57BB33020ACB800549D7B /* ApusToHTML.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -150,6 +150,7 @@
 		4E7CA9A22FD61AB400A5A906 /* Multi-Lex Adoption Design 2.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Multi-Lex Adoption Design 2.md"; sourceTree = "<group>"; };
 		4E89AAED2D6DF2EE006A0BBA /* ART.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
 		4E89AAF32D7667C3006A0BBA /* tortureART.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = tortureART.apus; sourceTree = "<group>"; };
+		4E8B834B301B498100118EB4 /* layout test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "layout test.swift"; path = "../../../../Desktop/layout test.swift"; sourceTree = "<group>"; };
 		4E8D05872F65845F0081C6D2 /* postRunActions.log */ = {isa = PBXFileReference; lastKnownFileType = text; path = postRunActions.log; sourceTree = "<group>"; };
 		4E8D05952F6A183C0081C6D2 /* GeneratedParser */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = GeneratedParser; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E8D05A02F6EC70A0081C6D2 /* tortureEBNF.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = tortureEBNF.apus; sourceTree = "<group>"; };
@@ -159,6 +160,8 @@
 		4E951C132D8874BD008B1012 /* Swift.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Swift.apus; sourceTree = "<group>"; };
 		4E95A4EB30151FC6000C251E /* SwiftGrammarRegexLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftGrammarRegexLibrary.swift; sourceTree = "<group>"; };
 		4EBB87132F7F4EC100037029 /* Swift EBNF.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = "Swift EBNF.apus"; sourceTree = "<group>"; };
+		4EC3D234301CC4FA00E27741 /* The rise and fall of Schrödinger, Frankenstein and other dead-ends.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "The rise and fall of Schrödinger, Frankenstein and other dead-ends.md"; sourceTree = "<group>"; };
+		4EC3D237301E03F200E27741 /* REJECTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REJECTS.md; sourceTree = "<group>"; };
 		4ECF5BE62F3748DB008E692B /* claude.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = claude.md; sourceTree = "<group>"; };
 		4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "SwiftSyntax Mapping.md"; sourceTree = "<group>"; };
 		4EE2FCD72F77C38400105588 /* regex-operator.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = "regex-operator.apus"; sourceTree = "<group>"; };
@@ -240,6 +243,9 @@
 		4EEBC9FB2F9EF35000E838A7 /* Swift6GrammarDraft.docx */ = {isa = PBXFileReference; lastKnownFileType = file; path = Swift6GrammarDraft.docx; sourceTree = "<group>"; };
 		4EEBC9FC2F9EF35000E838A7 /* Swift6GrammarDraft.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Swift6GrammarDraft.txt; sourceTree = "<group>"; };
 		4EEBCA032FA03A2C00E838A7 /* PEG-GLL-Oracle-Pruning.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "PEG-GLL-Oracle-Pruning.md"; sourceTree = "<group>"; };
+		4EF57BB33020ACB800549D7B /* ApusToHTML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusToHTML.swift; sourceTree = "<group>"; };
+		4EF57BB63020EAE300549D7B /* swift 3.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "swift 3.html"; sourceTree = "<group>"; };
+		4EF57BB73020ECFF00549D7B /* swift 4.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "swift 4.html"; sourceTree = "<group>"; };
 		CB6B7315257EA9F400B929C6 /* Advent */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Advent; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -341,6 +347,7 @@
 				4E34DF7E2C08042C00B2881E /* apus.apus */,
 				4E333D622629D5E400640821 /* apusWithAction.apus */,
 				4E7B09942FA735CC00E44E20 /* layout.apus */,
+				4E8B834B301B498100118EB4 /* layout test.swift */,
 				4EE2FCD72F77C38400105588 /* regex-operator.apus */,
 				4EBB87132F7F4EC100037029 /* Swift EBNF.apus */,
 				4E951C132D8874BD008B1012 /* Swift.apus */,
@@ -502,15 +509,18 @@
 				4E4E48C22FA219ED0094DFC6 /* codex.md */,
 				4E4E48C32FA219ED0094DFC6 /* Frankenstein Tokens.md */,
 				4E4E48C42FA219ED0094DFC6 /* Layout Sensitive Parsing.md */,
+				4E7CA9A22FD61AB400A5A906 /* Multi-Lex Adoption Design 2.md */,
 				4E1203802FA978B70061BD96 /* Oracle.md */,
-				4E4E48C52FA219ED0094DFC6 /* Scanner Mode Design.md */,
+				4E2CC1402FD4AC2200719D65 /* Regex CFG Discussion.md */,
 				4E2CC13E2FC8C9F100719D65 /* Regex Lookbehind Design.md */,
-				4E2CC13F2FD46F3400719D65 /* Structured Lookahead Design.md */,
+				4EC3D237301E03F200E27741 /* REJECTS.md */,
+				4E4E48C52FA219ED0094DFC6 /* Scanner Mode Design.md */,
 				4E4E48C62FA219ED0094DFC6 /* Schrodinger Tokens.md */,
+				4E2CC13F2FD46F3400719D65 /* Structured Lookahead Design.md */,
 				4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */,
+				4EC3D234301CC4FA00E27741 /* The rise and fall of Schrödinger, Frankenstein and other dead-ends.md */,
 				4E16D4762FA7A126008E2C1A /* TODO.md */,
 				4E4E48C72FA219ED0094DFC6 /* Trivia Oracle.md */,
-				4E7CA9A22FD61AB400A5A906 /* Multi-Lex Adoption Design 2.md */,
 				4E34DF802C08A71000B2881E /* ART.svg */,
 				4E8D05A92F701D560081C6D2 /* Derivations.svg */,
 				4E5754B42F5894BB0067165C /* SPPF.svg */,
@@ -537,6 +547,7 @@
 				4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */,
 				4EEBC98B2F9DECF000E838A7 /* SPPF.swift */,
 				4EEBC98C2F9DECF000E838A7 /* StringExtensions.swift */,
+				4E95A4EB30151FC6000C251E /* SwiftGrammarRegexLibrary.swift */,
 				4E11B2A42DA274B200555BB8 /* scratch.txt */,
 				4E7709B42F37870300972246 /* AdventTests */,
 				4ED1187E2FAAF9810055DAC7 /* apus grammars */,
@@ -544,9 +555,10 @@
 				4E8D058E2F67204C0081C6D2 /* Frameworks */,
 				4E8D05962F6A183C0081C6D2 /* GeneratedParser */,
 				4EEBC9FE2F9EF35000E838A7 /* grammars */,
+				4EF57BB33020ACB800549D7B /* ApusToHTML.swift */,
+				4EF57BB63020EAE300549D7B /* swift 3.html */,
+				4EF57BB73020ECFF00549D7B /* swift 4.html */,
 				CB6B7316257EA9F400B929C6 /* Products */,
-				4E2CC1402FD4AC2200719D65 /* Regex CFG Discussion.md */,
-				4E95A4EB30151FC6000C251E /* SwiftGrammarRegexLibrary.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -730,7 +742,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4E12037D2FA8B07C0061BD96 /* Oracle.swift in Sources */,
 				4E4E48CC2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -754,6 +765,7 @@
 				4EEBC9AD2F9DECF000E838A7 /* GenerateDiagrams.swift in Sources */,
 				4E4E48CA2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */,
 				4EEBC9AE2F9DECF000E838A7 /* ApusParser.swift in Sources */,
+				4EF57BB43020ACB800549D7B /* ApusToHTML.swift in Sources */,
 				4EEBC9AF2F9DECF000E838A7 /* GrammarNode.swift in Sources */,
 				4E12037E2FA8B07C0061BD96 /* Oracle.swift in Sources */,
 				4EEBC9B02F9DECF000E838A7 /* main.swift in Sources */,

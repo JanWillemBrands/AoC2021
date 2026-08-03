@@ -65,7 +65,7 @@ func expect(_ expected: String...) {
 let tokenPatterns: [String:TokenPattern] = [
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"word":	("/\\w+/",	/\w+/,	false,	false),
-	".":	(".",	Regex { "." },	true,	false),
+	""."":	(".",	Regex { "." },	true,	false),
 ]
 func article() throws {
 	try title()
@@ -98,7 +98,7 @@ func sentence() throws {
 		expect("word")
 		cI += 1
 	} while ["word"].contains(token.kind)
-	expect(".")
+	expect("\".\"")
 	cI += 1
 	boundary("<s>")
 }
