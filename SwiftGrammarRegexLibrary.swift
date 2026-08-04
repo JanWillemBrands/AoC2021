@@ -148,6 +148,49 @@ enum ApusRegexLibrary {
     /// `[.\-+*/%|^~<>=&]`, which likewise omitted `!?`.
     static let dotOperatorCharacter = CharacterClass(operatorCharacter, .anyOf(".")).subtracting(.anyOf("!?"))
 
+    // ── Raw-identifier scalar classes (mirrors swift-syntax UnicodeScalarExtensions) ──
+    // Used to assemble `escapedIdentifier` from named building blocks instead of a
+    // raw regex string literal.
+
+    /// swift-syntax: `isForbiddenRawIdentifierWhitespace`
+    /// These code points generate `.rawIdentifierCannotContainCharacter` — our scanner
+    /// simply excludes them so the terminal never matches.
+    static let forbiddenRawIdentifierWhitespace = CharacterClass(
+        "\u{0009}"..."\u{000D}",   // HT, LF, VT, FF, CR
+        "\u{0085}"..."\u{0085}",   // NEL
+        "\u{00A0}"..."\u{00A0}",   // NBSP
+        "\u{1680}"..."\u{1680}",
+        "\u{2000}"..."\u{200A}",
+        "\u{2028}"..."\u{2029}",
+        "\u{202F}"..."\u{202F}",
+        "\u{205F}"..."\u{205F}",
+        "\u{3000}"..."\u{3000}"
+    )
+
+    /// swift-syntax: `isPermittedRawIdentifierWhitespace` — U+0020, U+200E, U+200F.
+    /// Allowed individually, but an identifier whose ENTIRE content is these chars is
+    /// rejected via `NegativeLookahead` in `escapedIdentifier`.
+    static let permittedRawIdentifierWhitespace = CharacterClass(
+        "\u{0020}"..."\u{0020}",
+        "\u{200E}"..."\u{200F}"
+    )
+
+    /// swift-syntax: `!isPrintableASCII` — U+0000–001F (controls) + U+007F (DEL).
+    /// Generates `.unprintableAsciiCharacter` → hasError = true.
+    static let unprintableASCII = CharacterClass(
+        "\u{0000}"..."\u{001F}",
+        "\u{007F}"..."\u{007F}"
+    )
+
+    /// Valid backtick-identifier content: any code point that does NOT generate an
+    /// immediate lexing error — not backtick, not backslash, not forbidden whitespace,
+    /// not unprintable ASCII.
+    static let validRawIdentifierContent = CharacterClass(
+        .anyOf("`\\"),
+        unprintableASCII,
+        forbiddenRawIdentifierWhitespace
+    ).inverted
+
     // ── Terminals ───────────────────────────────────────────────────────────────
     // `.matchingSemantics(.unicodeScalar)` applied directly on each composed regex.
 
@@ -189,12 +232,55 @@ enum ApusRegexLibrary {
         OneOrMore { dotOperatorCharacter }
     }.matchingSemantics(.unicodeScalar)
 
+    /// `poundName` — `#` followed by an identifier (N1518 ranges, same as `identifier`).
+    /// Swift-syntax lexes `#macroName` as two tokens (`.pound` + `.identifier`); we
+    /// combine them into one scanner terminal. Character classes are identical to
+    /// `identifierHead`/`identifierCharacter` — no XID or `\p{So}` approximation.
+    static let poundName = Regex {
+        "#"
+        identifierHead
+        ZeroOrMore { identifierCharacter }
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `propertyWrapperProjection` — `$` + digits* + one non-digit identChar + identChar*.
+    /// Mirrors `lexDollarIdentifier` in swift-syntax: only the `!isAllDigits` path
+    /// (i.e. at least one non-digit continuation char) yields a projection identifier.
+    /// `$0`, `$1` etc (all-digit) are closure shorthand args, not projections.
+    static let propertyWrapperProjection = Regex {
+        "$"
+        ZeroOrMore { CharacterClass("0"..."9") }
+        identifierCharacter.subtracting(.anyOf("0123456789"))
+        ZeroOrMore { identifierCharacter }
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `escapedIdentifier` — backtick-delimited identifier.
+    /// Rejects two cases that swift-syntax (lexEscapedIdentifier) marks hasError:
+    ///   1. Pure-operator content: first char ∈ operatorHead, all remaining ∈ operatorCharacter
+    ///   2. All-whitespace content: every char ∈ permittedRawIdentifierWhitespace
+    static let escapedIdentifier = Regex {
+        "`"
+        NegativeLookahead {
+            One(operatorHead)
+            ZeroOrMore { operatorCharacter }
+            "`"
+        }
+        NegativeLookahead {
+            OneOrMore { permittedRawIdentifierWhitespace }
+            "`"
+        }
+        OneOrMore { validRawIdentifierContent }
+        "`"
+    }.matchingSemantics(.unicodeScalar)
+
     // ── Registry (key == `.apus` terminal name) ─────────────────────────────────
     static let patterns: [String: Regex<AnyRegexOutput>] = [
-        "identifier":           Regex<AnyRegexOutput>(identifier.regex),
-        "operatorToken":        Regex<AnyRegexOutput>(operatorToken.regex),
-        "operatorName":         Regex<AnyRegexOutput>(operatorToken.regex),
-        "postfixOperatorToken": Regex<AnyRegexOutput>(postfixOperatorToken.regex),
-        "dotOperator":          Regex<AnyRegexOutput>(dotOperator.regex),
+        "identifier":                  Regex<AnyRegexOutput>(identifier.regex),
+        "operatorToken":               Regex<AnyRegexOutput>(operatorToken.regex),
+        "operatorName":                Regex<AnyRegexOutput>(operatorToken.regex),
+        "postfixOperatorToken":        Regex<AnyRegexOutput>(postfixOperatorToken.regex),
+        "dotOperator":                 Regex<AnyRegexOutput>(dotOperator.regex),
+        "poundName":                   Regex<AnyRegexOutput>(poundName.regex),
+        "propertyWrapperProjection":   Regex<AnyRegexOutput>(propertyWrapperProjection.regex),
+        "escapedIdentifier":           Regex<AnyRegexOutput>(escapedIdentifier.regex),
     ]
 }

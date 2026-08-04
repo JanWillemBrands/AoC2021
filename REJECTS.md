@@ -539,9 +539,9 @@ the generic argument to be mis-parsed. Swift-syntax rejects these forms (sets `h
 
 ---
 
-## Open: C9 — `@abi` Attribute and Macro Role Name Violations
+## Resolved: C9 — `@abi` Attribute and Macro Role Name Violations
 
-**Test cases:**
+**Test cases (all resolved 2026-08-04):**
 
 | Label | Source | Violation |
 |-------|--------|-----------|
@@ -552,13 +552,11 @@ the generic argument to be mis-parsed. Swift-syntax rejects these forms (sets `h
 | `testABIAttribute#5` | `@abi()\nfunc fn2() {}` | Empty `@abi` arg list |
 | `testABIAttribute#6` | `@abi\nfunc fn3() {}` | `@abi` with no argument at all |
 
-**Root cause:** `@abi` is a new Swift attribute not yet in Advent's grammar. Advent parses
-`@abi(...)` as a generic attribute (attribute name `abi` with token-balanced parenthesized
-argument) and accepts all forms. Swift-syntax validates the contents and rejects malformed
-`@abi` bodies.
-
-For `testMacroRoleNames#1`: `class` is a reserved keyword and should be rejected as a
-`named(...)` macro role name argument; Advent's grammar does not enforce this restriction.
+**Fix (2026-08-04):** Added dedicated `attribute` rules in `Swift.apus`:
+- `attribute = "@" >s< "abi" >s< "(" abiDeclaration ")" .` — requires exactly one of the 8 `ABIAttributeArgumentsSyntax.Provider` types; empty `@abi()` and bare `@abi` fail.
+- Two `@longest` rules for `@attached`/`@freestanding` using `functionCallArgumentList?` — routes keyword `class` through the expression parser, which rejects it.
+- General `attribute` rule uses `>->("abi" "attached" "freestanding")` to skip the three names that have dedicated rules.
+- Added `abiDeclaration` non-terminal (8 specific declaration types from swift-syntax's `Provider` enum). ✓
 
 ---
 
@@ -580,33 +578,63 @@ as a single compound postfix operator, allowing `foo!!foo` to parse without erro
 
 ---
 
-## Open: C11 — Invalid Backtick-Escaped Identifiers (residual)
+## Resolved: C11 — Invalid Backtick-Escaped Identifiers (residual)
 
 **Test cases:**
 
 | Label | Source | Violation |
 |-------|--------|-----------|
-| `` testEscapedIdentifiers16#1 `` | `` let `+` = 0 ``, `` let `.` = 0 `` | Operator tokens inside backticks |
+| `` testEscapedIdentifiers16#1 `` | `` let `+` = 0 ``, `` let `.` = 0 `` | Pure-operator sequence inside backticks |
 
-**Root cause:** Advent's backtick-identifier scanner accepts operator tokens between
-backticks. Swift restricts backtick identifiers to valid Swift identifiers — operators
-(e.g. `+`, `.`) are not permitted. The `escapedIdentifier` regex already excludes
-non-printable characters, control characters, and backslashes (fixed 2026-08-02); the
-remaining gap is that operator characters need to be excluded from the content class.
+**Fix (2026-08-04):** Converted `escapedIdentifier` from a raw `/regex/` terminal in
+`Swift.apus` to a `@builder` terminal backed by `ApusRegexLibrary.escapedIdentifier` in
+`SwiftGrammarRegexLibrary.swift`.
+
+The authoritative rule (from `lexEscapedIdentifier` in swift-syntax's `Cursor.swift`) is:
+a backtick identifier is rejected if ALL of its characters form a pure operator sequence
+— i.e., the first character is an `isOperatorStartCodePoint` and every subsequent
+character is an `isOperatorContinuationCodePoint`.
+
+The fix encodes this with a `NegativeLookahead`:
+```swift
+NegativeLookahead {
+    One(operatorHead)           // first char ∈ isOperatorStartCodePoint
+    ZeroOrMore { operatorCharacter }  // all remaining ∈ isOperatorContinuationCodePoint
+    "`"
+}
+```
+Both ASCII and Unicode operator ranges are covered via the existing `operatorHead`/
+`operatorCharacter` constants (which already back `operatorToken`). A second lookahead
+rejects all-whitespace identifiers (permittedRawIdentifierWhitespace). The `validRawIdentifierContent`
+class (built from the three new named constants — `unprintableASCII`, `forbiddenRawIdentifierWhitespace`,
+`permittedRawIdentifierWhitespace`) replaces the former ad-hoc exclusion list. ✓
 
 *(Null byte and backslash cases fixed — see Resolved: C11 partial above.)*
 
 ---
 
-## Open: C12 — Availability Condition Violations
+## Parked: C12 — `@available` argument string literal kind
 
 **Test cases:** `testDiagnoseAvailability17a#1`, `testDiagnoseAvailability17b#1`,
 `testDiagnoseAvailability20#1`, `testDiagnoseAvailability21#1`
 
-**Root cause:** Various invalid availability condition forms that Advent accepts without
-error. Swift-syntax parses these with `hasError`. The specific violations need source-level
-inspection; likely candidates are malformed platform/version specifiers or availability
-conditions in invalid positions.
+**Root cause:** `@available` attribute arguments are parsed via `balancedTokens`, which accepts
+any string literal form. Swift-syntax parses the same input but emits a diagnostic based on the
+*kind* of string literal found:
+
+| Test | Diagnostic |
+|------|------------|
+| 17a/17b | "argument cannot be an **interpolated** string literal" (`"\(...)"`) |
+| 20 | "argument cannot be an **extended escaping** string literal" (`#"""..."""#`) |
+| 21 | "argument cannot be an **extended escaping** string literal" (`#"..."#`) |
+
+Plain string literals (`"…"`, `"""…"""`) are accepted; only `#`-delimited and `\()`-interpolated
+forms are rejected. The check is a property of the *parsed token kind*, not the token stream
+shape — a post-parse predicate on `stringLiteralExpression` kind, not a grammar production split.
+
+**Parked:** waiting for the Oracle Filter / Post-Parse Predicate mechanism (see APUS Extension
+Candidates §1 below). The predicate would inspect the string literal's token type and prune
+the derivation for those two disallowed forms.
 
 ---
 
@@ -628,10 +656,11 @@ The patterns above suggest two high-value additions to the APUS annotation vocab
 
 ### 1. Oracle Filter / Post-Parse Predicate
 
-**Motivation:** B1 (literal trailing closure). The restriction `!leadingExpr.isLiteral`
-is a property of the *parsed result*, not the token stream. Encoding it as a grammar
-production split creates combinatorial duplication. An Oracle-level hook is the natural
-home for such post-parse structural predicates.
+**Motivation:** B1 (literal trailing closure) and C12 (`@available` string literal kind).
+Both restrictions are properties of the *parsed result*, not the token stream — B1 checks
+`leadingExpr.isLiteral`; C12 checks `stringLiteral.isInterpolated || stringLiteral.isExtended`.
+Encoding either as a grammar production split creates combinatorial duplication. An Oracle-level
+hook is the natural home for such post-parse structural predicates.
 
 **Proposed form:** A declarative annotation on a production rule (or a named Oracle rule)
 that can inspect the sub-tree of one of the rule's components and prune the derivation if

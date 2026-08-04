@@ -64,22 +64,24 @@ identifier - @builder .
 // swift-syntax dispatch order (Cursor.swift:1056-1061).
 //rawIdentifier - /[A-Za-z_\u{00A8}\u{00AA}\u{00AD}\u{00AF}\u{00B2}-\u{00B5}\u{00B7}-\u{00BA}\u{00BC}-\u{00BE}\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{167F}\u{1681}-\u{180D}\u{180F}-\u{1DBF}\u{1E00}-\u{1FFF}\u{200B}-\u{200D}\u{202A}-\u{202E}\u{203F}-\u{2040}\u{2054}\u{2060}-\u{20CF}\u{2100}-\u{218F}\u{2460}-\u{24FF}\u{2776}-\u{2793}\u{2C00}-\u{2DFF}\u{2E80}-\u{2FFF}\u{3004}-\u{3007}\u{3021}-\u{302F}\u{3031}-\u{D7FF}\u{F900}-\u{FD3D}\u{FD40}-\u{FDCF}\u{FDF0}-\u{FE1F}\u{FE30}-\u{FE44}\u{FE47}-\u{FFF8}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E0000}-\u{EFFFD}][A-Za-z0-9_\u{00A8}\u{00AA}\u{00AD}\u{00AF}\u{00B2}-\u{00B5}\u{00B7}-\u{00BA}\u{00BC}-\u{00BE}\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{167F}\u{1681}-\u{180D}\u{180F}-\u{1FFF}\u{200B}-\u{200D}\u{202A}-\u{202E}\u{203F}-\u{2040}\u{2054}\u{2060}-\u{218F}\u{2460}-\u{24FF}\u{2776}-\u{2793}\u{2C00}-\u{2DFF}\u{2E80}-\u{2FFF}\u{3004}-\u{3007}\u{3021}-\u{302F}\u{3031}-\u{D7FF}\u{F900}-\u{FD3D}\u{FD40}-\u{FDCF}\u{FDF0}-\u{FE44}\u{FE47}-\u{FFF8}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E0000}-\u{EFFFD}]*/ .
 
-escapedIdentifier           - /`[^`\\\u{0000}-\u{001F}\u{007F}\u{0085}\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}-\u{200A}\u{2028}-\u{2029}\u{202F}\u{205F}\u{3000}]+`/ .   // TODO: pure operator character sequences should be rejected
+escapedIdentifier       - @builder .
 
 //`implicitParameterName` ($0/$1) is NOT an identifier — swift-syntax lexes it as
 // `.dollarIdentifier` and parses it as a distinct primary expression form via `parseAnonymousClosureArgument`
 // (Expressions.swift:1348). It appears as its own `primaryExpression` alternate below.
-implicitParameterName       - /\$[0-9]+/ . // only digits
+implicitParameterName   - /\$[0-9]+/ . // only digits
 
-propertyWrapperProjection   - /\$[0-9]*[\p{XID_Continue}--[0-9]]\p{XID_Continue}*/ .   // NOT only digits  TODO: eliminate XID...
+propertyWrapperProjection - @builder .   // `$name`, `$0abc` — at least one non-digit identChar after `$`; excludes `$0`, `$1` (closure shorthand)
 
 // Most Swift identifiers exclude the hard reserved keywords
-hardIdentifier  = identifier ---("_" "Any" "as" "associatedtype" "await" "break" "case" "catch" "class" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while")
+hardIdentifier  = identifier
+                ---("_" "Any" "as" "associatedtype" "await" "break" "case" "catch" "class" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while")
                 | escapedIdentifier
                 | propertyWrapperProjection .
 
 // Swift allows keywords as argument labels and as member names, just a few keywords are excluded for legacy reasons.
-softIdentifier  = identifier ---("_" "let" "var" "inout")
+softIdentifier  = identifier
+                ---("_" "let" "var" "inout")
                 | escapedIdentifier
                 | propertyWrapperProjection .
 
@@ -1489,7 +1491,7 @@ freestandingMacroExpansionDeclaration = macroHead genericArgumentClause? functio
 // the old `"#" + rawIdentifier` the name token started AFTER the `#`, so no reserved literal shared
 // its position and `---` was a silent no-op. Reserved keywords have dedicated rules (availability /
 // #if directives / #sourceLocation); everything else (`#foo`, `#selector`, `#colorLiteral`, …) is a macro.
-poundName - /#[\p{XID_Start}_\p{So}][\p{XID_Continue}\p{So}]*/ .   // `#` + identifier-body, deduped like `identifier` (`_` in head, single continuation class). Bare `#_` is not a valid macro name, clawed back at the sole use site (macroHead) below. TODO: eliminate XID...
+poundName - @builder .   // `#` + identifier (N1518 ranges); `_` included in identifierHead. Bare `#_` excluded at macroHead below.
 macroHead = poundName ---("#_" "#available" "#unavailable" "#if" "#elseif" "#else" "#endif" "#sourceLocation") .
 macroHead = "#" >s< moduleSelector identifier ---("_") .   // SE-0491 #Module::macro (rare; keeps the module-qualified form)
 
@@ -1741,6 +1743,12 @@ initializerBody = codeBlock .
 // Grammar of a deinitializer declaration
 deinitializerDeclaration = attributes? declarationModifiers? "deinit" "async"? codeBlock? .
 
+// Declaration types allowed as the argument to `@abi(...)` — mirrors swift-syntax
+// ABIAttributeArgumentsSyntax.Provider (8 cases; import/class/struct/etc. are NOT included).
+abiDeclaration = associatedTypeDeclaration | deinitializerDeclaration | enumCaseDeclaration
+               | functionDeclaration | initializerDeclaration | subscriptDeclaration
+               | typealiasDeclaration | variableDeclaration .
+
 
 // Grammar of an extension declaration
 extensionDeclaration = attributes? accessLevelModifier? "extension" typeIdentifier typeInheritanceClause? genericWhereClause? extensionBody .
@@ -1833,9 +1841,21 @@ actorIsolationModifier = "nonisolated" | "nonisolated" "(" "unsafe" ")" | "nonis
 // swift-syntax always takes a tight `(…)` as attribute args (probe-verified: a bare attribute
 // like `@derivative(of: x)` alone is a MissingDecl error, not an expression), so prefer the
 // longest attribute. Safe because the arg clause only matches a TIGHT `(` (see >s< below).
+
+// `@abi(decl)` — argument must be one of the 8 Provider types (swift-syntax ABIAttributeArgumentsSyntax.Provider).
+// Argument is required; empty `@abi()` and bare `@abi` are both rejected.
+attribute = "@" >s< "abi" >s< "(" abiDeclaration ")" .
+
+// @attached / @freestanding — arguments parsed as an expression list (parseMacroRoleArguments →
+// parseArgumentListElements), so hard keywords like `class` in `named(class)` fail as non-expressions.
 @longest
-// Grammar of an attribute
-attribute = "@" >s< attributeName attributeArgumentClause? .
+attribute = "@" >s< "attached" >s< "(" functionCallArgumentList? ")" .
+@longest
+attribute = "@" >s< "freestanding" >s< "(" functionCallArgumentList? ")" .
+
+@longest
+// Grammar of an attribute — general path; `>->` skips the 3 names that have specific rules above.
+attribute = "@" >->("abi" "attached" "freestanding") >s< attributeName attributeArgumentClause? .
 
 // swift-syntax parseAttributeName = parseSimpleType(forAttributeName:) — the attribute name is a
 // type identifier: member-qualified (`@Foo.Bar`), generic (`@Foo<Int>`), or escaped (`@`name``).

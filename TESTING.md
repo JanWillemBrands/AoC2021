@@ -249,11 +249,35 @@ experimental-feature disables (features may have graduated).
 - **Message-path vs test-path (see §1b).** "Passes as a message, fails as a test" =
   acceptance passes, `treesMatch` fails. Always split by `@Test`.
 
-- **MCP `RunSomeTests` smart re-run.** First call runs all parameter cases; every
-  later call re-runs **only previously-failing args** (often one case). Because a
-  `.apus` edit isn't a "changed input," this stays narrow and hides the true count.
-  For real counts, use `xcodebuild` (§3). MCP `RunAllTests` **truncates** the
-  console — read its `fullConsoleLogsPath` and grep instead.
+- **MCP `RunSomeTests` smart re-run — stale across sessions.** The re-run cache
+  is process-level and **persists across conversation context resets**. After a
+  long pause or context compaction, the cache may still point to a stale set of
+  failing args from a completely different grammar state — typically resolving to a
+  single test case (e.g. `testEnum17f#1`) that has nothing to do with the current
+  work. Symptom: `RunSomeTests` runs 0 or 1 tests and returns a misleadingly
+  small result. Fix: use `RunAllTests` for a definitive full sweep, or run the
+  specific suite directly. Do **not** diagnose grammar health from a smart-rerun result.
+
+- **MCP `RunAllTests` — "failed" count is not the grammar-failure count.**
+  `RunAllTests` reports a `failed` total (e.g. 122) that **includes both grammar
+  failures AND parallel-execution crashes**. The crash failures
+  (`Crash: xctest at <deduplicated_symbol>`) are pre-existing noise from the
+  parallel test runner — they are NOT grammar regressions. A crash count of
+  100+ is normal and expected. The actual grammar-failure count (tests where
+  the parser made a wrong decision) is obtained by grepping the console log:
+  ```bash
+  # Reject-suite grammar failures (parser wrongly accepted invalid input):
+  grep -c "Advent wrongly accepted" "$full_console_log"
+
+  # Accept-suite grammar failures (parser wrongly rejected valid input):
+  grep -c "Advent wrongly rejected" "$full_console_log"
+  ```
+  Both counts are typically 0-100; a crash-inflated "122 failed" with
+  0 "wrongly accepted" means the grammar is passing and the failures are all crashes.
+
+  MCP `RunAllTests` also **truncates** the JSON results to 100 entries — read
+  the `fullSummaryPath` file (all 1186+ results in the same key=value format)
+  and grep it by `TEST_STATE`, `TEST_IDENTIFIER`, or `TEST_DISPLAY_NAME`.
 
 - **`treesMatch` is red by design.** ~1660 Translated cases fail it. Track the count
   vs baseline; a *stable* count = no regression.
@@ -292,3 +316,56 @@ experimental-feature disables (features may have graduated).
 ---
 
 *Testing improvement options live in `TODO.md` under "Testing infrastructure & speed."*
+
+---
+
+## 9. Efficient testing workflow — recommendations
+
+### Tier 1: single-snippet iteration (fastest, seconds)
+
+Use `SwiftSyntaxTests / ParserProbe` with a temporary inline `adventParse` call.
+`RunSomeTests` runs it instantly with no smart-rerun collapse (it is not
+parametrized). Best for: confirming a single snippet accepts/rejects before
+touching the grammar.
+
+### Tier 2: targeted suite run (seconds to ~1 min)
+
+Use `RunSomeTests` on a single suite (e.g. `RejectSyntaxTests/adventRejects(_:)`)
+**immediately after** starting a fresh session (or after verifying the smart-rerun
+cache is pointing at the right suite). Best for: confirming that a specific
+category of failing tests passes after a fix. **Do not trust this after a session
+reset without checking which test case it intends to run** (smart-rerun caveat above).
+
+### Tier 3: reject-count sweep (the real correctness signal)
+
+The definitive metric for "how many snippets does Advent wrongly accept?" is
+a `RunAllTests` followed by a grep:
+```bash
+grep -c "Advent wrongly accepted" "$full_console_log"
+```
+This number is **immune to crash-count noise**. Run it:
+- Before starting a new fix (establish baseline)
+- After applying a fix (confirm it went down)
+- Before closing a session (record final count in `REJECTS.md`)
+
+Use `xcodebuild` (§3) for the authoritative command-line equivalent.
+
+### Tier 4: full regression check (5–10 min)
+
+Run `RunAllTests` (or `xcodebuild test`) targeting all suites. Then check:
+1. `grep -c "Advent wrongly accepted"` — should be ≤ baseline
+2. `grep -c "Advent wrongly rejected"` — must be 0 (no accept regressions)
+3. Crash count in the `failed` total is expected to be 50–150 (pre-existing parallel noise)
+
+The `treesMatch` suite failure count (~1660 baseline) is separately tracked and
+not a correctness signal by itself.
+
+### Interpreting a `RunAllTests` result quickly
+
+| Observation | Meaning |
+|-------------|---------|
+| `failed` jumps by 20–40 with all-crash error messages | Pre-existing parallel noise, not a regression |
+| `grep "wrongly accepted" log` goes up | Real regression — a previously-rejected snippet now accepts |
+| `grep "wrongly rejected" log` > 0 | Accept regression — fix narrowed the grammar too much |
+| `testEscapedIdentifiers16#1` STATE: Passed in `fullSummaryPath` | C11 fix is live |
+| `fullSummaryPath` missing a test you expect | The test ran in a process that crashed — not a grammar signal |
