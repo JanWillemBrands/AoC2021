@@ -140,7 +140,7 @@ let statementSnippets: [SwiftSnippet] = [
         origin: "StatementTests.testSwitch",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testMissingIfClauseIntroducer#1", source: "if _ = 42 {}", origin: "StatementTests.testMissingIfClauseIntroducer", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testMissingIfClauseIntroducer#1", source: "if _ = 42 {}", origin: "StatementTests.testMissingIfClauseIntroducer", syntaxVersion: "603.0.1", disabledReason: "compiler error — assignment (`_ = 42`) can't be an if-condition; swift-syntax accepts it syntactically but the compiler rejects it, and our `conditionExpression` deliberately excludes `assignmentOperator` (we follow compiler)"),
     SwiftSnippet(
         label: "testIfHasSymbol#1",
         source: """

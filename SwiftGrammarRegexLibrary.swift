@@ -155,12 +155,19 @@ enum ApusRegexLibrary {
     /// swift-syntax: `isForbiddenRawIdentifierWhitespace`
     /// These code points generate `.rawIdentifierCannotContainCharacter` — our scanner
     /// simply excludes them so the terminal never matches.
+    ///
+    /// NOTE: U+2000 and U+2001 are *canonically decomposable* (→ U+2002 / U+2003), so
+    /// they trap Swift's regex engine at match time if used as RANGE BOUNDS (see the
+    /// header note on `identifierHead`). They are given via `.anyOf` (membership, not a
+    /// range bound) — the safe range starts at U+2002. This mirrors the original grammar
+    /// regex `\u{2000}\u{2001}\u{2002}-\u{200A}` exactly.
     static let forbiddenRawIdentifierWhitespace = CharacterClass(
         "\u{0009}"..."\u{000D}",   // HT, LF, VT, FF, CR
         "\u{0085}"..."\u{0085}",   // NEL
         "\u{00A0}"..."\u{00A0}",   // NBSP
         "\u{1680}"..."\u{1680}",
-        "\u{2000}"..."\u{200A}",
+        .anyOf("\u{2000}\u{2001}"), // decomposable — NOT usable as range bounds
+        "\u{2002}"..."\u{200A}",
         "\u{2028}"..."\u{2029}",
         "\u{202F}"..."\u{202F}",
         "\u{205F}"..."\u{205F}",

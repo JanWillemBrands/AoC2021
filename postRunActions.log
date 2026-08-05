@@ -183,7 +183,7 @@ network simplex:  5194 nodes 8653 edges maxiter=1440 balance=2
 network simplex: 100 200 300 400 500 600 700 800 900 1000 
 network simplex: 1100 1200 1300 1400 
 network simplex: 5194 nodes 8653 edges 1440 iter 0.02 sec
-routesplines: 839 edges, 4915 boxes 0.05 sec
+routesplines: 839 edges, 4915 boxes 0.07 sec
 Using render: svg:core
 Using device: svg:svg:core
 gvRenderJobs Derivations: 0.02 secs.

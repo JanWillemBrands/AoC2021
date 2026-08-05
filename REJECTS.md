@@ -26,6 +26,11 @@ this snippet is syntactically valid and belongs in the accepts suite.
 **Resolution:** Moved from `expressionRejectSnippets` to `expressionSnippets` in
 `SwiftSyntaxExpressions.swift`. ✓
 
+**Accept-side grammar fix (2026-08-05):** moving it to the accepts suite exposed that the
+`whitespace` terminal (reject-era) had dropped U+00A0, so Advent couldn't parse `a<NBSP>+ 2`.
+Added `\u{00A0}` back to the `whitespace` regex (swift-syntax lexes NBSP as trivia + a
+`.nonBreakingSpace` warning; it is the only non-ASCII whitespace so treated). Accept now passes. ✓
+
 ---
 
 ### Resolved: B1 — Trailing Closure on Literal Expressions *(partial)*
@@ -246,6 +251,11 @@ accepted it without error.
 `Swift.apus`. `conditionInfixExpression` mirrors `infixExpression` but omits the
 `assignmentOperator` alternative. Three usage sites updated to use `conditionExpression`:
 `condition`, `repeatWhileStatement`, and `whereExpression`. ✓
+
+**Permissive counterpart disabled (2026-08-05):** swift-syntax *accepts* `if _ = 42 {}` syntactically
+(`testMissingIfClauseIntroducer#1`), but this same rule (correctly) rejects it as an assignment in
+condition position. Per the follow-the-compiler policy we keep our interpretation and marked that
+accept snippet `disabledReason: "compiler error — …(we follow compiler)"` rather than loosen the rule.
 
 ---
 
@@ -552,11 +562,27 @@ the generic argument to be mis-parsed. Swift-syntax rejects these forms (sets `h
 | `testABIAttribute#5` | `@abi()\nfunc fn2() {}` | Empty `@abi` arg list |
 | `testABIAttribute#6` | `@abi\nfunc fn3() {}` | `@abi` with no argument at all |
 
-**Fix (2026-08-04):** Added dedicated `attribute` rules in `Swift.apus`:
-- `attribute = "@" >s< "abi" >s< "(" abiDeclaration ")" .` — requires exactly one of the 8 `ABIAttributeArgumentsSyntax.Provider` types; empty `@abi()` and bare `@abi` fail.
-- Two `@longest` rules for `@attached`/`@freestanding` using `functionCallArgumentList?` — routes keyword `class` through the expression parser, which rejects it.
-- General `attribute` rule uses `>->("abi" "attached" "freestanding")` to skip the three names that have dedicated rules.
-- Added `abiDeclaration` non-terminal (8 specific declaration types from swift-syntax's `Provider` enum). ✓
+**Fix (2026-08-04):** Added dedicated `attribute` rules in `Swift.apus`, with the general rule
+using `>->("abi" "attached" "freestanding")` to skip the three names that have dedicated rules.
+
+**Accept-regression + hybrid repair (2026-08-05):** The first cut over-tightened both arms and
+**wrongly rejected 34 valid attribute snippets** (ACCEPT suite was at 0 before this work). Fixed by
+making each arm cover exactly what swift-syntax accepts — a hybrid of specific + token-soup:
+- **`@abi`** stays a *specific* declaration check (token-soup can't reject `@abi(import Fnord)`), but
+  `abiDeclaration` was **widened** to the bodyless/accessor/constant forms swift-syntax allows:
+  `constantDeclaration` (`let c1, c2`), `bodylessInitializerDeclaration` (`init()`),
+  `abiSubscriptDeclaration` (bodyless `subscript(…) -> …`), `abiVariableDeclaration`
+  (`var v { get set }` with no type annotation).
+- **`@attached`/`@freestanding`** replaced `functionCallArgumentList?` (too narrow — rejected
+  `named(deinit)`, `named(subscript)`, `named(init(a:b:))`, module selectors) with a faithful
+  token-soup `macroRoleArguments`, whose identifier atom excludes exactly the keywords
+  swift-syntax's `parseDeclReferenceBase` rejects as decl-reference names (everything except
+  `init`/`deinit`/`subscript`/`self`/`Self`, plus role `extension`). `named(class)` still fails
+  (`testMacroRoleNames#1` preserved); `literal` omitted so `named(true)`/`named(nil)` still fail.
+  A stray `"::"` atom was dropped — it duplicated the scanner's `:`/`::` Schrödinger reading and
+  caused 2 pivot ambiguities (`testModuleSelectorExpr#8/#9`).
+
+All C9 rejects preserved; all 34 attribute accepts restored; 0 residual ambiguity. ✓
 
 ---
 

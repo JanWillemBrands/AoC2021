@@ -89,48 +89,44 @@ regression" even though the run is red.
 
 ## 3. Running the suites
 
-Grammars (`*.apus`) are read at runtime via `#filePath`, so **Xcode's build system
-does not treat a grammar edit as a changed input.** Consequences:
-- A `.apus`-only change needs no recompile — the next test run picks it up.
-- But MCP `RunSomeTests` "smart re-run" then thinks nothing changed and re-runs only
-  previously-failing args (§7).
-
-### Authoritative full sweep — use `xcodebuild` directly
+### Full sweep — `tools/run_tests.sh` (use this)
 
 ```bash
-SWIFT_DETERMINISTIC_HASHING=1 xcodebuild test \
-  -scheme Advent -destination 'platform=macOS,arch=arm64' \
-  -only-testing:AdventTests/ExpressionSyntaxTests \
-  -only-testing:AdventTests/DeclarationSyntaxTests \
-  … > /tmp/run.log 2>&1
+tools/run_tests.sh                 # all correctness suites
+tools/run_tests.sh Rejects         # only suites matching a name (grep -i)
+tools/run_tests.sh Expressions Types
 ```
 
-Triage the log by `@Test` name (this is the single most useful command):
+This script is the authoritative runner and folds in every workflow safeguard, so
+you never have to reconstruct them by hand. It:
+- **always builds fresh** (no stale DerivedData binary),
+- leaves **hashing non-deterministic on purpose** — the GLL algorithm does not depend
+  on `Dictionary`/`Set` order, so a random seed acts as a fuzzer that surfaces
+  order-dependent bugs (see the dollar-closure story in §7). Do **not** set
+  `SWIFT_DETERMINISTIC_HASHING`.
+- runs the **full** suite set every time (no MCP "smart re-run" narrowing),
+- reads the **complete** log (no 100-row truncation) and prints clean per-category
+  counts by matching the exact `#expect` messages,
+- **flags `Crash: … <deduplicated_symbol>` loudly as a real fault**, and
+- exits non-zero only on crashes or correctness failures — `Trees differ` (the
+  frontier, §2) is reported but never fails the run.
 
-```bash
-grep -aoE 'Test "[^"]+" recorded an issue' /tmp/run.log | sort | uniq -c
-# e.g.  1662 Test "trees match" recorded an issue   ← frontier, fine
-#          0 accepts / ambiguity                    ← what you actually care about
-```
+The counts it prints map to these messages, if you ever need to grep a log yourself:
 
-To see which snippets fail a given test:
-```bash
-grep -aE '"(Advent accepts|no residual ambiguity)".*snippet → ' /tmp/run.log \
-  | grep -aoE 'snippet → [^ ]+' | sort -u
-```
+| Category | Message grepped | Actionable? |
+|----------|-----------------|-------------|
+| reject failure | `Advent wrongly accepted invalid input` | yes — accepted invalid input |
+| accept failure | `Advent failed to parse:` | yes — rejected valid input |
+| residual ambiguity | `Residual ambiguity in` | yes |
+| trees differ | `Trees differ for` | no — frontier |
 
 ### Iterating on the grammar — use the probe
 
 For fast single-snippet iteration use the non-parametric `SwiftSyntaxTests / ParserProbe`
-`@Test` calling `adventParse` on exact strings: `RunSomeTests` runs one test
-reliably (no smart-rerun collapse, no truncation), and `.apus` edits need no rebuild.
-
-### `SWIFT_DETERMINISTIC_HASHING=1` — always set it
-
-Set it on every test run. It forces `Dictionary`/`Set` iteration to a fixed seed,
-which is what turns order-dependent flakes into deterministic pass/fail (see the
-dollar-closure story in §7). `xcodebuild` forwards it into the test runner; if you
-launch the runner yourself, forward it with the `TEST_RUNNER_` prefix.
+`@Test` calling `adventParse` on exact strings. `.apus` edits are read at runtime via
+`#filePath`, so a grammar-only change needs **no recompile** — but that also means
+MCP `RunSomeTests` sees "no changed input" and may re-run only a stale set of args;
+for any real count use `tools/run_tests.sh`.
 
 ---
 
@@ -198,8 +194,10 @@ parser was made reentrant:
 ### Results / verification
 - Test-run phase **~43s → ~16s** on the 7 suites (~2.6×); `user ≈ 2×real` confirms
   real multicore use. Wall time is now dominated by the build (see §7 stale builds).
-- **Deterministic:** identical issue counts and identical failing snippets across
-  repeated `SWIFT_DETERMINISTIC_HASHING=1` runs.
+- **No data race (one-time check):** pinning the seed with
+  `SWIFT_DETERMINISTIC_HASHING=1` for this verification gave identical issue counts and
+  failing snippets across repeated runs. That was a *methodology to prove reentrancy* —
+  normal runs stay non-deterministic (§7).
 - **ThreadSanitizer: 0 data-race warnings** on a high-concurrency subset
   (`-enableThreadSanitizer YES` on Expressions+Attributes). TSan exits non-zero
   simply because `treesMatch` fails — that is not a race; grep for
@@ -233,12 +231,20 @@ experimental-feature disables (features may have graduated).
 
 ## 7. Known problems, gotchas & stale-test hazards
 
-- **Stale binaries / stale builds.** Never run a DerivedData binary without a fresh
-  build first — old products persist indefinitely (once burned an afternoon on an
-  April Release binary with a *different* grammar). And note: editing a core `.swift`
-  (e.g. `GrammarNode.swift`) forces a **full** rebuild of the giant test files, so a
-  post-edit run's *wall time* is build-dominated and not comparable to a
-  grammar-only run.
+*Build staleness, smart-rerun narrowing, log truncation, and mixed crash/grammar
+counts are all handled by `tools/run_tests.sh` (§3) — use it and none of those bite.
+The items below are the residual knowledge a script can't remove.*
+
+- **A wall of `Crash: … <deduplicated_symbol>` is a REAL fault, not runner noise.**
+  When every case in a suite reports that identical crash, the parser is trapping at
+  runtime. The classic cause is a **canonically-decomposable scalar used as a
+  `CharacterClass` range bound** (see the U+F900 / U+2000 note in
+  `SwiftGrammarRegexLibrary.swift`): Swift's regex engine traps at *match time*, so it
+  crashes every parse reaching that terminal — which looks like mass runner failure.
+  (This once masqueraded as "122 pre-existing crashes"; it was one bad bound.)
+  Check a bound with
+  `python3 -c "import unicodedata; d=unicodedata.decomposition(chr(0xNNNN)); print(d and not d.startswith('<'))"`
+  — `True` = unsafe as a bound; give it via `.anyOf` instead.
 
 - **`^^^` fixtures are stored escaped.** The `^^^` blocks contain literal `\"`,`\n`,
   `\t`. `harvest_ambiguity.py` **unescapes** before running; `loadLanguageFixture`
@@ -248,36 +254,6 @@ experimental-feature disables (features may have graduated).
 
 - **Message-path vs test-path (see §1b).** "Passes as a message, fails as a test" =
   acceptance passes, `treesMatch` fails. Always split by `@Test`.
-
-- **MCP `RunSomeTests` smart re-run — stale across sessions.** The re-run cache
-  is process-level and **persists across conversation context resets**. After a
-  long pause or context compaction, the cache may still point to a stale set of
-  failing args from a completely different grammar state — typically resolving to a
-  single test case (e.g. `testEnum17f#1`) that has nothing to do with the current
-  work. Symptom: `RunSomeTests` runs 0 or 1 tests and returns a misleadingly
-  small result. Fix: use `RunAllTests` for a definitive full sweep, or run the
-  specific suite directly. Do **not** diagnose grammar health from a smart-rerun result.
-
-- **MCP `RunAllTests` — "failed" count is not the grammar-failure count.**
-  `RunAllTests` reports a `failed` total (e.g. 122) that **includes both grammar
-  failures AND parallel-execution crashes**. The crash failures
-  (`Crash: xctest at <deduplicated_symbol>`) are pre-existing noise from the
-  parallel test runner — they are NOT grammar regressions. A crash count of
-  100+ is normal and expected. The actual grammar-failure count (tests where
-  the parser made a wrong decision) is obtained by grepping the console log:
-  ```bash
-  # Reject-suite grammar failures (parser wrongly accepted invalid input):
-  grep -c "Advent wrongly accepted" "$full_console_log"
-
-  # Accept-suite grammar failures (parser wrongly rejected valid input):
-  grep -c "Advent wrongly rejected" "$full_console_log"
-  ```
-  Both counts are typically 0-100; a crash-inflated "122 failed" with
-  0 "wrongly accepted" means the grammar is passing and the failures are all crashes.
-
-  MCP `RunAllTests` also **truncates** the JSON results to 100 entries — read
-  the `fullSummaryPath` file (all 1186+ results in the same key=value format)
-  and grep it by `TEST_STATE`, `TEST_IDENTIFIER`, or `TEST_DISPLAY_NAME`.
 
 - **`treesMatch` is red by design.** ~1660 Translated cases fail it. Track the count
   vs baseline; a *stable* count = no regression.
@@ -290,9 +266,11 @@ experimental-feature disables (features may have graduated).
   Because the grammar is loaded once and **cached/shared**, the wrong-or-right set was
   baked in per process → looked flaky. Fixed as a **greatest** fixpoint (start at TOP,
   shrink by intersection). **Lesson:** a shared cached grammar makes *any* load-time
-  order-dependence a per-process flake — audit load-time set computations for
-  order-independence, and pin flakes with `SWIFT_DETERMINISTIC_HASHING=1`, then diff
-  descriptors/yields between a PASS and a FAIL run.
+  order-dependence a per-process flake — this is exactly why we keep hashing
+  **non-deterministic**: the random seed is what exposes such bugs. When one surfaces,
+  audit load-time set computations for order-independence; to study a specific case you
+  can temporarily set `SWIFT_DETERMINISTIC_HASHING=1` to reproduce one seed and diff
+  descriptors/yields between a PASS and a FAIL run — but never leave it set for normal runs.
 
 ---
 
