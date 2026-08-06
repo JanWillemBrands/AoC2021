@@ -46,7 +46,7 @@ enum Disambiguation: String { case shortest, longest, left, right }
 /// threaded through `resolveGrammarNodeLinks`. Each load owns its own instance,
 /// so numbering is isolated by construction — no shared static to race on under
 /// concurrent loads, and node numbers stay compact per grammar ([0, nodeCounter)).
-final class GrammarBuild {
+final class GrammarBuild {  // TODO: why is this a final class and not a struct?
     var nodeCounter = 0
 }
 
@@ -59,10 +59,12 @@ extension GrammarNodeKind {
 
 final class GrammarNode {
 
-    // this is to give GrammarNodes access to the grammar
+    /// this is to give GrammarNodes access to their grammar
     static weak var grammar: Grammar?
     
+    /// a unique number identifying each node, used in BSR yield
     var number = 0
+    
     /// Integer ID from `Grammar.symbolToID`, set by `assignNameIDs()`.
     /// Only meaningful for terminal-like nodes (.T, .TI, .C, .B, .EOS, .EPS);
     /// nonterminals keep the default -1. Used by `tokenMatch()` for O(1) integer comparison.
@@ -108,12 +110,12 @@ final class GrammarNode {
     var signature: String?      // function signature text (params, throws, return) for .N nodes
     var locals: [String] = []   // local declarations for generated function  TODO: can this be removed ???
     
-    // first is a positional prediction set: the tokens that can appear at this
-    // position in the sequence, including look-through of nullable elements.
-    // During FIRST/FOLLOW propagation (Grammar.handleBracket), ε is removed
-    // from OPT/KLN and replaced by the continuation's FIRST (concatenation rule).
-    // This means first does NOT contain ε for OPT/KLN, even though they are
-    // intrinsically nullable. Use isNullable for nullability checks instead.
+    /// first is a positional prediction set: the tokens that can appear at this
+    /// position in the sequence, including look-through of nullable elements.
+    /// During FIRST/FOLLOW propagation (Grammar.handleBracket), ε is removed
+    /// from OPT/KLN and replaced by the continuation's FIRST (concatenation rule).
+    /// This means first does NOT contain ε for OPT/KLN, even though they are
+    /// intrinsically nullable. Use isNullable for nullability checks instead.
     var first:      Set<String> = []
     var follow:     Set<String> = []
     var ambiguous:  Set<String> = []
@@ -129,7 +131,7 @@ final class GrammarNode {
     /// matched one has a kindID in `followAheadBS` (or is the EOS sentinel,
     /// which is always treated as approved).
     /// Populated by `>+>("(" ")" ...)` annotations in APUS grammar rules.
-    /// Mirrors Swift's `canParseAsGenericArgumentList` follow-set commit:
+    /// Mirrors e.g. Swift's `canParseAsGenericArgumentList` follow-set commit:
     /// generic-clause `>` only matches when the next token closes an expression.
     var followAhead: Set<String> = []
 
@@ -142,14 +144,14 @@ final class GrammarNode {
     /// suffix (`(`/`[`/`.`), which would make them a call/subscript/member instead.
     var followAheadExclude: Set<String> = []
 
-    /// BitSet mirrors of first/follow/ambiguous/exclude/followAhead, populated by `Grammar.populateBitSets()`.
+    /// BitSet mirrors of first/follow/etc, populated by `Grammar.populateBitSets()`.
     /// Used by `testSelect()` and the follow check on the hot path for O(1) membership tests.
-    var firstBS:        BitSet = []
-    var followBS:       BitSet = []
-    var ambiguousBS:    BitSet = []
-    var excludeBS:          BitSet = []
-    var followAheadBS:      BitSet = []
-    var followAheadExcludeBS: BitSet = []
+    var firstBS:                BitSet = []
+    var followBS:               BitSet = []
+    var ambiguousBS:            BitSet = []
+    var excludeBS:              BitSet = []
+    var followAheadBS:          BitSet = []
+    var followAheadExcludeBS:   BitSet = []
 
     /// Alternate-level `@prefer` annotation. Captured at parse time on the `.ALT`
     /// node heading the alternate (prefix, right after `=` or `|`). Resolved by the
@@ -180,10 +182,10 @@ final class GrammarNode {
     /// in addDecscriptorsForAlternates(). Default true, set to false during verifyLL1().
     var isLocallyLL1 = true
     
-    // Whether this node is intrinsically nullable (can derive ε).
-    // Per Definition 6 of "GLL syntax analysers for EBNF grammars":
-    // FIRST([ψ]) = FIRST(ψ) ∪ {ε} and FIRST({ψ}) = FIRST(ψ) ∪ {ε}
-    // OPT and KLN are always nullable by definition.
+    /// Whether this node is intrinsically nullable (can derive ε).
+    /// Per Definition 6 of "GLL syntax analysers for EBNF grammars":
+    /// FIRST([ψ]) = FIRST(ψ) ∪ {ε} and FIRST({ψ}) = FIRST(ψ) ∪ {ε}
+    /// OPT and KLN are always nullable by definition.
     var isNullable: Bool {
         switch kind {
         case .OPT, .KLN: return true
@@ -194,7 +196,8 @@ final class GrammarNode {
     // BSR yields moved to `MessageParser.yields`, indexed by `node.number`.
     // Keeps the grammar load-time-immutable and lets multiple parsers (or a
     // recursive sub-parse) share a grammar without state collisions.
-    var disambiguation: Disambiguation?
+    
+    var disambiguation: Disambiguation? // TODO:  this seems not to be used
     
     var cell = Cell(name: "", r: 0, c: 0)
 }
@@ -297,6 +300,7 @@ extension GrammarNode: CustomStringConvertible {
 extension GrammarNode {
     // sets the .seq and .alt links for END nodes
     // sets the .prv links for all nodes (except LHS nonTerminals that have neither valid .seq nor .prv)
+    // TODO: if .prv is useless then remove!
     func resolveGrammarNodeLinks(parent: GrammarNode?, alternate: GrammarNode?, build: GrammarBuild) {
         number = build.nodeCounter
         build.nodeCounter += 1

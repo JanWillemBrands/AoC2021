@@ -220,7 +220,7 @@ enum ApusRegexLibrary {
                 OneOrMore { operatorCharacter }
             }
         }
-    }
+    } // TODO: why is there no .matchingSemantics(.unicodeScalar) here?
 
     /// `operatorToken` / `operatorName` — the operator body under scalar semantics.
     static let operatorToken = operatorBody.matchingSemantics(.unicodeScalar)

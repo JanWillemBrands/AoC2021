@@ -5,17 +5,7 @@
 //  Created by Johannes Brands on 27/04/2025.
 //
 
-//import Foundation
-import OSLog
-//import AdventMacros
-
-struct BSR: Hashable, CustomStringConvertible {
-    let slot: GrammarNode
-    let i: CharPosition  // left extent
-    let k: CharPosition  // pivot
-    let j: CharPosition  // right extent
-    var description: String { "\(slot.ebnfDot()) \(i):\(k):\(j)" }
-}
+import Foundation
 
 struct BinarySpan: Hashable, Comparable, CustomStringConvertible {
     let i: CharPosition  // left extent

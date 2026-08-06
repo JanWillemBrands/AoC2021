@@ -107,34 +107,6 @@
 		4E333D6A2629D5E500640821 /* test.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = test.apus; sourceTree = "<group>"; };
 		4E34DF7E2C08042C00B2881E /* apus.apus */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; fileEncoding = 4; path = apus.apus; sourceTree = "<group>"; };
 		4E34DF802C08A71000B2881E /* ART.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = ART.svg; sourceTree = "<group>"; };
-		4E4E48A12FA219220094DFC6 /* A reference GLL implementation.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "A reference GLL implementation.txt"; sourceTree = "<group>"; };
-		4E4E48A22FA219220094DFC6 /* Derivation representation using binary subtree sets.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Derivation representation using binary subtree sets.txt"; sourceTree = "<group>"; };
-		4E4E48A32FA219220094DFC6 /* Exploring and visualizing GLL parsing.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Exploring and visualizing GLL parsing.txt"; sourceTree = "<group>"; };
-		4E4E48A42FA219220094DFC6 /* Faster, Practical GLL Parsing.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Faster, Practical GLL Parsing.txt"; sourceTree = "<group>"; };
-		4E4E48A52FA219220094DFC6 /* First Follow LL set construction.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "First Follow LL set construction.txt"; sourceTree = "<group>"; };
-		4E4E48A62FA219220094DFC6 /* GLL parse-tree generation.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "GLL parse-tree generation.txt"; sourceTree = "<group>"; };
-		4E4E48A72FA219220094DFC6 /* GLL Syntax Analysers For EBNF Grammars.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "GLL Syntax Analysers For EBNF Grammars.txt"; sourceTree = "<group>"; };
-		4E4E48A82FA219220094DFC6 /* Graph-structured Stack and Natural Language Parsing.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Graph-structured Stack and Natural Language Parsing.txt"; sourceTree = "<group>"; };
-		4E4E48A92FA219220094DFC6 /* Multiple Lexicalisation - A Java Based Study.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Multiple Lexicalisation - A Java Based Study.txt"; sourceTree = "<group>"; };
-		4E4E48AA2FA219220094DFC6 /* Practical general top-down parsers.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Practical general top-down parsers.txt"; sourceTree = "<group>"; };
-		4E4E48AB2FA219220094DFC6 /* Principled Parsing for Indentation-Sensitive Languages.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Principled Parsing for Indentation-Sensitive Languages.txt"; sourceTree = "<group>"; };
-		4E4E48AC2FA219220094DFC6 /* referenceImplementationSlides.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = referenceImplementationSlides.txt; sourceTree = "<group>"; };
-		4E4E48AD2FA219220094DFC6 /* Schrodinger’s token.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Schrodinger’s token.txt"; sourceTree = "<group>"; };
-		4E4E48AE2FA219220094DFC6 /* Structuring the GLL parsing algorithm for performance.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Structuring the GLL parsing algorithm for performance.txt"; sourceTree = "<group>"; };
-		4E4E48B02FA219220094DFC6 /* A reference GLL implementation.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "A reference GLL implementation.pdf"; sourceTree = "<group>"; };
-		4E4E48B12FA219220094DFC6 /* Derivation representation using binary subtree sets.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Derivation representation using binary subtree sets.pdf"; sourceTree = "<group>"; };
-		4E4E48B22FA219220094DFC6 /* Exploring and visualizing GLL parsing.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Exploring and visualizing GLL parsing.pdf"; sourceTree = "<group>"; };
-		4E4E48B32FA219220094DFC6 /* Faster, Practical GLL Parsing.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Faster, Practical GLL Parsing.pdf"; sourceTree = "<group>"; };
-		4E4E48B42FA219220094DFC6 /* First Follow LL set construction.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "First Follow LL set construction.pdf"; sourceTree = "<group>"; };
-		4E4E48B52FA219220094DFC6 /* GLL parse-tree generation.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "GLL parse-tree generation.pdf"; sourceTree = "<group>"; };
-		4E4E48B62FA219220094DFC6 /* GLL Syntax Analysers For EBNF Grammars.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "GLL Syntax Analysers For EBNF Grammars.pdf"; sourceTree = "<group>"; };
-		4E4E48B72FA219220094DFC6 /* Graph-structured Stack and Natural Language Parsing.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Graph-structured Stack and Natural Language Parsing.pdf"; sourceTree = "<group>"; };
-		4E4E48B82FA219220094DFC6 /* Multiple Lexicalisation - A Java Based Study.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Multiple Lexicalisation - A Java Based Study.pdf"; sourceTree = "<group>"; };
-		4E4E48B92FA219220094DFC6 /* Practical general top-down parsers.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Practical general top-down parsers.pdf"; sourceTree = "<group>"; };
-		4E4E48BA2FA219220094DFC6 /* Principled Parsing for Indentation-Sensitive Languages.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Principled Parsing for Indentation-Sensitive Languages.pdf"; sourceTree = "<group>"; };
-		4E4E48BB2FA219220094DFC6 /* referenceImplementationSlides.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = referenceImplementationSlides.pdf; sourceTree = "<group>"; };
-		4E4E48BC2FA219220094DFC6 /* Schrodinger’s token.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Schrodinger’s token.pdf"; sourceTree = "<group>"; };
-		4E4E48BD2FA219220094DFC6 /* Structuring the GLL parsing algorithm for performance.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Structuring the GLL parsing algorithm for performance.pdf"; sourceTree = "<group>"; };
 		4E4E48BF2FA219ED0094DFC6 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 		4E4E48C22FA219ED0094DFC6 /* codex.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = codex.md; sourceTree = "<group>"; };
 		4E4E48C32FA219ED0094DFC6 /* Frankenstein Tokens.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Frankenstein Tokens.md"; sourceTree = "<group>"; };
@@ -252,6 +224,7 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4E7709B42F37870300972246 /* AdventTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AdventTests; sourceTree = "<group>"; };
 		4E8D05962F6A183C0081C6D2 /* GeneratedParser */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GeneratedParser; sourceTree = "<group>"; };
+		4EBFE0563024BE06001F3FF2 /* articles */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = articles; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -290,49 +263,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		4E4E48AF2FA219220094DFC6 /* raw */ = {
-			isa = PBXGroup;
-			children = (
-				4E4E48A12FA219220094DFC6 /* A reference GLL implementation.txt */,
-				4E4E48A22FA219220094DFC6 /* Derivation representation using binary subtree sets.txt */,
-				4E4E48A32FA219220094DFC6 /* Exploring and visualizing GLL parsing.txt */,
-				4E4E48A42FA219220094DFC6 /* Faster, Practical GLL Parsing.txt */,
-				4E4E48A52FA219220094DFC6 /* First Follow LL set construction.txt */,
-				4E4E48A62FA219220094DFC6 /* GLL parse-tree generation.txt */,
-				4E4E48A72FA219220094DFC6 /* GLL Syntax Analysers For EBNF Grammars.txt */,
-				4E4E48A82FA219220094DFC6 /* Graph-structured Stack and Natural Language Parsing.txt */,
-				4E4E48A92FA219220094DFC6 /* Multiple Lexicalisation - A Java Based Study.txt */,
-				4E4E48AA2FA219220094DFC6 /* Practical general top-down parsers.txt */,
-				4E4E48AB2FA219220094DFC6 /* Principled Parsing for Indentation-Sensitive Languages.txt */,
-				4E4E48AC2FA219220094DFC6 /* referenceImplementationSlides.txt */,
-				4E4E48AD2FA219220094DFC6 /* Schrodinger’s token.txt */,
-				4E4E48AE2FA219220094DFC6 /* Structuring the GLL parsing algorithm for performance.txt */,
-			);
-			path = raw;
-			sourceTree = "<group>";
-		};
-		4E4E48BE2FA219220094DFC6 /* articles */ = {
-			isa = PBXGroup;
-			children = (
-				4E4E48AF2FA219220094DFC6 /* raw */,
-				4E4E48B02FA219220094DFC6 /* A reference GLL implementation.pdf */,
-				4E4E48B12FA219220094DFC6 /* Derivation representation using binary subtree sets.pdf */,
-				4E4E48B22FA219220094DFC6 /* Exploring and visualizing GLL parsing.pdf */,
-				4E4E48B32FA219220094DFC6 /* Faster, Practical GLL Parsing.pdf */,
-				4E4E48B42FA219220094DFC6 /* First Follow LL set construction.pdf */,
-				4E4E48B52FA219220094DFC6 /* GLL parse-tree generation.pdf */,
-				4E4E48B62FA219220094DFC6 /* GLL Syntax Analysers For EBNF Grammars.pdf */,
-				4E4E48B72FA219220094DFC6 /* Graph-structured Stack and Natural Language Parsing.pdf */,
-				4E4E48B82FA219220094DFC6 /* Multiple Lexicalisation - A Java Based Study.pdf */,
-				4E4E48B92FA219220094DFC6 /* Practical general top-down parsers.pdf */,
-				4E4E48BA2FA219220094DFC6 /* Principled Parsing for Indentation-Sensitive Languages.pdf */,
-				4E4E48BB2FA219220094DFC6 /* referenceImplementationSlides.pdf */,
-				4E4E48BC2FA219220094DFC6 /* Schrodinger’s token.pdf */,
-				4E4E48BD2FA219220094DFC6 /* Structuring the GLL parsing algorithm for performance.pdf */,
-			);
-			path = articles;
-			sourceTree = "<group>";
-		};
 		4E8D058E2F67204C0081C6D2 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -502,6 +432,8 @@
 				4E89AAED2D6DF2EE006A0BBA /* ART.gv */,
 				4E8D05A82F701CDD0081C6D2 /* Derivations.gv */,
 				4E8D05A32F6FEE810081C6D2 /* SPPF.gv */,
+				4EF57BB63020EAE300549D7B /* swift 3.html */,
+				4EF57BB73020ECFF00549D7B /* swift 4.html */,
 				4E8D05872F65845F0081C6D2 /* postRunActions.log */,
 				4E4E48BF2FA219ED0094DFC6 /* AGENTS.md */,
 				4E12037B2FA857210061BD96 /* apus.md */,
@@ -526,6 +458,7 @@
 				4E5754B42F5894BB0067165C /* SPPF.svg */,
 				4EEBC9782F9DECF000E838A7 /* ApusParser.swift */,
 				4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */,
+				4EF57BB33020ACB800549D7B /* ApusToHTML.swift */,
 				4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */,
 				4EEBC97B2F9DECF000E838A7 /* CallReturnForest.swift */,
 				4EEBC97C2F9DECF000E838A7 /* Descriptor.swift */,
@@ -551,13 +484,10 @@
 				4E11B2A42DA274B200555BB8 /* scratch.txt */,
 				4E7709B42F37870300972246 /* AdventTests */,
 				4ED1187E2FAAF9810055DAC7 /* apus grammars */,
-				4E4E48BE2FA219220094DFC6 /* articles */,
+				4EBFE0563024BE06001F3FF2 /* articles */,
 				4E8D058E2F67204C0081C6D2 /* Frameworks */,
 				4E8D05962F6A183C0081C6D2 /* GeneratedParser */,
 				4EEBC9FE2F9EF35000E838A7 /* grammars */,
-				4EF57BB33020ACB800549D7B /* ApusToHTML.swift */,
-				4EF57BB63020EAE300549D7B /* swift 3.html */,
-				4EF57BB73020ECFF00549D7B /* swift 4.html */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 			);
 			sourceTree = "<group>";

@@ -108,14 +108,14 @@ struct OnDemandLiteralLexer: LCNPLexer {
     let regexByID: [Int: Regex<AnyRegexOutput>]
     /// `@splitBefore("c")` per terminal: besides the maximal match, also offer the
     /// prefix ending before each internal `c`. Ports swift-syntax's operator
-    /// regex-scan (`^^/regex/` → `^^` + `/regex/`). See TODO #0.
+    /// regex-scan (`^^/regex/` → `^^` + `/regex/`).
     let splitBeforeByID: [Int: Character]
     /// Terminal IDs of `@lexicalClass` regex terminals (identifier, operator, …).
     /// Maximal-munch (default, longest-across): a literal match is suppressed when
     /// any lexical-class terminal has a strictly longer match at the same start
     /// (`for` inside `foreach`, `_` inside `_foo`, `&` inside `&&`). The check is
     /// a runtime prefix-match of the class regex — the ground truth, not a
-    /// derived extension class. See TODO #0 / `Multiple Lexicalisation` §4.1.
+    /// derived extension class. See `Multiple Lexicalisation` §4.1.
     let lexicalClassIDs: [Int]
     /// Compiled `isSkip` patterns from the grammar, used to skip whitespace /
     /// comments / etc. between the parser's cursor and the next meaningful
