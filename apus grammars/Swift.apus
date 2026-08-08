@@ -65,13 +65,13 @@ propertyWrapperProjection - @builder .   // `$name`, `$0abc` — at least one no
 
 // Most Swift identifiers exclude the hard reserved keywords
 hardIdentifier  = identifier
-                  --- ( "_" "Any" "as" "associatedtype" "await" "break" "case" "catch" "class" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while" )
+                  ---( "_" "Any" "as" "associatedtype" "await" "break" "case" "catch" "class" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while" )
                 | escapedIdentifier
                 | propertyWrapperProjection .
 
 // Swift allows keywords as argument labels and as member names, just a few keywords are excluded for legacy reasons.
 softIdentifier  = identifier
-                  --- ( "_" "let" "var" "inout" )
+                  ---( "_" "let" "var" "inout" )
                 | escapedIdentifier
                 | propertyWrapperProjection .
 
@@ -550,10 +550,10 @@ typeIdentifier = typeName typeGenericArgumentClause? | typeName typeGenericArgum
 typeName = hardIdentifier .
 typeName = selfType .           // TODO: verify fix for https://github.com/swiftlang/swift-book/issues/293
 // SE-0491: a module-qualified type name. After `::` swift-syntax consumes ANY keyword as the name
-// (Names.swift:218), so the name is `rawIdentifier` (the raw identifier-shaped token, keyword
+// (Names.swift:218), so the name is `identifier` (the raw identifier-shaped token, keyword
 // exclusion NOT applied). Covers `Swift::Type`, `Swift::Self`, `Swift::Any`, member `Type.Module::M`,
 // and attribute names via typeIdentifier.
-typeName = moduleSelector identifier --- ( "_" ) .
+typeName = moduleSelector identifier ---( "_" ) .
 
 // Grammar of a tuple type
 
@@ -785,12 +785,12 @@ genericIdentifier = hardIdentifier | hardIdentifier genericArgumentClause .
 // TODO: does @longest work on optional?  e.g. @longest genericIdentifier = hardIdentifier genericArgumentClause? .
 
 // SE-0491 module-qualified reference. After `::` any keyword is a name (Names.swift:218), so the
-// qualified name is `rawIdentifier` (covers Swift::foo, Swift::nil, Swift::self, Swift::Self,
+// qualified name is `identifier` (covers Swift::foo, Swift::nil, Swift::self, Swift::Self,
 // Swift::Any, Swift::super, Swift::init, Swift::do, …). Subsumes `moduleSelector identifier`.
 primaryExpression = moduleGenericIdentifier .
 @longest
-moduleGenericIdentifier = moduleSelector identifier --- ( "_" )
-                        | moduleSelector identifier --- ( "_" ) genericArgumentClause .
+moduleGenericIdentifier = moduleSelector identifier ---( "_" )
+                        | moduleSelector identifier ---( "_" ) genericArgumentClause .
 // `$foo` (property-wrapper projection) lexes as `.identifier` in swift-syntax (Cursor.swift:2343-2346),
 // so it's a valid qualified name too: `Swift::$foo`.
 primaryExpression = moduleSelector propertyWrapperProjection .
@@ -995,9 +995,9 @@ macroExpansionExpression = macroHead genericArgumentClause? functionCallArgument
 // alternate prunes the root-absent sibling ONLY where both cover the same span (i.e. the `[…]` parses
 // as a type); where the type fails, only the root-absent alternate yields, so the preference is inert.
 @longest
-keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents .   // escape needed for apus literal "\" (Swift string syntax)
+keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents? .   // components optional: swift-syntax accepts a rooted keypath with zero components (`\Foo`, `\X?` — the loop runs zero times, no diagnostic). escape needed for apus literal "\" (Swift string syntax)
 @longest
-keyPathExpression =         "\\" keyPathComponents .
+keyPathExpression =         "\\" keyPathComponents .   // root-absent (`\.foo`): keyPathComponents is NOT optional — it must start with `.`, so a bare `\` still fails (swift-syntax parseSimpleType on non-`.` head → missing type)
 
 // simpler alternative?
 //keyPathExpression = "\\" [@prefer keyPathRootType] keyPathComponents .
@@ -1009,41 +1009,56 @@ keyPathExpression =         "\\" keyPathComponents .
 // `.b`,`.c` (root is never a `.member` chain — probe-confirmed). Excluding the member recursion here
 // is what makes the root-vs-`.member` overlap vanish — NO `@shortest` needed (the old full-`type`
 // root pruned it after the fact; this prevents it structurally). Covers `\Foo<Int>.bar`, `\[X].y`,
-// `\[X:Y].y`, `\(X).y`, `\Any.y`. Postfix `?`/`!` and `.Type` are keyPathComponents, not root, so the
-// optional/IUO/metatype simple-type forms are (correctly) absent here.
-
-keyPathRootType = typeName typeGenericArgumentClause?
+// `\[X:Y].y`, `\(X).y`, `\Any.y`. Postfix `?`/`!` ARE part of the root: parseSimpleType's postfix
+// loop (Types.swift:327-333) greedily consumes every trailing `?`/`!`, so `\X?.y` = root `X?` +
+// `.y`, and `\String?.!.count` = root `String?` + `.!` + `.count`. This is why the leading `?`/`!`
+// is NEVER a component (and why the entry pivot below excludes bare `?`/`!`).
+// (Metatype `.Type`/`.Protocol` is likewise a root postfix in swift-syntax, but is currently reached
+//  via a property component below — accept/reject-identical, differs only in tree shape; see TODO.)
+keyPathRootType = keyPathRootBase keyPathRootOptionals? .
+keyPathRootBase = typeName typeGenericArgumentClause?
                 | tupleType
                 | arrayType
                 | inlineArrayType
                 | dictionaryType
                 | anyType
                 | "(" tupleTypeElement ")" .
+keyPathRootOptionals = keyPathRootOptional keyPathRootOptionals? .
+keyPathRootOptional = >s< optionalMark .                       // tight postfix optional (parseSimpleType loop, Types.swift:327)
+keyPathRootOptional = >s< forceMark .                          // tight postfix IUO      (Types.swift:331)
 
-// A keypath is a run of components under swift-syntax's `mayBeAfterTypeName` rule
-// (parseKeyPathExpression, Expressions.swift): the DOTTED postfix/subscript forms `.?` `.!` `.[`
-// are only valid while every preceding component is a property (`.member`) — i.e. up to and
-// INCLUDING the FIRST non-property component. After the first subscript/optional/force component
-// the flag flips false FOREVER (properties keep it true, never reset it), so from then on only
-// BARE `?` `!` `[…]` and properties `.member` are allowed. Modeled as two phases:
-//   • `keyPathProperty*` (phase-1, flag still true) then
-//   • `keyPathPivot` (the first non-property — MAY be dotted) then
-//   • `keyPathBareTail*` (phase-2, flag false — bare postfix/subscript + properties only).
-// Ground truth: `\Optional.?!?!?!?` accepts (dotted `.?` is the first non-property) but
-// `\Optional.?!?!?!?.??!` rejects (dotted `.??!` after non-properties) — testKeypathExpression#12
-// vs the C1 reject. The earlier flat rule (any component anywhere) wrongly accepted the C1 rejects.
-keyPathComponents = keyPathProperty keyPathComponents? .        // phase-1: a leading run of properties
-keyPathComponents = keyPathPivot keyPathBareTail? .             // first non-property (may be dotted), then bare-only tail
+// A keypath is a run of components under swift-syntax's `mayBeAfterTypeName` flag
+// (parseKeyPathExpression, Expressions.swift:1129): the DOTTED postfix/subscript forms `.?` `.!` `.[`
+// are only valid while every preceding component is a property (`.member`) — properties KEEP the flag
+// true, never reset it; the first subscript/optional/force component flips it false FOREVER, after
+// which only BARE `?` `!` `[…]` and properties `.member` are allowed. A CFG can't thread a mutable
+// flag, so its two states are two nonterminals: the flag-true run (`keyPathComponents` /
+// `keyPathComponentsAfterProperty`) and the flag-false tail (`keyPathBareTail`). One entry guard: the
+// FIRST component can't be a bare `?`/`!` — the root type already absorbed every trailing `?`/`!`
+// (see keyPathRootType) — so `keyPathPivotFirst` drops them; after ≥1 property the flag is still true
+// but the root is out of reach, so bare `?`/`!` are re-admitted (`\Foo.bar?`).
+// Ground truth: `\Optional.?!?!?!?` accepts (dotted `.?` is the first non-property, then a bare run)
+// but `\Optional.?!?!?!?.??!` rejects (dotted `.??!` once the flag is false) — testKeypathExpression#12
+// vs the C1 reject; `\String?.!.count` = root `String?` + `.!` + `.count`; `\Foo?.?.?.blah` is the
+// keypath `\Foo?.?` followed by the infix operator `.?.` and `blah` (testKeyPathFollowedByOperator).
+keyPathComponents = keyPathProperty keyPathComponentsAfterProperty? .   // flag true: leading property run
+keyPathComponents = keyPathPivotFirst keyPathBareTail? .                // first non-property (no bare ?/!) → flag false
+
+keyPathComponentsAfterProperty = keyPathProperty keyPathComponentsAfterProperty? .   // flag stays true
+keyPathComponentsAfterProperty = keyPathPivot keyPathBareTail? .                     // non-property after a property → flag false
 
 keyPathProperty = "." keyPathMemberName .
 
-// The first non-property component — dotted forms allowed here because the flag is still true:
-keyPathPivot = "." >s< optionalMark .                           // .?
-keyPathPivot = "." >s< forceMark .                              // .!
-keyPathPivot = "." "[" functionCallArgumentList? "]" .          // .[args]
-keyPathPivot = >s< optionalMark .                               // bare ?
-keyPathPivot = >s< forceMark .                                  // bare !
-keyPathPivot = "[" functionCallArgumentList? "]" .              // bare [args]
+// The first non-property component while the flag is still true — dotted forms allowed. Bare `?`/`!`
+// are EXCLUDED here: parseSimpleType greedily absorbed any leading `?`/`!` into the root type.
+keyPathPivotFirst = "." >s< optionalMark .                      // .?
+keyPathPivotFirst = "." >s< forceMark .                        // .!
+keyPathPivotFirst = "." "[" functionCallArgumentList? "]" .     // .[args]
+keyPathPivotFirst = "[" functionCallArgumentList? "]" .         // bare [args]  (`\[0].y`, `\Foo[0]`)
+// After ≥1 property the flag is still true but the root can no longer reach a bare `?`/`!`, so re-admit them:
+keyPathPivot = keyPathPivotFirst .
+keyPathPivot = >s< optionalMark .                              // bare ?  (`\Foo.bar?`)
+keyPathPivot = >s< forceMark .                                 // bare !
 
 // After the first non-property: NO dotted `.?`/`.!`/`.[`; only bare postfix/subscript + properties.
 keyPathBareTail = keyPathBareComponent keyPathBareTail? .
@@ -1052,15 +1067,15 @@ keyPathBareComponent = >s< optionalMark .                       // bare ?
 keyPathBareComponent = >s< forceMark .                          // bare !
 keyPathBareComponent = "[" functionCallArgumentList? "]" .      // bare [args]
 
-// Member name accepts any rawIdentifier (so keywords like `extension`/`self` work), integer indices
+// Member name accepts any identifier (so keywords like `extension`/`self` work), integer indices
 // for tuple-typed paths, and the decl-name argument-label syntax (.method(_:), .method(label:), .method(a:b:))
 // which is swift-syntax's parseDottedExpressionSuffix function-reference form — NOT the experimental
 // keypathWithMethodMembers method-call form (that one stays out).
-keyPathMemberName = moduleSelector? softIdentifier .                                 // softIdentifier (not bare rawIdentifier): with the optional moduleSelector? prefix, bare rawIdentifier fails to consume a keyword member (`.self`/`.extension`/…) — a Schrödinger/OPT interaction — whereas the `---`-annotated softIdentifier resolves it, matching every other member rule. SE-0491: .Module::member
+keyPathMemberName = moduleSelector? softIdentifier .                                 // softIdentifier (not raw identifier): with the optional moduleSelector? prefix, bare raw identifier fails to consume a keyword member (`.self`/`.extension`/…) — a Schrödinger/OPT interaction — whereas the `---`-annotated softIdentifier resolves it, matching every other member rule. SE-0491: .Module::member
 keyPathMemberName = decimalDigits .
 keyPathMemberName = moduleSelector? softIdentifier "(" keyPathArgumentLabels ")" .    // .method(_:) / .method(arg:) / .method(a:b:)
 keyPathArgumentLabels = keyPathArgumentLabel keyPathArgumentLabels? .
-keyPathArgumentLabel = identifier --- ( "inout" "_" ) ":" .   // swift-syntax isArgumentLabel (Names.swift:410): a label is an identifier or ANY keyword EXCEPT `inout`, or `_`. Exclude `inout` (per that rule) and `_` (the wildcard label is the separate production below; without excluding it here `.method(_:)` is ambiguous).
+keyPathArgumentLabel = identifier ---( "inout" "_" ) ":" .   // swift-syntax isArgumentLabel (Names.swift:410): a label is an identifier or ANY keyword EXCEPT `inout`, or `_`. Exclude `inout` (per that rule) and `_` (the wildcard label is the separate production below; without excluding it here `.method(_:)` is ambiguous).
 keyPathArgumentLabel = "_" ":" .
 
 // selectorExpression / keyPathStringExpression removed: `#selector(…)` and `#keyPath(…)` are
@@ -1163,7 +1178,7 @@ labeledTrailingClosure = trailingClosureLabel ":" closureExpression .
 // `default` is the only keyword excluded from labeled trailing closure position — swift-syntax's
 // atStartOfLabelledTrailingClosure() explicitly checks `self.at(.keyword(.default))` and returns
 // false. All other keywords (including `case`, `return`, `for`, …) are valid trailing closure labels.
-trailingClosureLabel = identifier --- ( "_" "let" "var" "inout" "default" ) | "_" .
+trailingClosureLabel = identifier ---( "_" "let" "var" "inout" "default" ) | "_" .
 
 
 // Grammar of an initializer expression
@@ -1183,7 +1198,7 @@ initializerExpression = "init" .
 // swift-syntax parseDottedExpressionSuffix (Expressions.swift:699) calls
 // parseDeclReferenceExpr with `.keywords` flag (Names.swift:218-220), which accepts
 // any lexer-classified keyword as the member name (`x.default`, `x.deinit`,
-// `x.subscript`, `x.where`, `x.case`, …). softIdentifier (rawIdentifier minus
+// `x.subscript`, `x.where`, `x.case`, …). softIdentifier (identifier minus
 // `let`/`var`/`inout`) covers all of these in one rule. The dedicated rules for
 // `x.init` (initializerExpression) and `x.self` (postfixSelfExpression) below
 // still match — GLL keeps the extra parses but they're harmless. TODO: WTF???
@@ -1513,12 +1528,12 @@ freestandingMacroExpansionDeclaration = macroHead genericArgumentClause? functio
 // A macro head is a SINGLE token `#name` (regex — `#` and the name are one lexeme). This is what
 // lets `---` exclude the RESERVED pound-keywords: the excluded literal (`#available`) co-matches the
 // exact same span as `poundName`, so the exclusion (same-position/same-end suppression) fires. With
-// the old `"#" + rawIdentifier` the name token started AFTER the `#`, so no reserved literal shared
+// the old `"#" + identifier` the name token started AFTER the `#`, so no reserved literal shared
 // its position and `---` was a silent no-op. Reserved keywords have dedicated rules (availability /
 // #if directives / #sourceLocation); everything else (`#foo`, `#selector`, `#colorLiteral`, …) is a macro.
 poundName - @builder .   // `#` + identifier (N1518 ranges); `_` included in identifierHead. Bare `#_` excluded at macroHead below.
-macroHead = poundName --- ( "#_" "#available" "#unavailable" "#if" "#elseif" "#else" "#endif" "#sourceLocation" ) .
-macroHead = "#" >s< moduleSelector identifier --- ( "_" ) .   // SE-0491 #Module::macro (rare; keeps the module-qualified form)
+macroHead = poundName ---( "#_" "#available" "#unavailable" "#if" "#elseif" "#else" "#endif" "#sourceLocation" ) .
+macroHead = "#" >s< moduleSelector identifier ---( "_" ) .   // SE-0491 #Module::macro (rare; keeps the module-qualified form)
 
 //  "#error" "#warning" "#fileLiteral" "#colorLiteral" "#imageLiteral" "#keyPath" "#selector"
 
@@ -1625,7 +1640,7 @@ functionDeclaration = functionHead functionName genericParameterClause? function
 functionHead = attributes? declarationModifiers? "func" .
 // swift-syntax parseFuncDeclaration (Declarations.swift:1384) uses expectIdentifier(keywordRecovery: true)
 // so a hard keyword can be consumed as the function name without `hasError` — e.g. `func await()`,
-// `func async()`. softIdentifier (rawIdentifier minus let/var/inout) matches that behavior.
+// `func async()`. softIdentifier (raw identifier minus let/var/inout) matches that behavior.
 functionName = softIdentifier | operatorName .
 
 functionSignature = parameterClause "async"? throwsClause? functionResult? .
@@ -1833,7 +1848,7 @@ infixOperatorDeclaration = "infix" "operator" operator infixOperatorGroup? .
 //infixOperatorGroup = ":" precedenceGroupName .
 infixOperatorGroup = ":" precedenceGroupName designatedTypes? . // TODO: grammar fix
 designatedTypes = "," | "," designatedType designatedTypes? .   // trailing comma allowed (swift-syntax tolerates `operator : Prec,`)
-designatedType = identifier | escapedIdentifier | nonWordToken | literal | operator .   // swift-syntax consumes ANY token here (deprecated feature) — rawIdentifier/escapedIdentifier catch all word tokens, nonWordToken the rest
+designatedType = identifier | escapedIdentifier | nonWordToken | literal | operator .   // swift-syntax consumes ANY token here (deprecated feature) — identifier/escapedIdentifier catch all word tokens, nonWordToken the rest
 
 // Grammar of a precedence group declaration
 
@@ -1917,8 +1932,10 @@ macroRoleArguments = macroRoleToken macroRoleArguments? .
 // selector in `Swift::deinit` is covered by two `nonWordToken` `:`s. Adding a `"::"` atom created
 // a SECOND same-span reading → ambiguous pivot (testModuleSelectorExpr#8/#9).
 macroRoleToken = identifier
-                 --- ( "_" "Any" "as" "associatedtype" "await" "break" "case" "catch" "class" "continue" "default" "defer" "do" "else" "enum" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "inout" "internal" "is" "let" "nil" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "static" "struct" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while" )
-               | escapedIdentifier | nonWordToken | operator .
+                 ---( "_" "Any" "as" "associatedtype" "await" "break" "case" "catch" "class" "continue" "default" "defer" "do" "else" "enum" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "inout" "internal" "is" "let" "nil" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "static" "struct" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while" )
+               | escapedIdentifier
+               | nonWordToken
+               | operator .
 macroRoleToken = "(" macroRoleArguments? ")" .
 macroRoleToken = "[" macroRoleArguments? "]" .
 macroRoleToken = "{" macroRoleArguments? "}" .
@@ -1944,12 +1961,17 @@ elseDirectiveAttributes = elseDirective attributes? .
 // Non-word residue for the token-soup contexts (balancedToken, designatedType). It holds ONLY
 // tokens that are NOT identifier-shaped words: `#`-directives, `_`, `@`, and the punctuation
 // `! ? = &` that operatorToken can't match alone (they need a continuation char). ALL keywords
-// (`class`, `async`, `some`, …) and word literals (`true`/`false`/`nil`) are caught by rawIdentifier
+// (`class`, `async`, `some`, …) and word literals (`true`/`false`/`nil`) are caught by identifier
 // instead — a single word-token route, so no identifier-vs-keyword or keyword-vs-operator duals.
 // Single-char operators `< > | ^ ~ % * + - /` are caught by the `operator` sibling alternate.
 nonWordToken = "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "#" | "&" | "?" | "!" | "_" | "@".
 
-balancedToken = @prefer identifier | escapedIdentifier | nonWordToken | literal | operator .   // @prefer rawIdentifier over literal: `true`/`false`/`nil` are keyword-shaped and match BOTH; in attribute token-soup (`@_specialize(exported: true, …)`) they are raw keyword tokens, so take the identifier reading. Numbers/strings match only `literal`, so they're unaffected.
+balancedToken = @prefer identifier
+              | escapedIdentifier
+              | nonWordToken
+              | literal
+              | operator .
+// @prefer identifier over literal: `true`/`false`/`nil` are keyword-shaped and match BOTH; in attribute token-soup (`@_specialize(exported: true, …)`) they are raw keyword tokens, so take the identifier reading. Numbers/strings match only `literal`, so they're unaffected.
 //balancedToken = Any identifier, keyword, literal, or operator .
 //balancedToken = Any punctuation except (, ), [, ], {, or } .
 
@@ -2051,6 +2073,7 @@ valueBindingPattern = "var" matchPattern
 valueBindingPattern = "_borrowing" >+> ( identifier "_" ) matchPattern
                     | "_consuming" matchPattern
                     | "_mutating" matchPattern .
+
 // `>+>(identifier "_")`: port of swift-syntax `shouldParsePatternBinding` (Patterns.swift:274) —
 // `borrowing`/`_borrowing` introduce a value-binding pattern ONLY when the next token is an identifier
 // or `_` (`peek(isAt: .identifier, .wildcard)`). So `case borrowing(let x)` (next `(`) is the enum-case
@@ -2082,17 +2105,18 @@ expressionPattern = expression .
 
 // Grammar of a generic parameter clause
 
-genericParameterClause  = openAngle genericParameterList ","? closeAngle .   // declaration-position generic params are unambiguous — no follow-restriction (unlike expression-position genericArgumentClause)
+// declaration-position generic params are unambiguous — no follow-restriction (unlike expression-position genericArgumentClause)
+genericParameterClause  = openAngle genericParameterList ","? closeAngle .
 
 genericParameterList = genericParameter | genericParameter "," genericParameterList .
 // swift-syntax GenericParameterSyntax carries `attributes` PER PARAMETER, so `<T, @foo U>`
 // (attribute on a non-first parameter) is valid — hence attributes? attaches here, not before the list.
 genericParameter = attributes? typeName .
-//genericParameter = typeName ":" typeIdentifier .
-//genericParameter = typeName ":" protocolCompositionType .
 genericParameter = attributes? typeName ":" "~"? typeIdentifier .          // TODO: T: P or T: ~Copyable (SE-0390)
 genericParameter = attributes? typeName ":" "~"? protocolCompositionType . // TODO: T: P & Q or T: ~(P & Q)
 genericParameter = attributes? "let" typeName ":" type .
+//genericParameter = typeName ":" typeIdentifier .
+//genericParameter = typeName ":" protocolCompositionType .
 
 genericWhereClause = "where" requirementList .
 requirementList = requirement | requirement "," requirementList .

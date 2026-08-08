@@ -10,9 +10,8 @@ import Foundation
 
 trace = false
 
-let grammarFileURL = URL(fileURLWithPath: #filePath)
+let grammarURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-//    .appendingPathComponent("apus grammars/charGLL")
     .appendingPathComponent("apus grammars/Swift")
 //    .appendingPathComponent("apus grammars/layout")
 //    .appendingPathComponent("apus grammars/apus")
@@ -32,15 +31,15 @@ let grammarFileURL = URL(fileURLWithPath: #filePath)
 
 let grammar: Grammar
 do {
-    let apusParser = try ApusParser(fromFile: grammarFileURL)
+    let apusParser = try ApusParser(fromFile: grammarURL)
     do {
         grammar = try apusParser.parse(explicitStartSymbol: "")
     } catch {
-        Logger.ui.error("failed to parse grammar: \(grammarFileURL, privacy: .public), error: \(error, privacy: .public)")
+        Logger.ui.error("failed to parse grammar: \(grammarURL, privacy: .public), error: \(error, privacy: .public)")
         exit(1)
     }
 } catch {
-    Logger.ui.error("failed to scan grammar: \(grammarFileURL, privacy: .public), error: \(error, privacy: .public)")
+    Logger.ui.error("failed to scan grammar: \(grammarURL, privacy: .public), error: \(error, privacy: .public)")
     exit(1)
 }
 
@@ -48,7 +47,7 @@ let messageParser = MessageParser(grammar: grammar)
 
 //let ball = 1 ⚽️ 2
 
-print("grammar: \(grammarFileURL.lastPathComponent), messages: \(grammar.messages.count)")
+print("grammar: \(grammarURL.lastPathComponent), messages: \(grammar.messages.count)")
 if grammar.messages.isEmpty {
     print("no messages found (^^^ blocks). nothing to parse")
 }
@@ -139,6 +138,17 @@ for (mi, message) in grammar.messages.enumerated() {
     //    // Example: print total distributed-yield cardinality used by stats.
     //    // Logger.parse.debug("yieldCount = \(messageParser.yieldCount)")
 
+//    do {
+//        let apus = try String(contentsOf: grammarURL, encoding: .utf8)
+//        let html = convertApusToHTML(apus)
+//        let htmlURL = grammarURL
+//            .deletingPathExtension()
+//            .appendingPathExtension("html")
+//        try html.write(to: htmlURL, atomically: true, encoding: .utf8)
+//        print("✅ Successfully wrote \(htmlURL)")
+//    } catch {
+//        print("❌ Error: \(error)")
+//    }
 
 
 #if DEBUG

@@ -279,7 +279,7 @@ All remaining position state is now `CharPosition`. `TokenPosition` survives onl
 - `MessageParser.{cI, cU, furthestMismatchIndex}` — `CharPosition`.
 - Removed: `MessageParser.charPos(_:)` bridge helper; all six `charPos(...)` call sites collapsed since `addYield`/`addDescriptor` accept `CharPosition` directly.
 - Added: `MessageParser.tokenIndexByStart: [CharPosition: Int]` — a sidecar built once per parse mapping each visible token's `image.startIndex` to its array index. `input.startIndex` is aliased to 0 so the initial cursor finds token 0 even when there's leading trivia. `input.endIndex` naturally points at the EOS token (whose image is `input[end..<end]`).
-- Added two `@inline(__always)` helpers:
+- Added two `@inline(always)` helpers:
   - `tokenIdx(at: CharPosition) -> Int` — O(1) dict lookup with binary-search fallback for diagnostic-only positions.
   - `nextTokenStart(after: Int) -> CharPosition` — returns `tokens[idx+1].image.startIndex`, or `input.endIndex` past the array. Replaces `cI.nextToken()` which advanced by token-array index.
 - `tokenMatch()` now returns `CharPosition?` — the start of the next token on success.
@@ -1226,7 +1226,7 @@ if !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
 | PatternSyntax (6) | 6/6 pass | ~0% | unchanged (7.1 s) |
 | ExpressionSyntax (184) | 145/184 pass (identical 39 failures, same cluster) | n/a measured | unchanged (101.5 s) |
 
-**Why the gain is small:** Phase D already pushed exclusion/followAhead/Schrödinger checks down to per-end LCNP filters, and `continuationViable` (in `rtn` / `bracketRtn`'s pop replay) prunes dead-end descriptors before they enter the queue. By Phase F the remaining dead-end terminals were already being suppressed one slot later by `testSelect`'s per-terminal lex. Phase F formally closes the LCNP migration by making the prediction happen *at lex time* (matching the paper's semantics), but the operational headline-win that motivated `lexLKH` in classical implementations was already captured by Phase D's piecemeal filters.
+**Why the gain is small:** Phase D already pushed exclusion/followAhead/Schrödinger checks down to per-end LCNP filters, and `continuationViable` (in `rtn` / `bracketRtn`'s pop replay) prunes dead-end descriptors before they enter the queue. By Phase F the remaining dead-end terminals were already being suppressed one slot later by `testSelect`'s per-terminal lex. Phase F formally closes the LCNP migration by making the prediction happen *at lex time* (matching the paper's semantics), but the operational headline-win that motivated `lexLKH` in classical implementations was already captured by Phase D's piecemeal filters. TODO: is the lexer filter more efficient than the parser?
 
 **Token.dual + GatedTransition retirement:** completed in Phase H.
 

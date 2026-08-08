@@ -2,7 +2,7 @@
 //  GenerateSwiftSyntaxAST.swift
 //  Advent
 //
-//  Walks BSR yields on GrammarNodes to construct SwiftSyntax trees directly.
+//  Walks BSR yields to construct SwiftSyntax trees directly.
 //  Assumes all ambiguity has been resolved by the Oracle — exactly one path
 //  through the yields exists.
 //

@@ -535,7 +535,7 @@ private final class ApusHTMLConverter {
             var items: [String] = []
             while k == "literal" { items.append(literalContent(t)); pos += 1 }
             expect(")")
-            core += " <span class=\"apus-annot\" title=\"these keywords are suppressed here\">∖ (\(esc(items.joined(separator: " "))))</span>"
+            core += " <span class=\"apus-annot\" title=\"these keywords are suppressed here\">---(\(esc(items.joined(separator: " "))))</span>"
         }
 
         // Forward lookahead: >+>( … ) positive / >->( … ) negative
@@ -588,17 +588,22 @@ private final class ApusHTMLConverter {
     /// (▷ next / ◁ previous); a struck triangle negates it.
     ///   >+>  ⊳ next must be in set      >->  ⋫ next must NOT be in set
     ///   <+<  ⊲ previous must be in set  <-<  ⋪ previous must NOT be in set
-    private let followGlyph     = "⊳"
-    private let notFollowGlyph  = "⋫"
-    private let precedeGlyph    = "⊲"
-    private let notPrecedeGlyph = "⋪"
+//    private let followGlyph     = "⊳"
+//    private let notFollowGlyph  = "⋫"
+//    private let precedeGlyph    = "⊲"
+//    private let notPrecedeGlyph = "⋪"
+    private let followGlyph     = ">+>"
+    private let notFollowGlyph  = ">->"
+    private let precedeGlyph    = "<+<"
+    private let notPrecedeGlyph = "<-<"
 
     /// One annotation chip: a glyph followed by a space-separated `(…)` operand list,
     /// all in the pragma colour (`.apus-annot`).
     private func annot(_ glyph: String, _ items: [String], _ tip: String) -> String {
         " <span class=\"apus-annot\" title=\"\(tip)\"><span class=\"apus-tri\">\(glyph)</span> (\(esc(items.joined(separator: " "))))</span>"
     }
-    private let frankMark = " <span class=\"apus-annot\" title=\"may match a prefix of a longer token\">✂</span>"
+//    private let frankMark = " <span class=\"apus-annot\" title=\"may match a prefix of a longer token\">✂</span>"
+    private let frankMark = " <span class=\"apus-annot\" title=\"may match a prefix of a longer token\">~~~</span>"
     private let epsHTML  = "<em class=\"apus-eps\">ε</em>"
 
     private func nt(_ name: String) -> String { "<em>\(esc(kebab(name)))</em>" }
@@ -623,12 +628,18 @@ private final class ApusHTMLConverter {
 
     private func layoutHTML(_ kind: String) -> String {
         switch kind {
-        case ">>|": return "<span class=\"apus-layout\" title=\"indent (column increased)\">▸ INDENT</span>"
-        case "|<<": return "<span class=\"apus-layout\" title=\"dedent (column decreased)\">◂ DEDENT</span>"
-        case ">s<": return "<span class=\"apus-constraint\" title=\"tokens must be adjacent — no space\">⟨joined⟩</span>"
-        case "<s>": return "<span class=\"apus-constraint\" title=\"tokens must not be adjacent — space required\">⟨space⟩</span>"
-        case ">n<": return "<span class=\"apus-constraint\" title=\"tokens must be on the same line\">⟨same-line⟩</span>"
-        case "<n>": return "<span class=\"apus-constraint\" title=\"tokens must be on different lines\">⟨new-line⟩</span>"
+//        case ">>|": return "<span class=\"apus-layout\" title=\"indent (column increased)\">▸ INDENT</span>"
+//        case "|<<": return "<span class=\"apus-layout\" title=\"dedent (column decreased)\">◂ DEDENT</span>"
+//        case ">s<": return "<span class=\"apus-constraint\" title=\"tokens must be adjacent — no space\">⟨joined⟩</span>"
+//        case "<s>": return "<span class=\"apus-constraint\" title=\"tokens must not be adjacent — space required\">⟨space⟩</span>"
+//        case ">n<": return "<span class=\"apus-constraint\" title=\"tokens must be on the same line\">⟨same-line⟩</span>"
+//        case "<n>": return "<span class=\"apus-constraint\" title=\"tokens must be on different lines\">⟨new-line⟩</span>"
+        case ">>|": return "<span class=\"apus-layout\" title=\"indent (column increased)\">indent</span>"
+        case "|<<": return "<span class=\"apus-layout\" title=\"dedent (column decreased)\">dedent</span>"
+        case ">s<": return "<span class=\"apus-constraint\" title=\"tokens must be adjacent — no space\">joined</span>"
+        case "<s>": return "<span class=\"apus-constraint\" title=\"tokens must not be adjacent — space required\">space</span>"
+        case ">n<": return "<span class=\"apus-constraint\" title=\"tokens must be on the same line\">same-line</span>"
+        case "<n>": return "<span class=\"apus-constraint\" title=\"tokens must be on different lines\">new-line</span>"
         default:    return esc(kind)
         }
     }
@@ -890,6 +901,8 @@ private final class ApusHTMLConverter {
         .apus-constraint {
           font-size: 0.78em;
           color: #5a4b8a;
+        /*          color: #5a4b8a; */
+        color: #6a5b9a;
         }
         .apus-action {
           font-size: 0.82em;

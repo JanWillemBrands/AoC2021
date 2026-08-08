@@ -1,13 +1,20 @@
+// TOKENS
+
+// Grammar of trivia
 whitespace  : /\s+/ .
 comment     : /\/\/.*/ .
 
+// Grammar of terminals
 identifier  - /[_\p{XID_Start}][-\p{XID_Continue}]*/ .
 literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
 
+// Grammar of attributes
 action      : /'(?:[^'\\]|\\.)*'/ .
 pragma      - /@\p{XID_Start}\p{XID_Continue}*/ .
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
+
+// PRODUCTIONS
 
 grammar     = < production > { message } .
               
@@ -29,7 +36,7 @@ factor      = terminal
             | "(" selection ")"
             .
 
-terminal    = identifier    [ "---" "(" < literal > ")" ]
+terminal    = identifier [ exclusion ]
             | literal
             | regex
             | epsilon | empty
@@ -37,6 +44,10 @@ terminal    = identifier    [ "---" "(" < literal > ")" ]
 
 epsilon     = "ε" .
 empty       = "\"\"" .
+
+// Grammar of annotations
+
+exclusion   = "---" "(" < literal > ")" .
 
 layout      = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
 

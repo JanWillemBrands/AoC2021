@@ -31,8 +31,8 @@ func trace(_ items: Any..., terminator term: String = "") {
 
 /// Called by the trace macro expansion.
 /// The closure defers argument evaluation until the trace flag is checked.
-/// In release builds the body is empty; @inline(__always) ensures the optimizer eliminates everything.
-//@inline(__always)
+/// In release builds the body is empty; @inline(always) ensures the optimizer eliminates everything.
+//@inline(always)
 //func _traceImpl(_ items: () -> [Any], terminator factor: String = "") {
 //#if DEBUG
 //    if trace {

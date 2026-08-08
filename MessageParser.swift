@@ -102,8 +102,8 @@ class MessageParser {
     /// matching tens of thousands of times.
     var lexCache: [LexCacheKey: [LexMatch]] = [:]
 
-    @inline(__always)
-    func cachedLex(at pos: CharPosition, terminalID: Int) -> [LexMatch] {
+    @inline(always)
+    final func cachedLex(at pos: CharPosition, terminalID: Int) -> [LexMatch] {
         let key = LexCacheKey(pos: pos, terminalID: terminalID)
         if let cached = lexCache[key] { return cached }
         let result = lexer.lex(at: pos, terminalID: terminalID)
@@ -220,8 +220,8 @@ class MessageParser {
 
     /// Read accessor for consumers (Oracle, diagrams, tests). Inside the
     /// parser/BSR hot path we use direct `yields[node.number]` access.
-    @inline(__always)
-    func yield(of node: GrammarNode) -> Set<BinarySpan> {
+    @inline(always)
+    final func yield(of node: GrammarNode) -> Set<BinarySpan> {
         yields[node.number]
     }
 
@@ -261,8 +261,8 @@ class MessageParser {
         return input[triviaStart..<longestEnd]
     }
 
-    @inline(__always)
-    func recordCommit(terminalID: Int, triviaStart: CharPosition, start: CharPosition, end: CharPosition, triviaEnd: CharPosition) {
+    @inline(always)
+    final func recordCommit(terminalID: Int, triviaStart: CharPosition, start: CharPosition, end: CharPosition, triviaEnd: CharPosition) {
         let idx = commits.count
         commits.append(TerminalCommit(terminalID: terminalID, triviaStart: triviaStart, start: start, end: end, triviaEnd: triviaEnd))
         // Index by `triviaStart` — the position the parser cursor was at when
@@ -842,8 +842,8 @@ class MessageParser {
         return true
     }
 
-    @inline(__always)
-    private func isLineBreak(_ ch: Character) -> Bool {
+    @inline(always)
+    final private func isLineBreak(_ ch: Character) -> Bool {
         ch == "\n" || ch == "\r"
     }
 
