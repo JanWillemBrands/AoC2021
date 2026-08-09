@@ -275,3 +275,31 @@ func parsePostOracle(grammar grammarString: String, message: String) throws -> (
         return (raw, fullSpan(), pruned)
     }
 }
+
+/// Parse, run the Oracle, then build the derivation tree and report residual ambiguity.
+/// This is the small-grammar analogue of the SwiftSyntax suites' "no residual ambiguity"
+/// check: `isUnambiguous` == `DerivationBuilder.buildAST()` produced no ambiguity
+/// diagnostics (`builder.diagnostics.isEmpty`). It is the precise signal the nested-cluster
+/// Oracle tests assert — `pruned > 0` only says *something* was removed, not that the parse
+/// became single-valued.
+func parseOracleAmbiguity(grammar grammarString: String, message: String) throws
+    -> (rawMatch: Bool, postMatch: Bool, pruned: Int, isUnambiguous: Bool) {
+    try withParserIsolation {
+        trace = false
+        traceIndent = 0
+        let grammarWithWhitespace = "whitespace : /\\s+/.\n" + grammarString
+        let parser = try ApusParser(fromString: grammarWithWhitespace)
+        let grammar = try parser.parse(explicitStartSymbol: "")
+        let mp = MessageParser(grammar: grammar)
+        mp.parse(input: message)
+        func fullSpan() -> Bool {
+            mp.yield(of: mp.currentParseRoot).contains { $0.i == message.startIndex && $0.j == message.endIndex }
+        }
+        let raw = fullSpan()
+        let pruned = Oracle(parser: mp, input: message).disambiguate()
+        let post = fullSpan()
+        let builder = DerivationBuilder(parser: mp, input: message)
+        _ = builder.buildAST()
+        return (raw, post, pruned, builder.diagnostics.isEmpty)
+    }
+}
