@@ -138,15 +138,10 @@ enum ApusRegexLibrary {
     static let operatorHeadStandalone = operatorHead.subtracting(.anyOf("=!?&"))
     static let operatorSpecial = CharacterClass.anyOf("=!?&")
 
-    /// Dot-operator continuation: `.` ∪ operator-character, but MINUS the reserved
-    /// `!`/`?`. TSPL's `dot-operator-character` is `. | operator-character`, and
-    /// operator-character contains `!`/`?` — but Swift reserves solo `!`/`?` as
-    /// postfix (force / optional-chain), so they may NOT be part of a `.`-led
-    /// operator either. Without this exclusion, `dotOperator` greedily eats the
-    /// optional-chaining `?` in a keypath component like `\.?.foo` (breaks
-    /// testKeypathExpression#1/#12/#13). Mirrors the old coarse dot class
-    /// `[.\-+*/%|^~<>=&]`, which likewise omitted `!?`.
-    static let dotOperatorCharacter = CharacterClass(operatorCharacter, .anyOf(".")).subtracting(.anyOf("!?"))
+    /// Dot-operator continuation = TSPL `dot-operator-character` (`. | operator-character`),
+    /// which includes `!`/`?`. See Swift.apus operator dev 3 for why `?`/`!` are admitted and
+    /// keypath dev 6 / `Lexical Disambiguation Tools.md` for the keyPathDot coexistence.
+    static let dotOperatorCharacter = CharacterClass(operatorCharacter, .anyOf("."))
 
     // ── Raw-identifier scalar classes (mirrors swift-syntax UnicodeScalarExtensions) ──
     // Used to assemble `escapedIdentifier` from named building blocks instead of a
@@ -222,21 +217,28 @@ enum ApusRegexLibrary {
         }
     } // TODO: why is there no .matchingSemantics(.unicodeScalar) here?
 
-    /// `operatorToken` / `operatorName` — the operator body under scalar semantics.
+    /// `operatorToken` / `operatorName` — the operator body under scalar semantics
+    /// (Swift.apus operator dev 1: one greedy `@lexicalClass` token).
     static let operatorToken = operatorBody.matchingSemantics(.unicodeScalar)
 
-    /// `postfixOperatorToken` — the operator body, but may not BEGIN with `!`/`?`
-    /// (those split into force/optional postfix tokens).
+    /// `postfixOperatorToken` — operator body that may not BEGIN with `!`/`?`
+    /// (Swift.apus operator dev 4: `x!!` is two force-unwraps, not a `!!` operator).
     static let postfixOperatorToken = Regex {
         NegativeLookahead { CharacterClass.anyOf("!?") }
         operatorBody
     }.matchingSemantics(.unicodeScalar)
 
-    /// `dotOperator` — a `.`-led operator (`...`, `..<`, `.+.`); needs ≥1
-    /// continuation (a lone `.` is member access).
+    /// `dotOperatorCharacter` minus the reserved `!`/`?` — a dot-operator may not END in them.
+    static let dotOperatorCharacterNoReserved = CharacterClass(operatorCharacter, .anyOf(".")).subtracting(.anyOf("!?"))
+
+    /// `dotOperator` — a `.`-led operator (`...`, `..<`, `.?.`). Swift.apus operator dev 3:
+    /// interior may contain `?`/`!` but the operator may not END in them (swift splits a
+    /// trailing `?`/`!` run off as postfix), so the last char is `dotOperatorCharacterNoReserved`.
+    /// Hence `.?.` is an operator but `.?`/`.!`/`.??!` are not.
     static let dotOperator = Regex {
         "."
-        OneOrMore { dotOperatorCharacter }
+        ZeroOrMore { dotOperatorCharacter }
+        dotOperatorCharacterNoReserved
     }.matchingSemantics(.unicodeScalar)
 
     /// `poundName` — `#` followed by an identifier (N1518 ranges, same as `identifier`).

@@ -158,7 +158,7 @@ regexOpenSlash  - /\// .
          binaryLiteral octalLiteral decimalLiteral hexadecimalLiteral
          decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
          regexCloseSlash extendedRegularExpressionLiteral
-         ")" "]" "}" ">"
+         "_" ")" "]" "}" ">"
          "!"
          "->" "..." "." "@" )
 regexCloseSlash - /\// .
@@ -377,81 +377,50 @@ integerLiteral = hexadecimalLiteral .
 
 // Grammar of operators
 
-// Single greedy operator terminal (maximal munch via @lexicalClass).
-// Replaces the old char-by-char assembly (`operatorHead { >s< operatorCharacter }`)
-// that let multi-char operators split — the source of the `a && b` == `a & (&b)`
-// pivots. As one @lexicalClass token, `&&`/`&+`/`<<`/`->` lex maximally; the lone
-// literals `&`,`<`,`>`,`->` are suppressed only when a strictly longer operator
-// run follows here. Faithful to the 3 old alts:
-//   alt1: operatorHead (incl. unicode) then any operator characters
-//   alt2: operatorSpecial `! ? =` OR reserved `&` — must have >=1 continuation
-//         (so lone `!`/`?`/`=`/`&` stay dedicated literals; bare `&` = bitwise-and
-//         via `infixOperator = "&"`, prefix `&` via inOutExpression). `.`-operators
-//         remain the separate char-level `dotOperator`.
-// `/` IS included (division, `/=`, and `/`-containing operator names like `/^/`).
-// Maximal-munch is the WHOLE regex-vs-operator disambiguator on the operator side:
-// `=/`, `+/`, `.../`, `/^/` lex as single operator tokens and the lone `+`/`=`/`.`
-// are suppressed.
-//`@splitBefore("/")` offers the "operator ends before an internal `/`"
-// prefix so a regex can follow a prefix operator (`^^/regex/` → `^^` + `/regex/`), porting
-// swift-syntax's `tryLexOperatorAsRegexLiteral` (Cursor.swift:2275). It is GATED by the
-// `<-<` lookbehind = swift-syntax's `preferRegexOverBinaryOperator`: the split
-// is offered ONLY when the operator is in PREFIX position (not preceded by an operand-ender).
-// In INFIX position (`/x/+/y/`, `_=/0/`, `0 /^/ 1` — operator preceded by an operand) the
-// split is suppressed and maximal-munch wins (`+/`, `=/`, `/^/`), so no `op` + `/regex/`
-// reading competes. (Engine: a failing `<-<` on a `@splitBefore` terminal drops the split
-// matches only, never the maximal base match — operators legitimately follow operands.)
+// TSPL builds operators char-by-char (operator-head operator-characters). Advent instead
+// lexes each operator as ONE greedy `@lexicalClass` terminal. Deviations from TSPL (each
+// faithful to swift-syntax's lexer/parser):
+//
+//  1. Maximal munch: `&&`, `<<`, `->`, `.../` lex as one token; a lone `&`/`<`/`.` survives
+//     only where no longer operator follows.  e.g. `a && b`, not `a & (&b)`.
+//  2. operatorToken @splitBefore(regexOpenSlash): an operator may end before an internal
+//     regex opener so a regex can follow a prefix operator — `^^/regex/` → `^^` `/regex/`.
+//     Offered only in prefix position: keyed on the terminal `regexOpenSlash`, so it inherits
+//     that terminal's `<-<` = `preferRegexOverBinaryOperator` (hence operatorToken needs no
+//     `<-<` of its own).  swift-syntax Cursor.swift `tryLexOperatorAsRegexLiteral` (:2275).
+//  3. dotOperator (`.`-led) may CONTAIN `?`/`!` but not END in them — swift splits a trailing
+//     `?`/`!` run off as postfix. So `.?.` is a binary operator but `.?`/`.!`/`.??!` are not.
+//     e.g. `\Foo?.?.?.blah` = keypath `\Foo?.?` + `.?.` + `blah`.  Cursor.swift (trailing `!?` split).
+//  4. postfixOperatorToken drops the `!?`-led alternatives: a prefix/postfix operator may not
+//     begin with `!`/`?`.  e.g. `x!!` = two force-unwraps, never a `!!` operator.
+//  5. operatorName @splitBefore(openAngle): an operator function name ends before a generic `<`.
+//     e.g. `func %%%%<T,U>`.  swift-syntax SwiftParser (decl context only).
+//  6. Munch-exempt single-char regex terminals — openAngle `<`, closeAngle `>`, optionalMark `?`,
+//     forceMark `!`, keyPathDot `.` — match one char even inside a longer operator run, mirroring
+//     swift-syntax parser-side token splitting.  e.g. `Array<Array<Int>>` (closeAngle inside `>>`),
+//     `Int??` (optionalMark). keyPathDot lets a keypath `.?` pivot coexist with the `.?.` operator
+//     (regex-vs-regex, neither suppresses the other; see the keypath section).
 
-@lexicalClass @splitBefore("/")
+@lexicalClass @splitBefore(regexOpenSlash)
 operatorToken - @builder .
-     <-< ( "true" "false" "nil" "self" "Self" "super" "Any"
-         identifier escapedIdentifier implicitParameterName propertyWrapperProjection
-         binaryLiteral octalLiteral decimalLiteral hexadecimalLiteral
-         decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
-         regexCloseSlash extendedRegularExpressionLiteral
-         "_" ")" "]" "}" ">" "!" )
 
-// Dot-operator: a `.`-led operator (`...`, `..<`, `.+.`). Greedy @lexicalClass terminal
-// — was char-assembled (`"." { dotOperatorCharacter }`), which let `...` split into
-// `.`+`.`+`.` and produced range/operator pivots. A `.`-led operator may contain `.`;
-// a lone `.` (member access) is the literal `"."`, not this (needs >=1 continuation).
 @lexicalClass
-dotOperator - @builder .   // regex = ApusRegexLibrary.dotOperator (GrammarRegexLibrary.swift): `.` (dotCont)+
+dotOperator - @builder .
 
 operator = operatorToken .
 operator = dotOperator .
 
-// Postfix-operator token. Swift forbids a prefix/postfix operator from BEGINNING with `!` or `?`
-// (those are reserved: force / optional-chain / ternary); only INFIX may (`!=`, `??`). swift-syntax
-// splits a trailing `!`/`?` run into individual force/optional postfix tokens — `x!!` is two nested
-// ForceUnwrap, never a `!!` operator (probe-verified). So this terminal drops operatorToken's
-// `[!?=&]`-led alternative (all infix-only), leaving only `[-+*/%|^~<>]`- or symbol-led runs. This
-// is what removes the spurious `x!!`/`x??` postfix-operator reading — no @prefer needed, so keypath
-// `?`/`!` Frankenstein components are untouched.
-postfixOperatorToken - @builder .   // regex = ApusRegexLibrary.postfixOperatorToken (GrammarRegexLibrary.swift): (?![!?]) then the shared operator body
+postfixOperatorToken - @builder .
 
-// Operator FUNCTION name (`func %%%%<T,U>`). Same run as operatorToken but split
-// before a generic `<` (swift-syntax peels the `<` off the operator name in decl
-// context — SwiftParser). Scoped to functionName only, so the `<`-split can't
-// reach expressions (where it would re-create the operator/operand pivots). Not
-// @lexicalClass — it does not drive maximal munch.
-@splitBefore("<")
-operatorName - @builder .   // regex = ApusRegexLibrary.operatorBody (GrammarRegexLibrary.swift), same body as operatorToken
+@splitBefore(openAngle)
+operatorName - @builder .
 
-// Munch-exempt split terminals: A REGEX terminal (`/>/` not the literal `">"`) is exempt from the
-// operatorToken maximal munch, so each matches its single char even when a longer
-// operator run follows — mirroring swift-syntax's parser-side token splitting.
-//   openAngle    ↔ generic-open `<` split off an operator run (e.g. `%<T>` → `%` `<`)
-//   closeAngle   ↔ generic-close `>` matches a single `>` even inside `>>`,
-//                  letting `Array<Array<Int>>` close two nested generics.
-//                  In expression position `a >> b` the shift is `operatorToken`.
-//   optionalMark ↔ postfix/optional `?` split (SwiftParser type parsing splits `??`→`?`;
-//                  `Int??`, `Value?>`), and postfix optional-chaining `a?`
-//   forceMark    ↔ postfix force `!` split (`a!`, keypath `.!`)
+// munch-exempt single-char regex terminals
 openAngle       - /</ .
 closeAngle      - />/ .
-optionalMark    - /\?/ .  // TODO: can we write optionalMark -  >s< /\?/ .
+optionalMark    - /\?/ .
 forceMark       - /!/ .
+keyPathDot      - /\./ .
 
 //operator = operatorHead operatorCharacters? .
 //operator = dotOperatorHead dotOperatorCharacters .
@@ -494,7 +463,7 @@ infixOperator = "&" .                    // reserved bitwise-and; bare "&" is no
 prefixOperator = operator .
 
 postfixOperator = postfixOperatorToken .   // postfix ops cannot begin with `!`/`?` (those split into force/optional)
-postfixOperator = dotOperator .            // postfix ranges: `1...`, `1..<5`
+postfixOperator = dotOperator .            // postfix ranges: `1...`, `1..<5` (dotOperator can't end in `?`/`!`, so `.?`/`.!`/`.??!` aren't postfix operators)
 
 
 
@@ -959,9 +928,8 @@ tupleElement = expression | softIdentifier ":" expression .
 
 wildcardExpression = "_" .
 
-// Grammar of a macro-expansion expression
 
-//macroExpansionExpression = "#" identifier genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+// Grammar of a macro-expansion expression
 
 // `@longest`: a macro greedily takes its (single) argument clause. `#foo(bar)` is macro-with-args,
 // not argless-`#foo` + call `(bar)` (probe-verified: swift-syntax yields MacroExpansionExpr with
@@ -969,53 +937,55 @@ wildcardExpression = "_" .
 // readings give macroExpansionExpression different extents at the same start; keep the longest.
 @longest
 macroExpansionExpression = macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+//macroExpansionExpression = "#" identifier genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+
 
 // Grammar of a key-path expression
 
 //keyPathExpression = "\" type? "." keyPathComponents .
 //keyPathComponents = keyPathComponent | keyPathComponent "." keyPathComponents .
 //keyPathComponent = identifier keyPathPostfixes? | keyPathPostfixes .
+
 //keyPathPostfixes = keyPathPostfix keyPathPostfixes? .
 //keyPathPostfix = "?" | "!" | "self" | "[" functionCallArgumentList "]" .
-//keyPathPostfix = "?" | "!" | "[" functionCallArgumentList "]" .
 
-// swift-syntax parseKeyPathExpression (Expressions.swift:1107+) — `mayBeAfterTypeName`:
-// leading-dot `.?` / `.!` / `.[` are only valid at the START (still in "type-name"
-// position); after the first component only bare `?` / `!` / `[` and `.member`.
-// Factored: one shared `keyPathComp`; `keyPathLead` (first) adds the leading-dot forms.
-// @longest: a keypath greedily consumes ALL trailing components — `\.?.foo` is one keypath
-// (components `.?`, `.foo`), not `\.?` + a `.foo` member access on it (swift-syntax parses the
-// whole run as keypath components). The two readings share a start but differ in extent of the
-// keyPathExpression (`\.?` vs `\.?.foo`), so keeping the longest prunes the early-stop base.
-// Split from `"\\" keyPathRootType? keyPathComponents` so the root-bearing reading can be @prefer'd:
-// a leading `[…]`/`[…:…]` is BOTH a valid root type (Array/Dictionary type) AND a bare-subscript
-// first component. swift-syntax commits to the ROOT TYPE (`\[X].y` → root ArrayType, `\[X:Y].y` →
-// root DictionaryType; probe-confirmed), falling back to a subscript component only when the `[…]`
-// is not a valid type (`\[0].y` → `0` is no type → subscript). `@prefer` on the root-bearing
-// alternate prunes the root-absent sibling ONLY where both cover the same span (i.e. the `[…]` parses
-// as a type); where the type fails, only the root-absent alternate yields, so the preference is inert.
+// swift-syntax parseKeyPathExpression (Expressions.swift:1107+). Deviations from the TSPL
+// grammar above (each faithful to swift-syntax):
+//
+//  1. Root = parseSimpleType(allowMemberTypes:false) (Expressions.swift:1118): the root is a
+//     SIMPLE type with the `.member` chain excluded, so `\a.b.c` = root `a` + `.b` `.c` (the
+//     root is never a member chain — kills the root-vs-`.member` overlap structurally, no
+//     `@shortest`). Covers `\Foo<Int>.bar`, `\[X].y`, `\(X).y`, `\Any.y`.
+//  2. Root greedily absorbs trailing `?`/`!` (parseSimpleType loop, Types.swift:327-333):
+//     `\X?.y` = root `X?` + `.y`. So a LEADING `?`/`!` is never a component (keyPathPivotFirst
+//     excludes bare `?`/`!`).
+//  3. A leading `[…]` root type is preferred over a bare-subscript first component (@prefer):
+//     `\[X].y` = root ArrayType; `\[0].y` → subscript (`0` is no type, so the type reading
+//     fails and the preference is inert).
+//  4. mayBeAfterTypeName (Expressions.swift:1129): the DOTTED forms `.?`/`.!`/`.[` are valid
+//     only while every preceding component is a property; the first non-property flips the flag
+//     false FOREVER, after which only BARE `?`/`!`/`[…]` and `.member` are allowed. A CFG can't
+//     thread the flag, so it is two nonterminals — flag-true (keyPathComponents /
+//     keyPathComponentsAfterProperty) vs flag-false (keyPathBareTail). An EBNF collapse of these
+//     is non-confluent (see the note at the rules); the recursion is load-bearing.
+//     e.g. `\Optional.?!?!?!?` accepts, `\Optional.?!?!?!?.??!` rejects.
+//  5. @longest: a keypath greedily consumes ALL components — `\.?.foo` is one keypath, not
+//     `\.?` + a `.foo` member access.
+//  6. KNOWN GAP (REJECTS.md C1, testKeyPathSubscript#2 disabled): the greedy-keypath COMMIT is
+//     not modeled, so `\Foo.Bar.?.[1]` is wrongly accepted (Advent also finds `\Foo.Bar` +
+//     `.?.` + `[1]`, which nothing prunes). Needs a keypath-commit / structural-lookahead primitive.
+
+// Must be two TOP-LEVEL alternates: @prefer/@longest are keyed on the nonterminal's own
+// alternates (nt.alt), so the root-vs-bare-subscript preference (dev 3) only binds here.
+// Factoring the shared "\\" into an inline `( … | … )` group puts @prefer inside the group
+// where the Oracle can't see it — it goes inert and ambiguity explodes (1 → 40, measured).
+
 @longest
-keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents? .   // components optional: swift-syntax accepts a rooted keypath with zero components (`\Foo`, `\X?` — the loop runs zero times, no diagnostic). escape needed for apus literal "\" (Swift string syntax)
+keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents? .   // dev 1,3; components optional (`\Foo`, `\X?`). `\\` = apus escape for literal `\`
 @longest
-keyPathExpression =         "\\" keyPathComponents .   // root-absent (`\.foo`): keyPathComponents is NOT optional — it must start with `.`, so a bare `\` still fails (swift-syntax parseSimpleType on non-`.` head → missing type)
+keyPathExpression =         "\\" keyPathComponents .                    // root-absent (`\.foo`): keyPathComponents must start with `.`
 
-// simpler alternative?
-//keyPathExpression = "\\" [@prefer keyPathRootType] keyPathComponents .
-//@longest keyPathComponents = keyPathComponent keyPathComponents? .
-
-
-// Keypath root = swift-syntax `parseSimpleType(allowMemberTypes: false)` (Expressions.swift:1118):
-// a SIMPLE type with the `.member` chain structurally EXCLUDED, so `\a.b.c` = root `a` + components
-// `.b`,`.c` (root is never a `.member` chain — probe-confirmed). Excluding the member recursion here
-// is what makes the root-vs-`.member` overlap vanish — NO `@shortest` needed (the old full-`type`
-// root pruned it after the fact; this prevents it structurally). Covers `\Foo<Int>.bar`, `\[X].y`,
-// `\[X:Y].y`, `\(X).y`, `\Any.y`. Postfix `?`/`!` ARE part of the root: parseSimpleType's postfix
-// loop (Types.swift:327-333) greedily consumes every trailing `?`/`!`, so `\X?.y` = root `X?` +
-// `.y`, and `\String?.!.count` = root `String?` + `.!` + `.count`. This is why the leading `?`/`!`
-// is NEVER a component (and why the entry pivot below excludes bare `?`/`!`).
-// (Metatype `.Type`/`.Protocol` is likewise a root postfix in swift-syntax, but is currently reached
-//  via a property component below — accept/reject-identical, differs only in tree shape; see TODO.)
-keyPathRootType = keyPathRootBase keyPathRootOptionals? .
+keyPathRootType = keyPathRootBase keyPathRootOptionals? .   // dev 1,2
 keyPathRootBase = typeName typeGenericArgumentClause?
                 | tupleType
                 | arrayType
@@ -1024,45 +994,35 @@ keyPathRootBase = typeName typeGenericArgumentClause?
                 | anyType
                 | "(" tupleTypeElement ")" .
 keyPathRootOptionals = keyPathRootOptional keyPathRootOptionals? .
-keyPathRootOptional = >s< optionalMark .                       // tight postfix optional (parseSimpleType loop, Types.swift:327)
-keyPathRootOptional = >s< forceMark .                          // tight postfix IUO      (Types.swift:331)
+keyPathRootOptional = >s< optionalMark .                       // dev 2: tight postfix `?` (Types.swift:327)
+keyPathRootOptional = >s< forceMark .                          // dev 2: tight postfix `!` (Types.swift:331)
 
-// A keypath is a run of components under swift-syntax's `mayBeAfterTypeName` flag
-// (parseKeyPathExpression, Expressions.swift:1129): the DOTTED postfix/subscript forms `.?` `.!` `.[`
-// are only valid while every preceding component is a property (`.member`) — properties KEEP the flag
-// true, never reset it; the first subscript/optional/force component flips it false FOREVER, after
-// which only BARE `?` `!` `[…]` and properties `.member` are allowed. A CFG can't thread a mutable
-// flag, so its two states are two nonterminals: the flag-true run (`keyPathComponents` /
-// `keyPathComponentsAfterProperty`) and the flag-false tail (`keyPathBareTail`). One entry guard: the
-// FIRST component can't be a bare `?`/`!` — the root type already absorbed every trailing `?`/`!`
-// (see keyPathRootType) — so `keyPathPivotFirst` drops them; after ≥1 property the flag is still true
-// but the root is out of reach, so bare `?`/`!` are re-admitted (`\Foo.bar?`).
-// Ground truth: `\Optional.?!?!?!?` accepts (dotted `.?` is the first non-property, then a bare run)
-// but `\Optional.?!?!?!?.??!` rejects (dotted `.??!` once the flag is false) — testKeypathExpression#12
-// vs the C1 reject; `\String?.!.count` = root `String?` + `.!` + `.count`; `\Foo?.?.?.blah` is the
-// keypath `\Foo?.?` followed by the infix operator `.?.` and `blah` (testKeyPathFollowedByOperator).
-keyPathComponents = keyPathProperty keyPathComponentsAfterProperty? .   // flag true: leading property run
-keyPathComponents = keyPathPivotFirst keyPathBareTail? .                // first non-property (no bare ?/!) → flag false
+// dev 4 — flag-true run (dotted forms allowed) vs flag-false tail (bare only), as explicit
+// nonterminals. NOTE: an EBNF collapse — `keyPathComponents = { property } [ pivot { bare } ]` —
+// reads shorter but is NON-CONFLUENT: it makes the component bracketing ambiguous and
+// residual-ambiguity jumps 1 → ~40 across the keypath tests (seed-dependent; measured). The
+// right-recursive nonterminals below are load-bearing for disambiguation, not just verbosity.
+// Entry pivot (0 properties) = keyPathPivotFirst — no bare `?`/`!`: the root absorbed trailing
+// `?`/`!` (dev 2), and excluding them keeps `\Foo?` unambiguous. After ≥1 property, keyPathPivot
+// re-admits bare `?`/`!` (`\Foo.bar?`). The bare tail has no dotted `.?`/`.!`/`.[`.
+keyPathComponents = keyPathProperty keyPathComponentsAfterProperty? .   // leading property run
+keyPathComponents = keyPathPivotFirst keyPathBareTail? .                // first non-property → flag false
 
 keyPathComponentsAfterProperty = keyPathProperty keyPathComponentsAfterProperty? .   // flag stays true
-keyPathComponentsAfterProperty = keyPathPivot keyPathBareTail? .                     // non-property after a property → flag false
+keyPathComponentsAfterProperty = keyPathPivot keyPathBareTail? .                     // non-property → flag false
 
 keyPathProperty = "." keyPathMemberName .
 
-// The first non-property component while the flag is still true — dotted forms allowed. Bare `?`/`!`
-// are EXCLUDED here: parseSimpleType greedily absorbed any leading `?`/`!` into the root type.
-keyPathPivotFirst = "." >s< optionalMark .                      // .?
-keyPathPivotFirst = "." >s< forceMark .                        // .!
+keyPathPivotFirst = keyPathDot >s< optionalMark .              // .?  (keyPathDot per operator dev 6)
+keyPathPivotFirst = keyPathDot >s< forceMark .                 // .!
 keyPathPivotFirst = "." "[" functionCallArgumentList? "]" .     // .[args]
 keyPathPivotFirst = "[" functionCallArgumentList? "]" .         // bare [args]  (`\[0].y`, `\Foo[0]`)
-// After ≥1 property the flag is still true but the root can no longer reach a bare `?`/`!`, so re-admit them:
 keyPathPivot = keyPathPivotFirst .
-keyPathPivot = >s< optionalMark .                              // bare ?  (`\Foo.bar?`)
+keyPathPivot = >s< optionalMark .                              // bare ?  (`\Foo.bar?`; dev 2: re-admitted after a property)
 keyPathPivot = >s< forceMark .                                 // bare !
 
-// After the first non-property: NO dotted `.?`/`.!`/`.[`; only bare postfix/subscript + properties.
-keyPathBareTail = keyPathBareComponent keyPathBareTail? .
-keyPathBareComponent = keyPathProperty .                        // .member (always allowed)
+keyPathBareTail = keyPathBareComponent keyPathBareTail? .      // flag false: no dotted `.?`/`.!`/`.[`
+keyPathBareComponent = keyPathProperty .                        // .member
 keyPathBareComponent = >s< optionalMark .                       // bare ?
 keyPathBareComponent = >s< forceMark .                          // bare !
 keyPathBareComponent = "[" functionCallArgumentList? "]" .      // bare [args]

@@ -54,13 +54,17 @@ struct TokenPattern {
     /// (`for` inside `foreach`). Grammar-declared; see TODO #0 / `Multiple
     /// Lexicalisation` §4.1 (suffix-property longest-across).
     var isLexicalClass: Bool = false
-    /// `@splitBefore("c")` — besides its maximal match, this (regex) terminal also
-    /// offers the prefix ending before each *internal* occurrence of `c`. Ports
-    /// swift-syntax's `lexOperatorIdentifier` regex-scan (Cursor.swift:2275): an
-    /// operator token is split before an internal `/` so a regex literal can follow
-    /// a prefix operator (`^^/regex/` → `^^` + `/regex/`). A leading `c` is not a
-    /// split point.
-    var splitBefore: Character? = nil
+    /// `@splitBefore(X)` — besides its maximal match, this (regex) terminal also
+    /// offers the prefix ending before each *internal* position where terminal `X`
+    /// begins a non-empty match. Ports swift-syntax's `lexOperatorIdentifier`
+    /// regex-scan (Cursor.swift:2275): an operator token is split before an internal
+    /// `regexOpenSlash` so a regex literal can follow a prefix operator
+    /// (`^^/regex/` → `^^` + `/regex/`). A leading match position is not a split
+    /// point. Keying on a *terminal* (not a raw char) names the construct and lets
+    /// the split inherit `X`'s `<-<` position gate — see the split-gate in
+    /// `MessageParser.tokenMatch`. Stores the terminal *name*; resolved to an ID at
+    /// parser build.
+    var splitBeforeTerminal: String? = nil
     /// `=|` lexical-nonterminal marker. This terminal has no regex/literal source; its match
     /// is computed by a GLL sub-parse of the same-named nonterminal (see `GrammarNode.isLexicalToken`
     /// and `MessageParser` lexicalTokenRecognisers). Skipped when building regexByID/literalSourceByID.

@@ -106,10 +106,11 @@ struct OnDemandLiteralLexer: LCNPLexer {
     /// `terminalID → compiled regex` for every regex terminal (non-literal,
     /// non-skip). Answered from `input` directly via `prefixMatch`.
     let regexByID: [Int: Regex<AnyRegexOutput>]
-    /// `@splitBefore("c")` per terminal: besides the maximal match, also offer the
-    /// prefix ending before each internal `c`. Ports swift-syntax's operator
-    /// regex-scan (`^^/regex/` → `^^` + `/regex/`).
-    let splitBeforeByID: [Int: Character]
+    /// `@splitBefore(X)` per terminal: besides the maximal match, also offer the
+    /// prefix ending before each internal position where terminal `X` (the value)
+    /// begins a non-empty match. Ports swift-syntax's operator regex-scan
+    /// (`^^/regex/` → `^^` + `/regex/`, keyed on `regexOpenSlash`).
+    let splitBeforeByID: [Int: Int]
     /// Terminal IDs of `@lexicalClass` regex terminals (identifier, operator, …).
     /// Maximal-munch (default, longest-across): a literal match is suppressed when
     /// any lexical-class terminal has a strictly longer match at the same start
@@ -188,15 +189,17 @@ struct OnDemandLiteralLexer: LCNPLexer {
             let maxEnd = m.range.upperBound
             let cursorEnd = skipTrivia(from: maxEnd)
             var results = [LexMatch(terminalID: terminalID, start: scanStart, end: maxEnd, triviaEnd: cursorEnd)]
-            // @splitBefore("c"): besides the maximal match, offer the prefix ending
-            // before each internal `c` — ports swift-syntax lexOperatorIdentifier's
-            // regex-scan (Cursor.swift:2275), letting `^^/regex/` split into `^^`
-            // + `/regex/`. A leading `c` is not a split point. No trivia sits before
-            // the split char, so end == triviaEnd.
-            if let splitChar = splitBeforeByID[terminalID] {
+            // @splitBefore(X): besides the maximal match, offer the prefix ending
+            // before each internal position where terminal `X` begins — ports
+            // swift-syntax lexOperatorIdentifier's regex-scan (Cursor.swift:2275),
+            // letting `^^/regex/` split into `^^` + `/regex/` (X = regexOpenSlash).
+            // A leading match position is not a split point. No trivia sits before
+            // the split, so end == triviaEnd. Whether the split survives in infix
+            // position is decided by X's `<-<` gate in `tokenMatch`.
+            if let splitID = splitBeforeByID[terminalID] {
                 var i = input.index(after: scanStart)
                 while i < maxEnd {
-                    if input[i] == splitChar {
+                    if splitTerminalMatches(splitID, at: i) {
                         results.append(LexMatch(terminalID: terminalID, start: scanStart, end: i, triviaEnd: i))
                     }
                     i = input.index(after: i)
@@ -205,6 +208,22 @@ struct OnDemandLiteralLexer: LCNPLexer {
             return results
         }
         return []
+    }
+
+    /// Does the `@splitBefore` key terminal `terminalID` begin a non-empty match
+    /// exactly at `pos` — no trivia skip (split points sit mid-token)? Used by the
+    /// `@splitBefore(X)` loop to offer an operator prefix ending where terminal `X`
+    /// can start. `X` is a single-char delimiter in practice (`regexOpenSlash`,
+    /// `openAngle`), so this is cheap.
+    private func splitTerminalMatches(_ terminalID: Int, at pos: CharPosition) -> Bool {
+        if let literal = literalSourceByID[terminalID] {
+            return input[pos...].hasPrefix(literal)
+        }
+        if let regex = regexByID[terminalID],
+           let m = input[pos...].prefixMatch(of: regex), m.range.upperBound > pos {
+            return true
+        }
+        return false
     }
 
     /// Advance past any sequence of trivia matches starting at `pos`. Tries

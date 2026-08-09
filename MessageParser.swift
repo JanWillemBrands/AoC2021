@@ -404,11 +404,16 @@ class MessageParser {
         // strictly longer match at the same start. Collect the class terminal
         // IDs; the runtime prefix-match lives in `OnDemandLiteralLexer.lex`.
         var lexicalClassIDs: [Int] = []
-        var splitBeforeByID: [Int: Character] = [:]
+        // `@splitBefore(X)`: terminal ID → the ID of the terminal `X` whose start
+        // positions define the split points. Terminal-keyed (not char-keyed) so the
+        // split inherits `X`'s `<-<` gate (see the split-gate in `tokenMatch`).
+        var splitBeforeByID: [Int: Int] = [:]
         for (name, pat) in grammar.terminals {
             guard let id = grammar.symbolToID[name] else { continue }
             if pat.isLexicalClass { lexicalClassIDs.append(id) }
-            if let sc = pat.splitBefore { splitBeforeByID[id] = sc }
+            if let st = pat.splitBeforeTerminal, let stID = grammar.symbolToID[st] {
+                splitBeforeByID[id] = stID
+            }
         }
         lexer = OnDemandLiteralLexer(
             input: input,
@@ -906,21 +911,29 @@ class MessageParser {
         // commit history (Phase E Step 1). Filters out matches whose context
         // doesn't satisfy the grammar's lookbehind annotation. Cheap when the
         // terminal has no lookbehind (most do not).
-        if let lookbehind = lookbehindByTerminalID[cL.nameID],
+        // Own-lookbehind gate (`++N`/`--N`): for a terminal carrying its own
+        // lookbehind that is NOT a `@splitBefore` terminal, a failing lookbehind
+        // blocks it entirely — the regex-vs-division case (`regexOpenSlash` after an
+        // operand-ender is division, not a regex start).
+        if grammar.terminals[cL.name]?.splitBeforeTerminal == nil,
+           let lookbehind = lookbehindByTerminalID[cL.nameID],
            !lookbehindAllows(lookbehind, at: cI) {
-            // On a `@splitBefore` terminal, a failing lookbehind gates the SPLIT matches
-            // ONLY — it does not block the terminal. The operand-ender predecessor means
-            // this operator is in infix position (swift-syntax `preferRegexOverBinaryOperator`
-            // = false), so maximal-munch wins and the "operator ends before `/`" split
-            // (which would expose a competing regex) is dropped. The maximal base match
-            // survives — operators legitimately follow operands. For a non-split terminal,
-            // a failing lookbehind blocks it entirely (the regex-vs-division case).
-            if grammar.terminals[cL.name]?.splitBefore != nil {
-                let maxEnd = matches.map(\.end).max()!
-                matches = matches.filter { $0.end == maxEnd }
-            } else {
-                return []
-            }
+            return []
+        }
+        // Inherited split gate: a `@splitBefore(X)` terminal offers its SPLIT
+        // (shorter) matches only where terminal `X` could legitimately begin — i.e.
+        // when `X`'s own `<-<` lookbehind passes at `cI`. `X = regexOpenSlash` carries
+        // the operand-ender exclusion (swift-syntax `preferRegexOverBinaryOperator`),
+        // so in infix position (operator preceded by an operand) the split — which
+        // would expose a competing regex — is dropped and maximal munch wins; the
+        // maximal base match always survives (operators legitimately follow operands).
+        // Keying on `X` means the operator terminal needs no duplicated `<-<` list.
+        if let splitName = grammar.terminals[cL.name]?.splitBeforeTerminal,
+           let splitID = grammar.symbolToID[splitName],
+           let splitLookbehind = lookbehindByTerminalID[splitID],
+           !lookbehindAllows(splitLookbehind, at: cI) {
+            let maxEnd = matches.map(\.end).max()!
+            matches = matches.filter { $0.end == maxEnd }
         }
 
         // Exclude: `---(…)` — for each candidate end, if any excluded terminal

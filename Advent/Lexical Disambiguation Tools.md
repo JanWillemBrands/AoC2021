@@ -301,3 +301,46 @@ suppression**, independently of the `^^/regex/` residual (retired by the irreduc
 _(Supersedes an earlier draft of this section that wrongly assumed "this fix" = the LCNP finish and
 answered "yes"; the recovered transcript shows "this fix" = the narrow `@splitBefore(regexOpenSlash)`
 reframe, which does not deliver the suppression change.)_
+
+## 2026-08-08 — EXECUTED: `@splitBefore` is now terminal-keyed (`@splitBefore(regexOpenSlash)`)
+
+The reframe is implemented and validated. `@splitBefore` no longer takes a raw char; it takes a
+**terminal name** whose start positions define the split points, and the split inherits that
+terminal's `<-<` gate.
+
+**Code changes:**
+- `TokenPattern.splitBefore: Character?` → `splitBeforeTerminal: String?` (`Scanner.swift`).
+- `ApusParser` parses `@splitBefore(identifier)` (was `@splitBefore("c")`).
+- `OnDemandLiteralLexer.splitBeforeByID: [Int: Int]` (terminal → split-terminal ID); the split loop
+  now offers a prefix at each internal position where the key terminal lexes non-empty, via a new
+  `splitTerminalMatches` helper (`Descriptor.swift`).
+- `MessageParser.tokenMatch` split-gate split in two: (a) a terminal with its *own* lookbehind that
+  is *not* a `@splitBefore` terminal is blocked entirely on failure (regex-vs-division); (b) a
+  `@splitBefore(X)` terminal drops only its split matches when **X's** lookbehind fails at `cI`.
+- `Swift.apus`: `operatorToken` → `@splitBefore(regexOpenSlash)` **and its own `<-<` list deleted**
+  (now inherited from `regexOpenSlash`); `operatorName` → `@splitBefore(openAngle)`.
+
+**The one subtlety the recovered plan missed ("inherit for free" wasn't quite free):**
+`operatorToken`'s old `<-<` list contained the wildcard `"_"`; `regexOpenSlash`'s list did **not**.
+The split-gate is evaluated at the *operator's* start (predecessor `_` in `_=/0/`), whereas
+`regexOpenSlash`'s native direct-use gate is evaluated at the `/` (never immediately after `_`), so
+the two lists had legitimately diverged. Inheriting `regexOpenSlash`'s list therefore lost the `_`
+guard → a new residual ambiguity on `testForwardSlashRegex19#1` (`_=/0/`). Fix: **add `"_"` to
+`regexOpenSlash`'s `<-<` list** — correct for its direct use too (a regex never starts right after a
+`_` wildcard operand-ender); the omission was a latent gap. With that, `operatorToken`'s old list is
+fully subsumed by `regexOpenSlash`'s (which is the superset, additionally excluding
+`func`/`operator`/`->`/`...`/`.`/`@`).
+
+**Validation (`tools/run_tests.sh`, full suite set, `treesMatch` ignored per TESTING.md §2):**
+
+| metric | baseline | after |
+|---|---|---|
+| reject failures | 79 | 79 |
+| accept failures | 1 distinct (`\Foo?.?.?.blah`) | same |
+| residual ambiguity | 1 (`testForwardSlashRegex11#1`) | same |
+
+Behaviour-preserving on every correctness signal; `^^/regex/`, `Array<Array<Int>>`, `Int??`,
+`func %%%%<T,U>`, `/x/+/y/`, `_=/0/`, `0 /^/ 1`, `a/b` all unchanged. Net structural win: one fewer
+duplicated `<-<` list, and `@splitBefore` now names its construct. The regex-instead-of-literal trick
+(`closeAngle`/`optionalMark`/`forceMark`) is **untouched** — retiring it remains the separate
+predict-gated-suppression step per the section above.

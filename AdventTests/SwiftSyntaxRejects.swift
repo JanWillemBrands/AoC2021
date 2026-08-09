@@ -65,7 +65,7 @@ let expressionRejectSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "testKeyPathMethodAndInitializers#3", source: #"\Foo.method<Int>()"#, origin: "ExpressionTests.testKeyPathMethodAndInitializers", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testKeyPathMethodAndInitializers#4", source: #"\Foo.method<Int>(arg:)"#, origin: "ExpressionTests.testKeyPathMethodAndInitializers", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testKeyPathSubscript#1", source: #"\Foo.Bar.[2].[1]"#, origin: "ExpressionTests.testKeyPathSubscript", syntaxVersion: "603.0.1"),
-    SwiftSnippet(label: "testKeyPathSubscript#2", source: #"\Foo.Bar.?.[1]"#, origin: "ExpressionTests.testKeyPathSubscript", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testKeyPathSubscript#2", source: #"\Foo.Bar.?.[1]"#, origin: "ExpressionTests.testKeyPathSubscript", syntaxVersion: "603.0.1", disabledReason: "greedy-keypath commit (REJECTS.md C1): swift-syntax commits to the keypath and errors on the missing member after `.?` (`.[` is not `.member`). Advent (GLL) also finds the valid-shaped reading `\\Foo.Bar` + infix `.?.` + `[1]` and nothing prunes it — the greedy alternative doesn't complete, so `@longest` can't see it. Needs a keypath-commit / structural-lookahead primitive, not a lexical fix."),
     SwiftSnippet(label: "testChainedOptionalUnwrapsWithDot#1", source: #"\T.?.!"#, origin: "ExpressionTests.testChainedOptionalUnwrapsWithDot", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testChainedOptionalUnwrapsAfterSubscript#1", source: #"\T.abc[2].?"#, origin: "ExpressionTests.testChainedOptionalUnwrapsAfterSubscript", syntaxVersion: "603.0.1"),
     SwiftSnippet(

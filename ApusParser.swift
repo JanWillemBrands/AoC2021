@@ -194,14 +194,16 @@ class ApusParser {
             isLexicalClassAnnotation = true
             cI += 1
         }
-        // `@splitBefore("c")` — regex terminal also offers prefixes ending before
-        // each internal `c` (ports swift-syntax's operator regex-split). See TODO #0.
-        var splitBeforeChar: Character? = nil
+        // `@splitBefore(X)` — regex terminal also offers prefixes ending before
+        // each internal position where terminal `X` begins (ports swift-syntax's
+        // operator regex-split). Keyed on a terminal name, not a raw char, so the
+        // split inherits `X`'s `<-<` position gate. See TODO #0.
+        var splitBeforeTerminalName: String? = nil
         if token.kind == "pragma", token.stripped == "splitBefore" {
             cI += 1
             try expect(["("]); cI += 1
-            try expect(["literal"])
-            splitBeforeChar = token.stripped.escapesRemoved.first
+            try expect(["identifier"])
+            splitBeforeTerminalName = String(token.image)
             cI += 1
             try expect([")"]); cI += 1
         }
@@ -225,7 +227,7 @@ class ApusParser {
                 terminalAlias = nonTerminalName
                 terminal = try regex()
                 if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
-                if let sc = splitBeforeChar { grammar.terminals[nonTerminalName]?.splitBefore = sc }
+                if let st = splitBeforeTerminalName { grammar.terminals[nonTerminalName]?.splitBeforeTerminal = st }
             case "literal":
                 terminal = literal()
                 literalAliases[nonTerminalName] = terminal.name
@@ -236,7 +238,7 @@ class ApusParser {
                 //   name - @builder(key) .     → ApusRegexLibrary.patterns["key"]
                 terminal = try regexBuilder(name: nonTerminalName)
                 if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
-                if let sc = splitBeforeChar { grammar.terminals[nonTerminalName]?.splitBefore = sc }
+                if let st = splitBeforeTerminalName { grammar.terminals[nonTerminalName]?.splitBeforeTerminal = st }
             default:
                 try expect(["regex", "literal"])
             }
