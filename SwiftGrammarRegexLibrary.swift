@@ -202,8 +202,9 @@ enum ApusRegexLibrary {
         ZeroOrMore { identifierCharacter }
     }.matchingSemantics(.unicodeScalar)
 
-    /// Shared operator body — `(headStandalone)(char)* | special(char)+`. Plain
-    /// (no scalar option); the terminals below apply `.unicodeScalar` on the whole.
+    /// Shared operator body — `(headStandalone)(char)* | special(char)+`. Carries
+    /// `.unicodeScalar` semantics itself, so every consumer matches per scalar (the
+    /// `⚽️` = U+26BD + U+FE0F case) without having to re-apply it.
     static let operatorBody = Regex {
         ChoiceOf {
             Regex {
@@ -215,11 +216,11 @@ enum ApusRegexLibrary {
                 OneOrMore { operatorCharacter }
             }
         }
-    } // TODO: why is there no .matchingSemantics(.unicodeScalar) here?
+    }.matchingSemantics(.unicodeScalar)
 
-    /// `operatorToken` / `operatorName` — the operator body under scalar semantics
+    /// `operatorToken` / `operatorName` — the operator body (already scalar-semantic)
     /// (Swift.apus operator dev 1: one greedy `@lexicalClass` token).
-    static let operatorToken = operatorBody.matchingSemantics(.unicodeScalar)
+    static let operatorToken = operatorBody
 
     /// `postfixOperatorToken` — operator body that may not BEGIN with `!`/`?`
     /// (Swift.apus operator dev 4: `x!!` is two force-unwraps, not a `!!` operator).
