@@ -170,43 +170,60 @@ class Oracle {
                     }
                 }
             }
-            // Alternate-level @prefer. Collect preferred alternates' last body
-            // symbols; register a PreferRule on every NON-preferred alternate's
-            // last body symbol so its completion yields are pruned wherever a
-            // preferred sibling derives the same parent node (same (i,j) span).
-            var preferredLast: [GrammarNode] = []
-            var scan: GrammarNode? = nt.alt
-            while let a = scan {
-                if a.isPreferred, let last = a.bodySymbols.last { preferredLast.append(last) }
-                scan = a.alt
-            }
-            if !preferredLast.isEmpty {
-                let p = parser
-                var b: GrammarNode? = nt.alt
-                while let a = b {
-                    if !a.isPreferred, let last = a.bodySymbols.last {
-                        rules.append((last, PreferRule(preferredLastSymbols: preferredLast,
-                                                       yieldsOf: { p.yield(of: $0) })))
-                    }
-                    b = a.alt
-                }
-            }
+            // Alternate-level @prefer on the nonterminal's own alternate chain.
+            registerPrefer(altChainHead: nt.alt)
         }
 
-        // Bracket-level @avoid. Walk the full node graph (the pragma lives on a
-        // nested OPT/KLN/POS, not a top-level alternate) and register an
-        // AvoidOptionalRule on the symbol immediately following each @avoid bracket.
+        // Full-graph walk for the pragmas that live on a NESTED node rather than a
+        // top-level alternate:
+        //   - @avoid: register an AvoidOptionalRule on the symbol immediately
+        //     following each @avoid OPT/KLN/POS bracket.
+        //   - @prefer inside an inline cluster ( a | b ) / [ … ] / { … } / < … >:
+        //     a bracket owns its alternates via `.alt` exactly like a nonterminal
+        //     LHS (see `factor()` → `GrammarNode(kind: .DO/…, alt: selection())`),
+        //     and `@prefer` already lands on those ALT nodes via `sequence()`. The
+        //     same PreferRule therefore applies verbatim — only this registration
+        //     walk had been skipping nested clusters. We run it per BRACKET node
+        //     (not per ALT node, whose `.alt` is a sibling continuation, not a
+        //     fresh group head), so each alternate group is registered exactly once.
         var seen = Set<ObjectIdentifier>()
         func walk(_ node: GrammarNode?) {
             guard let node, seen.insert(ObjectIdentifier(node)).inserted else { return }
-            if node.kind.isBracket, node.isAvoided,
-               let next = node.seq, next.kind != .END {
-                rules.append((next, AvoidOptionalRule()))
+            if node.kind.isBracket {
+                if node.isAvoided, let next = node.seq, next.kind != .END {
+                    rules.append((next, AvoidOptionalRule()))
+                }
+                registerPrefer(altChainHead: node.alt)
             }
             if node.kind != .END { walk(node.seq) }
             walk(node.alt)
         }
         for nt in grammar.nonTerminals.values { walk(nt) }
+    }
+
+    /// Register alternate-level `@prefer` for one alternate group (a chain of `.ALT`
+    /// nodes reachable from `altChainHead`). Collect the preferred alternates' last
+    /// body symbols, then register a `PreferRule` on every NON-preferred sibling's
+    /// last body symbol so its completion yields are pruned wherever a preferred
+    /// sibling covers the same `(i, j)` span. Level-agnostic: the head may be a
+    /// nonterminal's `nt.alt` or an inline cluster's `bracket.alt`.
+    private func registerPrefer(altChainHead: GrammarNode?) {
+        var preferredLast: [GrammarNode] = []
+        var scan = altChainHead
+        while let a = scan {
+            if a.isPreferred, let last = a.bodySymbols.last { preferredLast.append(last) }
+            scan = a.alt
+        }
+        guard !preferredLast.isEmpty else { return }
+        let p = parser
+        var b = altChainHead
+        while let a = b {
+            if !a.isPreferred, let last = a.bodySymbols.last {
+                rules.append((last, PreferRule(preferredLastSymbols: preferredLast,
+                                               yieldsOf: { p.yield(of: $0) })))
+            }
+            b = a.alt
+        }
     }
 
     @discardableResult

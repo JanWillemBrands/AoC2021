@@ -157,19 +157,16 @@ struct OracleDisambiguationTests {
         // Minimal analogue of the factored `keyPathExpression` that motivated this
         // work: a single token `x` is ambiguous between a "root" reading and a
         // "component" reading, so `[x]` parses two ways that cover the exact same
-        // span. `@prefer` on the first alternate of the group should keep only the
-        // root reading. The group LOADS today; the Oracle just never scans it, so
-        // the ambiguity currently survives (hence the `withKnownIssue` on
-        // `isUnambiguous`).
+        // span. `@prefer` on the first alternate of the group keeps only the root
+        // reading. The Oracle's registration walk now scans bracket alternate chains
+        // (`registerPrefer` per bracket node), so the same `PreferRule` fires here.
 
         @Test("@prefer in ( a | b ) selection group — acceptance preserved, ambiguity removed")
         func preferInSelectionGroup() throws {
             let g = #"x - /x/ . S = "[" ( @prefer root comps? | comps ) "]" . root = x . comps = x ."#
             let r = try parseOracleAmbiguity(grammar: g, message: "[x]")
             #expect(r.postMatch, "@prefer in a selection group must not drop the valid parse")
-            withKnownIssue("nested @prefer in ( | ) not yet unified — Tier A", isIntermittent: false) {
-                #expect(r.isUnambiguous, "@prefer in the group should collapse the root/component ambiguity")
-            }
+            #expect(r.isUnambiguous, "@prefer in the group should collapse the root/component ambiguity")
         }
 
         // The multi-element reading under a nested prefer must still survive — the
