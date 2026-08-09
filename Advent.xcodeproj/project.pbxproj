@@ -205,6 +205,7 @@
 		4EEBC9FB2F9EF35000E838A7 /* Swift6GrammarDraft.docx */ = {isa = PBXFileReference; lastKnownFileType = file; path = Swift6GrammarDraft.docx; sourceTree = "<group>"; };
 		4EEBC9FC2F9EF35000E838A7 /* Swift6GrammarDraft.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Swift6GrammarDraft.txt; sourceTree = "<group>"; };
 		4EEBCA032FA03A2C00E838A7 /* PEG-GLL-Oracle-Pruning.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "PEG-GLL-Oracle-Pruning.md"; sourceTree = "<group>"; };
+		4EF1DB8B3028CDCB0023F1F7 /* Oracle Disambiguation Unification.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Oracle Disambiguation Unification.md"; sourceTree = "<group>"; };
 		4EF57BB33020ACB800549D7B /* ApusToHTML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusToHTML.swift; sourceTree = "<group>"; };
 		CB6B7315257EA9F400B929C6 /* Advent */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Advent; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -457,6 +458,7 @@
 				4E8D058E2F67204C0081C6D2 /* Frameworks */,
 				4E8D05962F6A183C0081C6D2 /* GeneratedParser */,
 				4EEBC9FE2F9EF35000E838A7 /* grammars */,
+				4EF1DB8B3028CDCB0023F1F7 /* Oracle Disambiguation Unification.md */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 			);
 			sourceTree = "<group>";
