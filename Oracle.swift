@@ -172,6 +172,10 @@ class Oracle {
             }
             // Alternate-level @prefer on the nonterminal's own alternate chain.
             registerPrefer(altChainHead: nt.alt)
+            // Alternate-prefix @longest/@shortest/@left/@right on the nonterminal's
+            // own alternate chain (the uniform per-ALT form; complements the legacy
+            // production-start `nt.disambiguation` handled just above).
+            registerAltDisambiguation(owner: nt, altChainHead: nt.alt)
         }
 
         // Full-graph walk for the pragmas that live on a NESTED node rather than a
@@ -194,6 +198,7 @@ class Oracle {
                     rules.append((next, AvoidOptionalRule()))
                 }
                 registerPrefer(altChainHead: node.alt)
+                registerAltDisambiguation(owner: node, altChainHead: node.alt)
             }
             if node.kind != .END { walk(node.seq) }
             walk(node.alt)
@@ -223,6 +228,30 @@ class Oracle {
                                                yieldsOf: { p.yield(of: $0) })))
             }
             b = a.alt
+        }
+    }
+
+    /// Register alternate-prefix `@longest`/`@shortest`/`@left`/`@right` for one
+    /// alternate group. Mirrors the legacy production-start handling in `init`, but
+    /// reads the annotation off each `.ALT` node (`alt.disambiguation`) so it works
+    /// on ANY owner — a nonterminal or an inline `( )`/`[ ]`/`{ }`/`< >` cluster:
+    ///   - extent (`@longest`/`@shortest`): register on the OWNER node (its yields
+    ///     from a common start are what an extent rule prunes).
+    ///   - associativity (`@left`/`@right`): register a pivot rule on the annotated
+    ///     alternate's own body symbols.
+    private func registerAltDisambiguation(owner: GrammarNode, altChainHead: GrammarNode?) {
+        var scan = altChainHead
+        while let a = scan {
+            if let d = a.disambiguation {
+                switch d {
+                case .longest:  rules.append((owner, LongestMatchRule()))
+                case .shortest: rules.append((owner, ShortestMatchRule()))
+                case .left, .right:
+                    let rule: DisambiguationRule = d == .left ? LeftAssocRule() : RightAssocRule()
+                    for sym in a.bodySymbols { rules.append((sym, rule)) }
+                }
+            }
+            scan = a.alt
         }
     }
 

@@ -99,16 +99,29 @@ Tiering (safe increments):
   is purely additive on the real grammar — full sweep unchanged at accept 0 / reject 79 / residual
   ambiguity 1. New nested test `preferInSelectionGroup` green.
 - **Tier B — `@longest`/`@shortest`/`@left`/`@right` on clusters, incl. `{ }` / `< >`**: MEDIUM.
-  Parser+model plumbing + the hazard below. NOT STARTED. Four `withKnownIssue` tripwires already in
-  `OracleDisambiguationTests.NestedCluster` (`leftOnCluster`, `rightOnCluster`, `longestOnPOSClosure`,
-  `longestOnKLNClosure`) flip to unexpected-pass when it lands.
-  **Open design decision:** the apus syntax for a cluster-attached extent/assoc pragma. Provisional
-  choice under test = "pragma immediately after the opening bracket annotates the cluster node"
-  (mirrors where `@avoid`/`@prefer` already sit inside brackets): `( @left a "+" a | b )`,
-  `< @longest word >`, `{ @longest word }`. Needs: apus parse of the prefix + a `disambiguation`
-  slot honoured on cluster nodes + Oracle registration off `bracket.disambiguation` / `bracket.alt`
-  body symbols (generalise the nonterminal loop's `@longest`/`@left` arms exactly as `registerPrefer`
-  was generalised).
+  ✅ **DONE**. **Design resolved (user):** all disambiguation pragmas are alternate-prefixes on an
+  `.ALT` node — `@prefer` via `isPreferred`, the rest via `alt.disambiguation` — both parsed in
+  `sequence()`. Since a nonterminal AND every bracket own an alternate chain, there is *no* placement
+  question: the annotation lives on the alternate, wherever alternate-prefixes already go
+  (`( @left E "+" E | n )`, `< @longest word >`, `{ @longest word }`). Implementation:
+  - `ApusParser.sequence()`: parse `@longest/@shortest/@left/@right` prefix → `startOfSequence.disambiguation`.
+  - `Oracle.registerAltDisambiguation(owner:altChainHead:)`: reads `alt.disambiguation` off any chain;
+    extent (`@longest/@shortest`) registers on the OWNER node, assoc (`@left/@right`) on that alt's
+    body symbols. Called for both nonterminals (loop) and brackets (walk).
+  - Legacy production-start form (`@longest X = …`, `nt.disambiguation`) untouched → zero Swift.apus
+    migration. Full sweep unchanged: accept 0 / reject 79 / residual ambiguity 1.
+  Six `NestedCluster` tests green (prefer×2, left, right-parity, longest-POS, longest-KLN).
+
+  **Two findings (recorded, orthogonal to this branch):**
+  1. **KLN yield-identity hazard did NOT bite** the tested `{ @longest word }` case — the shared-cluster
+     conflation concern (below) did not manifest for a simple repetition extent. Not proven safe in
+     general; revisit if a cluster-`@longest` over genuinely-varying repetition extents misbehaves.
+  2. **`@right` under-prunes on 3+ operands** — `@right E = E "+" E | n` on `1 + 2 + 3` prunes only
+     1 pivot and leaves residual ambiguity (`isUnambiguous: false`), whereas `@left` fully resolves.
+     Verified **level-independent** (same at top level and in a cluster), so it is a PRE-EXISTING
+     `RightAssocRule` limitation, not a Tier-B/cluster issue. `rightOnCluster` therefore asserts
+     `pruned > 0` (parity with the top-level `rightAssocPrunes`), not `isUnambiguous`. Fixing the
+     right-assoc keep-min-pivot rule to cascade to a fixpoint is a separate task.
 
 ---
 

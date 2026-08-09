@@ -408,6 +408,16 @@ class ApusParser {
         if token.kind == "pragma" && token.stripped == "prefer" {
             startOfSequence.isPreferred = true
             cI += 1
+        } else if token.kind == "pragma", let d = Disambiguation(rawValue: token.stripped) {
+            // Alternate-prefix `@longest`/`@shortest`/`@left`/`@right` — the uniform,
+            // node-agnostic form. Stored on the ALT node (like `@prefer`'s
+            // `isPreferred`), so the Oracle can read it off ANY alternate chain: a
+            // nonterminal's `nt.alt` OR an inline cluster's `bracket.alt`. This is
+            // what lets `( @left a "+" a | b )`, `< @longest word >` etc. work. The
+            // legacy production-start form (`@longest X = …`, parsed in
+            // `production()` onto the LHS `nt.disambiguation`) still works unchanged.
+            startOfSequence.disambiguation = d
+            cI += 1
         }
 
         // leading actions (before first factor)
