@@ -93,9 +93,22 @@ Tests first (this is the risky bit — lock behaviour before touching the engine
 Tiering (safe increments):
 - **Tier A — `@prefer` on non-repeating selection `( a | b )`** (the `keyPathExpression` case):
   LOW risk. Registration-walk generalization only; `isPreferred` already attaches; `PreferRule`
-  reused as-is.
+  reused as-is. ✅ **DONE** (commit `3685f3f`). `registerPrefer(altChainHead:)` extracted and
+  called per BRACKET node inside the existing `@avoid` full-graph walk. Verified: every `@prefer`
+  in `Swift.apus` is a top-level nonterminal alternate (none inside an inline group), so the change
+  is purely additive on the real grammar — full sweep unchanged at accept 0 / reject 79 / residual
+  ambiguity 1. New nested test `preferInSelectionGroup` green.
 - **Tier B — `@longest`/`@shortest`/`@left`/`@right` on clusters, incl. `{ }` / `< >`**: MEDIUM.
-  Parser+model plumbing + the hazard below.
+  Parser+model plumbing + the hazard below. NOT STARTED. Four `withKnownIssue` tripwires already in
+  `OracleDisambiguationTests.NestedCluster` (`leftOnCluster`, `rightOnCluster`, `longestOnPOSClosure`,
+  `longestOnKLNClosure`) flip to unexpected-pass when it lands.
+  **Open design decision:** the apus syntax for a cluster-attached extent/assoc pragma. Provisional
+  choice under test = "pragma immediately after the opening bracket annotates the cluster node"
+  (mirrors where `@avoid`/`@prefer` already sit inside brackets): `( @left a "+" a | b )`,
+  `< @longest word >`, `{ @longest word }`. Needs: apus parse of the prefix + a `disambiguation`
+  slot honoured on cluster nodes + Oracle registration off `bracket.disambiguation` / `bracket.alt`
+  body symbols (generalise the nonterminal loop's `@longest`/`@left` arms exactly as `registerPrefer`
+  was generalised).
 
 ---
 
