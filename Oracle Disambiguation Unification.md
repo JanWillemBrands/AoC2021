@@ -142,6 +142,44 @@ to clusters unchanged.
 
 ---
 
+## Epsilon watertightness & the `@avoid` model (findings, 2026-08-10)
+
+Stress suite `OracleDisambiguationTests.EpsilonAndAvoidModel`, grounded in Scott/Johnstone/van
+Binsbergen "Derivation representation using binary subtree sets" (SCICO 2019): an empty derivation
+is a real degenerate BSR element `(X ::= ε, j, j, j)` (§3.1 rule 1); the paper explicitly **punts**
+on nullable `X ::= BBβ`, which makes `(BB,i,i)` a multigraph with two `(B,i,i)` children (§1.1 p4,
+§3.2 p8: "easy to add if required"). That punt is our KLN/POS shared-cluster hazard, by name.
+
+1. **Same-span `@prefer`/`@avoid` are epsilon-watertight.** `@prefer` keys correctly through an
+   explicit-ε tail and a skipped-OPT tail: an empty alternate is an addressable `(i,i)` element on
+   its last symbol, so `PreferRule` keys on it. Empty vs non-empty are different spans → no false
+   cross-prune.
+2. **The engine does NOT conflate nullable `A A`.** `A = "a" | ""` on `"a"` is represented as a
+   genuine two-tree ambiguity — we close the gap Scott left open (no ε-multigraph collapse).
+3. **`@avoid A` ≡ `@prefer` on all siblings** for **same-span** groups (the "3 = 1" equivalence
+   holds via `PreferRule`, winners unranked). Generalising `@avoid` to a non-optional multi-alt
+   group needs it parseable as an **alt-prefix** on any alt chain (today `consumeAvoid` only fires
+   right after `[`/`{`/`<`); tripwire `oneAvoidEqualsThreePrefer` is `withKnownIssue` until then.
+
+### Should Swift.apus replace `[ @avoid X ]` with `@shortest [ X ]`? — **No.**
+
+They are equivalent **only locally**, when skip and take converge to the **same end** (verified: the
+two original `@avoid` cases pass with `@shortest`). But the two rules differ in *scope*:
+- `@avoid` = `pruneByPivot` on the **following symbol**, grouped by the follower's `(i,j)` — surgical:
+  it only pits skip against take when they reach the **same overall span**.
+- `@shortest [X]` = `pruneByExtent` on the **OPT node**, grouped by the OPT's **start `i`** — coarser:
+  it prunes *every* take `(i,m)` in favour of skip `(i,i)` from that start, **ignoring the follower**.
+
+Swift.apus's five `@avoid` uses (`prefixExpression`, `closureParameter`×2, `parameter`×2) are
+*deliberately* shared-end (the comments at `Swift.apus:899,1620` engineer a "common end" so
+`pruneByPivot` groups correctly), so a swap would *probably* hold — but `@shortest` is a blunter
+instrument with real over-prune risk if any optional-start ever has take-readings that complete at
+different extents, it buys nothing, and `@avoid` already works. **Keep `@avoid`.** The valuable
+direction is the opposite: generalise `@avoid` to any alt chain as "prefer the siblings" (finding 3),
+not replace it with `@shortest`.
+
+---
+
 ## Key file references
 
 - `Oracle.swift`: rules (`28–98`), registration `init` (`152–210`), Phase-1 `pruneUnproductive`
