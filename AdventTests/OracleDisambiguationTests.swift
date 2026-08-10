@@ -235,4 +235,96 @@ struct OracleDisambiguationTests {
             #expect(r.postMatch)
         }
     }
+
+    // MARK: - Epsilon watertightness & the @avoid model
+
+    // Stress `@prefer`/`@avoid` against empty derivations, and probe the
+    // `@avoid ≡ @shortest [X]` conjecture. Grounded in Scott/Johnstone/van Binsbergen,
+    // "Derivation representation using binary subtree sets" (SCICO 2019): an empty
+    // derivation is a real degenerate BSR element `(X ::= ε, j, j, j)` (§3.1 rule 1),
+    // and the paper explicitly PUNTS on the nullable `X ::= BBβ` case, which yields a
+    // multigraph because `(BB,i,i)` has two children `(B,i,i)` (§1.1 p4, §3.2 p8:
+    // "we have not added the treatment of the special case … easy to add if required").
+    // That punt is exactly our KLN/POS shared-cluster yield-identity hazard. `apus`
+    // spells ε as `""` (empty) or `ε`.
+    @Suite("Epsilon & @avoid model", .serialized)
+    struct EpsilonAndAvoidModel {
+
+        // A) Same-span `@prefer` where the PREFERRED alternate ends in a nonterminal
+        // that derived ε. Its last-symbol BSR yield is the degenerate (i,i) element,
+        // so PreferRule can still key on it: alt1 (`"a" B`, B→"") and alt2 (`"a"`)
+        // both span (0,1) → @prefer collapses them.
+        @Test("@prefer keys through an explicit-ε tail")
+        func preferThroughEpsilonTail() throws {
+            let g = #"S = ( @prefer "a" B | "a" ) . B = "b" | "" ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "a")
+            #expect(r.postMatch, "must still parse 'a'")
+            #expect(r.isUnambiguous, "@prefer should collapse the ε-tail tie")
+        }
+
+        // B) Same, but the tail is a skipped OPT (nullable-over-span, not explicit ε).
+        @Test("@prefer keys through a skipped OPT tail")
+        func preferThroughSkippedOptTail() throws {
+            let g = #"b - /b/ . S = ( @prefer "a" b? | "a" ) ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "a")
+            #expect(r.postMatch)
+            #expect(r.isUnambiguous, "@prefer should collapse the skipped-OPT tie")
+        }
+
+        // C) Multi-alt same-span: mark 3 of 4 alternates `@prefer`; the 4th (D) is
+        // pruned wherever any preferred sibling covers its span. PreferRule does NOT
+        // rank winners, so A/B/C stay mutually ambiguous → pruned>0 but NOT unambiguous.
+        @Test("three @prefer siblings prune the fourth (winners unranked)")
+        func threePreferPruneFourth() throws {
+            let g = #"t - /t/ . S = @prefer A | @prefer B | @prefer C | D . A = t . B = t . C = t . D = t ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "t")
+            #expect(r.postMatch)
+            #expect(r.pruned > 0, "D should be pruned by the preferred siblings")
+            #expect(!r.isUnambiguous, "A/B/C remain mutually ambiguous (prefer doesn't rank winners)")
+        }
+
+        // D) The equivalence you posed: marking the 4th `@avoid` should equal marking
+        // the other three `@prefer` (C). Needs `@avoid` parseable as an alt-prefix on
+        // ANY alt chain — not implemented yet (consumeAvoid only fires right after
+        // [ / { / <), so the grammar does not parse. Tripwire for the generalization.
+        @Test("one @avoid sibling ≡ three @prefer (needs @avoid as alt-prefix)")
+        func oneAvoidEqualsThreePrefer() throws {
+            withKnownIssue("@avoid is not yet an alt-prefix on a general alt chain") {
+                let g = #"t - /t/ . S = A | B | C | @avoid D . A = t . B = t . C = t . D = t ."#
+                let r = try parseOracleAmbiguity(grammar: g, message: "t")
+                #expect(r.postMatch)
+                #expect(r.pruned > 0)
+            }
+        }
+
+        // E) Scott's punt: `A A` with A nullable. On "a" there are two distinct trees
+        // (the 'a' under the first vs. second A). The engine must REPRESENT that as a
+        // genuine ambiguity (not conflate the two (i,i) ε-elements into one tree).
+        @Test("nullable A A represents the ambiguity, no ε-conflation")
+        func nullableRepetitionAmbiguity() throws {
+            let g = #"S = A A . A = "a" | "" ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "a")
+            #expect(r.postMatch, "must parse 'a'")
+            #expect(!r.isUnambiguous, "two distinct trees (a·ε vs ε·a) — must not conflate to one")
+        }
+
+        // F) The `@avoid ≡ @shortest [X]` conjecture, on the two original @avoid cases.
+        // These are LOCAL equivalences: skip and take converge to the SAME overall
+        // span here, which is the only regime where the two rules agree (see the note
+        // on the divergence below).
+        @Test("@shortest [X] reproduces @avoid when readings share an end (skip wins)")
+        func shortestReproducesAvoidSkip() throws {
+            let g = #"mod - /m/ . id - /[a-z]/ . S = [ @shortest mod ] id id? ."#
+            let r = try parsePostOracle(grammar: g, message: "m x")
+            #expect(r.postMatch, "must still parse 'm x'")
+            #expect(r.pruned > 0, "@shortest on the OPT should prune the take reading (skip is shorter)")
+        }
+
+        @Test("@shortest [X] reproduces @avoid when skip cannot parse (take survives)")
+        func shortestReproducesAvoidForcedTake() throws {
+            let g = #"op - /-/ . id - /[a-z]+/ . S = [ @shortest op ] id ."#
+            let r = try parsePostOracle(grammar: g, message: "-x")
+            #expect(r.postMatch, "phase-1 removes the skip; @shortest must keep the forced take")
+        }
+    }
 }
