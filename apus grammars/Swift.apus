@@ -636,12 +636,13 @@ typeInheritanceList = attributes? "~"? "nonisolated"? typeIdentifier
 expression = tryOperator? awaitOperator? conditionalExpression coercingOperator? .
 expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 
-// `@avoid` the optional prefix operator: at expression-start `/abc/` parses both as a
+// `[ @avoid … ]` the optional prefix operator: at expression-start `/abc/` parses both as a
 // regex literal (operator skipped) AND as prefix-`/`(postfix-`/`(abc)) (operator taken);
 // avoiding the operator makes the regex reading win = swift-syntax's
 // `preferRegexOverBinaryOperator` (Tool 4). Where skipping fails (`-x`), phase-1 drops it
-// and the operator is taken as normal. `@avoid` keys on postfixExpression's pivot, so it
-// scopes to exactly this optional without touching the other alternates below.
+// and the operator is taken as normal. `@avoid` is the follower-pivot optional-skip (keep
+// the smallest pivot on postfixExpression); it is NOT `@shortest` — extent on the OPT
+// over-prunes here and rejects valid input (`!!/1 / .bitWidth`, `(^/x)/`). See Oracle.md.
 // `@longest`: prefer the longest operand. Resolves `any P & Q` in expression position —
 // `any` binds the whole composition (`any (P & Q)`, probe-verified: CompositionType, no infix `&`),
 // not `(any P) & Q`. The two readings give prefixExpression different extents at the same start;

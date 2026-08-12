@@ -373,23 +373,31 @@ class DerivationBuilder {
                 result = Set(parser.yield(of: sym).lazy.filter { $0.i == from }.map(\.j))
             }
         case .DO, .OPT, .KLN, .POS:
-            var positions = Set<CharPosition>()
-            if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }
-            if sym.kind.isClosure {
-                var visited = Set<CharPosition>()
-                var queue = [from]
-                while !queue.isEmpty {
-                    let pos = queue.removeFirst()
-                    guard visited.insert(pos).inserted else { continue }
-                    for end in iterationEndPositions(sym, from: pos) where end > pos {
-                        positions.insert(end)
-                        queue.append(end)
-                    }
-                }
+            if sym.disambiguation != nil {
+                // ANNOTATED bracket (@longest/@shortest): read its OWN (Oracle-prunable)
+                // yields so the extent prune drives the builder's ambiguity/tiling.
+                // Yields are (alternate-start, k = bracket-start, j) → filter k == from.
+                result = Set(parser.yield(of: sym).lazy.filter { $0.k == from }.map(\.j))
             } else {
-                positions.formUnion(iterationEndPositions(sym, from: from))
+                // UNANNOTATED bracket: original body-recompute path, untouched.
+                var positions = Set<CharPosition>()
+                if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }
+                if sym.kind.isClosure {
+                    var visited = Set<CharPosition>()
+                    var queue = [from]
+                    while !queue.isEmpty {
+                        let pos = queue.removeFirst()
+                        guard visited.insert(pos).inserted else { continue }
+                        for end in iterationEndPositions(sym, from: pos) where end > pos {
+                            positions.insert(end)
+                            queue.append(end)
+                        }
+                    }
+                } else {
+                    positions.formUnion(iterationEndPositions(sym, from: from))
+                }
+                result = positions
             }
-            result = positions
         case .EPS:
             result = [from]
         default:

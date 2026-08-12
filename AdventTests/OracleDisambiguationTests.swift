@@ -121,10 +121,10 @@ struct OracleDisambiguationTests {
             }
         }
 
-        // `@avoid` is the pivot-keyed dual of `@prefer` for an OPT that should be SKIPPED
-        // whenever skipping still yields a complete parse. Here `m` is BOTH the modifier `mod`
-        // and an `id`, so `m x` parses two ways: take-mod (`mod=m`, `id=x`) or skip (`id=m`,
-        // `id=x`). `@avoid` must keep the SKIP reading.
+        // Bracket-level `[ @avoid X ]` — the optional-skip: prefer NOT taking the optional
+        // when skipping still parses. Compiled to a follower-pivot rule (keep-min pivot on
+        // the symbol after the bracket). Here `m` is BOTH modifier `mod` and an `id`, so
+        // `m x` parses two ways; @avoid keeps the SKIP reading.
         @Test("@avoid skips the optional when skipping still parses")
         func avoidSkipsOptional() throws {
             let g = #"mod - /m/ . id - /[a-z]/ . S = [ @avoid mod ] id id? ."#
@@ -133,9 +133,9 @@ struct OracleDisambiguationTests {
             #expect(r.pruned > 0, "@avoid should prune the take-modifier reading")
         }
 
-        // Edge case (Oracle.swift:116-118): when skipping the @avoid'd optional does NOT lead
-        // to a complete parse, the lone "taken" reading must survive. Here `id` can't start at
-        // the leading `-`, so the `op` prefix is forced.
+        // When skipping does NOT lead to a complete parse, the lone "taken" reading must
+        // survive: phase-1 removes the skip pivot before @avoid runs. Here `id` can't start
+        // at the leading `-`, so the `op` prefix is forced.
         @Test("@avoid keeps the taken reading when skipping cannot parse")
         func avoidKeepsTakenWhenSkipFails() throws {
             let g = #"op - /-/ . id - /[a-z]+/ . S = [ @avoid op ] id ."#
@@ -180,18 +180,18 @@ struct OracleDisambiguationTests {
 
         // ---- Tier B: extent / associativity pragmas ON a cluster node ----------
         //
-        // Provisional syntax (now implemented): the pragma sits immediately after
-        // the opening bracket, i.e. it is an alternate-prefix on the cluster's ALT
-        // node — the same mechanism as `@prefer`. `sequence()` parses it onto
-        // `alt.disambiguation`; the Oracle's `registerAltDisambiguation` reads it off
-        // any alternate chain (nonterminal- or bracket-owned).
+        // Node-level pragmas attach BEFORE the group (mirroring `@longest X = …`
+        // before a LHS): `@left ( … )`, `@longest < … >`, `@longest { … }`.
+        // `factor()` parses the prefix onto the bracket node's `.disambiguation`; the
+        // Oracle's `registerNodeDisambiguation` reads it off the owner (nonterminal or
+        // bracket) uniformly.
 
         // `@left` moved one level down: E's body is a single ( … ) cluster holding
-        // both alternates, and `@left` annotates inside it. Mirrors the top-level
+        // both alternates, and `@left` annotates the group. Mirrors the top-level
         // `leftAssocPrunes` on "1 + 2 + 3".
         @Test("@left on a ( … ) cluster prunes to left-associative")
         func leftOnCluster() throws {
-            let g = #"n - /[0-9]+/ . S = E . E = ( @left E "+" E | n ) ."#
+            let g = #"n - /[0-9]+/ . S = E . E = @left ( E "+" E | n ) ."#
             let r = try parseOracleAmbiguity(grammar: g, message: "1 + 2 + 3")
             #expect(r.postMatch)
             #expect(r.isUnambiguous, "@left on the cluster should leave a single left-assoc tree")
@@ -207,7 +207,7 @@ struct OracleDisambiguationTests {
         // `rightAssocPrunes` assertion (matches && pruned > 0).
         @Test("@right on a ( … ) cluster prunes right-associative (parity with top level)")
         func rightOnCluster() throws {
-            let g = #"n - /[0-9]+/ . S = E . E = ( @right E "+" E | n ) ."#
+            let g = #"n - /[0-9]+/ . S = E . E = @right ( E "+" E | n ) ."#
             let r = try parseOracleAmbiguity(grammar: g, message: "1 + 2 + 3")
             #expect(r.postMatch)
             #expect(r.pruned > 0, "@right on the cluster should prune the non-right-assoc pivot(s)")
@@ -218,7 +218,7 @@ struct OracleDisambiguationTests {
         // POS); here the annotation moves onto the closure itself.
         @Test("@longest on a < … > POS closure")
         func longestOnPOSClosure() throws {
-            let g = #"word - /[a-z]+/ . S = < @longest word > ."#
+            let g = #"word - /[a-z]+/ . S = @longest < word > ."#
             let r = try parseOracleAmbiguity(grammar: g, message: "hello world foo")
             #expect(r.postMatch)
         }
@@ -230,7 +230,7 @@ struct OracleDisambiguationTests {
         // conflate distinct occurrences before we prune them.
         @Test("@longest on a { … } KLN closure (yield-identity hazard probe)")
         func longestOnKLNClosure() throws {
-            let g = #"word - /[a-z]+/ . S = { @longest word } ."#
+            let g = #"word - /[a-z]+/ . S = @longest { word } ."#
             let r = try parseOracleAmbiguity(grammar: g, message: "hello world foo")
             #expect(r.postMatch)
         }
@@ -283,18 +283,17 @@ struct OracleDisambiguationTests {
             #expect(!r.isUnambiguous, "A/B/C remain mutually ambiguous (prefer doesn't rank winners)")
         }
 
-        // D) The equivalence you posed: marking the 4th `@avoid` should equal marking
-        // the other three `@prefer` (C). Needs `@avoid` parseable as an alt-prefix on
-        // ANY alt chain — not implemented yet (consumeAvoid only fires right after
-        // [ / { / <), so the grammar does not parse. Tripwire for the generalization.
-        @Test("one @avoid sibling ≡ three @prefer (needs @avoid as alt-prefix)")
+        // D) The equivalence you posed: marking the 4th `@avoid` equals marking the
+        // other three `@prefer` (C). `@avoid` is now an alt-prefix on any alt chain
+        // (parsed in `sequence()`, compiled as "prefer the siblings" in
+        // `registerPrefer`), so this behaves exactly like C.
+        @Test("one @avoid sibling ≡ three @prefer")
         func oneAvoidEqualsThreePrefer() throws {
-            withKnownIssue("@avoid is not yet an alt-prefix on a general alt chain") {
-                let g = #"t - /t/ . S = A | B | C | @avoid D . A = t . B = t . C = t . D = t ."#
-                let r = try parseOracleAmbiguity(grammar: g, message: "t")
-                #expect(r.postMatch)
-                #expect(r.pruned > 0)
-            }
+            let g = #"t - /t/ . S = A | B | C | @avoid D . A = t . B = t . C = t . D = t ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "t")
+            #expect(r.postMatch)
+            #expect(r.pruned > 0, "the avoided D should be pruned by its siblings")
+            #expect(!r.isUnambiguous, "A/B/C remain mutually ambiguous — same as three @prefer")
         }
 
         // E) Scott's punt: `A A` with A nullable. On "a" there are two distinct trees
@@ -308,23 +307,69 @@ struct OracleDisambiguationTests {
             #expect(!r.isUnambiguous, "two distinct trees (a·ε vs ε·a) — must not conflate to one")
         }
 
-        // F) The `@avoid ≡ @shortest [X]` conjecture, on the two original @avoid cases.
-        // These are LOCAL equivalences: skip and take converge to the SAME overall
-        // span here, which is the only regime where the two rules agree (see the note
-        // on the divergence below).
-        @Test("@shortest [X] reproduces @avoid when readings share an end (skip wins)")
-        func shortestReproducesAvoidSkip() throws {
-            let g = #"mod - /m/ . id - /[a-z]/ . S = [ @shortest mod ] id id? ."#
+        // F) `@shortest [ X ]` is the canonical "skip the optional when possible" —
+        // node-level extent that keeps the empty (i,i) reading. This replaces the retired
+        // `[ @avoid X ]` hybrid. Both directions:
+        //   - skip is viable → @shortest keeps it, prunes the take reading;
+        //   - skip is NOT viable → phase-1 already removed the (i,i) yield, so take survives.
+        @Test("@shortest [X] skips the optional when skipping still parses")
+        func shortestOptionalSkipWins() throws {
+            let g = #"mod - /m/ . id - /[a-z]/ . S = @shortest [ mod ] id id? ."#
             let r = try parsePostOracle(grammar: g, message: "m x")
             #expect(r.postMatch, "must still parse 'm x'")
             #expect(r.pruned > 0, "@shortest on the OPT should prune the take reading (skip is shorter)")
         }
 
-        @Test("@shortest [X] reproduces @avoid when skip cannot parse (take survives)")
-        func shortestReproducesAvoidForcedTake() throws {
-            let g = #"op - /-/ . id - /[a-z]+/ . S = [ @shortest op ] id ."#
+        @Test("@shortest [X] keeps the taken reading when skipping cannot parse")
+        func shortestOptionalForcedTake() throws {
+            let g = #"op - /-/ . id - /[a-z]+/ . S = @shortest [ op ] id ."#
             let r = try parsePostOracle(grammar: g, message: "-x")
             #expect(r.postMatch, "phase-1 removes the skip; @shortest must keep the forced take")
         }
+
+        // S1/S2 — extent on an OPT whose start is fixed (S1) or moved by a variable-length
+        // prefix (S2). Both resolve now: extent compares interval length (not just the end),
+        // and the OPT reads its own prunable yields so the kill propagates along the sequence.
+        @Test("@shortest [X] [X] — first is kept empty (fixed-start extent)")
+        func shortestTwoOptionalsFirst() throws {
+            let r = try parseOracleAmbiguity(grammar: #"x - /x/ . S = @shortest [ x ] [ x ] ."#, message: "x")
+            #expect(r.postMatch)
+            #expect(r.isUnambiguous, "@shortest on the first OPT should force it empty → unambiguous")
+        }
+
+        @Test("[X] @shortest [X] — second is kept empty (moved-start extent)")
+        func shortestTwoOptionalsSecond() throws {
+            let r = try parseOracleAmbiguity(grammar: #"x - /x/ . S = [ x ] @shortest [ x ] ."#, message: "x")
+            #expect(r.postMatch)
+            #expect(r.isUnambiguous, "@shortest on the second OPT (start moved by [x]) should still resolve")
+        }
+
+        // Closures now honor extent (the shared cluster's accumulated pops give the
+        // transitive end set on the closure node, which endPositions reads and the extent
+        // rule prunes). S3 = baseline massive ambiguity; S5 @longest greedily forces the
+        // first closure to consume all → unambiguous; S4 @shortest only forces the first
+        // closure empty, so { x }{ x } over "xxx" stays (legitimately) ambiguous.
+        @Test("{X}{X}{X} is massively ambiguous (baseline)")
+        func closuresBaselineAmbiguous() throws {
+            let r = try parseOracleAmbiguity(grammar: #"x - /x/ . S = { x } { x } { x } ."#, message: "xxx")
+            #expect(r.postMatch)
+            #expect(!r.isUnambiguous)
+        }
+
+        @Test("@longest {X}{X}{X} → greedy first closure, unambiguous")
+        func longestClosuresUnambiguous() throws {
+            let r = try parseOracleAmbiguity(grammar: #"x - /x/ . S = @longest { x } { x } { x } ."#, message: "xxx")
+            #expect(r.postMatch)
+            #expect(r.isUnambiguous, "@longest forces the first closure to consume all → single parse")
+        }
+
+        @Test("@shortest {X}{X}{X} → first closure empty, still ambiguous (fewer parses)")
+        func shortestClosuresReduced() throws {
+            let r = try parseOracleAmbiguity(grammar: #"x - /x/ . S = @shortest { x } { x } { x } ."#, message: "xxx")
+            #expect(r.postMatch)
+            #expect(r.pruned > 0, "@shortest prunes the non-empty first-closure readings")
+            #expect(!r.isUnambiguous, "only the first closure is constrained; { x }{ x } over xxx stays ambiguous")
+        }
+
     }
 }

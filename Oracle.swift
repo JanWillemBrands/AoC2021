@@ -26,14 +26,16 @@ protocol DisambiguationRule {
 }
 
 struct LongestMatchRule: DisambiguationRule {
+    let input: String
     func prune(_ yields: inout Set<BinarySpan>) -> Int {
-        pruneByExtent(yields: &yields, keep: { $0.max()! })
+        pruneByExtent(yields: &yields, input: input, keepLongest: true)
     }
 }
 
 struct ShortestMatchRule: DisambiguationRule {
+    let input: String
     func prune(_ yields: inout Set<BinarySpan>) -> Int {
-        pruneByExtent(yields: &yields, keep: { $0.min()! })
+        pruneByExtent(yields: &yields, input: input, keepLongest: false)
     }
 }
 
@@ -44,6 +46,22 @@ struct LeftAssocRule: DisambiguationRule {
 }
 
 struct RightAssocRule: DisambiguationRule {
+    func prune(_ yields: inout Set<BinarySpan>) -> Int {
+        pruneByPivot(yields: &yields, keep: { $0.min()! })
+    }
+}
+
+/// Bracket-level `@avoid` (`[ @avoid X ]`) — the optional-skip rule: prefer NOT taking the
+/// optional whenever skipping still yields a complete parse. Registered on the symbol
+/// immediately FOLLOWING the annotated bracket. Both readings reach the same enclosing
+/// span `(i, j)`; they differ only in the pivot `k` = where the bracket ended / the
+/// follower began (`k = i` ⟺ the bracket was skipped). Keep the smallest pivot (skip);
+/// prune the larger ones (bracket taken). This is a pivot rule (same mechanism as
+/// `@right`), just at the bracket/follower boundary — and it is NOT `@shortest`: extent
+/// on the bracket over-prunes here (it changes acceptance; verified on `parameter` and
+/// the regex sites). When skipping does not complete, phase-1 has already removed the
+/// `k = i` yield, so the lone "taken" pivot survives (e.g. `-x`).
+struct AvoidOptionalRule: DisambiguationRule {
     func prune(_ yields: inout Set<BinarySpan>) -> Int {
         pruneByPivot(yields: &yields, keep: { $0.min()! })
     }
@@ -78,36 +96,26 @@ struct PreferRule: DisambiguationRule {
     }
 }
 
-/// Bracket-level `@avoid` — the negative dual of `@prefer`, for an optional that
-/// should be SKIPPED whenever skipping still yields a complete parse. Registered on
-/// the body symbol immediately following the annotated OPT/KLN/POS: that symbol's
-/// yields `(i, k, j)` carry the bracket boundary as their pivot `k` (k = i ⟺ the
-/// optional was skipped). Among yields sharing an `(i, j)` span, keep the smallest
-/// pivot (skip) and prune the larger ones (optional taken).
-///
-/// This is why `@avoid` needs no empty branch to key on (the flaw that forced a
-/// manual rule split for `@prefer`): it keys on the *following* symbol's pivot, and
-/// "skip" is simply the pivot at the bracket's own start. When skipping does not
-/// lead to a complete parse, phase-1 has already removed the `k = i` yield, so the
-/// lone "taken" pivot survives untouched (e.g. `-x`, where `postfixExpression`
-/// cannot start at the `-`).
-struct AvoidOptionalRule: DisambiguationRule {
-    func prune(_ yields: inout Set<BinarySpan>) -> Int {
-        pruneByPivot(yields: &yields, keep: { $0.min()! })
-    }
-}
-
 private func pruneByExtent(
     yields: inout Set<BinarySpan>,
-    keep: ([CharPosition]) -> CharPosition
+    input: String,
+    keepLongest: Bool
 ) -> Int {
+    // Extent compares interval LENGTH `j - k`, not the end `j`. For an `.N` LHS yield
+    // `i == k`, so length ↔ `j` and this matches the classic behaviour. For a bracket
+    // (yield `(alternate-start i, k = bracket-start, j)`), the competing readings of one
+    // occurrence share `i`; they may differ in `j` (same start, S1) OR in `k` (start
+    // moved by a variable-length prefix, so `j` is pinned — S2). Comparing `j` alone
+    // can't see the S2 case; length can. Group by the alternate anchor `i`, keep the
+    // min/max-length reading, prune the rest. `pruneUnproductive` then propagates the
+    // kill backward/forward along the sequence.
     let grouped = Dictionary(grouping: yields) { $0.i }
     var pruned = 0
     for (_, spans) in grouped where spans.count > 1 {
-        let js = spans.map(\.j)
-        guard Set(js).count > 1 else { continue }
-        let target = keep(js)
-        for span in spans where span.j != target {
+        let lengths = spans.map { input.distance(from: $0.k, to: $0.j) }
+        guard Set(lengths).count > 1 else { continue }
+        let target = keepLongest ? lengths.max()! : lengths.min()!
+        for span in spans where input.distance(from: span.k, to: span.j) != target {
             yields.remove(span)
             pruned += 1
         }
@@ -154,42 +162,27 @@ class Oracle {
         self.grammar = parser.grammar
         self.input = input
         for (_, nt) in grammar.nonTerminals {
-            // LHS-level disambiguation pragmas: @longest, @shortest, @left, @right.
-            if let d = nt.disambiguation {
-                switch d {
-                case .shortest: rules.append((nt, ShortestMatchRule()))
-                case .longest:  rules.append((nt, LongestMatchRule()))
-                case .left, .right:
-                    let rule: DisambiguationRule = d == .left ? LeftAssocRule() : RightAssocRule()
-                    var alt = nt.alt
-                    while let a = alt {
-                        for sym in a.bodySymbols {
-                            rules.append((sym, rule))
-                        }
-                        alt = a.alt
-                    }
-                }
-            }
-            // Alternate-level @prefer on the nonterminal's own alternate chain.
+            // Node-level extent/associativity (@longest/@shortest/@left/@right),
+            // read off the owner node — for a nonterminal that is the production-start
+            // form `@longest X = …` stored on `nt.disambiguation`.
+            registerNodeDisambiguation(owner: nt)
+            // Alternate-level @prefer / @avoid on the nonterminal's own alt chain.
             registerPrefer(altChainHead: nt.alt)
-            // Alternate-prefix @longest/@shortest/@left/@right on the nonterminal's
-            // own alternate chain (the uniform per-ALT form; complements the legacy
-            // production-start `nt.disambiguation` handled just above).
-            registerAltDisambiguation(owner: nt, altChainHead: nt.alt)
         }
 
-        // Full-graph walk for the pragmas that live on a NESTED node rather than a
-        // top-level alternate:
-        //   - @avoid: register an AvoidOptionalRule on the symbol immediately
-        //     following each @avoid OPT/KLN/POS bracket.
-        //   - @prefer inside an inline cluster ( a | b ) / [ … ] / { … } / < … >:
-        //     a bracket owns its alternates via `.alt` exactly like a nonterminal
-        //     LHS (see `factor()` → `GrammarNode(kind: .DO/…, alt: selection())`),
-        //     and `@prefer` already lands on those ALT nodes via `sequence()`. The
-        //     same PreferRule therefore applies verbatim — only this registration
-        //     walk had been skipping nested clusters. We run it per BRACKET node
-        //     (not per ALT node, whose `.alt` is a sibling continuation, not a
-        //     fresh group head), so each alternate group is registered exactly once.
+        // Full-graph walk for the pragmas that live on a NESTED node — every ALT-bearing
+        // node is treated exactly like a nonterminal:
+        //   - bracket-level @avoid (`[ @avoid X ]`, optional-skip): register an
+        //     AvoidOptionalRule on the symbol immediately following the bracket (pivot rule
+        //     on the follower — see AvoidOptionalRule; this is the follower-pivot, NOT
+        //     `@shortest`, which over-prunes).
+        //   - node-level extent/assoc: `registerNodeDisambiguation` reads the pragma off
+        //     the bracket node (`@longest ( … )` / `@left < … >`, parsed in `factor()`).
+        //   - alternate-level @prefer / @avoid: `registerPrefer` reads `isPreferred` /
+        //     `isAvoided` off the cluster's ALT nodes (a bracket owns its alternates via
+        //     `.alt` exactly like a nonterminal LHS — `factor()` → `GrammarNode(.DO/…,
+        //     alt: selection())`). Run per BRACKET node (not per ALT node, whose `.alt`
+        //     is a sibling continuation), so each group is registered exactly once.
         var seen = Set<ObjectIdentifier>()
         func walk(_ node: GrammarNode?) {
             guard let node, seen.insert(ObjectIdentifier(node)).inserted else { return }
@@ -197,8 +190,8 @@ class Oracle {
                 if node.isAvoided, let next = node.seq, next.kind != .END {
                     rules.append((next, AvoidOptionalRule()))
                 }
+                registerNodeDisambiguation(owner: node)
                 registerPrefer(altChainHead: node.alt)
-                registerAltDisambiguation(owner: node, altChainHead: node.alt)
             }
             if node.kind != .END { walk(node.seq) }
             walk(node.alt)
@@ -206,52 +199,67 @@ class Oracle {
         for nt in grammar.nonTerminals.values { walk(nt) }
     }
 
-    /// Register alternate-level `@prefer` for one alternate group (a chain of `.ALT`
-    /// nodes reachable from `altChainHead`). Collect the preferred alternates' last
-    /// body symbols, then register a `PreferRule` on every NON-preferred sibling's
-    /// last body symbol so its completion yields are pruned wherever a preferred
-    /// sibling covers the same `(i, j)` span. Level-agnostic: the head may be a
-    /// nonterminal's `nt.alt` or an inline cluster's `bracket.alt`.
-    private func registerPrefer(altChainHead: GrammarNode?) {
-        var preferredLast: [GrammarNode] = []
-        var scan = altChainHead
-        while let a = scan {
-            if a.isPreferred, let last = a.bodySymbols.last { preferredLast.append(last) }
-            scan = a.alt
-        }
-        guard !preferredLast.isEmpty else { return }
-        let p = parser
-        var b = altChainHead
-        while let a = b {
-            if !a.isPreferred, let last = a.bodySymbols.last {
-                rules.append((last, PreferRule(preferredLastSymbols: preferredLast,
-                                               yieldsOf: { p.yield(of: $0) })))
+    /// Register node-level extent/associativity for an ALT-bearing `owner` (a
+    /// nonterminal LHS or an inline `( )`/`[ ]`/`{ }`/`< >` cluster), reading the pragma
+    /// off `owner.disambiguation` (set before the LHS in `production()` or before the
+    /// bracket in `factor()`):
+    ///   - extent (`@longest`/`@shortest`): register on the owner itself. Its yields from
+    ///     a common start are what an extent rule prunes, and `endPositions` reads those
+    ///     yields for `.N` nonterminals AND (now) `.OPT` brackets, so the prune propagates
+    ///     through both the phase-1 cascade and the DerivationBuilder. (Closures still
+    ///     recompute their transitive extent from the body, so extent on a `{ }`/`< >`
+    ///     closure is not yet honored — a separate carrier problem.)
+    ///   - associativity (`@left`/`@right`): register a pivot rule on every alternate's
+    ///     body symbols (associativity governs the whole node's self-ambiguity).
+    private func registerNodeDisambiguation(owner: GrammarNode) {
+        guard let d = owner.disambiguation else { return }
+        switch d {
+        case .shortest: rules.append((owner, ShortestMatchRule(input: input)))
+        case .longest:  rules.append((owner, LongestMatchRule(input: input)))
+        case .left, .right:
+            let rule: DisambiguationRule = d == .left ? LeftAssocRule() : RightAssocRule()
+            var alt = owner.alt
+            while let a = alt {
+                for sym in a.bodySymbols { rules.append((sym, rule)) }
+                alt = a.alt
             }
-            b = a.alt
         }
     }
 
-    /// Register alternate-prefix `@longest`/`@shortest`/`@left`/`@right` for one
-    /// alternate group. Mirrors the legacy production-start handling in `init`, but
-    /// reads the annotation off each `.ALT` node (`alt.disambiguation`) so it works
-    /// on ANY owner — a nonterminal or an inline `( )`/`[ ]`/`{ }`/`< >` cluster:
-    ///   - extent (`@longest`/`@shortest`): register on the OWNER node (its yields
-    ///     from a common start are what an extent rule prunes).
-    ///   - associativity (`@left`/`@right`): register a pivot rule on the annotated
-    ///     alternate's own body symbols.
-    private func registerAltDisambiguation(owner: GrammarNode, altChainHead: GrammarNode?) {
+    /// Register the same-span, last-symbol-keyed alternate preferences for one alternate
+    /// group (a chain of `.ALT` nodes reachable from `altChainHead`). Level-agnostic: the
+    /// head may be a nonterminal's `nt.alt` or an inline cluster's `bracket.alt`.
+    ///   - `@prefer` names WINNERS: every non-preferred sibling is pruned where a
+    ///     preferred sibling covers the same `(i, j)` span.
+    ///   - `@avoid` (alt-prefix) names a LOSER: it is the dual — an avoided alternate is
+    ///     pruned where ANY of its siblings covers the same `(i, j)`, i.e. `@avoid A` ≡
+    ///     `@prefer` on all of A's siblings. ("Avoid the optional" is NOT this — that is a
+    ///     node-level extent choice, spelled `@shortest [ X ]`.)
+    /// Both key on last body symbols, so a winner must be non-empty to be keyable.
+    private func registerPrefer(altChainHead: GrammarNode?) {
+        var alts: [GrammarNode] = []
         var scan = altChainHead
-        while let a = scan {
-            if let d = a.disambiguation {
-                switch d {
-                case .longest:  rules.append((owner, LongestMatchRule()))
-                case .shortest: rules.append((owner, ShortestMatchRule()))
-                case .left, .right:
-                    let rule: DisambiguationRule = d == .left ? LeftAssocRule() : RightAssocRule()
-                    for sym in a.bodySymbols { rules.append((sym, rule)) }
+        while let a = scan { alts.append(a); scan = a.alt }
+        let p = parser
+
+        // @prefer: preferred alternates prune their non-preferred siblings.
+        let preferredLast = alts.filter { $0.isPreferred }.compactMap { $0.bodySymbols.last }
+        if !preferredLast.isEmpty {
+            for a in alts where !a.isPreferred {
+                if let last = a.bodySymbols.last {
+                    rules.append((last, PreferRule(preferredLastSymbols: preferredLast,
+                                                   yieldsOf: { p.yield(of: $0) })))
                 }
             }
-            scan = a.alt
+        }
+
+        // @avoid (alt-prefix): an avoided alternate loses to all its (non-empty) siblings.
+        for a in alts where a.isAvoided {
+            let siblingsLast = alts.filter { $0 !== a }.compactMap { $0.bodySymbols.last }
+            if let last = a.bodySymbols.last, !siblingsLast.isEmpty {
+                rules.append((last, PreferRule(preferredLastSymbols: siblingsLast,
+                                               yieldsOf: { p.yield(of: $0) })))
+            }
         }
     }
 
@@ -339,23 +347,34 @@ class Oracle {
                     result = Set(parser.yield(of: sym).lazy.filter { $0.i == from }.map(\.j))
                 }
             case .DO, .OPT, .KLN, .POS:
-                var positions = Set<CharPosition>()
-                if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }
-                if sym.kind.isClosure {
-                    var visited = Set<CharPosition>()
-                    var queue = [from]
-                    while !queue.isEmpty {
-                        let pos = queue.removeFirst()
-                        guard visited.insert(pos).inserted else { continue }
-                        for end in iterEndPositions(sym, from: pos) where end > pos {
-                            positions.insert(end)
-                            queue.append(end)
-                        }
-                    }
+                if sym.disambiguation != nil {
+                    // ANNOTATED bracket (@longest/@shortest): read its OWN (Oracle-prunable)
+                    // yields so the extent prune is honored here. A bracket is an RHS
+                    // occurrence — yields are `(alternate-start, k = bracket-start, j)`,
+                    // filtered by `k == from` like a terminal; a closure's shared cluster
+                    // accumulates its transitive ends the same way.
+                    result = Set(parser.yield(of: sym).lazy.filter { $0.k == from }.map(\.j))
                 } else {
-                    positions.formUnion(iterEndPositions(sym, from: from))
+                    // UNANNOTATED bracket: original body-recompute path, untouched — so the
+                    // global operator/regex machinery keeps its exact phase-1 reachability.
+                    var positions = Set<CharPosition>()
+                    if sym.kind == .KLN || sym.kind == .OPT { positions.insert(from) }
+                    if sym.kind.isClosure {
+                        var visited = Set<CharPosition>()
+                        var queue = [from]
+                        while !queue.isEmpty {
+                            let pos = queue.removeFirst()
+                            guard visited.insert(pos).inserted else { continue }
+                            for end in iterEndPositions(sym, from: pos) where end > pos {
+                                positions.insert(end)
+                                queue.append(end)
+                            }
+                        }
+                    } else {
+                        positions.formUnion(iterEndPositions(sym, from: from))
+                    }
+                    result = positions
                 }
-                result = positions
             case .EPS:
                 result = [from]
             default:
@@ -452,7 +471,17 @@ class Oracle {
 
         func visitBracket(_ bracket: GrammarNode, from: CharPosition, to: CharPosition) {
             if from == to { return }
-            for end in iterEndPositions(bracket, from: from) where end <= to && end > from {
+            // For a non-closure bracket, iterate the bracket's OWN (Oracle-pruned) end
+            // positions — so an extent prune on the bracket is honored by the reachability
+            // walk and dead sibling/prefix yields get removed ("walk the rest of the
+            // sequence to kill dead paths"). Using `iterEndPositions` (body recompute) here
+            // re-marked extent-pruned spans reachable, leaving stale readings that kept an
+            // enclosing pivot ambiguous. Closures still step per-iteration (their own ends
+            // are transitive, not single-step) and recurse below.
+            let ends = bracket.kind.isClosure
+                ? iterEndPositions(bracket, from: from)
+                : endPositions(bracket, from: from)
+            for end in ends where end <= to && end > from {
                 if visitAlternates(bracket, from: from, to: end) {
                     reachable.insert(NodeSpan(id: ObjectIdentifier(bracket), from: from, to: end))
                     if end == to {

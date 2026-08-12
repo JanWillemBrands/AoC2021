@@ -402,21 +402,19 @@ class ApusParser {
         let startOfSequence = GrammarNode(kind: .ALT, name: "")
         var termNode = startOfSequence
 
-        // `@prefer` prefix: marks this alternate as higher-priority than its
-        // siblings (Oracle prunes non-preferred siblings where this one yields).
-        // Placed at the alternate's start — right after `=` or `|`.
+        // Alternate-level pragmas, placed at the alternate's start (right after `=`,
+        // `|`, or an opening bracket). Both are same-span, last-symbol-keyed:
+        //   `@prefer` marks this alternate a WINNER (its non-preferred siblings lose).
+        //   `@avoid`  marks this alternate a LOSER — the dual of `@prefer`; it loses to
+        //             all its siblings (`@avoid A` ≡ `@prefer` on A's siblings).
+        // Node-level extent/associativity (`@longest`/`@shortest`/`@left`/`@right`) are
+        // NOT here — they attach to the whole group, parsed before the LHS
+        // (`production()`) or before the bracket (`factor()`).
         if token.kind == "pragma" && token.stripped == "prefer" {
             startOfSequence.isPreferred = true
             cI += 1
-        } else if token.kind == "pragma", let d = Disambiguation(rawValue: token.stripped) {
-            // Alternate-prefix `@longest`/`@shortest`/`@left`/`@right` — the uniform,
-            // node-agnostic form. Stored on the ALT node (like `@prefer`'s
-            // `isPreferred`), so the Oracle can read it off ANY alternate chain: a
-            // nonterminal's `nt.alt` OR an inline cluster's `bracket.alt`. This is
-            // what lets `( @left a "+" a | b )`, `< @longest word >` etc. work. The
-            // legacy production-start form (`@longest X = …`, parsed in
-            // `production()` onto the LHS `nt.disambiguation`) still works unchanged.
-            startOfSequence.disambiguation = d
+        } else if token.kind == "pragma" && token.stripped == "avoid" {
+            startOfSequence.isAvoided = true
             cI += 1
         }
 
@@ -430,7 +428,11 @@ class ApusParser {
                 termNode.seq = layoutNode
                 termNode = layoutNode
                 termNode.actions = collectActions(at: cI)
-            case "(", "<", "[", "epsilon", "empty", "identifier", "literal", "regex", "{":
+            case "(", "<", "[", "epsilon", "empty", "identifier", "literal", "regex", "{", "pragma":
+                // "pragma" here = a node-level group prefix (@longest/@shortest/@left/
+                // @right before a bracket); factor() consumes it and attaches it to the
+                // group. (@prefer/@avoid were consumed at sequence start; terminal-def
+                // pragmas live in production().)
                 var factorNode = try factor()
                 switch token.kind {
                 case "?", "*", "+":
@@ -461,7 +463,7 @@ class ApusParser {
                 try expect(["(", "<", "<n>", "<s>", ">>|", ">n<", ">s<", "[", "identifier", "literal", "regex", "epsilon", "empty", "{", "|<<"])
             }
             
-        } while ["(", "<", "<n>", "<s>", ">>|", ">n<", ">s<", "[", "epsilon", "empty", "identifier", "literal", "regex", "{", "|<<"].contains(token.kind)
+        } while ["(", "<", "<n>", "<s>", ">>|", ">n<", ">s<", "[", "epsilon", "empty", "identifier", "literal", "regex", "{", "|<<", "pragma"].contains(token.kind)
         
         termNode.seq = GrammarNode(kind: .END, name: "")
         // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
@@ -647,8 +649,11 @@ class ApusParser {
     }
     
     /// `@avoid` as the first token inside a bracket (`[ @avoid X ]`, `{ @avoid X }`,
-    /// `< @avoid X >`): marks the optional/repetition as a fallback. Consumes the
-    /// pragma and returns true when present. See `AvoidOptionalRule` in Oracle.swift.
+    /// `< @avoid X >`): the optional-skip form — prefer NOT taking the optional/repetition
+    /// when skipping still yields a complete parse. Consumed here (bracket-level) and
+    /// compiled to a follower-pivot rule (`AvoidOptionalRule`) in the Oracle. Distinct from
+    /// the alternate-prefix `@avoid` in `sequence()` (same-span loser): here it sits right
+    /// after the opening bracket and flags the bracket node's `isAvoided`.
     func consumeAvoid() -> Bool {
         if token.kind == "pragma" && token.stripped == "avoid" {
             cI += 1
@@ -659,6 +664,17 @@ class ApusParser {
 
     func factor() throws -> GrammarNode {
         trace("factor", token)
+        // Node-level extent/associativity prefix on a group: @longest/@shortest/@left/
+        // @right immediately before a bracket annotates that whole bracket node,
+        // mirroring the production-start form before a LHS (`@longest X = …`).
+        // (@prefer/@avoid are alternate-level and handled in sequence().) It is only
+        // meaningful before a bracket; the Oracle reads `disambiguation` on
+        // bracket/nonterminal nodes only, so a stray prefix elsewhere is inert.
+        var groupDisambiguation: Disambiguation? = nil
+        if token.kind == "pragma", let d = Disambiguation(rawValue: token.stripped) {
+            groupDisambiguation = d
+            cI += 1
+        }
         let node: GrammarNode
         switch token.kind {
         case "identifier":
@@ -710,7 +726,12 @@ class ApusParser {
             try expect(["identifier", "literal", "epsilon", "empty", "regex", "(", "[", "{", "<"])
             fatalError("\(#function) expect() should have thrown - this line should never be reached")
         }
-        
+
+        // Attach a node-level extent/assoc prefix (parsed above) to the group node.
+        if let d = groupDisambiguation {
+            node.disambiguation = d
+        }
+
         // check for Schrödinger exclusion annotation: ---("if" "while" ...)
         if token.kind == "---" {
             cI += 1

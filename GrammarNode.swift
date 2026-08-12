@@ -160,12 +160,18 @@ final class GrammarNode {
     /// the non-preferred siblings' yields are pruned.
     var isPreferred: Bool = false
 
-    /// Bracket-level `@avoid` annotation. Captured at parse time on an OPT/KLN/POS
-    /// bracket (prefix, right before the factor). The negative dual of `@prefer`:
-    /// the annotated optional is a fallback — when SKIPPING it still yields a complete
-    /// parse, that skip wins. The Oracle compiles it to a pivot preference (keep the
-    /// smallest pivot = "optional skipped") on the symbol immediately following the
-    /// bracket, so it needs no empty branch to key on (unlike `@prefer`).
+    /// `@avoid` annotation. Two position-distinguished forms, both meaning "avoid this":
+    ///   • **alternate-prefix** (`( a | @avoid b )`) — on an `.ALT` node; the same-span
+    ///     negative dual of `@prefer`. `@avoid A` ≡ `@prefer` on A's siblings: the avoided
+    ///     alternate is pruned wherever any sibling covers the same `(i,j)`
+    ///     (Oracle `registerPrefer`).
+    ///   • **bracket-level / optional-skip** (`[ @avoid X ]`) — on an OPT/KLN/POS bracket
+    ///     node (consumed by `consumeAvoid` right after the opening bracket); prefer NOT
+    ///     taking the optional when skipping still parses. The Oracle compiles it to a
+    ///     follower-pivot rule (`AvoidOptionalRule`) on the symbol after the bracket:
+    ///     among readings sharing the enclosing `(i,j)`, keep the smallest pivot (skip).
+    ///     This is a pivot choice (like `@right`), NOT extent — `@shortest [X]` over-prunes
+    ///     it and changes acceptance.
     var isAvoided: Bool = false
 
     /// `=|` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at lex

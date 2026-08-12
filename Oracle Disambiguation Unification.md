@@ -99,29 +99,48 @@ Tiering (safe increments):
   is purely additive on the real grammar — full sweep unchanged at accept 0 / reject 79 / residual
   ambiguity 1. New nested test `preferInSelectionGroup` green.
 - **Tier B — `@longest`/`@shortest`/`@left`/`@right` on clusters, incl. `{ }` / `< >`**: MEDIUM.
-  ✅ **DONE**. **Design resolved (user):** all disambiguation pragmas are alternate-prefixes on an
-  `.ALT` node — `@prefer` via `isPreferred`, the rest via `alt.disambiguation` — both parsed in
-  `sequence()`. Since a nonterminal AND every bracket own an alternate chain, there is *no* placement
-  question: the annotation lives on the alternate, wherever alternate-prefixes already go
-  (`( @left E "+" E | n )`, `< @longest word >`, `{ @longest word }`). Implementation:
-  - `ApusParser.sequence()`: parse `@longest/@shortest/@left/@right` prefix → `startOfSequence.disambiguation`.
-  - `Oracle.registerAltDisambiguation(owner:altChainHead:)`: reads `alt.disambiguation` off any chain;
-    extent (`@longest/@shortest`) registers on the OWNER node, assoc (`@left/@right`) on that alt's
-    body symbols. Called for both nonterminals (loop) and brackets (walk).
+  ✅ **DONE**. **Design (final, pivoted from the first cut):** the extent/associativity pragmas are
+  a **node-level prefix placed BEFORE the group** — `@left ( E "+" E | n )`, `@longest < word >`,
+  `@shortest [ mod ] …` — mirroring the production-start form `@longest X = …` that sits before a
+  LHS. (The earlier iteration parsed them as alternate-prefixes *inside* the bracket,
+  `( @left … | … )`; that was replaced because "annotate the whole group" reads more naturally and
+  unifies the nonterminal and bracket cases on one field.) `@prefer`/`@avoid` remain
+  **alternate-level** (same-span, keyed on the last body symbol), parsed at the alternate's start.
+  Implementation:
+  - `ApusParser.factor()`: a `@longest/@shortest/@left/@right` pragma immediately before a bracket
+    → `node.disambiguation`. `production()`'s legacy LHS form is unchanged.
+  - `ApusParser.sequence()`: `@prefer` → `isPreferred`, `@avoid` → `isAvoided`, both on the `.ALT`
+    node. `consumeAvoid()` still handles the distinct bracket-level `[ @avoid X ]` optional-skip.
+  - `Oracle.registerNodeDisambiguation(owner:)`: reads `owner.disambiguation` off ANY owner
+    (nonterminal or bracket); extent registers on the owner, assoc on each alternate's body symbols.
+    `registerPrefer(altChainHead:)` now handles both `@prefer` (winners) and alt-prefix `@avoid`
+    (loser ≡ prefer-the-siblings). The old `registerAltDisambiguation` is folded away.
+  - **Extent now compares interval LENGTH `j − k`, not the end `j`** (`pruneByExtent(input:)`), so a
+    bracket whose start moved under a variable-length prefix (the S2 case) is handled, not just the
+    fixed-start S1 case.
+  - **Closures honor extent.** `endPositions`/`visitBracket` read an ANNOTATED bracket's own
+    Oracle-prunable yields (filtered by `k == from`) instead of recomputing the body, so an extent
+    prune propagates through phase-1 and the DerivationBuilder. Unannotated brackets keep the exact
+    original body-recompute path (global operator/regex reachability untouched).
   - Legacy production-start form (`@longest X = …`, `nt.disambiguation`) untouched → zero Swift.apus
-    migration. Full sweep unchanged: accept 0 / reject 79 / residual ambiguity 1.
-  Six `NestedCluster` tests green (prefer×2, left, right-parity, longest-POS, longest-KLN).
+    migration. **Full sweep holds: accept 0 / reject 79 / residual ambiguity 1** (28/28 Oracle tests
+    green, incl. the new S1/S2 two-optional and `{X}{X}{X}` longest/shortest closure probes).
 
-  **Two findings (recorded, orthogonal to this branch):**
-  1. **KLN yield-identity hazard did NOT bite** the tested `{ @longest word }` case — the shared-cluster
-     conflation concern (below) did not manifest for a simple repetition extent. Not proven safe in
-     general; revisit if a cluster-`@longest` over genuinely-varying repetition extents misbehaves.
-  2. **`@right` under-prunes on 3+ operands** — `@right E = E "+" E | n` on `1 + 2 + 3` prunes only
+  **Findings (recorded, orthogonal to this branch):**
+  1. **KLN yield-identity hazard did NOT bite** — the shared-cluster conflation concern (below) did
+     not manifest, now including the `@longest {X}{X}{X}` and `@shortest {X}{X}{X}` closure-extent
+     probes. Not proven safe in general; revisit if a cluster-extent over genuinely-varying
+     repetition extents misbehaves.
+  2. **`@right` under-prunes on 3+ operands** — `@right ( E "+" E | n )` on `1 + 2 + 3` prunes only
      1 pivot and leaves residual ambiguity (`isUnambiguous: false`), whereas `@left` fully resolves.
      Verified **level-independent** (same at top level and in a cluster), so it is a PRE-EXISTING
      `RightAssocRule` limitation, not a Tier-B/cluster issue. `rightOnCluster` therefore asserts
      `pruned > 0` (parity with the top-level `rightAssocPrunes`), not `isUnambiguous`. Fixing the
      right-assoc keep-min-pivot rule to cascade to a fixpoint is a separate task.
+  3. **Alt-prefix `@avoid` on a general alt chain now works** (`oneAvoidEqualsThreePrefer` is green,
+     no longer `withKnownIssue`): `S = A | B | C | @avoid D` prunes `D` via its siblings, exactly
+     like marking the other three `@prefer`. Distinct from the bracket-level `[ @avoid X ]`
+     optional-skip, which stays a follower-pivot rule (NOT `@shortest`) — see the finding below.
 
 ---
 
@@ -157,9 +176,12 @@ on nullable `X ::= BBβ`, which makes `(BB,i,i)` a multigraph with two `(B,i,i)`
 2. **The engine does NOT conflate nullable `A A`.** `A = "a" | ""` on `"a"` is represented as a
    genuine two-tree ambiguity — we close the gap Scott left open (no ε-multigraph collapse).
 3. **`@avoid A` ≡ `@prefer` on all siblings** for **same-span** groups (the "3 = 1" equivalence
-   holds via `PreferRule`, winners unranked). Generalising `@avoid` to a non-optional multi-alt
-   group needs it parseable as an **alt-prefix** on any alt chain (today `consumeAvoid` only fires
-   right after `[`/`{`/`<`); tripwire `oneAvoidEqualsThreePrefer` is `withKnownIssue` until then.
+   holds via `PreferRule`, winners unranked). ✅ **Now implemented**: alt-prefix `@avoid` is parsed
+   in `sequence()` (→ `isAvoided` on the `.ALT` node) and compiled in `registerPrefer` as
+   "prefer the siblings", so `S = A | B | C | @avoid D` prunes `D` exactly like marking the other
+   three `@prefer`. `oneAvoidEqualsThreePrefer` is green (the `withKnownIssue` is removed). This is
+   the **alternate-level** `@avoid`, distinct from the **bracket-level** `[ @avoid X ]` optional-skip
+   consumed by `consumeAvoid` right after `[`/`{`/`<` (a follower-pivot rule — see below).
 
 ### Should Swift.apus replace `[ @avoid X ]` with `@shortest [ X ]`? — **No.**
 
