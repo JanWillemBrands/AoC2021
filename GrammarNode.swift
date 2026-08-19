@@ -160,18 +160,18 @@ final class GrammarNode {
     /// the non-preferred siblings' yields are pruned.
     var isPreferred: Bool = false
 
-    /// `@avoid` annotation. Two position-distinguished forms, both meaning "avoid this":
-    ///   • **alternate-prefix** (`( a | @avoid b )`) — on an `.ALT` node; the same-span
-    ///     negative dual of `@prefer`. `@avoid A` ≡ `@prefer` on A's siblings: the avoided
-    ///     alternate is pruned wherever any sibling covers the same `(i,j)`
-    ///     (Oracle `registerPrefer`).
-    ///   • **bracket-level / optional-skip** (`[ @avoid X ]`) — on an OPT/KLN/POS bracket
-    ///     node (consumed by `consumeAvoid` right after the opening bracket); prefer NOT
-    ///     taking the optional when skipping still parses. The Oracle compiles it to a
-    ///     follower-pivot rule (`AvoidOptionalRule`) on the symbol after the bracket:
-    ///     among readings sharing the enclosing `(i,j)`, keep the smallest pivot (skip).
-    ///     This is a pivot choice (like `@right`), NOT extent — `@shortest [X]` over-prunes
-    ///     it and changes acceptance.
+    /// Alternate-level `@avoid` annotation — the negative dual of `@prefer`, ALWAYS on the
+    /// `.ALT` node heading an alternate (prefix, right after `=`, `|`, or an opening
+    /// `(`/`[`/`{`/`<`). "Avoid this alternate": it loses to its rivals. Its rivals are
+    ///   • its **explicit siblings** — pruned same-span wherever a sibling covers the same
+    ///     `(i,j)` (`@avoid A` ≡ `@prefer` on A's siblings), via Oracle `registerPrefer`; and
+    ///   • when the enclosing group is an **OPT/KLN**, that group's **implicit empty (skip)
+    ///     branch** — the reading where the whole optional is dropped. ε has no last body
+    ///     symbol to key a same-span rule on, so the Oracle compiles this rival as an
+    ///     alternate-aware follower-pivot (`AvoidOptionalRule`) via `registerOptionalSkip`.
+    /// `[ @avoid X ]` (single body alternate) is thus just the skip-rival case: "prefer the
+    /// skip", expressed as an annotation on the body alternate — NOT a bracket property, and
+    /// NOT `@shortest` (extent over-prunes and changes acceptance).
     var isAvoided: Bool = false
 
     /// `=|` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at lex

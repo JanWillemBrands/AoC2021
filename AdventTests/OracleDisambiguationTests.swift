@@ -372,4 +372,71 @@ struct OracleDisambiguationTests {
         }
 
     }
+
+    // MARK: - Optional-skip unification (@avoid always on the ALT node)
+    //
+    // `@avoid`/`@prefer` ALWAYS annotate the ALT node now — there is no separate
+    // bracket-level `@avoid`. `[ @avoid X ]` marks the body alternate `X`; its rival is
+    // the OPT's implicit empty (skip) branch, keyed by the follower-pivot rule
+    // (`registerOptionalSkip`). This removes the old silent-theft trap where the first
+    // `@avoid` after `[` was stolen from the first alternate onto the bracket.
+    @Suite("Optional-skip unification", .serialized)
+    struct OptionalSkipUnification {
+
+        // Canonical single-body skip still works after the ALT-node re-routing — the
+        // annotation now sits on the alternate, but the follower-pivot behaviour is identical.
+        @Test("[ @avoid X ] still prefers the skip (regression under the ALT-node model)")
+        func avoidSingleBodySkip() throws {
+            let g = #"mod - /m/ . id - /[a-z]/ . S = [ @avoid mod ] id id? ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "m x")
+            #expect(r.postMatch, "must still parse 'm x'")
+            #expect(r.pruned > 0, "the take-modifier reading is pruned; skip wins")
+        }
+
+        // KLN analogue: `{ @avoid X }` (zero-or-more, prefer zero). Same follower-pivot.
+        @Test("{ @avoid X } prefers zero iterations")
+        func avoidKlnSkip() throws {
+            let g = #"a - /a/ . S = { @avoid a } a? a ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "a a")
+            #expect(r.postMatch, "must still parse 'a a'")
+            #expect(r.pruned > 0, "the closure prefers zero iterations (skip)")
+        }
+
+        // The FIX for the silent-theft trap: `[ @avoid A | B ]` now marks the FIRST
+        // alternate A (not the bracket). On "a c" both A and B tile the same span, so the
+        // same-span PreferRule prunes A and keeps B → unambiguous. (Under the old parse,
+        // the leading @avoid was stolen onto the bracket and A stayed un-annotated.)
+        @Test("[ @avoid A | B ] marks A — same-span sibling prune keeps B")
+        func avoidFirstAlternateInBracket() throws {
+            let g = #"a - /a/ . c - /c/ . S = [ @avoid A | B ] c . A = a . B = a ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "a c")
+            #expect(r.postMatch, "must parse 'a c'")
+            #expect(r.pruned > 0, "@avoid A is pruned by its sibling B (same span)")
+            #expect(r.isUnambiguous, "only B survives → single tree")
+        }
+
+        // Mixed group, sibling B shadows A same-span (A=B=a on "a"). "A loses to B" fires
+        // (same-span PreferRule) → A pruned. But @avoid A does NOT rank B against the skip,
+        // so B-take vs skip stays (legitimately) ambiguous. This is CORRECT, not a gap.
+        @Test("mixed [ @avoid A | B ], sibling shadows A — A pruned, B-vs-skip stays ambiguous")
+        func mixedAvoidSiblingShadows() throws {
+            let g = #"a - /a/ . S = [ @avoid A | B ] a? . A = a . B = a ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "a")
+            #expect(r.postMatch, "must parse 'a'")
+            #expect(r.pruned > 0, "the avoided A is pruned by its same-span sibling B")
+            #expect(!r.isUnambiguous, "B-take vs skip is unranked by @avoid A → residual ambiguity (correct)")
+        }
+
+        // Mixed bracket whose non-avoided sibling `other` does NOT match, so only the avoided
+        // `mod`-take and the skip compete. `@avoid mod` prefers the skip. Nonterminal follower
+        // `id`, so the follower-pivot prune propagates; the alternate-aware exemption leaves the
+        // (viable) sibling untouched.
+        @Test("mixed [ @avoid mod | other ], sibling not viable — mod-take loses to skip")
+        func mixedAvoidSkipResolves() throws {
+            let g = #"mod - /m/ . other - /o/ . id - /[a-z]/ . S = [ @avoid mod | other ] id id? ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "m x")
+            #expect(r.postMatch, "must still parse 'm x'")
+            #expect(r.pruned > 0, "the mod-take reading is pruned in favour of the skip (sibling 'other' doesn't match)")
+        }
+    }
 }

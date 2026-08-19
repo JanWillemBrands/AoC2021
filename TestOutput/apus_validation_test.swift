@@ -63,44 +63,44 @@ func expect(_ expected: String...) {
 
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
-	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
 	"pragma":	("/@\\p{XID_Start}\\p{XID_Continue}*/",	/@\p{XID_Start}\p{XID_Continue}*/,	false,	false),
+	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
+	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
 	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)+\\\"/",	/\"(?:[^\"\\]|\\.)+\"/,	false,	false),
 	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
-	"identifier":	("/[_\\p{XID_Start}][-\\p{XID_Continue}]*/",	/[_\p{XID_Start}][-\p{XID_Continue}]*/,	false,	false),
 	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
 	"action":	("/\'(?:[^\'\\\\]|\\\\.)*\'/",	/'(?:[^'\\]|\\.)*'/,	false,	true),
+	"identifier":	("/[_\\p{XID_Start}][-\\p{XID_Continue}]*/",	/[_\p{XID_Start}][-\p{XID_Continue}]*/,	false,	false),
 	""-:"":	("-:",	Regex { "-:" },	true,	false),
-	""<+<"":	("<+<",	Regex { "<+<" },	true,	false),
-	"">+>"":	(">+>",	Regex { ">+>" },	true,	false),
-	"">s<"":	(">s<",	Regex { ">s<" },	true,	false),
-	""}"":	("}",	Regex { "}" },	true,	false),
-	""|"":	("|",	Regex { "|" },	true,	false),
-	"":"":	(":",	Regex { ":" },	true,	false),
-	""---"":	("---",	Regex { "---" },	true,	false),
-	""+"":	("+",	Regex { "+" },	true,	false),
-	""\"\""":	("\"\"",	Regex { "\"\"" },	true,	false),
-	""]"":	("]",	Regex { "]" },	true,	false),
-	""("":	("(",	Regex { "(" },	true,	false),
-	"">>|"":	(">>|",	Regex { ">>|" },	true,	false),
-	""."":	(".",	Regex { "." },	true,	false),
-	""-"":	("-",	Regex { "-" },	true,	false),
-	""["":	("[",	Regex { "[" },	true,	false),
-	"")"":	(")",	Regex { ")" },	true,	false),
-	""<n>"":	("<n>",	Regex { "<n>" },	true,	false),
-	""<"":	("<",	Regex { "<" },	true,	false),
-	"">n<"":	(">n<",	Regex { ">n<" },	true,	false),
 	""*"":	("*",	Regex { "*" },	true,	false),
+	""-"":	("-",	Regex { "-" },	true,	false),
+	""}"":	("}",	Regex { "}" },	true,	false),
+	"")"":	(")",	Regex { ")" },	true,	false),
 	""|<<"":	("|<<",	Regex { "|<<" },	true,	false),
-	"">"":	(">",	Regex { ">" },	true,	false),
+	"">s<"":	(">s<",	Regex { ">s<" },	true,	false),
 	"">->"":	(">->",	Regex { ">->" },	true,	false),
+	"">n<"":	(">n<",	Regex { ">n<" },	true,	false),
 	""?"":	("?",	Regex { "?" },	true,	false),
-	""="":	("=",	Regex { "=" },	true,	false),
+	""["":	("[",	Regex { "[" },	true,	false),
+	""."":	(".",	Regex { "." },	true,	false),
+	"">+>"":	(">+>",	Regex { ">+>" },	true,	false),
 	""{"":	("{",	Regex { "{" },	true,	false),
-	""ε"":	("ε",	Regex { "ε" },	true,	false),
+	""="":	("=",	Regex { "=" },	true,	false),
+	""<+<"":	("<+<",	Regex { "<+<" },	true,	false),
+	"">>|"":	(">>|",	Regex { ">>|" },	true,	false),
+	""|"":	("|",	Regex { "|" },	true,	false),
+	"">"":	(">",	Regex { ">" },	true,	false),
 	""<s>"":	("<s>",	Regex { "<s>" },	true,	false),
+	""<"":	("<",	Regex { "<" },	true,	false),
+	""---"":	("---",	Regex { "---" },	true,	false),
+	""<n>"":	("<n>",	Regex { "<n>" },	true,	false),
+	"":"":	(":",	Regex { ":" },	true,	false),
+	""]"":	("]",	Regex { "]" },	true,	false),
+	""+"":	("+",	Regex { "+" },	true,	false),
+	""("":	("(",	Regex { "(" },	true,	false),
+	""\"\""":	("\"\"",	Regex { "\"\"" },	true,	false),
 	""<-<"":	("<-<",	Regex { "<-<" },	true,	false),
+	""ε"":	("ε",	Regex { "ε" },	true,	false),
 ]
 func empty() throws {
 	expect("\"\\\"\\\"\"")
@@ -108,6 +108,18 @@ func empty() throws {
 }
 func epsilon() throws {
 	expect("\"ε\"")
+	cI += 1
+}
+func exclusion() throws {
+	expect("\"---\"")
+	cI += 1
+	expect("\"(\"")
+	cI += 1
+	repeat {
+		expect("literal")
+		cI += 1
+	} while ["literal"].contains(token.kind)
+	expect("\")\"")
 	cI += 1
 }
 func factor() throws {
@@ -271,15 +283,7 @@ func terminal() throws {
 	case "identifier":
 		cI += 1
 		if ["\"---\""].contains(token.kind) {
-			cI += 1
-			expect("\"(\"")
-			cI += 1
-			repeat {
-				expect("literal")
-				cI += 1
-			} while ["literal"].contains(token.kind)
-			expect("\")\"")
-			cI += 1
+			try exclusion()
 		}
 	case "literal":
 		cI += 1

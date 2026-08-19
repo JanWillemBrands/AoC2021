@@ -403,10 +403,17 @@ class ApusParser {
         var termNode = startOfSequence
 
         // Alternate-level pragmas, placed at the alternate's start (right after `=`,
-        // `|`, or an opening bracket). Both are same-span, last-symbol-keyed:
-        //   `@prefer` marks this alternate a WINNER (its non-preferred siblings lose).
-        //   `@avoid`  marks this alternate a LOSER — the dual of `@prefer`; it loses to
-        //             all its siblings (`@avoid A` ≡ `@prefer` on A's siblings).
+        // `|`, or an opening `(`/`[`/`{`/`<`). They ALWAYS annotate this ALT node —
+        // there is no separate "bracket-level" form:
+        //   `@prefer` marks this alternate a WINNER (its siblings lose where they tile
+        //             the same span).
+        //   `@avoid`  marks this alternate a LOSER — the dual of `@prefer`. Its rivals are
+        //             its explicit siblings AND, when the enclosing group is an OPT/KLN,
+        //             that group's implicit empty (skip) branch. So `[ @avoid X ]` means
+        //             "prefer the skip", spelled as an annotation on the body alternate `X`
+        //             rather than on the bracket. The Oracle picks the mechanism by group
+        //             shape (same-span `PreferRule` for non-empty siblings; follower-pivot
+        //             for the ε skip) — see `registerPrefer` / the OPT/KLN walk.
         // Node-level extent/associativity (`@longest`/`@shortest`/`@left`/`@right`) are
         // NOT here — they attach to the whole group, parsed before the LHS
         // (`production()`) or before the bracket (`factor()`).
@@ -648,20 +655,6 @@ class ApusParser {
         return GrammarNode(kind: .EPS, name: "ε")
     }
     
-    /// `@avoid` as the first token inside a bracket (`[ @avoid X ]`, `{ @avoid X }`,
-    /// `< @avoid X >`): the optional-skip form — prefer NOT taking the optional/repetition
-    /// when skipping still yields a complete parse. Consumed here (bracket-level) and
-    /// compiled to a follower-pivot rule (`AvoidOptionalRule`) in the Oracle. Distinct from
-    /// the alternate-prefix `@avoid` in `sequence()` (same-span loser): here it sits right
-    /// after the opening bracket and flags the bracket node's `isAvoided`.
-    func consumeAvoid() -> Bool {
-        if token.kind == "pragma" && token.stripped == "avoid" {
-            cI += 1
-            return true
-        }
-        return false
-    }
-
     func factor() throws -> GrammarNode {
         trace("factor", token)
         // Node-level extent/associativity prefix on a group: @longest/@shortest/@left/
@@ -703,23 +696,22 @@ class ApusParser {
             cI += 1
         case "[":
             cI += 1
-            let avoid = consumeAvoid()
+            // `@avoid`/`@prefer` right after `[` are NOT consumed here — they flow into
+            // `selection()` → `sequence()` and land on the body ALT node, exactly like
+            // after `=` or `|`. `[ @avoid X ]` therefore marks the alternate `X`, whose
+            // implicit rival is the OPT's skip (ε); the Oracle keys the optional-skip off
+            // that (see `registerPrefer` / the OPT/KLN walk in Oracle.swift).
             node = GrammarNode(kind: .OPT, name: "", alt: try selection())
-            node.isAvoided = avoid
             try expect(["]"])
             cI += 1
         case "{":
             cI += 1
-            let avoid = consumeAvoid()
             node = GrammarNode(kind: .KLN, name: "", alt: try selection())
-            node.isAvoided = avoid
             try expect(["}"])
             cI += 1
         case "<":
             cI += 1
-            let avoid = consumeAvoid()
             node = GrammarNode(kind: .POS, name: "", alt: try selection())
-            node.isAvoided = avoid
             try expect([">"])
             cI += 1
         default:

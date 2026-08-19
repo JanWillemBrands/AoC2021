@@ -15,7 +15,7 @@ topLevelDeclaration = shebang? statements? .
 
 // Grammar of whitespace
 
-whitespace : /[\u{0000}\u{0009}\u{000A}\u{000B}\u{000C}\u{000D}\u{0020}\u{00A0}\u{FEFF}]+/ .   // U+00A0 (NBSP): swift-syntax lexUnknown treats it as trivia w/ a `.nonBreakingSpace` WARNING (hasError false), so `a<NBSP>+ 2` is accepted; only non-ASCII whitespace so treated.  // non-ASCII whitespace generates a warning e.g. a  + 2
+whitespace : /[\u{0000}\u{0009}\u{000A}\u{000B}\u{000C}\u{000D}\u{0020}\u{00A0}\u{FEFF}]+/ .
 //whitespace = whitespaceItem whitespace? .
 //whitespaceItem = lineBreak .
 //whitespaceItem = inlineSpace .
@@ -636,7 +636,7 @@ typeInheritanceList = attributes? "~"? "nonisolated"? typeIdentifier
 expression = tryOperator? awaitOperator? conditionalExpression coercingOperator? .
 expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 
-// `[ @avoid … ]` the optional prefix operator: at expression-start `/abc/` parses both as a
+// `@shortest [ … ]` the optional prefix operator: at expression-start `/abc/` parses both as a
 // regex literal (operator skipped) AND as prefix-`/`(postfix-`/`(abc)) (operator taken);
 // avoiding the operator makes the regex reading win = swift-syntax's
 // `preferRegexOverBinaryOperator` (Tool 4). Where skipping fails (`-x`), phase-1 drops it
@@ -652,7 +652,7 @@ expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 // Grammar of a prefix expression
 
 @longest
-prefixExpression = [ @avoid prefixOperator >s< ] postfixExpression .   // >s<: a prefix operator is rightBound (tight to its operand) — `/ 1` (space after) is NOT prefix, so a line-leading spaced operator can't begin a statement; it stays infix, continuing the previous line (`0⏎/ 1 /⏎2` = one `0 / 1 / 2`, not a split)
+prefixExpression = @shortest [ prefixOperator >s< ] postfixExpression .   // >s<: a prefix operator is rightBound (tight to its operand) — `/ 1` (space after) is NOT prefix, so a line-leading spaced operator can't begin a statement; it stays infix, continuing the previous line (`0⏎/ 1 /⏎2` = one `0 / 1 / 2`, not a split)
 prefixExpression = "!" >s< postfixExpression .                  // disallow space after '!'
 prefixExpression = inOutExpression .
 // SE-0366 (consume), SE-0432 (borrow), SE-0429 (copy), SE-0411 (unsafe)
@@ -895,10 +895,10 @@ closureParameterList = closureParameter | closureParameter "," closureParameterL
 // swift-syntax parseClosureParameter (Parameters.swift:194-200) uses parseParameterNames
 // which returns two names (firstName / secondName) — same `external? internal: Type` shape
 // as regular parameters. `_ x: Type` and `x y: Type` are both valid.
-// `[ @avoid … ]`: modifier-word + one name = external name, not a modifier (see `parameter` below).
+// `@shortest [ … ]`: modifier-word + one name = external name, not a modifier (see `parameter` below).
 // closureParameterNames groups the one-or-two names so the @avoid follower has a common end.
-closureParameter = attributes? [ @avoid parameterDeclarationModifiers ] closureParameterNames typeAnnotation? .
-closureParameter = attributes? [ @avoid parameterDeclarationModifiers ] closureParameterNames typeAnnotation "..." .
+closureParameter = attributes? @shortest [ parameterDeclarationModifiers ] closureParameterNames typeAnnotation? .
+closureParameter = attributes? @shortest [ parameterDeclarationModifiers ] closureParameterNames typeAnnotation "..." .
 closureParameterNames = externalParameterName closureParameterName | closureParameterName .
 closureParameterName = hardIdentifier | "_" .       // `_` = wildcard closure param (e.g. `{ _ in }`, `{ (_ x: Int) in }`)
 
@@ -1613,15 +1613,15 @@ parameterClause = "(" ")" | "(" parameterList ","? ")" .
 parameterList = parameter | parameter "," parameterList .
 
 // TODO:  verify missing attributes? grammar error   https://github.com/swiftlang/swift-book/issues/294
-// `[ @avoid parameterDeclarationModifiers ]`: a modifier word followed by ONE name is the external
+// `@shortest [ parameterDeclarationModifiers ]`: a modifier word followed by ONE name is the external
 // name, NOT a modifier — swift-syntax parses `f(_const map: T)` as external `_const` + local `map`
 // (probe: empty DeclModifierList), and only `f(_const x y: T)` (two names) makes `_const` a
 // modifier. @avoid prefers the skip; where skipping can't parse (three words), the modifier is taken.
 // `parameterNames` groups the one-or-two names (mirrors swift-syntax parseParameterNames) so the
 // slot after the @avoid bracket has a COMMON END — pruneByPivot groups on (i,j) and needs the
 // mandatory follower to end at the same j in both readings.
-parameter = attributes? [ @avoid parameterDeclarationModifiers ] parameterNames typeAnnotation defaultArgumentClause? .
-parameter = attributes? [ @avoid parameterDeclarationModifiers ] parameterNames typeAnnotation "..." .
+parameter = attributes? @shortest [ parameterDeclarationModifiers ] parameterNames typeAnnotation defaultArgumentClause? .
+parameter = attributes? @shortest [ parameterDeclarationModifiers ] parameterNames typeAnnotation "..." .
 
 parameterNames = externalParameterName localParameterName | localParameterName .
 externalParameterName = softIdentifier | "_" .  // accept all keywords except let, var, inout; `_` = wildcard name (swift-syntax firstName/secondName allow .wildcard)
