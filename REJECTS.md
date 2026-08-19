@@ -310,17 +310,17 @@ excludes `default`. The exclusion set is `---("_" "let" "var" "inout" "default")
 
 **Test cases:**
 
-| Label | Source summary |
+| Label | Actual source (verbatim; newlines matter) |
 |-------|---------------|
-| `testTrailingClosureInIfCondition#1` | `if test { $0 } {}` |
+| `testTrailingClosureInIfCondition#1` | `if test {⏎  $0⏎} {}` |
 | `testClosureAtStartOfIfCondition#1` | `if {x}() {}` |
-| `testClosureAtStartOfIfCondition#2` | `if { x }() {}` (multiline) |
-| `testClosureAtStartOfIfCondition#3` | `if { x\n}() {}` |
-| `testClosureAtStartOfIfCondition#4` | `if { a in x + a }(1) {}` |
+| `testClosureAtStartOfIfCondition#2` | `if {⏎  x⏎}() {}` |
+| `testClosureAtStartOfIfCondition#3` | `if { x⏎}() {}` |
+| `testClosureAtStartOfIfCondition#4` | `if { a in⏎  x + a⏎}(1) {}` |
 | `testTrailingClosureInGuard#1` | `guard test { $0 } else {}` |
-| `testTrailingClosureInGuard#2` | `guard test { $0\n} else {}` (multiline) |
-| `testTrailingClosureInGuard#3` | `guard test { $0\n} else {}` (different split) |
-| `testTrailingClosureInGuard#4` | `guard test { x in x\n} else {}` |
+| `testTrailingClosureInGuard#2` | `guard test {⏎  $0⏎} else {}` |
+| `testTrailingClosureInGuard#3` | `guard test { $0⏎} else {}` |
+| `testTrailingClosureInGuard#4` | `guard test { x in⏎  x⏎} else {}` |
 | `testRecovery17#1` | `if { true } {}` |
 | `testRecovery18#1` | `if { true }() {}` |
 | `testRecovery23#1` | `while { true } {}` |
@@ -329,44 +329,52 @@ excludes `default`. The exclusion set is `---("_" "let" "var" "inout" "default")
 | `testRecovery50#1` | `switch { 42 } { case _: return }` — closure as switch subject |
 | `testRecovery51a#1` | `switch { 42 }() { case _: return }` — called-closure as switch subject |
 | `testRecovery51b#1` | (same source, duplicate) |
-| Swift.apus fixture | `if [1,2,3].filter { $0 % 2 == 0 }.isEmpty { print("accepts") }` |
 
-**Note:** `testRecovery28#1` was previously Parked (P1) believing Advent rejected it, but
-the B3 fix removed the `>->("{")` gate on `while`, exposing that Advent actually accepts
-`repeat {} while { true }()`. It is now a confirmed B2 failure.
+**Provenance / methodology note (2026-08-19):** an earlier pass hand-typed *single-line*
+approximations of these sources from this table's summaries and mis-concluded that
+swift-syntax now accepts them ("stale rejects"). That was a probe error, not a swift-syntax
+change: `atValidTrailingClosure` keys on `isAtStartOfLine`, so flattening the newline flips the
+verdict. Re-probed against the **verbatim** sources (`Parser.parse(source:).hasError`), **all
+entries above are genuine rejects.** Always probe the literal snippet, never a paraphrase.
 
-**Root cause:** The grammar uses `expression` inside `if`/`guard`/`while`/`switch` conditions
-without restricting trailing closures. The condition's `{` is ambiguous with the
-statement-body `{`, so `if test { $0 } {}` parses as either:
-- `if` with condition `test { $0 }` (trailing closure) and body `{}` ← invalid
-- `if` with condition `test` and body `{ $0 } {}` ← also invalid
+**Root cause (measured).** The rejects come from three *distinct* discriminators in
+swift-syntax's `atValidTrailingClosure(flavor:)` (Expressions.swift:2263), all active only in
+**`.stmtCondition`** flavor (in `.basic` flavor the function returns `true` at line 2284, so a
+multiline `foo {⏎ bar⏎}` at statement level stays valid — any Advent gate MUST be scoped to the
+condition path or it breaks accept-side statement closures):
 
-**Swift-syntax equivalent:** `atValidTrailingClosure(flavor: .stmtCondition)` — a
-structural lookahead that skips through the content of the `{ }` body and inspects the
-token **after** the closing `}`. The trailing closure is accepted only if that token is a
-continuation operator on the same line (`.`, `[`, `(`, `?`, `!`, `as`, `is`, `,`).
-If the `}` is followed by a newline or `{` (the statement body), the closure is refused.
+1. **Newline after the closure's opening `{`** (`if test {⏎ $0⏎} {}`, and the multiline
+   Recovery variants). `!self.peek().isAtStartOfLine` (line 2296): if the body's first token is
+   at start of line, the `{…}` is not a condition trailing closure, so the enclosing structure
+   breaks → reject. Largest sub-cluster.
+2. **Condition begins with `{`** (`if {x}() {}`, `while { true } {}`, `switch { 42 } …`). The
+   leading `{` is always taken as the statement body (condition = `MissingExpr`) → reject.
+   Independent of newlines.
+3. **Disqualifying follow token after the closing `}`** (`guard test { $0 } else {}`, single-line
+   — not a newline case). The token after `}` is `else`, which is not in the follow true-set
+   (`{ where , [ ( . is as ? ! : =` + operators, the operator/bracket group additionally
+   requiring `!lookahead.atStartOfLine`) → closure refused → reject.
 
-**Three fix options analysed:**
+**Fix plan (P1–P3), scoped to the existing `conditionExpression`/`conditionInfixExpressions`
+path (added for C13c) — i.e. make it a real `ExprFlavor.stmtCondition` mirror:**
 
-- **Option A — Negative lookahead `>->`:** Block trailing closure when `}` is followed
-  by `{`. Simple, but over-broad: would incorrectly block `f { }.property { }` in a
-  condition (continuation tokens after `}` should still allow the closure).
+- **P1 — newline gate (discriminator 1), existing primitive.** In a condition-flavored trailing
+  closure, forbid a newline between `{` and the first body token (`"{" <n> …`, the layout
+  no-newline gate), scoped to the condition clone so statement-level closures are untouched.
+- **P2 — leading-brace gate (discriminator 2), existing primitive.** `>->("{")` on the
+  `if`/`while`/`switch`/`guard`/`repeat`-`while` keyword slots: a condition/subject may never
+  open with `{`. This re-introduces the gate B3 removed ("in anticipation of B2 structural
+  lookahead"), now justified by the probe; it also re-fixes `testRecovery28`.
+- **P3 — follow-after-`}` check (discriminator 3), the one genuinely new primitive.** The
+  guard-`else` case needs to inspect the token *following the closure's extent* against the
+  follow true-set — the deferred "forward lookahead at nonterminal completion" (CRF pop/return
+  replay) from `Structured Lookahead Design.md`. This is the reusable primitive the whole ◐
+  predicate frontier wants; the same-line continuation refinement rides on it.
 
-- **Option B — Condition expression non-terminal:** Introduce `conditionExpression` that
-  omits `trailingClosures` entirely from function calls. Matches swift-syntax's
-  `ExprFlavor.basic`. Slightly over-restricts (disallows `f { }.foo { }` in conditions)
-  but structurally clean and requires no lookahead machinery.
-
-- **Option C — Structural lookahead (preferred):** After the closing `}` of a trailing
-  closure, assert a continuation token follows on the same line. Faithfully mirrors
-  `atValidTrailingClosure`. Requires a new APUS mechanism: a lookahead that can inspect
-  the token **following the end of a non-terminal** (here: the end of `closureExpression`
-  inside `trailingClosures`). This is precisely the "structural lookahead" APUS extension
-  candidate described below.
-
-**Status:** Waiting for the structural-lookahead primitive before committing to an
-implementation. Option C is preferred once the primitive exists.
+**Status:** P2 in progress (existing `>->`); P1 next (existing layout gate); P3 deferred to the
+nonterminal-completion-lookahead engine task. The old "Option A/B/C" framing is superseded:
+Option A was rejected for the wrong reason (the real discriminators are the two above, not
+"`}` followed by `{`"); Option C is now scoped down to just discriminator 3.
 
 ---
 

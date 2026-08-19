@@ -514,6 +514,7 @@ typeAnnotation = ":" type .   // specifiers/attributes carried by `type` (single
 
 
 // Grammar of a type identifier
+// swift-syntax canParseTypeIdentifier (Types.swift:1041): base name + optional generic args, dotted.
 
 typeIdentifier = typeName typeGenericArgumentClause? | typeName typeGenericArgumentClause? "." typeIdentifier .
 typeName = hardIdentifier .
@@ -573,6 +574,7 @@ dictionaryType = "[" type ":" type "]" .
 // parens: `(() -> E)?`), `~A?` = ~(A?), `some P?` = some(P?). `simpleType` is the subset these
 // postfixes may bind to; prefix forms (~/modifier/attribute), functionType, compositions and
 // some/any operands are excluded.
+// swift-syntax canParseSimpleType (Types.swift:861): the non-composition, non-function type core.
 simpleType = typeIdentifier | tupleType | arrayType | inlineArrayType | dictionaryType
            | optionalType | implicitlyUnwrappedOptionalType | metatypeType | anyType
            | "(" tupleTypeElement ")" .
@@ -643,8 +645,9 @@ expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 // and the operator is taken as normal. `@avoid` is the follower-pivot optional-skip (keep
 // the smallest pivot on postfixExpression); it is NOT `@shortest` — extent on the OPT
 // over-prunes here and rejects valid input (`!!/1 / .bitWidth`, `(^/x)/`). See Oracle.md.
-// `@longest`: prefer the longest operand. Resolves `any P & Q` in expression position —
-// `any` binds the whole composition (`any (P & Q)`, probe-verified: CompositionType, no infix `&`),
+// `@longest`: prefer the longest operand (swift-syntax canParseSimpleOrCompositionType,
+// Types.swift:841 — greedily consumes the `&`-composition). Resolves `any P & Q` in expression
+// position — `any` binds the whole composition (`any (P & Q)`, probe-verified: CompositionType, no infix `&`),
 // not `(any P) & Q`. The two readings give prefixExpression different extents at the same start;
 // keep the longest. Only fires where an operand genuinely has multiple extents (any/some + `&`
 // composition); ordinary operands are single-extent so it's a no-op elsewhere.
@@ -868,12 +871,14 @@ conditionalExpression = ifExpression | switchExpression .
 
 // Grammar of an if expression
 
-ifExpression = "if" conditionList codeBlock elseClause? .
+// `>-> ( "{" )` (B2 discriminator 2): a condition may never open with `{` — a leading brace is the
+// statement body, so `if {x}() {}` is a reject (swift-syntax: condition = MissingExpr). See REJECTS §B2.
+ifExpression = "if" >-> ( "{" ) conditionList codeBlock elseClause? .
 elseClause = "else" codeBlock | "else" ifExpression .
 
 // Grammar of a switch expression
 
-switchExpression = "switch" expression "{" switchCases? "}" .
+switchExpression = "switch" >-> ( "{" ) expression "{" switchCases? "}" .   // B2 discriminator 2: subject may not open with `{` (`switch { 42 } {…}` is a reject)
 
 // Grammar of a closure expression
 
@@ -1273,7 +1278,7 @@ forInStatement = "for" "try"? "await"? "unsafe"? bindingPattern "in" expression 
 
 // Grammar of a while statement
 
-whileStatement = "while" conditionList codeBlock .
+whileStatement = "while" >-> ( "{" ) conditionList codeBlock .   // B2 discriminator 2: `while { true } {}` is a reject
 
 conditionList = condition | condition "," conditionList .
 condition = conditionExpression
@@ -1287,7 +1292,7 @@ optionalBindingCondition = "let" bindingPattern initializer? | "var" bindingPatt
 
 // Grammar of a repeat-while statement
 
-repeatWhileStatement = "repeat" codeBlock "while" conditionExpression .
+repeatWhileStatement = "repeat" codeBlock "while" >-> ( "{" ) conditionExpression .   // B2 discriminator 2: `repeat {} while { true }()` is a reject (testRecovery28)
 
 // Grammar of a branch statement
 
@@ -1297,7 +1302,7 @@ branchStatement = guardStatement .
 
 // Grammar of a guard statement
 
-guardStatement = "guard" conditionList "else" codeBlock .
+guardStatement = "guard" >-> ( "{" ) conditionList "else" codeBlock .   // B2 discriminator 2: a guard condition may not open with `{`
 
 switchCases = switchCase switchCases? .
 switchCase = caseLabel statements .
@@ -1542,7 +1547,7 @@ getterSetterBlock = codeBlock .
 // `@prefer` the accessor reading: `{ get {} set {} }` parses both as accessors AND as a codeBlock
 // (get/set as identifiers with trailing closures); swift-syntax commits to accessors when accessor
 // keywords are present. A plain getter body (`{ return 1 }`) has no accessor parse, so codeBlock stands.
-getterSetterBlock = @prefer "{" accessorClauseList "}" .   // swift-syntax AccessorBlock = "{" AccessorDeclList "}"
+getterSetterBlock = @prefer "{" accessorClauseList "}" .   // swift-syntax AccessorBlock = "{" AccessorDeclList "}"; the accessor-vs-codeBlock commitment is atStartOfGetSetAccessor (Lookahead.swift:252)
 // swift-syntax parseAccessorDecl (Declarations.swift:1736) calls parseAccessorEffectSpecifiers
 // for EVERY accessor keyword (get/set/init/willSet/didSet/_read/_modify/...). Effects aren't
 // getter-specific; the `accessorEffects` non-terminal below is shared across all clauses.
@@ -1992,6 +1997,8 @@ matchPattern = typeCastingPattern .
 // parser's. `@prefer` the expression reading over the structural siblings at the same start;
 // `let`/`var`/`is` survive (not expressions) and `.foo(let x)` stays on enumCasePattern (an
 // embedded `let` is not a valid expression, so no expression reading competes there).
+// swift-syntax canParsePattern (Patterns.swift:285) / canParsePatternTuple (Patterns.swift:331):
+// the pattern-vs-expression fork; `let`/`var`/`is` are the true pattern forms, everything else is an expression.
 matchPattern = @prefer expressionPattern .
 
 // Grammar of a tuple pattern

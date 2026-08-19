@@ -105,4 +105,48 @@ The Oracle is unambiguous by construction; the "79" are `RejectSyntaxTests/adven
 leak). Guided by the ◐ rows above, the reduction work is per-predicate: tighten each
 "slightly off" construct so its second reading is unreachable at swift's position.
 
-_(Analysis of the 79, categorised by predicate family, below — appended as worked.)_
+Sources: the maintained cluster inventory in `REJECTS.md` (B/C labels), mapped onto the
+predicate families above. Counts are from `REJECTS.md`'s open clusters and should be
+reconciled against a fresh sweep (accept 0 / reject 79 / ambiguity 1); they are the shape of
+the frontier, not a certified census.
+
+### The open clusters, by predicate family
+
+| REJECTS cluster | ~n | predicate family (this doc) | commitment leak? | reduction lever |
+|---|---|---|---|---|
+| **B2** trailing closure / brace in cond/subject | ~18 | `atValidTrailingClosure(.stmtCondition)` (kin of `atStartOfLabelledTrailingClosure` ✅, different *flavor*) | ✅ yes | THREE discriminators (measured, REJECTS §B2): (1) newline after closure `{` → layout gate `<n>`; (2) condition opens with `{` → `>->("{")`; (3) follow token after `}` (guard-`else`) → structural lookahead. Only (3) needs a new primitive; scope all to the `conditionExpression` path |
+| **C1** key-path postfix chains (`\T.?.!`, `.[n]`, `method<T>()`) | 7 | `atStartOfPostfixExprSuffix` ◐ | ✅ yes | extend key-path postfix grammar to the full postfix-suffix set (same suffixes as ordinary postfix) |
+| **C3** forward-slash regex edges (`qux(/,1)/2`, `^/"/"`) | 6 | `preferRegexOverBinaryOperator` / `isStartOfReturnExpr` ◐ | ✅ yes | scanner-side regex-vs-divide gate at operand-ender / after `(` (already partly modeled via `<-<`) |
+| **C7** new keywords (`using`, `~Copyable` param, `nonisolated` type) | 4 | `atStartOfUsing` ✗, `canParseNonisolatedAsSpecifierInExpressionContext` ◐ | ✅ yes | the two ✗ holes: add `using` decl + `~T` inverse-type in parameter; tighten `nonisolated` type-position |
+| **C8** multiline generic w/ line-leading `of` | 3 | `canParseInlineArrayTypeBody` (`[N of T]`) ◐ | ✅ yes | layout scanner must not treat line-leading `of` as a separator inside a generic-arg `[ … ]` |
+| **C4** module selector invalid forms (`Foo::Bar`) | 11 | `canParseBaseTypeForQualifiedDeclName` ✗ | partial | the one genuine ✗ hole + several are malformed-arg checks, not commitment |
+| **C13** misc error-recovery (12 tests) | 12 | mixed — mostly `atStartOfDeclaration`/`atStartOfStatement` recovery ◐ | mixed | per-test triage; some are commitment, some are recovery-only `hasError` that need a reject shape |
+
+### Out of family — NOT a commitment leak (won't move by tightening a predicate)
+
+These are the doc's blind spot: rejects that are **lexical or semantic**, so no `canParse*`/
+`atStartOf*` tightening touches them. They belong to the two **APUS extension candidates**
+(`REJECTS.md` §Extension) or the scanner, not the predicate-porting task.
+
+| cluster | ~n | why out of family | home |
+|---|---|---|---|
+| **C2** malformed string / multiline literals | 12 | scanner-level (indentation, newline-after-`"""`, termination) | Scanner |
+| **C10** spacing-sensitive postfix (`foo!!foo`, `foo??bar`) | 4 | maximal-munch postfix-operator lexing | Scanner (postfix `!`/`?` split) |
+| **C5** duplicate access modifiers (`open open(set)`) | 2 | semantic dedup / counting | Post-parse predicate (Oracle filter) |
+| **C6** coroutine accessor combos, init-accessor defaults | 3 | invalid *combination*, not shape | Post-parse predicate |
+| **C12** `@available` string-literal kind | 4 | property of parsed token kind | Post-parse predicate (parked) |
+
+### Headline for the reduction work
+
+- **~38 of the 79 are genuine commitment leaks** (B2, C1, C3, C7, C8, and the C4/C13 subset) —
+  exactly the ◐/✗ rows above. The single highest-leverage item is **B2 (~18)**, gated on one
+  reusable primitive (**structural lookahead** past a nonterminal's extent); landing it clears
+  the largest cluster and is grammar-agnostic.
+- **~25 are out of family** (C2, C5, C6, C10, C12) — scanner or post-parse-predicate work; the
+  predicate-porting effort will not touch them, so they should be tracked separately and not
+  counted against "commitment leak" progress.
+- The two outright predicate **holes** worth closing directly are `atStartOfUsing` (C7) and
+  `canParseBaseTypeForQualifiedDeclName` (C4) — small, self-contained declaration/type additions.
+
+_Next: drill B2 first (structural-lookahead primitive), then the C1 postfix-suffix extension;
+reconcile the counts with a fresh sweep before committing per-cluster fixes._
