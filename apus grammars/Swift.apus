@@ -333,7 +333,7 @@ hexadecimalFloatingPointLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-
 //floatingPointLiteral = decimalLiteral decimalFraction? decimalExponent? .
 //floatingPointLiteral = hexadecimalLiteral hexadecimalFraction? hexadecimalExponent .
 
-signedFloatingPointLiteral = "-"? floatingPointLiteral .
+signedFloatingPointLiteral = "-"? >s< floatingPointLiteral .
 
 floatingPointLiteral = decimalFloatingPointLiteral | hexadecimalFloatingPointLiteral .
 
@@ -365,7 +365,7 @@ nilLiteral = "nil" .
 
 // Grammar of an integer literal
 
-signedIntegerLiteral = "-"? integerLiteral .
+signedIntegerLiteral = "-"? >s< integerLiteral .
 
 integerLiteral = binaryLiteral .
 integerLiteral = octalLiteral .
@@ -626,7 +626,9 @@ typeInheritanceList = attributes? "~"? "nonisolated"? typeIdentifier
                     | attributes? "~"? "nonisolated"? typeIdentifier "," typeInheritanceList .
 // SE-0414 nonisolated conformance is BARE only — swift-syntax rejects `struct S: nonisolated(unsafe) P` (probe: hasError). The `(arg)` form belongs to the decl modifier / type specifier, not conformance.
 
-
+// EBNF:
+//typeInheritanceClause = ":" typeInheritance { "," typeInheritance } .
+//typeInheritance = attributes? "~"? "nonisolated"? typeIdentifier .
 
 // EXPRESSIONS
 
@@ -656,7 +658,7 @@ expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 
 @longest
 prefixExpression = @shortest [ prefixOperator >s< ] postfixExpression .   // >s<: a prefix operator is rightBound (tight to its operand) — `/ 1` (space after) is NOT prefix, so a line-leading spaced operator can't begin a statement; it stays infix, continuing the previous line (`0⏎/ 1 /⏎2` = one `0 / 1 / 2`, not a split)
-prefixExpression = "!" >s< postfixExpression .                  // disallow space after '!'
+prefixExpression = "!" >s< postfixExpression .
 prefixExpression = inOutExpression .
 // SE-0366 (consume), SE-0432 (borrow), SE-0429 (copy), SE-0411 (unsafe)
 // contextual-keyword prefix operators. swift-syntax Expressions.swift:483-558
@@ -685,7 +687,7 @@ inOutExpression = "&" >s< postfixExpression .
 
 // Grammar of a try expression
 
-tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .           // disallow space before '?' and '!'
+tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .
 
 // Grammar of an await expression
 
@@ -822,7 +824,7 @@ nonLiteralPrimary = genericIdentifier | moduleGenericIdentifier | moduleSelector
 literalExpression = literal | arrayLiteral | dictionaryLiteral .
 
 arrayLiteral = "[" arrayLiteralItems? ","? "]" .
-arrayLiteralItems = arrayLiteralItem | arrayLiteralItem "," arrayLiteralItems .   // no trailing `","?` here — arrayLiteral owns the trailing comma (else it has two homes → the `⋯ "]"` pivot)
+arrayLiteralItems = arrayLiteralItem | arrayLiteralItem "," arrayLiteralItems .
 
 arrayLiteralItem = @prefer expression .   // @prefer over `typeExpression` (below): swift-syntax parses an arrow element `(Int,Double) -> Bool` as a SequenceExpr(TupleExpr, `->`, …) — NOT a FunctionType/TypeExpr (probe-verified). The expression/`->`-operator route is faithful; typeExpression survives only for type-only elements the expression route can't reach.
 // TypeExpr array element (swift-syntax `TypeExprSyntax`). A collection element that is a
@@ -836,14 +838,13 @@ arrayLiteralItem = typeExpression .
 typeExpression = type .   // swift-syntax TypeExprSyntax: a type used in expression position
 
 dictionaryLiteral = "[" dictionaryLiteralItems ","? "]" | "[" ":" "]" .
-dictionaryLiteralItems = dictionaryLiteralItem | dictionaryLiteralItem "," dictionaryLiteralItems .   // trailing comma owned by dictionaryLiteral (see arrayLiteralItems)
+dictionaryLiteralItems = dictionaryLiteralItem | dictionaryLiteralItem "," dictionaryLiteralItems .
 dictionaryLiteralItem = dictionaryLiteralElement ":" dictionaryLiteralElement .
 dictionaryLiteralElement = @prefer expression .   // @prefer over typeExpression, same rationale as arrayLiteralItem
 dictionaryLiteralElement = typeExpression .        // TypeExpr key/value, e.g. `[String: (nonisolated(nonsending) () async -> Void)?]`
 
 // playgroundLiteral rules removed: swift-syntax has no object-literal node — `#colorLiteral(…)`,
-// `#fileLiteral(…)`, `#imageLiteral(…)` are plain MacroExpansionExpr (probe-verified), already
-// covered by macroExpansionExpression. The dedicated shape rules only duplicated that reading.
+// `#fileLiteral(…)`, `#imageLiteral(…)` are plain MacroExpansionExpr (probe-verified)
 
 // Grammar of a self expression
 
@@ -985,9 +986,11 @@ macroExpansionExpression = macroHead genericArgumentClause? functionCallArgument
 // alternates (nt.alt), so the root-vs-bare-subscript preference (dev 3) only binds here.
 // Factoring the shared "\\" into an inline `( … | … )` group puts @prefer inside the group
 // where the Oracle can't see it — it goes inert and ambiguity explodes (1 → 40, measured).
+// TODO: is the argument above still valid ('goes inert')?
 
 @longest
-keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents? .   // dev 1,3; components optional (`\Foo`, `\X?`). `\\` = apus escape for literal `\`
+keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents? .   // components optional (`\Foo`, `\X?`).
+// TODO: why do we need @prefer here if the alternate always starts with a '.', and this one can't?
 @longest
 keyPathExpression =         "\\" keyPathComponents .                    // root-absent (`\.foo`): keyPathComponents must start with `.`
 
@@ -1139,8 +1142,17 @@ functionCallArgument = moduleSelector operator
 argumentLabel = softIdentifier | "_" .
 
 trailingClosures = closureExpression labeledTrailingClosures? .
+// B2 — post-parse filters (do NOT parse; prune trailing-closure derivations inside a condition that
+// violate swift-syntax's atValidTrailingClosure, .stmtCondition). See `Within Filter Design.md`.
+//   disc-3: inside a condition, a trailing closure's `}` may not be followed by `else` (guard).
+@within(conditionExpression) trailingClosures = closureExpression >-> ( "else" ) labeledTrailingClosures? .
+//   disc-1: a trailing closure (⊂ trailingClosures AND ⊂ conditionExpression — excludes argument
+//   closures) must open tight: no newline between `{` and its first body token.
+@within(conditionExpression) @within(trailingClosures) closureExpression = "{" <n> closureSignature? statements? "}" .
 labeledTrailingClosures = labeledTrailingClosure labeledTrailingClosures? .
 labeledTrailingClosure = trailingClosureLabel ":" closureExpression .
+
+// TODO: 1, check the correctness of the statement below. 2, verify that exluding "_" and then adding "_" is neccessary
 // `default` is the only keyword excluded from labeled trailing closure position — swift-syntax's
 // atStartOfLabelledTrailingClosure() explicitly checks `self.at(.keyword(.default))` and returns
 // false. All other keywords (including `case`, `return`, `for`, …) are valid trailing closure labels.

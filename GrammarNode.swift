@@ -174,6 +174,7 @@ final class GrammarNode {
     /// NOT `@shortest` (extent over-prunes and changes acceptance).
     var isAvoided: Bool = false
 
+
     /// `=|` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at lex
     /// time and emitted as a SINGLE token (like `=:` trivia, but a token not trivia). References
     /// to it in other productions resolve to a terminal (`.T`) — the outer parser never sees the

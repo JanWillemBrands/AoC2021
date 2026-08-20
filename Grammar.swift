@@ -23,6 +23,13 @@ class Grammar {
     var messages: [String] = []
     var preamble: [String] = []
     var epilogue: [String] = []
+
+    /// Post-parse filter productions: `@within(Ctx…) LHS = rhs .`. These do NOT contribute to the
+    /// parse (their alternates are never registered on the nonterminal); the Oracle reads the extra
+    /// gates off `rhs` and prunes `LHS` derivations that lie inside ALL of `contextNames`' extents
+    /// (BSR containment) and violate a gate. See `Within Filter Design.md`.
+    struct FilterProduction { let lhsName: String; let contextNames: [String]; let rhs: GrammarNode }
+    var filters: [FilterProduction] = []
     var root: GrammarNode = GrammarNode(kind: .EOS, name: "○")
     var isLL1: Bool = true
     /// Number of grammar nodes numbered during `resolveGrammarNodeLinks`; node

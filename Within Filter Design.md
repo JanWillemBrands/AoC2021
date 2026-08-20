@@ -43,76 +43,72 @@ For a bare trailing closure in `.stmtCondition`, `atValidTrailingClosure` return
   (same line only). `else` and newline-led operators are NOT in the set → refuse.
   (Plus two early outs: not a get/set accessor, not a `case`-led switch body.)
 
-## The tool
+## The tool — a filter production in the same APUS language
 
 ```
-@within ( ContextNT )   — prefixes an alternate; makes it a HARD post-parse filter, active only
-                          where the alternate's span lies inside a ContextNT yield (BSR span
-                          containment). The boundary predicate is written with the existing
-                          gate operators, but evaluated post-parse by the Oracle, not the matcher.
+@within ( Ctx ) [ @within ( Ctx2 ) … ]  LHS = rhs .
 ```
+
+A production carrying one-or-more `@within(Ctx)` prefixes is a **filter production**: it does NOT
+contribute to the parse (its alternates are never registered on the nonterminal — no double-parse).
+Post-parse, the Oracle prunes derivations of the *base* `LHS` that lie inside **all** of the
+`Ctx…` extents (BSR span-containment) and violate a gate declared in `rhs`.
 
 - **Hard** = it may remove the last surviving derivation → the input becomes a *reject*. This is
-  the one property that separates it from `@prefer`/`@avoid` (preferences, which are forbidden
-  from emptying the forest by the dead-wood invariant). `@within` is a **faithfulness filter**,
-  a deliberately different phase.
-- **Context by BSR containment** = the GLL substitute for the inherited `flavor`. A
-  `trailingClosures` yield `(…,k,j)` is "in a condition" iff some `conditionExpression` yield
-  `(ci,·,cj)` satisfies `ci ≤ k ∧ j ≤ cj`. `conditionExpression` already exists — no new
-  nonterminals, no clone.
+  what separates it from `@prefer`/`@avoid` (preferences, forbidden from emptying the forest by
+  the dead-wood invariant). A filter production is a **faithfulness filter** (the SDF/Rascal
+  *reject*/*follow-restriction* lineage; see CC-2002).
+- **Context by BSR containment** = the GLL substitute for the inherited `flavor`. Stacked
+  `@within(A) @within(B)` = conjunction (inside A *and* B) — e.g. a closure that is `⊂ trailingClosures`
+  *and* `⊂ conditionExpression` is a trailing-closure-in-a-condition, excluding argument closures.
+  `conditionExpression`/`trailingClosures` already exist — no new nonterminals, no clone.
+- **Declarative** = the constraints are ordinary APUS gates in `rhs`; there is no disc-1/disc-3
+  logic in Swift. The gate *is* the predicate.
 
-### Boundary predicate operators (inside an `@within` alternate)
+### Gate shapes read off the filter `rhs`
 
-- `>+> ( set )` / `>-> ( set )` after a **nonterminal** = the token following that nonterminal's
-  completion must / must not be in `set`. (Existing operators; new anchor = nonterminal
-  completion — the previously-deferred "`>+>` at nonterminal completion" task. Evaluated
-  post-parse from `input` at the nonterminal's `j`.) This is **disc-3**.
-- **disc-1** (no newline between the closure's `{` and its first body token) is folded into the
-  `@within` predicate as a newline scan on the closure's own span — no operator, no cloned
-  closure rule. (This is why the earlier `condClosureBodyTight` idea is dropped: it was a
-  one-rule closure clone to carry disc-1; the filter already owns the span and `input`.)
+- **`>-> ( set )` / `>+> ( set )` on a body symbol S** → the source word following S's completion
+  must-not / must be in `set` (disc-3). Anchor = the base `LHS`'s own body symbol named S.
+- **`<n>` / `>n<` immediately after a `"{"` literal** → no line break between `{` and the first
+  body token (disc-1) — the same computation as the `>n<` boundary gate (`lexer.triviaSkipEnd` +
+  line-break-in-trivia). Anchor = the base `LHS` node. Self-guards on `input[i] == "{"`.
 
-## Swift.apus surface
-
-Guard-`else` first cut — disc-3 only (all four guard cases are `} else`):
+## Swift.apus surface (implemented)
 
 ```apus
-trailingClosures = @within(conditionExpression) closureExpression >-> ( "else" ) labeledTrailingClosures?
-                 | closureExpression labeledTrailingClosures? .        // unscoped (.basic) — unchanged
+// base parse grammar — unchanged
+trailingClosures  = closureExpression labeledTrailingClosures? .
+closureExpression = "{" closureSignature? statements? "}" .
+
+// post-parse filters (do NOT parse; prune trailing-closure derivations in a condition that
+// violate atValidTrailingClosure, .stmtCondition)
+//   disc-3: inside a condition, a trailing closure's `}` may not be followed by `else` (guard)
+@within(conditionExpression) trailingClosures = closureExpression >-> ( "else" ) labeledTrailingClosures? .
+//   disc-1: a trailing closure (⊂ trailingClosures AND ⊂ conditionExpression — excludes argument
+//   closures) must open tight: no newline between `{` and its first body token
+@within(conditionExpression) @within(trailingClosures) closureExpression = "{" <n> closureSignature? statements? "}" .
 ```
 
-Full version — same alternate; `@within` folds in disc-1 (newline scan) and the full disc-3
-allow-set; still no closure clone:
+Model in one line: the base grammar still *parses* (the trailing-closure reading is produced); the
+filter then removes it in condition context iff a declared gate fails — literally swift-syntax's
+`withLookahead { atValidTrailingClosure() }`, read off the BSR.
 
-```apus
-trailingClosures = @within(conditionExpression) closureExpression >+> ( "{" "where" "," "." "(" "[" "?" "!" ":" "=" "is" "as" ) labeledTrailingClosures?
-                 | closureExpression labeledTrailingClosures? .
-```
+## Engine implementation (as built)
 
-Model in one line: the alternate still *parses* (the trailing-closure reading is produced);
-`@within` then removes it in condition context iff the boundary predicate fails — literally
-swift-syntax's `withLookahead { atValidTrailingClosure() }`, read off the BSR.
+1. **ApusParser** (`production()`) — a production may carry leading `@within(NT)` (repeatable);
+   collected into a context list. Such a production is routed to `grammar.filters` and its
+   alternates are **never** registered on the nonterminal (so it doesn't parse). `>->`/`>+>` and
+   `<n>` inside the filter `rhs` parse into the usual node fields/`.B` nodes.
+2. **Grammar** — `struct FilterProduction { lhsName; contextNames; rhs }`, collected in `filters`.
+3. **Oracle** (`registerFilter`) — resolve the contexts and the base `LHS`; walk the filter `rhs`
+   for the two gate shapes above and register a `WithinRule` keyed on the corresponding **base**
+   node (the parse produced its yields), so pruning cascades through the existing second dead-wood
+   sweep exactly like a `PreferRule` on a body symbol. `WithinRule.prune` keeps a yield only if it
+   lies inside every context (conjunction) and passes the gate; a removal that empties the root →
+   reject.
 
-## Engine implementation
-
-1. **ApusParser** — recognise `@within ( identifier )` as an alternate prefix (like `@prefer`);
-   store the context name + the following boundary gate on the ALT node. (`>->`/`>+>` after a
-   nonterminal reference already parse as gates; they must be *retained*, not applied at match
-   time, when the alternate is `@within`.)
-2. **GrammarNode** — `withinContextName: String?`, resolved `withinContext: GrammarNode?`, and a
-   reference to the boundary gate set/polarity. Anchor node = the nonterminal the gate follows
-   (here `closureExpression`).
-3. **Grammar** — resolve `withinContextName` → node in finalisation (error if unknown).
-4. **Oracle** — a new **faithfulness-filter phase**, run after dead-wood pruning and before (or
-   folded with) preference disambiguation, ALLOWED to empty a node's yields:
-   - for each `@within` rule: let `C` = set of `withinContext` yields; for each candidate yield
-     `y` of the anchor nonterminal with `∃ c ∈ C: c.i ≤ y.i ∧ y.j ≤ c.j` (containment):
-     evaluate the boundary predicate at `y` (`disc-3`: next token after `y.j`; `disc-1`: newline
-     scan inside `y`). If it fails, remove `y` (and let the re-run dead-wood sweep propagate).
-   - re-run dead-wood; if the root loses all yields → reject.
-
-The Oracle already holds `input: String` and `CharPosition = String.Index`, so both
-discriminators are pure functions of `input` + span (Oracle.swift:122–138 already scans `input`).
+The Oracle holds `input: String` (`CharPosition = String.Index`) and the engine's
+`lexer.triviaSkipEnd`, so both gates use the same trivia/line-break notion as the boundary gates.
 
 ## Why not the alternatives (recap)
 - **Clone the chain:** heavy, and hard-codes flavor into grammar text.
@@ -131,7 +127,15 @@ modifiers, C6 accessor-combination, C12 `@available` string-kind) — each a pos
 on a node's subtree/neighbourhood. B2 is the first, most-motivated instance.
 
 ## Increments
-1. **guard-`else`** (`>->("else")`, disc-3, no disc-1) — clears `testTrailingClosureInGuard#1–4`.
-   Validate: 4 guard rejects flip green; full accept sweep stays at 0 failures.
-2. **disc-1 newline scan** folded into `@within` — clears `testTrailingClosureInIfCondition#1`.
-3. Broaden disc-3 to the full allow-set (with the same-line qualifier on the operator subset).
+1. ✅ **guard-`else`** (disc-3) — `testTrailingClosureInGuard#1–4` reject.
+2. ✅ **disc-1 newline** — `testTrailingClosureInIfCondition#1` rejects. Whole B2 cluster closed.
+   Full sweep: reject **79 → 62**, accept **0** failures, no new failures (filter-grammar form is
+   behavior-identical to the earlier alternate-prefix cut).
+3. (later) broaden disc-3 to the full allow-set (with the same-line qualifier on the operator
+   subset) if a test needs it — none currently do.
+
+## Status: implemented via the filter-grammar form (2026-08-20)
+`@within` is a production-level, stackable filter prefix; filter productions live in
+`grammar.filters` and are compiled to `WithinRule`s by `Oracle.registerFilter`. Reusable for the
+shape/context rejects on the frontier (REJECTS.md C5/C6/C12) — those want plain reject productions
+(no `@within`) or single-`@within`, in the same filter-grammar.
