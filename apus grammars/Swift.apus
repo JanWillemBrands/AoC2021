@@ -65,7 +65,7 @@ propertyWrapperProjection - @builder .   // `$name`, `$0abc` — at least one no
 
 // Most Swift identifiers exclude the hard reserved keywords
 hardIdentifier  = identifier
-                  ---( "_" "Any" "as" "associatedtype" "await" "break" "case" "catch" "class" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "open" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while" )
+                  ---( "_" "Any" "as" "associatedtype" "await" "break" "case" "catch" "class" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while" )   // `open` removed: NOT lexer-classified in swift-syntax (IsLexerClassified.swift) — contextual, usable as identifier/callee (`open(set)` call, `open` reference); its modifier reading lives in accessLevelModifier. `await`/`init` kept excluded: also non-reserved in swift-syntax but removing them adds 6 init-decl-vs-identifier ambiguities (measured), no accept/reject gain.
                 | escapedIdentifier
                 | propertyWrapperProjection .
 
@@ -333,7 +333,7 @@ hexadecimalFloatingPointLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-
 //floatingPointLiteral = decimalLiteral decimalFraction? decimalExponent? .
 //floatingPointLiteral = hexadecimalLiteral hexadecimalFraction? hexadecimalExponent .
 
-signedFloatingPointLiteral = "-"? >s< floatingPointLiteral .
+signedFloatingPointLiteral = [ "-" >s< ] floatingPointLiteral .
 
 floatingPointLiteral = decimalFloatingPointLiteral | hexadecimalFloatingPointLiteral .
 
@@ -365,7 +365,7 @@ nilLiteral = "nil" .
 
 // Grammar of an integer literal
 
-signedIntegerLiteral = "-"? >s< integerLiteral .
+signedIntegerLiteral = [ "-" >s< ] integerLiteral .
 
 integerLiteral = binaryLiteral .
 integerLiteral = octalLiteral .
@@ -990,7 +990,7 @@ macroExpansionExpression = macroHead genericArgumentClause? functionCallArgument
 
 @longest
 keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents? .   // components optional (`\Foo`, `\X?`).
-// TODO: why do we need @prefer here if the alternate always starts with a '.', and this one can't?
+// TODO: why do we need @prefer here if the alternate always starts with a '.', and this one can't?F
 @longest
 keyPathExpression =         "\\" keyPathComponents .                    // root-absent (`\.foo`): keyPathComponents must start with `.`
 
@@ -1867,7 +1867,7 @@ accessLevelModifier = "fileprivate" | "fileprivate" "(" "set" ")" .
 accessLevelModifier = "internal" | "internal" "(" "set" ")" .
 accessLevelModifier = "package" | "package" "(" "set" ")" .
 accessLevelModifier = "public" | "public" "(" "set" ")" .
-accessLevelModifier = "open" | "open" "(" "set" ")" .
+accessLevelModifier = "open" .   // C5: no `open(set)` — `open` is never a setter access level (compiler rejects; swift-syntax only tolerates it, and reads a leading `open(set)` as a call). Dropping the alternate rejects `open(set) var` / `open open(set) var` (testAccessLevelModifier#1/#2).
 
 mutationModifier = "mutating" | "nonmutating" .
 
