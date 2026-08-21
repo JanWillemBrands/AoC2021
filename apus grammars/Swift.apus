@@ -1222,7 +1222,7 @@ optionalChainingExpression = postfixExpression >s< optionalMark .
  
 // Grammar of a statement
 
-statement = expression .
+statement = >->(declaration) expression .   // an expression-statement only where a declaration does NOT start here (swift-syntax atStartOfDeclaration-first). Resolves the `open⏎var` modifier-vs-reference ambiguity: `open` before a decl is the declaration's modifier, not a bare reference. See `Grammar Predicate Lookahead Design.md`.
 // `@prefer`: where a declaration and an expression parse the SAME span (`init() {}` = decl vs
 // `init`-ref + call + trailing closure), swift-syntax commits to the declaration (probe:
 // InitializerDecl in a func body; its parseCodeBlockItem tries atStartOfDeclaration first).

@@ -447,6 +447,21 @@ class ApusParser {
             cI += 1
         }
 
+        // Leading forward lookahead predicate with a NONTERMINAL operand — `>->(N)` (negative)
+        // or `>+>(N)` (positive) at the alternate start. Captured on this ALT node; the Oracle
+        // anchors the prune on the alternate's first body symbol (yield start = alternate start).
+        // See `Grammar Predicate Lookahead Design.md`. Postfix `>->`/`>+>` on a TERMINAL stays
+        // the parse-time token gate in `factor()`.
+        if token.kind == ">->" || token.kind == ">+>" {
+            startOfSequence.predicateNegated = token.kind == ">->"
+            cI += 1
+            try expect(["("]); cI += 1
+            try expect(["identifier"])
+            startOfSequence.predicateTargetName = String(token.image)
+            cI += 1
+            try expect([")"]); cI += 1
+        }
+
         // leading actions (before first factor)
         termNode.actions = collectActions(at: cI)
         

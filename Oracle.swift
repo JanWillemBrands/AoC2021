@@ -151,6 +151,26 @@ private struct SpanKey: Hashable {
     let j: CharPosition
 }
 
+/// Forward lookahead predicate `>->(N)` / `>+>(N)` with a nonterminal operand (see
+/// `Grammar Predicate Lookahead Design.md`). Anchored on the alternate's FIRST body symbol,
+/// whose yield start `i` is the alternate start. For each such yield, ask the Way-1 BSR
+/// question "does `N` derive at `i`?" (`∃` a target yield with `.i == i`) and prune when the
+/// predicate fails: negative (`>->`) fails where `N` DOES derive here; positive (`>+>`) fails
+/// where it does NOT. Removal cascades to the whole alternate via the dead-wood sweep.
+struct LookaheadPredicateRule: DisambiguationRule {
+    let negated: Bool
+    let targetYields: () -> Set<BinarySpan>
+    func prune(_ yields: inout Set<BinarySpan>) -> Int {
+        let starts = Set(targetYields().map(\.i))          // positions where N starts a derivation
+        var pruned = 0
+        for span in yields {
+            let derivesHere = starts.contains(span.i)
+            if negated ? derivesHere : !derivesHere { yields.remove(span); pruned += 1 }
+        }
+        return pruned
+    }
+}
+
 private func pruneByPivot(
     yields: inout Set<BinarySpan>,
     keep: ([CharPosition]) -> CharPosition
@@ -289,6 +309,17 @@ class Oracle {
                 registerNodeDisambiguation(owner: node)
                 registerPrefer(altChainHead: node.alt)
                 registerOptionalSkip(bracket: node)
+            }
+            // Leading forward lookahead predicate on an ALT node (`>->(N)`/`>+>(N)`, N a
+            // nonterminal). Anchor the prune on the alternate's first body symbol.
+            if let tname = node.predicateTargetName {
+                let p = parser
+                if let target = grammar.nonTerminals[tname], let anchor = node.bodySymbols.first {
+                    rules.append((anchor, LookaheadPredicateRule(negated: node.predicateNegated,
+                                                                 targetYields: { p.yield(of: target) })))
+                } else {
+                    assertionFailure("lookahead predicate: unresolved target '\(tname)' or empty alternate")
+                }
             }
             if node.kind != .END { walk(node.seq) }
             walk(node.alt)

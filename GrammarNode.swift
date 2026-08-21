@@ -174,6 +174,14 @@ final class GrammarNode {
     /// NOT `@shortest` (extent over-prunes and changes acceptance).
     var isAvoided: Bool = false
 
+    /// Forward lookahead predicate on an alternate — a leading `>->(N)` / `>+>(N)` whose
+    /// operand `N` is a NONTERMINAL. Captured on the `.ALT` node heading the alternate.
+    /// The Oracle prunes the alternate's reading at its start position `i` where `N` does
+    /// (`>->`, negated) / does not (`>+>`, positive) derive at `i` — a Way-1 BSR query.
+    /// See `Grammar Predicate Lookahead Design.md`. (Postfix `>->`/`>+>` with a TERMINAL
+    /// operand remains the parse-time token gate in `factor()`.)
+    var predicateTargetName: String? = nil
+    var predicateNegated: Bool = false
 
     /// `=|` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at lex
     /// time and emitted as a SINGLE token (like `=:` trivia, but a token not trivia). References
