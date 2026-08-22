@@ -1492,7 +1492,7 @@ memberDeclaration = declaration | freestandingMacroExpansionDeclaration | bodyle
 // `case` in struct/class/extension (testEnum12/13/14 use plain assertParse); the compiler
 // rejects those only semantically. `enumMember` therefore uses just `declaration` (not a
 // second `enumCaseDeclaration` alternate), so `case` has exactly one parse — no ambiguity.
-declaration = enumCaseDeclaration .
+declaration = @within(memberDeclaration) enumCaseDeclaration .   // `case`-as-declaration is valid ONLY inside a type-member block (struct/class/enum/actor/protocol/extension all reach it via `memberDeclaration`); at top level or in a function body `case` is not a declaration (swift-syntax rejects — testEnum11). Containment predicate, see `Grammar Predicate Lookahead Design.md`.
 declaration = macroExpansionDeclaration .   // attributed/modified freestanding macro (see below); bare form is member-only
 
 // macroExpansionDeclaration REQUIRES a leading attribute or declaration-modifier (so a bare `#foo`

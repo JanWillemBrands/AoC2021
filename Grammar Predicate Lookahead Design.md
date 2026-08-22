@@ -129,6 +129,31 @@ proper mechanism, neither re-scanned in the Oracle.
 - **Cheap.** The BSR is the memo; for disambiguation the answer is already computed. The
   sub-parse fallback reuses machinery that already exists.
 
+## Settled decision (2026-08-21): `@within(N)` is the twin of `>->(N)`
+
+`>->(N)`/`>+>(N)`/`<+<(N)`/`<-<(N)` already take **N = a terminal set OR a nonterminal**, and a
+nonterminal carries the full apus RHS — so the lookahead side already has all the expressive
+power needed. **The only missing piece is to give `@within(N)` the same status**: a declarative
+containment predicate over an **arbitrary apus nonterminal `N`**, evaluated as a BSR query — the
+twin of `>->(N)`, differing only in relation (containment `∃ N-yield ⊇ [i,j]` vs. derives-at-anchor).
+No boolean DSL, no atom algebra — those were a wrong turn. `N` being a nonterminal is the power.
+
+This is already realised by `ContainmentRule` (`@within(memberDeclaration)` on `testEnum11`): a real
+nonterminal, span-containment over the BSR, zero procedural Swift.
+
+**Remaining work — the "@within rewrite" — is narrow:** the B2 filter still uses the procedural
+path (`registerFilter` pattern-matches two hardcoded boundary shapes; `WithinRule` has a baked-in
+`Gate` enum). Replace it with **general per-predicate evaluation**: a filter alternate carries
+whatever predicates the grammar writes — `@within(N)` (containment), `>->`/`>+>` (lookahead, N a
+terminal set or nonterminal), `<n>`/`>n<` (layout) — each evaluated by its own general evaluator,
+in whatever combination appears. Then delete `registerFilter`'s pattern-matching, the `Gate` enum,
+`FilterProduction`, `grammar.filters`, and production-level `@within`; fold everything onto the
+general `@within(N)` + `>->(N)` predicates. Language-agnostic: C++/Rust write `@within(theirNT)` /
+`>->(theirNT)` on their own productions; the engine evaluates predicates generically.
+
+Validation bar: B2 rejects (`testTrailingClosureInGuard#1–4`, `testTrailingClosureInIfCondition#1`)
+still reject; `testEnum11` holds; accept failures 0; residual ambiguity ≤ 1.
+
 ## First customer
 
 `open⏎var foo` — `open` is a contextual keyword (a legal identifier) *and* a modifier, so

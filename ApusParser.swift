@@ -447,6 +447,19 @@ class ApusParser {
             cI += 1
         }
 
+        // Leading containment predicate(s) `@within(N)` (repeatable = conjunction), at the
+        // alternate start. Kept on this ALT node; the Oracle keeps the alternate only where its
+        // span is contained in a yield of EACH `N`. Declarative replacement for the procedural
+        // `@within` filter. See `Grammar Predicate Lookahead Design.md`.
+        while token.kind == "pragma" && token.stripped == "within" {
+            cI += 1
+            try expect(["("]); cI += 1
+            try expect(["identifier"])
+            startOfSequence.withinContainers.append(String(token.image))
+            cI += 1
+            try expect([")"]); cI += 1
+        }
+
         // Leading forward lookahead predicate with a NONTERMINAL operand — `>->(N)` (negative)
         // or `>+>(N)` (positive) at the alternate start. Captured on this ALT node; the Oracle
         // anchors the prune on the alternate's first body symbol (yield start = alternate start).

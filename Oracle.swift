@@ -171,6 +171,26 @@ struct LookaheadPredicateRule: DisambiguationRule {
     }
 }
 
+/// Containment predicate `@within(N…)` on an alternate (see `Grammar Predicate Lookahead
+/// Design.md`). Anchored on the alternate's first body symbol: keep a yield `[i,j]` only where
+/// it is CONTAINED in a yield of EACH container `N` (`∃` an N-yield `[a,b]` with `a ≤ i` and
+/// `j ≤ b`); prune otherwise. Conjunction over multiple containers. If a container has no yields
+/// at all, nothing is contained in it → the alternate is pruned everywhere (positive semantics —
+/// the reading is valid ONLY inside `N`). This is the declarative form of the retired procedural
+/// `@within` filter (`WithinRule`): the context is read off the BSR, not a hand-rolled scan.
+struct ContainmentRule: DisambiguationRule {
+    let containers: [() -> Set<BinarySpan>]
+    func prune(_ yields: inout Set<BinarySpan>) -> Int {
+        let cys = containers.map { $0() }
+        var pruned = 0
+        for span in yields {
+            let containedInAll = cys.allSatisfy { cy in cy.contains { $0.i <= span.i && span.j <= $0.j } }
+            if !containedInAll { yields.remove(span); pruned += 1 }
+        }
+        return pruned
+    }
+}
+
 private func pruneByPivot(
     yields: inout Set<BinarySpan>,
     keep: ([CharPosition]) -> CharPosition
@@ -319,6 +339,22 @@ class Oracle {
                                                                  targetYields: { p.yield(of: target) })))
                 } else {
                     assertionFailure("lookahead predicate: unresolved target '\(tname)' or empty alternate")
+                }
+            }
+            // Leading containment predicate(s) `@within(N…)` on an ALT node — keep the alternate
+            // only where its span is contained in each container. Anchor on the first body symbol.
+            if !node.withinContainers.isEmpty {
+                let p = parser
+                if let anchor = node.bodySymbols.first {
+                    let containers = node.withinContainers.compactMap { name -> (() -> Set<BinarySpan>)? in
+                        guard let c = grammar.nonTerminals[name] else {
+                            assertionFailure("@within: unknown container nonterminal '\(name)'"); return nil
+                        }
+                        return { p.yield(of: c) }
+                    }
+                    rules.append((anchor, ContainmentRule(containers: containers)))
+                } else {
+                    assertionFailure("@within on an empty alternate")
                 }
             }
             if node.kind != .END { walk(node.seq) }
