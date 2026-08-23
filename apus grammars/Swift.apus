@@ -81,7 +81,15 @@ identifierList = hardIdentifier | hardIdentifier "," identifierList .
 // disambiguate which module it comes from. swift-syntax parseModuleSelectorIfPresent (Names.swift:125)
 // consumes `name ::` before the actual name in both expression and type positions. `::` is a new
 // token used nowhere else, so threading `moduleSelector?` through name positions adds no ambiguity.
-moduleSelector = hardIdentifier "::" . // TODO: I don't think escapedIdentifier and propertyWrapperProjection should be moduleSelector.
+// `>n<` after `::` = the base name must be on the SAME line as `::`. Faithful to swift-syntax
+// `consumeModuleSelectorTokensIfPresent` (Names.swift): `skipQualifiedName = afterContainsAnyNewline`
+// — a newline between `::` and the base name skips the qualified name → missing base name → hasError
+// (`Swift::⏎print`, `Swift ::⏎print`, `Swift⏎::⏎print`, `Swift::⏎do`).
+// `@excludedFrom(valueBindingPattern)`: inside a `let`/`var` binding pattern a name is INTRODUCED,
+// and swift-syntax parses it as a plain identifier — a module selector's `::x` is left as unexpected
+// code → hasError (`case let Optional.some(Swift::decl)`, `case let Swift::decl?`). A module selector
+// only qualifies a REFERENCE, so prune it wherever it lands inside a binding pattern.
+moduleSelector = @excludedFrom(valueBindingPattern) hardIdentifier "::" >n< . // TODO: I don't think escapedIdentifier and propertyWrapperProjection should be moduleSelector.
 
 //identifier = identifierHead identifierCharacters? .
 //identifier = "`" identifierHead identifierCharacters? "`" .
@@ -883,7 +891,14 @@ switchExpression = "switch" >-> ( "{" ) expression "{" switchCases? "}" .   // B
 
 // Grammar of a closure expression
 
-closureExpression = "{" closureSignature? statements? "}" .
+// Partitioned by the open-brace layout so the two readings are DISJOINT (no ambiguity): `>n<`
+// = no newline after `{` (tight), `<n>` = newline after `{`. B2 disc-1: a newline-opened trailing
+// closure inside a condition is NOT a trailing closure (the `{` is the body) — `@excludedFrom`
+// prunes that reading where it is contained in BOTH a `conditionExpression` and a `trailingClosures`.
+// The `<n>` fires at PARSE time (a normal alternate); the Oracle only does the containment BSR query.
+closureExpression = "{" >n< closureSignature? statements? "}" .
+closureExpression = @excludedFrom(conditionExpression) @excludedFrom(trailingClosures) newlineOpenedClosure .
+newlineOpenedClosure = "{" <n> closureSignature? statements? "}" .
 
 // swift-syntax ClosureSignatureSyntax carries `attributes` INSIDE the signature (before the
 // optional capture clause), and a signature always ends in `in`. So closure attributes require
@@ -1141,18 +1156,20 @@ functionCallArgument = moduleSelector operator
 // unaffected — that goes through `expression`; the `:` distinguishes label from value.
 argumentLabel = softIdentifier | "_" .
 
-trailingClosures = closureExpression labeledTrailingClosures? .
-// B2 — post-parse filters (do NOT parse; prune trailing-closure derivations inside a condition that
-// violate swift-syntax's atValidTrailingClosure, .stmtCondition). See `Within Filter Design.md`.
-//   disc-3: inside a condition, a trailing closure's `}` may not be followed by `else` (guard).
-@within(conditionExpression) trailingClosures = closureExpression >-> ( "else" ) labeledTrailingClosures? .
-//   disc-1: a trailing closure (⊂ trailingClosures AND ⊂ conditionExpression — excludes argument
-//   closures) must open tight: no newline between `{` and its first body token.
-@within(conditionExpression) @within(trailingClosures) closureExpression = "{" <n> closureSignature? statements? "}" .
+// B2 — trailing closures partitioned by whether the closure is followed by `else`, so the Oracle can
+// prune (via @excludedFrom) the followed-by-`else` reading inside a condition. Faithful to swift-syntax's
+// atValidTrailingClosure (.stmtCondition): a trailing closure's `}` may not be followed by `else` (guard).
+//   disc-3: not-followed-by-`else` — always a valid trailing closure.
+trailingClosures = closureExpression >-> ( "else" ) labeledTrailingClosures? .
+//   disc-3: followed-by-`else` — excluded inside a condition (dangling `{…}` → reject, matching swift).
+trailingClosures = @excludedFrom(conditionExpression) closureExpression >+> ( "else" ) labeledTrailingClosures? .
+//   disc-1: handled declaratively by the partitioned `closureExpression` + `@excludedFrom`
+//   (see the `newlineOpenedClosure` alternate above) — no procedural filter.
 labeledTrailingClosures = labeledTrailingClosure labeledTrailingClosures? .
 labeledTrailingClosure = trailingClosureLabel ":" closureExpression .
 
-// TODO: 1, check the correctness of the statement below. 2, verify that exluding "_" and then adding "_" is neccessary
+// TODO: check the correctness of the statements below
+// TODO: verify that exluding "_" and then adding "_" is neccessary
 // `default` is the only keyword excluded from labeled trailing closure position — swift-syntax's
 // atStartOfLabelledTrailingClosure() explicitly checks `self.at(.keyword(.default))` and returns
 // false. All other keywords (including `case`, `return`, `for`, …) are valid trailing closure labels.
@@ -1160,6 +1177,9 @@ trailingClosureLabel = identifier ---( "_" "let" "var" "inout" "default" ) | "_"
 
 
 // Grammar of an initializer expression
+
+//initializerExpression = postfixExpression "." init .
+//initializerExpression = postfixExpression "." init "(" argumentNames ")" .
 
 // `x.init` / `A.Module::init` / `x.init(a:b:)` need NO dedicated postfix rules: swift-syntax has
 // no initializer-expression node — `super.init()` is FunctionCall(MemberAccess(…, init)) — and
@@ -1492,7 +1512,7 @@ memberDeclaration = declaration | freestandingMacroExpansionDeclaration | bodyle
 // `case` in struct/class/extension (testEnum12/13/14 use plain assertParse); the compiler
 // rejects those only semantically. `enumMember` therefore uses just `declaration` (not a
 // second `enumCaseDeclaration` alternate), so `case` has exactly one parse — no ambiguity.
-declaration = @within(memberDeclaration) enumCaseDeclaration .   // `case`-as-declaration is valid ONLY inside a type-member block (struct/class/enum/actor/protocol/extension all reach it via `memberDeclaration`); at top level or in a function body `case` is not a declaration (swift-syntax rejects — testEnum11). Containment predicate, see `Grammar Predicate Lookahead Design.md`.
+declaration = @confinedTo(memberDeclaration) enumCaseDeclaration .   // `case`-as-declaration is valid ONLY inside a type-member block (struct/class/enum/actor/protocol/extension all reach it via `memberDeclaration`); at top level or in a function body `case` is not a declaration (swift-syntax rejects — testEnum11). Containment predicate, see `Grammar Predicate Lookahead Design.md`.
 declaration = macroExpansionDeclaration .   // attributed/modified freestanding macro (see below); bare form is member-only
 
 // macroExpansionDeclaration REQUIRES a leading attribute or declaration-modifier (so a bare `#foo`
@@ -1523,9 +1543,10 @@ codeBlock = "{" statements? "}" .
 // Grammar of an import declaration
 
 importDeclaration = attributes? "import" importKind? importPath .
+importDeclaration = attributes? "import" importKind moduleSelector ( hardIdentifier | operatorName ) .   // SE-0491 module-selected symbol import: `import struct Mod::A`, `import func Mod::+`. Requires a kind AND single symbols either side of `::`. The imported declName is swift-syntax `parseAnyIdentifier` = an identifier OR an operator (`import func Mod::+`/`::<`), NOT a keyword (`import struct Mod::class` rejects) — probe-verified. No-kind `import Mod::A`, dotted `Mod.Sub::A`/`Mod::A.B`, double `::` all reject.
 
 importKind = "typealias" | "struct" | "class" | "enum" | "protocol" | "let" | "var" | "func" .
-importPath = moduleSelector? hardIdentifier | moduleSelector? hardIdentifier "." importPath .   // SE-0491: import struct Module::A
+importPath = hardIdentifier | hardIdentifier "." importPath .   // NO moduleSelector: SE-0491 `::` disambiguates reference expressions, NOT import paths — swift-syntax rejects `import a::b` / `import struct M.S::A` (probe-verified hasError). Import paths are plain dotted identifiers.
 
 // No dedicated `"async"?` slot: `async` is already a declarationModifier (as in swift-syntax,
 // where `async let` puts `async` in VariableDecl.modifiers), so a separate slot only duplicated
@@ -1892,6 +1913,12 @@ actorIsolationModifier = "nonisolated" | "nonisolated" "(" "unsafe" ")" | "nonis
 // TODO: why no @longest here?
 attribute = "@" >s< "abi" >s< "(" abiDeclaration ")" .
 
+// `@isolated(x)` (SE-0431) — the argument is a plain identifier (`any` in valid code; swift-syntax's
+// parser accepts any identifier here and defers the `any`-only check to sema, so `@isolated(sdfhsdfi)`
+// parses). A dedicated rule so the argument is NOT the balanced-token soup: `@isolated(Swift::any)`
+// rejects (a module selector leaves `::any` as unexpected code — testModuleSelectorAttrs).
+attribute = "@" >s< "isolated" >s< "(" identifier ")" .
+
 // @attached / @freestanding — swift-syntax parseMacroRoleArguments: role (identifier or `extension`)
 // followed by parseArgumentListElements. The name arguments (`named(…)`, `prefixed(…)`, …) are
 // decl-reference-names, so per parseDeclReferenceBase (Names.swift) only `init`/`deinit`/`subscript`/
@@ -1903,7 +1930,13 @@ attribute = "@" >s< "attached"     >s< "(" macroRoleArguments? ")" .
 @longest
 attribute = "@" >s< "freestanding" >s< "(" macroRoleArguments? ")" .
 @longest
-attribute = "@" >-> ( "abi" "attached" "freestanding" ) >s< attributeName attributeArgumentClause? .
+attribute = "@" >-> ( "abi" "attached" "freestanding" "isolated" ) >s< attributeName attributeArgumentClause? .
+// Module-qualified attribute name = a custom attribute → its args are an EXPRESSION argument list, not
+// the balanced-token soup builtins allow. `@main::available(macOS 10.15, *)` rejects (availability spec
+// is not an expression arg list); `@main::available(foo: bar)` accepts.
+@longest
+attribute = "@" >-> ( "abi" "attached" "freestanding" "isolated" ) >s< moduleSelector attributeName attributeArgumentExprClause? .
+attributeArgumentExprClause = >s< "(" functionCallArgumentList? ")" .
 
 macroRoleArguments = macroRoleToken macroRoleArguments? .
 // `::` is NOT listed: the scanner already yields a Schrödinger `:`/`::` dual, so the module
@@ -1921,7 +1954,15 @@ macroRoleToken = "{" macroRoleArguments? "}" .
 // swift-syntax parseAttributeName = parseSimpleType(forAttributeName:) — the attribute name is a
 // type identifier: member-qualified (`@Foo.Bar`), generic (`@Foo<Int>`), or escaped (`@`name``).
 // `typeIdentifier` already builds on `typeName = identifier` (incl. escaped + propertyWrapperProjection).
-attributeName = typeIdentifier | "rethrows" .   // @rethrows: `rethrows` keyword remapped to identifier attr-name (swift-syntax Attributes.swift:328-330)
+// Module-FREE attribute name: the leading component is a plain type name (no `moduleSelector`), so a
+// module-qualified attribute (`@main::available`) does NOT match this balanced-token rule — it is a
+// CUSTOM attribute and goes through the strict-args rule below (swift-syntax: a module-qualified
+// attribute must be a custom attribute, so `@main::available(macOS 10.15, *)` — availability-spec
+// args — rejects, while `@main::available(foo: bar)` — an expression arg list — is fine).
+attributeName = attributeHeadName typeGenericArgumentClause?
+              | attributeHeadName typeGenericArgumentClause? "." typeIdentifier
+              | "rethrows" .   // @rethrows: `rethrows` keyword remapped to identifier attr-name (swift-syntax Attributes.swift:328-330)
+attributeHeadName = hardIdentifier | selfType .
 
 // `>s<`: the argument-clause `(` must be tight (no space after the attribute name). swift-syntax
 // requires this — `@available (macOS 11, *)` (space) is an error, `@available(macOS 11, *)` is not

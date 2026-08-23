@@ -178,14 +178,18 @@ struct LookaheadPredicateRule: DisambiguationRule {
 /// at all, nothing is contained in it → the alternate is pruned everywhere (positive semantics —
 /// the reading is valid ONLY inside `N`). This is the declarative form of the retired procedural
 /// `@within` filter (`WithinRule`): the context is read off the BSR, not a hand-rolled scan.
+/// Containment predicate. `negated == false` = `@confinedTo` (keep only where contained in ALL
+/// containers → prune where not); `negated == true` = `@excludedFrom` (prune where contained in
+/// ALL). Both stack as a conjunction over `containers`. See `Grammar Predicate Lookahead Design.md`.
 struct ContainmentRule: DisambiguationRule {
     let containers: [() -> Set<BinarySpan>]
+    let negated: Bool
     func prune(_ yields: inout Set<BinarySpan>) -> Int {
         let cys = containers.map { $0() }
         var pruned = 0
         for span in yields {
             let containedInAll = cys.allSatisfy { cy in cy.contains { $0.i <= span.i && span.j <= $0.j } }
-            if !containedInAll { yields.remove(span); pruned += 1 }
+            if containedInAll == negated { yields.remove(span); pruned += 1 }   // confinedTo prunes ¬contained; excludedFrom prunes contained
         }
         return pruned
     }
@@ -207,82 +211,6 @@ private func pruneByPivot(
         }
     }
     return pruned
-}
-
-/// `@within(ContextNT)` — a HARD, context-scoped faithfulness filter (see `Within Filter
-/// Design.md`). Compiled from an `@within(Ctx…) LHS = rhs .` FILTER production: for each `anchor`
-/// yield whose span lies inside ALL of `contexts`' extents (BSR span-containment = the GLL
-/// substitute for the inherited `ExprFlavor`), evaluate the boundary `gate` declared in the filter
-/// RHS; if it fails, REMOVE that yield. Unlike a preference this may leave the forest empty — the
-/// second dead-wood sweep then cascades the removal up to the root (→ reject).
-///
-/// The gate is whatever the filter RHS declared, so there is NO Swift-side disc-1/disc-3 logic —
-/// the grammar is the predicate:
-///   • `.followExclude` / `.followInclude` — the source word after the anchor's end `j` (a `>->`/
-///     `>+>` on a body symbol).
-///   • `.openBraceNoNewline` — a `<n>` after the anchor's opening `{` (line break in the trivia
-///     between `{` and the first body token — same computation as the `>n<` boundary gate).
-struct WithinRule: DisambiguationRule {
-    enum Gate {
-        case followExclude(Set<String>)
-        case followInclude(Set<String>)
-        case openBraceNoNewline
-    }
-    let gate: Gate
-    let contexts: [() -> Set<BinarySpan>]      // ALL must contain the anchor span (conjunction)
-    let input: String
-    /// The engine's trivia skipper (`lexer.triviaSkipEnd`) — so the gate uses the SAME trivia +
-    /// line-break notion as the `<n>`/`>n<` boundary gates, not a parallel hand-rolled scan.
-    let triviaSkipEnd: (CharPosition) -> CharPosition
-
-    func prune(_ yields: inout Set<BinarySpan>) -> Int {
-        let ctxYields = contexts.map { $0() }
-        guard ctxYields.allSatisfy({ !$0.isEmpty }) else { return 0 }
-        var pruned = 0
-        for y in yields {
-            // Conjunction of containments: the anchor span [y.i, y.j] must lie inside EACH context.
-            guard ctxYields.allSatisfy({ cy in cy.contains { $0.i <= y.i && y.j <= $0.j } }) else { continue }
-            if gateFails(at: y) { yields.remove(y); pruned += 1 }
-        }
-        return pruned
-    }
-
-    private func gateFails(at y: BinarySpan) -> Bool {
-        switch gate {
-        case .followExclude(let set):
-            let follow = wordAt(triviaSkipEnd(y.j))
-            return follow.map { set.contains($0) } ?? false            // EOF never excluded
-        case .followInclude(let set):
-            let follow = wordAt(triviaSkipEnd(y.j))
-            return !(follow.map { set.contains($0) } ?? true)          // EOF allowed
-        case .openBraceNoNewline:
-            return openBraceStartsNewLine(at: y.i)
-        }
-    }
-
-    /// A `<n>` after `{`: is there a line break in the trivia between an opening `{` at `bracePos`
-    /// and the first body token? Returns false unless `input[bracePos] == "{"` (self-guard).
-    private func openBraceStartsNewLine(at bracePos: CharPosition) -> Bool {
-        guard bracePos < input.endIndex, input[bracePos] == "{" else { return false }
-        let afterBrace = input.index(after: bracePos)
-        let contentStart = triviaSkipEnd(afterBrace)            // engine trivia skip (comments too)
-        return input[afterBrace..<contentStart].contains { $0 == "\n" || $0 == "\r" }
-    }
-
-    /// The source token at `pos` (already trivia-skipped): an identifier-shaped word, or a single
-    /// punctuation character; `nil` at end-of-input.
-    private func wordAt(_ pos: CharPosition) -> String? {
-        guard pos < input.endIndex else { return nil }
-        let c = input[pos]
-        if c.isLetter || c == "_" {
-            var j = pos
-            while j < input.endIndex, input[j].isLetter || input[j].isNumber || input[j] == "_" {
-                j = input.index(after: j)
-            }
-            return String(input[pos..<j])
-        }
-        return String(c)
-    }
 }
 
 // MARK: - Oracle
@@ -341,29 +269,27 @@ class Oracle {
                     assertionFailure("lookahead predicate: unresolved target '\(tname)' or empty alternate")
                 }
             }
-            // Leading containment predicate(s) `@within(N…)` on an ALT node — keep the alternate
-            // only where its span is contained in each container. Anchor on the first body symbol.
-            if !node.withinContainers.isEmpty {
+            // Leading containment predicate(s) on an ALT node — `@confinedTo(N…)` (keep only where
+            // contained) / `@excludedFrom(N…)` (prune where contained). Anchor on the first body symbol.
+            for (names, negated) in [(node.confinedToContainers, false), (node.excludedFromContainers, true)]
+            where !names.isEmpty {
                 let p = parser
                 if let anchor = node.bodySymbols.first {
-                    let containers = node.withinContainers.compactMap { name -> (() -> Set<BinarySpan>)? in
+                    let containers = names.compactMap { name -> (() -> Set<BinarySpan>)? in
                         guard let c = grammar.nonTerminals[name] else {
-                            assertionFailure("@within: unknown container nonterminal '\(name)'"); return nil
+                            assertionFailure("containment: unknown container nonterminal '\(name)'"); return nil
                         }
                         return { p.yield(of: c) }
                     }
-                    rules.append((anchor, ContainmentRule(containers: containers)))
+                    rules.append((anchor, ContainmentRule(containers: containers, negated: negated)))
                 } else {
-                    assertionFailure("@within on an empty alternate")
+                    assertionFailure("containment predicate on an empty alternate")
                 }
             }
             if node.kind != .END { walk(node.seq) }
             walk(node.alt)
         }
         for nt in grammar.nonTerminals.values { walk(nt) }
-
-        // `@within(Ctx…) LHS = rhs .` filter productions (post-parse; see `Within Filter Design.md`).
-        for filter in grammar.filters { registerFilter(filter) }
     }
 
     /// Register node-level extent/associativity for an ALT-bearing `owner` (a
@@ -455,64 +381,6 @@ class Oracle {
         let p = parser
         rules.append((next, AvoidOptionalRule(protectedLast: protectedLast,
                                               yieldsOf: { p.yield(of: $0) })))
-    }
-
-    /// Compile one `@within(Ctx…) LHS = rhs .` filter production into `WithinRule`s (see
-    /// `Within Filter Design.md`). Resolve the contexts and the BASE nonterminal `LHS`, then read the
-    /// extra gates off the filter `rhs` and key each rule on the corresponding BASE node (whose yields
-    /// the parse actually produced) — so pruning cascades through the second dead-wood sweep exactly
-    /// like a `PreferRule` on a body symbol. Two gate shapes are recognised:
-    ///   • a `>->`/`>+>` on a referenced body symbol S → anchor = LHS's own body symbol named S;
-    ///   • a `<n>`/`>n<` immediately after a `"{"` literal → anchor = the LHS node (open-brace no-newline).
-    private func registerFilter(_ filter: Grammar.FilterProduction) {
-        let p = parser
-        var contexts: [() -> Set<BinarySpan>] = []
-        for name in filter.contextNames {
-            guard let ctx = grammar.nonTerminals[name] else {
-                assertionFailure("@within(\(name)): unknown context nonterminal"); return
-            }
-            contexts.append({ p.yield(of: ctx) })
-        }
-        guard let baseLHS = grammar.nonTerminals[filter.lhsName] else {
-            assertionFailure("@within filter references unknown nonterminal \(filter.lhsName)"); return
-        }
-        let trivia: (CharPosition) -> CharPosition = { p.lexer.triviaSkipEnd(from: $0) }
-        func bare(_ s: Set<String>) -> Set<String> {
-            Set(s.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "\"")) })
-        }
-        var alt: GrammarNode? = filter.rhs
-        while let a = alt {
-            let body = a.bodySymbols
-            for (idx, n) in body.enumerated() {
-                // Case A — follow gate (`>->`/`>+>`) on a referenced body symbol.
-                if !n.followAheadExclude.isEmpty || !n.followAhead.isEmpty {
-                    if let anchor = baseBodySymbol(named: n.name, of: baseLHS) {
-                        let gate: WithinRule.Gate = !n.followAheadExclude.isEmpty
-                            ? .followExclude(bare(n.followAheadExclude))
-                            : .followInclude(bare(n.followAhead))
-                        rules.append((anchor, WithinRule(gate: gate, contexts: contexts, input: input, triviaSkipEnd: trivia)))
-                    } else {
-                        assertionFailure("@within \(filter.lhsName): no base body symbol named \(n.name)")
-                    }
-                }
-                // Case B — a `<n>`/`>n<` right after a `"{"` literal → open-brace-no-newline on the LHS.
-                if n.kind == .B, n.name == "<n>" || n.name == ">n<",
-                   idx > 0, body[idx - 1].name == "\"{\"" {
-                    rules.append((baseLHS, WithinRule(gate: .openBraceNoNewline, contexts: contexts, input: input, triviaSkipEnd: trivia)))
-                }
-            }
-            alt = a.alt
-        }
-    }
-
-    /// The first body symbol named `name` across all of `lhs`'s production alternates.
-    private func baseBodySymbol(named name: String, of lhs: GrammarNode) -> GrammarNode? {
-        var alt = lhs.alt
-        while let a = alt {
-            if let sym = a.bodySymbols.first(where: { $0.name == name }) { return sym }
-            alt = a.alt
-        }
-        return nil
     }
 
     @discardableResult

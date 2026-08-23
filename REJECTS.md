@@ -99,12 +99,13 @@ condition, and the missing `else` means `hasError` is set. Advent rejects correc
 is excluded from `hardIdentifier` so `conditionList` finds no valid condition and Advent rejects.
 
 **Status:** Tests confirmed passing. The `>->("{")` annotations on `if`/`switch`/`while`/`guard`
-have been **removed** (2026-08-01) in anticipation of a different fix (B2 structural lookahead).
-These rules are now bare without the gates. ✓
+were briefly **removed** (2026-08-01) in anticipation of a different fix, then **re-added** as B2
+discriminator 2 (see B2 above) — a condition/subject may never open with `{`. ✓
 
-**Side effect:** Removing the `>->("{")` gate on `while` now causes `testRecovery28#1` to fail
-adventRejects — that snippet (`repeat {} while { true }()`) was previously rejected by the gate.
-It is now a B2 failure (see below).
+**Side effect (historical, now resolved):** while the gates were removed, `testRecovery28#1`
+(`repeat {} while { true }()`) failed adventRejects. With the `>->("{")` gates restored under B2,
+Advent rejects it again; the only remaining wrinkle is on the swiftSyntax-reference side (see the
+B2 caveat).
 
 ---
 
@@ -306,7 +307,7 @@ excludes `default`. The exclusion set is `---("_" "let" "var" "inout" "default")
 
 ---
 
-## Open: B2 — Trailing Closure / Closure Expression in Condition or Subject Position
+## Resolved: B2 — Trailing Closure / Closure Expression in Condition or Subject Position
 
 **Test cases:**
 
@@ -355,50 +356,70 @@ condition path or it breaks accept-side statement closures):
    (`{ where , [ ( . is as ? ! : =` + operators, the operator/bracket group additionally
    requiring `!lookahead.atStartOfLine`) → closure refused → reject.
 
-**Fix plan (P1–P3), scoped to the existing `conditionExpression`/`conditionInfixExpressions`
-path (added for C13c) — i.e. make it a real `ExprFlavor.stmtCondition` mirror:**
+**Resolution (2026-08-23) — all three discriminators, fully declarative** (no procedural filter,
+no Oracle input re-read; see `Grammar Predicate Lookahead Design.md`):
 
-- **P1 — newline gate (discriminator 1), existing primitive.** In a condition-flavored trailing
-  closure, forbid a newline between `{` and the first body token (`"{" <n> …`, the layout
-  no-newline gate), scoped to the condition clone so statement-level closures are untouched.
-- **P2 — leading-brace gate (discriminator 2), existing primitive.** `>->("{")` on the
-  `if`/`while`/`switch`/`guard`/`repeat`-`while` keyword slots: a condition/subject may never
-  open with `{`. This re-introduces the gate B3 removed ("in anticipation of B2 structural
-  lookahead"), now justified by the probe; it also re-fixes `testRecovery28`.
-- **P3 — follow-after-`}` check (discriminator 3), the one genuinely new primitive.** The
-  guard-`else` case needs to inspect the token *following the closure's extent* against the
-  follow true-set — the deferred "forward lookahead at nonterminal completion" (CRF pop/return
-  replay) from `Structured Lookahead Design.md`. This is the reusable primitive the whole ◐
-  predicate frontier wants; the same-line continuation refinement rides on it.
+- **disc-1 — newline after `{`.** Folded the layout into a real nonterminal
+  `newlineOpenedClosure = "{" <n> closureSignature? statements? "}" .` (the `<n>` fires at parse
+  time), and excluded it from both condition and trailing-closure position:
+  `closureExpression = @excludedFrom(conditionExpression) @excludedFrom(trailingClosures) newlineOpenedClosure .`
+  `@excludedFrom` is a `ContainmentRule` BSR query — it prunes the newline-opened reading only where
+  it is contained in a `conditionExpression`/`trailingClosures` yield, so statement-level multiline
+  closures stay valid.
+- **disc-2 — condition/subject begins with `{`.** `>->("{")` on the
+  `if`/`while`/`switch`/`guard`/`repeat`-`while` keyword slots (existing terminal-anchored gate).
+  Re-fixes `testRecovery28` on the Advent side.
+- **disc-3 — `}` followed by `else`.** The genuinely-new primitive: the token-set `>->`/`>+>`
+  forward gate now fires at **nonterminal completion**, not just after a terminal, via the shared
+  `MessageParser.forwardGateAllows()` helper wired at the four CRF continuation sites (`call`
+  pop-replay, `rtn`, `bracketCall`, `bracketRtn`). `trailingClosures` partitions into two disjoint
+  alternates, and `@excludedFrom` prunes the `else`-following one inside a condition:
+  ```apus
+  trailingClosures = closureExpression >-> ("else") labeledTrailingClosures? .                              // not before else — always OK
+  trailingClosures = @excludedFrom(conditionExpression) closureExpression >+> ("else") labeledTrailingClosures? .  // before else — pruned in a condition
+  ```
 
-**Status:** P2 in progress (existing `>->`); P1 next (existing layout gate); P3 deferred to the
-nonterminal-completion-lookahead engine task. The old "Option A/B/C" framing is superseded:
-Option A was rejected for the wrong reason (the real discriminators are the two above, not
-"`}` followed by `{`"); Option C is now scoped down to just discriminator 3.
+The `@within`/`WithinRule` procedural filter that previously carried disc-1/disc-3 was deleted.
+
+**Validation:** probe of the **verbatim** sources matches swift-syntax `hasError` on every case
+(`testTrailingClosureInIfCondition#1`, `testTrailingClosureInGuard#1–4` REJECT; statement-level
+`foo {⏎ bar⏎}` ACCEPTs). Full sweep: 0 accept-regressions, and no B2 label among `adventRejects`
+failures. ✓
+
+**Caveat (test data, not Advent):** `testRecovery28#1` (`repeat {} while { true }()`) now fails on
+the *`swiftSyntaxRejects`* side — the current swift-syntax parses it without `hasError`, so the
+snippet is miscategorised and should move to the accepts suite (same pattern as R1/B1). Advent's
+own verdict is not at issue.
 
 ---
 
-## Open: C1 — Key Path Expression Extensions
+## Resolved: C1 — Key Path Expression Extensions *(one case parked)*
 
 **Test cases:**
 
-| Label | Source |
-|-------|--------|
-| `testKeypathExpression#2` | `\String?.!.count.?` |
-| `testKeypathExpression#3` | `\Optional.?!?!?!?.??!` |
-| `testKeyPathMethodAndInitializers#3` | `\Foo.method<Int>()` |
-| `testKeyPathSubscript#1` | `\Foo.Bar.[2].[1]` |
-| `testKeyPathSubscript#2` | `\Foo.Bar.?.[1]` |
-| `testChainedOptionalUnwrapsWithDot#1` | `\T.?.!` |
-| `testChainedOptionalUnwrapsAfterSubscript#1` | `\T.abc[2].?` |
+| Label | Source | Status |
+|-------|--------|--------|
+| `testKeypathExpression#2` | `\String?.!.count.?` | ✓ rejects |
+| `testKeypathExpression#3` | `\Optional.?!?!?!?.??!` | ✓ rejects |
+| `testKeyPathMethodAndInitializers#3` | `\Foo.method<Int>()` | ✓ rejects |
+| `testKeyPathSubscript#1` | `\Foo.Bar.[2].[1]` | ✓ rejects |
+| `testKeyPathSubscript#2` | `\Foo.Bar.?.[1]` | **disabled/parked** (see below) |
+| `testChainedOptionalUnwrapsWithDot#1` | `\T.?.!` | ✓ rejects |
+| `testChainedOptionalUnwrapsAfterSubscript#1` | `\T.abc[2].?` | ✓ rejects |
 
-**Root cause:** The `keyPathExpression` grammar allows some but not all of the postfix
-operations that Swift accepts inside key paths. Missing: consecutive `?.!` chains, bare
-subscript notation `.[n]` (subscript immediately after `.`), optional chain `.?` as a
-postfix in key paths, and generic method calls `method<T>()` inside key paths.
+**Root cause (was):** the `keyPathExpression` grammar admitted some but not all of the postfix
+operations Swift accepts inside key paths — consecutive `?.!` chains, bare subscript `.[n]`,
+optional chain `.?` as a key-path postfix, generic method calls `method<T>()`.
 
-**Note:** Test #1 (`testKeypathExpression#1`) and `testKeyPathMethodAndInitializers#1/#2/#4`
-are already passing — only the more complex chain forms fail.
+**Status:** confirmed rejecting on the 2026-08-23 sweep (none appear among `adventRejects`
+failures) — the grammar was extended to match swift-syntax's key-path postfix set. ✓
+
+**Parked residual — `testKeyPathSubscript#2`** (`\Foo.Bar.?.[1]`), disabled in
+`SwiftSyntaxRejects.swift`: swift-syntax *commits* to the key path and errors on the missing
+member after `.?` (`.[` is not `.member`). Advent (GLL) also finds the valid-shaped reading
+`\Foo.Bar` + infix `.?.` + `[1]`, and nothing prunes it — the greedy alternative doesn't
+complete, so `@longest` can't see it. Needs a key-path-commit / structural-lookahead primitive,
+not a lexical fix.
 
 ---
 
@@ -436,6 +457,7 @@ These are scanner-level (not grammar-level) checks.
 |-------|--------|-------|
 | `testLiteralWithTrailingClosure#6` | `_ = /foo/ { return /foo/ }` | Regex literal not in `literalExpression`; B1 exclusion doesn't apply |
 | `testForwardSlashRegex116#1` | `_ = qux(/, 1) / 2` + multiline | Regex literal in argument position where `/` would be binary divide |
+| `testForwardSlashRegex142#1` | (forward-slash regex vs. divide) | Same regex/divide scanner ambiguity family |
 | `testForwardSlashRegex150a#1` | `_ = ^/"/"` | Custom operator `^/` preceding regex/string |
 | `testForwardSlashRegex150b#1` | (same source, duplicate) | Same |
 | `testForwardSlashRegex151a#1` | `_ = ^/"[/"` | Same with bracket inside |
@@ -451,41 +473,65 @@ These are scanner-level (not grammar-level) checks.
 
 ---
 
-## Open: C4 — Module Selector Invalid Forms
+## Resolved: C4 — Module Selector (SE-0491 `Module::name`) Invalid Forms *(11 of 11)*
 
-**Test cases:** `testModuleSelectorImports#3`, `testModuleSelectorImports#4`,
-`testModuleSelectorIncorrectAttrNames#1`,
-`testModuleSelectorIncorrectBindingDecls#7`, `testModuleSelectorIncorrectBindingDecls#8`,
-`testModuleSelectorIncorrectBindingDecls#9`,
-`testModuleSelectorWhitespace#1`, `testModuleSelectorWhitespace#2`, `testModuleSelectorWhitespace#3`,
-`testModuleSelectorAttrs#2`, `testModuleSelectorExpr#1` (11 tests)
+Grounded in swift-syntax's `Names.swift` — `isAtModuleSelector` / `consumeModuleSelectorTokensIfPresent`
+/ `parseModuleSelectorIfPresent` / `parseDeclReferenceBase`. A valid selector is
+`identifier "::" baseName`: the module name must be a **plain identifier**, there is **no valid
+chaining** (`A::B::c`), no leading `::`, and the base name must be on the **same line** as `::`.
 
-**Root cause:** The module selector grammar (`#module(...)` or equivalent) accepts forms
-that swift-syntax marks as errors. The exact malformed patterns have not been investigated;
-these tests need source-level inspection to categorise the specific rejections required.
+- `testModuleSelectorImports#3`, `#4` — SE-0491 import-path / module-selector grammar work.
+- **Same-line rule** — `testModuleSelectorWhitespace#1/#2/#3`, `testModuleSelectorExpr#1`.
+  `consumeModuleSelectorTokensIfPresent` sets `skipQualifiedName = afterContainsAnyNewline`
+  (Names.swift:117): a newline between `::` and the base name → missing base name → `hasError`.
+  **Fix:** `moduleSelector = hardIdentifier "::" >n< .` (the `>n<` forbids a newline before the base name).
+- **Binding-pattern rule** — `testModuleSelectorIncorrectBindingDecls#7/#8/#9`
+  (`case let Optional.some(Swift::decl)`, `case let Swift::decl?`). Inside a `let`/`var` binding
+  pattern a name is *introduced*; swift-syntax parses it as a plain identifier and leaves `::decl` as
+  unexpected code → `hasError`. Advent leaked it in via `matchPattern → expressionPattern`.
+  **Fix:** `moduleSelector = @excludedFrom(valueBindingPattern) hardIdentifier "::" >n< .` — the
+  Oracle prunes any module selector whose span lies inside a value-binding pattern.
+- **Attribute-name rule** — `testModuleSelectorIncorrectAttrNames#1` (`@main::available(macOS 10.15, *)`).
+  A module-qualified attribute name is a *custom* attribute, so its args are an expression argument
+  list, not the balanced-token soup builtins allow — `(macOS 10.15, *)` (an availability spec) is not
+  a valid expression list. **Fix:** the general balanced-token rule's `attributeName` is now
+  module-free (`attributeHeadName = hardIdentifier | selfType`); a dedicated rule
+  `attribute = "@" … moduleSelector attributeName attributeArgumentExprClause?` gives module-qualified
+  attributes a strict `functionCallArgumentList` argument clause. `@main::available(foo: bar)` still
+  accepts.
+- **`@isolated(x)` rule** — `testModuleSelectorAttrs#2` (`@isolated(Swift::any)`). SE-0431 `@isolated`
+  takes a plain identifier argument (swift-syntax's parser accepts any identifier and defers the
+  `any`-only check to sema, so `@isolated(sdfhsdfi)` parses). **Fix:** a dedicated rule
+  `attribute = "@" "isolated" "(" identifier ")"` (and `isolated` added to the general rule's
+  `>->` exclusion). A module selector leaves `::any` unconsumed → reject; `@isolated(any)` /
+  `@isolated(sdfhsdfi)` accept. (`identifier`, not `hardIdentifier | "any"`, to avoid a double-match
+  on `any`.)
+
+All probe-verified against swift-syntax `hasError`; full sweep **reject 57 → 46, accept 0,
+residual ambiguity 0** (matching the last commit). ✓
 
 ---
 
-## Open: C5 — Duplicate / Invalid Access Level Modifier Combinations
+## Resolved: C5 — Invalid Access Level Modifier Combinations
 
-**Test cases:** `testAccessLevelModifier#1`, `testAccessLevelModifier#2`
+**Test cases:** `testAccessLevelModifier#1`–`#11` (all confirmed rejecting, 2026-08-23 sweep)
 
-**Source:**
+**Source (representative):**
 ```swift
 open open(set) var openProp = 0
 public public(set) var publicProp = 0
-package package(set) var packageProp = 0
-internal internal(set) var internalProp = 0
-fileprivate fileprivate(set) var fileprivateProp = 0
-private private(set) var privateProp = 0
-internal(set) var defaultProp = 0
+...
 ```
 
-**Root cause:** Swift rejects having both a bare access modifier (e.g., `open`) and the
-same modifier with `(set)` on the same declaration (e.g., `open open(set) var`). Advent
-accepts this because the grammar allows multiple access-level modifier tokens before a `var`.
-The rejection is a semantic constraint, not a purely syntactic one — it requires counting
-or deduplicating access-level modifiers in the attribute list.
+**Root cause (corrected):** the failing cases are all `open(set)` — either bare `open(set) var`
+or `open open(set) var`. This is NOT a "duplicate modifier" counting problem: `open` is simply
+never a *setter* access level. Swift-syntax only tolerates a leading `open(set)` by reading it as
+a call; the compiler rejects it.
+
+**Fix:** `accessLevelModifier` offers the `X | X "(" "set" ")"` pair for
+`private`/`fileprivate`/`internal`/`package`/`public`, but `open` has **no `(set)` alternate**
+(`accessLevelModifier = "open" .`). Dropping that one alternate makes `open(set)` unparseable, so
+both `open(set) var` and `open open(set) var` reject. The other `X(set)` forms remain valid. ✓
 
 ---
 
@@ -677,10 +723,15 @@ the derivation for those two disallowed forms.
 Tests where swift-syntax performs error recovery (`hasError = true`) but Advent accepts cleanly.
 Require individual source inspection to determine root cause:
 
-`testEnum11#1`, `testSwitch64#1`, `testSwitch67#1`, `testSelfRebinding2#1`,
+**Still failing:** `testSwitch64#1`, `testSwitch67#1`, `testSelfRebinding2#1`,
 `testRegexParseError17#1`, `testConflictMarkers12#1`, `testIfconfigExpr8#1`,
-`testIfconfigExpr9#1`, `testIdentifiers6#1`, `testInitDeinit11#1`,
-`testInvalid17#1`, `testInvalid21#1`
+`testIfconfigExpr9#1`, `testIdentifiers6#1`, `testInitDeinit11#1`
+
+**Resolved (2026-08-23 sweep):**
+- `testEnum11#1` — a top-level `case` is not a declaration; fixed by
+  `declaration = @confinedTo(memberDeclaration) enumCaseDeclaration .` (see
+  `Grammar Predicate Lookahead Design.md`). ✓
+- `testInvalid17#1`, `testInvalid21#1` — confirmed rejecting. ✓
 
 ---
 
@@ -703,21 +754,25 @@ a predicate fails. General enough to cover any "based-on-what-parsed" disambigua
 **Reuse:** Any grammar where an alternative is valid only when a sub-expression has a
 particular syntactic shape (e.g., lvalue restrictions, callable/non-callable distinctions).
 
-### 2. Structural Lookahead
+### 2. Structural Lookahead — ✓ DELIVERED (2026-08-23)
 
 **Motivation:** B2 (condition trailing closure). The `atValidTrailingClosure` check fires
 at the *end of a sub-parse* (the end of `closureExpression`) and inspects the token that
-follows. Existing `>>N` lookaheads anchor on a terminal; `>+>` / `>->` annotations anchor
-on the first token of a rule. Neither covers "inspect what follows the close of an embedded
+follows. Existing `>>N` lookaheads anchor on a terminal; `>+>` / `>->` annotations anchored
+only on a terminal-use. Neither covered "inspect what follows the close of an embedded
 non-terminal."
 
-**Proposed form:** An annotation applicable at a specific position within a rule (e.g.,
-after a nonterminal reference) that enforces a token-set constraint on the token
-immediately following that nonterminal's extent in the input. Something like:
+**Delivered form:** no new syntax was needed — the existing `>+>` / `>->` token-set forward
+gate simply became live **after a nonterminal / bracket completion** as well as after a
+terminal. The gate is evaluated by one shared helper `MessageParser.forwardGateAllows(slot:at:)`
+at the four CRF continuation sites, alongside `continuationViable`. So the proposed
+`>>end+>(…)` is spelled with the ordinary gate on a nonterminal-use:
+```apus
+trailingClosures = closureExpression >-> ("else") labeledTrailingClosures? .
 ```
-trailingClosures = closureExpression >>end+>(continuationTokens) labeledTrailingClosures? .
-```
-where `>>end` means "at the position just past the end of the preceding nonterminal."
+This honours the invariant *the Oracle never re-reads input* — a token-set lookahead is a
+scanner query and stays at parse time. See `Grammar Predicate Lookahead Design.md` and the
+`@within`/`WithinRule` retirement note in `The rise and fall of … dead-ends.md`.
 
 **Reuse:** Any grammar with context-sensitive continuation requirements after a sub-parse —
 layout-sensitive languages, operator precedence disambiguation, statement/expression

@@ -90,7 +90,7 @@ Same asymptotic class as token-level GLL. Empirical measurements (Table 4): LCNP
 
 ### Mechanisms that LCNP does NOT replace
 
-1. **`@unless(X)` parser-level alternate selection (Structured Lookahead Design).** LCNP is a lexer interface. Grammar-level ambiguity — same token kinds parseable under multiple productions, e.g. `Array<Array<Int>>` as generic vs comparison-chain — stays.
+1. **Grammar-predicate lookahead parser-level alternate selection (`Grammar Predicate Lookahead Design`).** LCNP is a lexer interface. Grammar-level ambiguity — same token kinds parseable under multiple productions, e.g. `Array<Array<Int>>` as generic vs comparison-chain — stays, resolved by `>->(N)`/`@confinedTo`/`@excludedFrom` (the retired `@unless` was an earlier form of this).
 
 2. **`@longest` / `@shortest` / `@left` / `@right` Oracle rules.** Post-parse disambiguation over the BSR is independent of how tokens were produced.
 
@@ -1379,8 +1379,8 @@ The §A–§H open-question outline that opened this section has been resolved o
 
 ## What This Does Not Address
 
-- **Parser-level ambiguity** (`Array<Array<Int>>`, all `canParseAsXxx` decisions) — addressed by `@unless` (Structured Lookahead Design).
-- **`@unless` cascade bug** (TODO 5 in `Advent/TODO.md`) — orthogonal; LCNP doesn't touch the Oracle's dead-wood propagation.
+- **Parser-level ambiguity** (`Array<Array<Int>>`, all `canParseAsXxx` decisions) — addressed by the grammar-predicate lookahead family (`Grammar Predicate Lookahead Design`).
+- **Oracle dead-wood propagation** — orthogonal; LCNP doesn't touch it.
 - **Performance on long inputs** generally — `pruneUnproductive` is already O(n²) per call; LCNP doesn't fix that.
 
 ## Per-File Change Inventory

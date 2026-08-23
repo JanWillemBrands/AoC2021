@@ -97,7 +97,7 @@ extension MessageParser {
         if let existingCluster = crf[clusterKey] {
             if existingCluster.returns.insert(returnEdge).inserted {
                 for pop in existingCluster.pops {
-                    if continuationViable(continuation: cL.seq!, at: pop) {
+                    if continuationViable(continuation: cL.seq!, at: pop) && forwardGateAllows(slot: cL, at: pop) {
                         addDescriptor(L: cL.seq!, k: cU, i: pop)
                         addYield(L: cL, i: cU, k: cI, j: pop)
                     } else {
@@ -121,7 +121,7 @@ extension MessageParser {
 
         if cluster.pops.insert(cI).inserted {
             for rtn in cluster.returns {
-                if continuationViable(continuation: rtn.slot.seq!, at: cI) {
+                if continuationViable(continuation: rtn.slot.seq!, at: cI) && forwardGateAllows(slot: rtn.slot, at: cI) {
                     addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
                     addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
                 } else {
@@ -141,7 +141,7 @@ extension MessageParser {
         if let existingCluster = crf[clusterKey] {
             if existingCluster.returns.insert(returnEdge).inserted {
                 for pop in existingCluster.pops {
-                    if continuationViable(continuation: bracket.seq!, at: pop) {
+                    if continuationViable(continuation: bracket.seq!, at: pop) && forwardGateAllows(slot: bracket, at: pop) {
                         addDescriptor(L: bracket.seq!, k: cU, i: pop)
                         addYield(L: bracket, i: cU, k: cI, j: pop)
                     } else {
@@ -166,7 +166,7 @@ extension MessageParser {
 
         if cluster.pops.insert(cI).inserted {
             for rtn in cluster.returns {
-                if continuationViable(continuation: rtn.slot.seq!, at: cI) {
+                if continuationViable(continuation: rtn.slot.seq!, at: cI) && forwardGateAllows(slot: rtn.slot, at: cI) {
                     addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
                     addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
                 } else {

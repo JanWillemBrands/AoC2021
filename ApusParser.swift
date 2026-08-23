@@ -182,19 +182,6 @@ class ApusParser {
     
     func production() throws {
         trace("production", token)
-        // `@within(Ctx)` (repeatable) — production-level prefix marking a POST-PARSE FILTER
-        // production (see `Within Filter Design.md`). Stacked `@within(A) @within(B) …` = the
-        // conjunction (the LHS derivation must lie inside ALL of A, B, … extents). Collected here;
-        // a filter production is routed to `grammar.filters` and NEVER added to the parse grammar.
-        var withinContexts: [String] = []
-        while token.kind == "pragma", token.stripped == "within" {
-            cI += 1
-            try expect(["("]); cI += 1
-            try expect(["identifier"])
-            withinContexts.append(String(token.image))
-            cI += 1
-            try expect([")"]); cI += 1
-        }
         var disambiguationAnnotation: Disambiguation?
         if token.kind == "pragma", let d = Disambiguation(rawValue: token.stripped) {
             disambiguationAnnotation = d
@@ -339,19 +326,10 @@ class ApusParser {
             // Actions between operator and body naturally land on the first ALT
             // node via sequence()'s collectActions(at: cI) — no separate locals
             // collection needed.
-            if !isTrivia, !isLexical, withinContexts.isEmpty, grammar.startSymbol == "" {
+            if !isTrivia, !isLexical, grammar.startSymbol == "" {
                 grammar.startSymbol = nonTerminalName
             }
             let node = try selection()
-            // Filter production: route aside, never register its alternates for parsing.
-            if !withinContexts.isEmpty {
-                grammar.filters.append(Grammar.FilterProduction(lhsName: nonTerminalName,
-                                                                contextNames: withinContexts,
-                                                                rhs: node))
-                try expect(["."])
-                cI += 1
-                return
-            }
             let lhsNode: GrammarNode
             if let existing = grammar.nonTerminals[nonTerminalName] {
                 var endOfList = existing
@@ -447,15 +425,18 @@ class ApusParser {
             cI += 1
         }
 
-        // Leading containment predicate(s) `@within(N)` (repeatable = conjunction), at the
-        // alternate start. Kept on this ALT node; the Oracle keeps the alternate only where its
-        // span is contained in a yield of EACH `N`. Declarative replacement for the procedural
-        // `@within` filter. See `Grammar Predicate Lookahead Design.md`.
-        while token.kind == "pragma" && token.stripped == "within" {
+        // Leading containment predicate(s) at the alternate start (repeatable = conjunction):
+        //   `@confinedTo(N)`  — keep this alternate only where its span is contained in a yield of N;
+        //   `@excludedFrom(N)`— prune this alternate where its span is contained in a yield of N.
+        // Kept on this ALT node; the Oracle anchors the prune on the alternate's first body symbol.
+        // See `Grammar Predicate Lookahead Design.md`.
+        while token.kind == "pragma", token.stripped == "confinedTo" || token.stripped == "excludedFrom" {
+            let negated = token.stripped == "excludedFrom"
             cI += 1
             try expect(["("]); cI += 1
             try expect(["identifier"])
-            startOfSequence.withinContainers.append(String(token.image))
+            if negated { startOfSequence.excludedFromContainers.append(String(token.image)) }
+            else       { startOfSequence.confinedToContainers.append(String(token.image)) }
             cI += 1
             try expect([")"]); cI += 1
         }

@@ -114,6 +114,8 @@
 		4E5754B42F5894BB0067165C /* SPPF.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = SPPF.svg; sourceTree = "<group>"; };
 		4E6933472FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateSwiftSyntaxAST.swift; sourceTree = "<group>"; };
 		4E6A46AD3035DE8200A4FCCC /* ambiguity resolution.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ambiguity resolution.md"; sourceTree = "<group>"; };
+		4E6A470E3039B4E400A4FCCC /* Grammar Predicate Lookahead Design.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Grammar Predicate Lookahead Design.md"; sourceTree = "<group>"; };
+		4E6A470F303ADE7700A4FCCC /* Multi-Lex Adoption Design.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Multi-Lex Adoption Design.md"; sourceTree = "<group>"; };
 		4E7709B32F37870300972246 /* AdventTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AdventTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E7CA9A22FD61AB400A5A906 /* Multi-Lex Adoption Design 2.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Multi-Lex Adoption Design 2.md"; sourceTree = "<group>"; };
 		4E89AAED2D6DF2EE006A0BBA /* ART.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ART.gv; sourceTree = "<group>"; };
@@ -407,15 +409,18 @@
 				4E8D05A32F6FEE810081C6D2 /* SPPF.gv */,
 				4E8D05872F65845F0081C6D2 /* postRunActions.log */,
 				4E4E48BF2FA219ED0094DFC6 /* AGENTS.md */,
+				4E6A46AD3035DE8200A4FCCC /* ambiguity resolution.md */,
 				4E12037B2FA857210061BD96 /* apus.md */,
 				4ECF5BE62F3748DB008E692B /* claude.md */,
 				4E4E48C22FA219ED0094DFC6 /* codex.md */,
 				4E4E48C32FA219ED0094DFC6 /* Frankenstein Tokens.md */,
+				4E6A470E3039B4E400A4FCCC /* Grammar Predicate Lookahead Design.md */,
 				4E4E48C42FA219ED0094DFC6 /* Layout Sensitive Parsing.md */,
-				4E7CA9A22FD61AB400A5A906 /* Multi-Lex Adoption Design 2.md */,
 				4EBFE06830268684001F3FF2 /* Lexical Disambiguation Tools.md */,
+				4E7CA9A22FD61AB400A5A906 /* Multi-Lex Adoption Design 2.md */,
+				4E6A470F303ADE7700A4FCCC /* Multi-Lex Adoption Design.md */,
+				4EF1DB8B3028CDCB0023F1F7 /* Oracle Disambiguation Unification.md */,
 				4E1203802FA978B70061BD96 /* Oracle.md */,
-				4E6A46AD3035DE8200A4FCCC /* ambiguity resolution.md */,
 				4E2CC1402FD4AC2200719D65 /* Regex CFG Discussion.md */,
 				4E2CC13E2FC8C9F100719D65 /* Regex Lookbehind Design.md */,
 				4EC3D237301E03F200E27741 /* REJECTS.md */,
@@ -423,6 +428,7 @@
 				4E4E48C62FA219ED0094DFC6 /* Schrodinger Tokens.md */,
 				4E2CC13F2FD46F3400719D65 /* Structured Lookahead Design.md */,
 				4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */,
+				4EF1DB8C3028D4170023F1F7 /* TESTING.md */,
 				4EC3D234301CC4FA00E27741 /* The rise and fall of Schrödinger, Frankenstein and other dead-ends.md */,
 				4E16D4762FA7A126008E2C1A /* TODO.md */,
 				4E4E48C72FA219ED0094DFC6 /* Trivia Oracle.md */,
@@ -461,8 +467,6 @@
 				4E8D058E2F67204C0081C6D2 /* Frameworks */,
 				4E8D05962F6A183C0081C6D2 /* GeneratedParser */,
 				4EEBC9FE2F9EF35000E838A7 /* grammars */,
-				4EF1DB8B3028CDCB0023F1F7 /* Oracle Disambiguation Unification.md */,
-				4EF1DB8C3028D4170023F1F7 /* TESTING.md */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 			);
 			sourceTree = "<group>";

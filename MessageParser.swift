@@ -1052,4 +1052,46 @@ class MessageParser {
         return false
     }
 
+    /// Forward 1-token gate applied at a nonterminal/bracket COMPLETION — the parse-time analogue
+    /// of the terminal-slot follow gate in `tokenMatch` (the `followAheadBS`/`followAheadExcludeBS`
+    /// block). `slot` is the reference node that was just completed and carries the postfix
+    /// `>+>`/`>->` annotation; `position` is where it ended (the token past trailing trivia).
+    /// Mirrors swift-syntax's contextual "what may follow" checks:
+    ///   • `followAheadExcludeBS` (`>->`): fails when an excluded terminal lexes at `position`.
+    ///   • `followAheadBS` (`>+>`): requires some approved terminal to lex at `position`.
+    /// End-of-input is handled EXPLICITLY per polarity (see the `atEOF` branches below), not via a
+    /// blanket "EOS always allowed": nothing follows at EOF, so a negative gate is satisfied (nothing
+    /// to exclude) while a positive gate is NOT (no token to match). Empty sets impose no constraint.
+    /// See disc-3 in `Grammar Predicate Lookahead Design.md`
+    /// (`trailingClosures … closureExpression >-> ("else")`).
+    func forwardGateAllows(slot: GrammarNode, at position: CharPosition) -> Bool {
+        let atEOF = position >= input.endIndex
+
+        // Negative gate `>->(X)`: fail if an excluded terminal lexes next.
+        if !slot.followAheadExcludeBS.isEmpty {
+            if atEOF {
+                // Nothing follows → nothing to exclude → allowed.
+            } else {
+                for eID in slot.followAheadExcludeBS where eID != grammar.epsilonID {
+                    if !cachedLex(at: position, terminalID: eID).isEmpty { return false }
+                }
+            }
+        }
+
+        // Positive gate `>+>(X)`: require an approved terminal to lex next.
+        if !slot.followAheadBS.isEmpty {
+            // Nothing follows at EOF → "a token actually follows" cannot hold → fail. (This differs
+            // from the terminal-path predict gate in `tokenMatch`, where EOF is a valid end/EOS —
+            // that gate is generic-argument closing, `<…>` closed by EOF. A nonterminal-completion
+            // `>+>` like `>+>("else")` means "else actually follows", so EOF must fail — otherwise a
+            // `>->(X)`/`>+>(X)` partition would BOTH pass at EOF → duplicate readings.)
+            if atEOF { return false }
+            for fID in slot.followAheadBS where fID != grammar.epsilonID {
+                if !cachedLex(at: position, terminalID: fID).isEmpty { return true }
+            }
+            return false
+        }
+        return true
+    }
+
 }

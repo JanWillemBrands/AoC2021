@@ -58,6 +58,27 @@ cases migrated to `@longest genericIdentifier`/`moduleGenericIdentifier`, leavin
 **What replaced it.** `@longest` / `@shortest` (extent), `@prefer` (same-span),
 `@avoid` (optional-skip) — all placed **directly on the affected term**.
 
+## `@within(Ctx)` / `WithinRule` — *dead, retired 2026-08-23*
+
+**What it was.** A production-level prefix (`@within(Ctx…) LHS = rhs .`) marking a POST-PARSE
+FILTER production. The Oracle compiled it to a `WithinRule` that, for each `LHS` yield contained
+in ALL of `Ctx…`'s BSR extents, evaluated a boundary gate declared in the filter RHS and removed
+the yield if it failed. It carried the B2 trailing-closure-in-condition rejects (disc-1 newline-
+after-`{`, disc-3 `}`→`else`).
+
+**Why it died.** The gate was **procedural**: `WithinRule.gateFails` re-scanned the raw input
+(`wordAt`, `openBraceStartsNewLine`) and pattern-matched two hardcoded gate shapes — violating the
+invariant *the Oracle never re-reads input*. It was also a bespoke second mechanism for containment
+that overlapped the declarative predicate family.
+
+**What replaced it.** The **grammar-predicate lookahead** family (`Grammar Predicate Lookahead
+Design.md`): `@confinedTo(N)` / `@excludedFrom(N)` containment (a `ContainmentRule` BSR query) plus
+the token-set `>->`/`>+>` forward gate — which now fires at **nonterminal completion** too
+(`MessageParser.forwardGateAllows`, wired at the CRF continuation sites), not just after a terminal.
+B2 became two disjoint partitioned alternates + `@excludedFrom`; both discriminators are now fully
+declarative with no Oracle input re-read. Engine scaffolding (`WithinRule`, `registerFilter`,
+`Grammar.FilterProduction`/`grammar.filters`, the production-level `@within` parse) deleted.
+
 ## Scanner-mode annotations `>>>` / `<<<` / `===` — *two rises, two falls*
 
 Scanner modes are a stack of lexer states (à la ANTLR modes / Flex start conditions):

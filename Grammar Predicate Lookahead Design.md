@@ -1,7 +1,7 @@
 # Grammar-Predicate Lookahead
 
-**Status:** design, 2026-08-21. Supersedes the retired `@unless` and the procedural
-`@within` filter for the lookahead/lookbehind family. Companion: `Oracle.md`.
+**Status:** built & validated, 2026-08-23. Supersedes the retired `@unless` and the procedural
+`@within` filter (now deleted) for the lookahead/lookbehind family. Companion: `Oracle.md`.
 
 ## What it is
 
@@ -99,71 +99,140 @@ one post-parse — no bespoke scanner suppression required.
 
 ## Containment (the fifth relation)
 
-Context predicates — "this reading is valid only **inside** an `N`" — are the same idea
-with a **containment** relation instead of start/end: some yield of `N` spans
-`[a,b]` with `a ≤ i` and `j ≤ b` around the guarded span. This is the honest, declarative
-replacement for `@within`'s procedural gates (`conditionExpression`/`trailingClosures` are
-real, parsed nonterminals, so their containment yields are already in the BSR). It is a
-prefix annotation on the whole production rather than an inline point, because containment
-is about the derivation's ancestry, not a position.
+Some rules are valid/invalid depending on the **context they sit in** (swift-syntax's
+inherited `ExprFlavor`, an enclosing member block, a function body). That is a **containment**
+relation: the guarded span `[i,j]` is inside a yield `[a,b]` of `N` when `a ≤ i ∧ j ≤ b`.
 
-## Not this mechanism: layout gates
+It is **not** a grammar rewrite. The annotated alternate is an ordinary CFG alternate that
+parses freely and adds its yields to the forest (it *augments*); the annotation is a
+**post-parse filter** that removes some of those yields by where their span sits in the
+derivation tree. The grammar stays context-*free*; the context-sensitivity lives entirely in
+the Oracle reading the BSR — which is why it composes with GLL's "produce all derivations."
+Nothing supersedes another rule; the annotation gates only its own alternate.
 
-`<n>` / `>n<` test a **trivia** fact (a line break in the gap), not whether a grammar symbol
-derives. They remain a separate primitive. A rule that mixes context and layout (e.g.
-"a trailing closure, inside a condition, whose `{` opens tight") decomposes cleanly:
-containment predicate for the context, `<n>` gate for the layout — each evaluated by its
-proper mechanism, neither re-scanned in the Oracle.
+It has the same `+`/`-` polarity as the lookahead glyphs, keyed on the alternate's first body
+symbol, stackable (stacking = conjunction over the containers):
 
-## Why this is good
+| annotation | polarity | keep the alternate's yield `[i,j]` iff |
+|---|---|---|
+| **`@confinedTo(N)`** — valid ONLY inside `N` | positive | `∃` an `N`-yield `⊇ [i,j]` |
+| **`@excludedFrom(N)`** — invalid inside `N` | negative | `∄` such an `N`-yield |
 
-- **Declarative.** The condition is a grammar symbol evaluated by the real parser. No
-  hand-written predicate, no input re-scan — the failure mode that made `@within` a
-  procedural costume over Swift.
-- **Uniform.** One anchor, four glyphs, one query family; forward/backward differ only by
-  `i` vs `j`. The old token-only forms are the terminal special case, so there is nothing
-  bespoke left to reconcile.
-- **Faithful.** It is exactly swift-syntax's predicate-gated choice ("if `N` parses here,
-  route to this reading"), which CFG shape plus extent/pivot/same-span annotations cannot
-  express. It maps directly onto the `canParse*`/`atStartOf*` catalogue.
-- **Cheap.** The BSR is the memo; for disambiguation the answer is already computed. The
-  sub-parse fallback reuses machinery that already exists.
+## Boundaries fold into nonterminals — the Oracle never re-reads input
 
-## Settled decision (2026-08-21): `@within(N)` is the twin of `>->(N)`
+Some rejects combine a context with a **boundary** (a `}` followed by `else`; a `{` that
+opens with a newline). The boundary is **never evaluated in the Oracle**. It is folded into a
+real, parsed nonterminal whose gate fires at **parse time** like anywhere else; the Oracle
+then does a plain yield query on that nonterminal.
 
-`>->(N)`/`>+>(N)`/`<+<(N)`/`<-<(N)` already take **N = a terminal set OR a nonterminal**, and a
-nonterminal carries the full apus RHS — so the lookahead side already has all the expressive
-power needed. **The only missing piece is to give `@within(N)` the same status**: a declarative
-containment predicate over an **arbitrary apus nonterminal `N`**, evaluated as a BSR query — the
-twin of `>->(N)`, differing only in relation (containment `∃ N-yield ⊇ [i,j]` vs. derives-at-anchor).
-No boolean DSL, no atom algebra — those were a wrong turn. `N` being a nonterminal is the power.
+- **Layout boundary** (`<n>`/`>n<`) *must* fold — layout is a trivia fact, not a derivation:
+  `newlineOpenedClosure = "{" <n> … "}"` parses only newline-opened closures.
+- **Token boundary** (`}`→`else`) is a parse-time forward gate: `>->("else")` / `>+>("else")`
+  fires when the closure nonterminal completes (the CRF `forwardGateAllows` site), partitioning
+  `trailingClosures` into two disjoint alternates. The Oracle sees only the yields the parser
+  chose to produce and does plain `@excludedFrom` containment — no end-query, no token peek.
 
-This is already realised by `ContainmentRule` (`@within(memberDeclaration)` on `testEnum11`): a real
-nonterminal, span-containment over the BSR, zero procedural Swift.
+**Invariant (hold the line):** every predicate the Oracle evaluates is a BSR yield query —
+containment (`⊇`), start (`i==p`), end (`j==p`), or same-span co-occurrence. The parser
+evaluates all layout/token gates. **Nothing in the Oracle re-reads the input.** (This is
+exactly what the old procedural `@within`/`WithinRule` got wrong — it re-scanned trivia and
+pattern-matched two hardcoded gate shapes.)
 
-**Remaining work — the "@within rewrite" — is narrow:** the B2 filter still uses the procedural
-path (`registerFilter` pattern-matches two hardcoded boundary shapes; `WithinRule` has a baked-in
-`Gate` enum). Replace it with **general per-predicate evaluation**: a filter alternate carries
-whatever predicates the grammar writes — `@within(N)` (containment), `>->`/`>+>` (lookahead, N a
-terminal set or nonterminal), `<n>`/`>n<` (layout) — each evaluated by its own general evaluator,
-in whatever combination appears. Then delete `registerFilter`'s pattern-matching, the `Gate` enum,
-`FilterProduction`, `grammar.filters`, and production-level `@within`; fold everything onto the
-general `@within(N)` + `>->(N)` predicates. Language-agnostic: C++/Rust write `@within(theirNT)` /
-`>->(theirNT)` on their own productions; the engine evaluates predicates generically.
-
-Validation bar: B2 rejects (`testTrailingClosureInGuard#1–4`, `testTrailingClosureInIfCondition#1`)
-still reject; `testEnum11` holds; accept failures 0; residual ambiguity ≤ 1.
-
-## First customer
+## Worked examples
 
 `open⏎var foo` — `open` is a contextual keyword (a legal identifier) *and* a modifier, so
 Advent finds both "one declaration `open var foo`" and "bare `open` reference + `var foo`".
-swift-syntax routes to the declaration because `atStartOfDeclaration` fires. Declaratively:
+swift-syntax routes to the declaration (`atStartOfDeclaration`). Declaratively:
 
 ```apus
-statement = >->(declaration) expression .   // an expression-statement, only where a declaration does NOT start here
+statement = >->(declaration) expression .   // expression-statement only where a declaration does NOT start here
 ```
 
-`declaration` is reached at every code-block item, so the query is a plain BSR test — no
-sub-parse, no newline hack, no procedural gate. It reproduces swift-syntax's
-declaration-first commit exactly.
+`testEnum11` — a top-level `case` is not a declaration; it's valid only inside a member block:
+
+```apus
+declaration = @confinedTo(memberDeclaration) enumCaseDeclaration .
+```
+
+`init {}` — a bare `init` reference is valid only inside a body (implicit `self.init`); the
+same `@confinedTo` shape once the container nonterminal is chosen.
+
+B2 (trailing closure in a condition) — the mixed case: containment + boundary. The `<n>` and the
+`>->`/`>+>("else")` gates all fire at PARSE time; the Oracle only does `@excludedFrom` containment:
+
+```apus
+newlineOpenedClosure = "{" <n> closureSignature? statements? "}" .
+
+// disc-3 — trailingClosures partitioned by the (now live at nonterminal completion) else-gate:
+trailingClosures = closureExpression >-> ("else") labeledTrailingClosures? .                              // not before else — always OK
+trailingClosures = @excludedFrom(conditionExpression) closureExpression >+> ("else") labeledTrailingClosures? .  // before else — pruned in a condition
+
+// disc-1 — newline-opened closure is not a trailing closure / condition body:
+closureExpression = @excludedFrom(conditionExpression) @excludedFrom(trailingClosures) newlineOpenedClosure .
+```
+
+## Why this is good
+
+- **Declarative & faithful.** The condition is a grammar symbol evaluated by the real parser —
+  exactly swift-syntax's predicate-gated choice, which CFG shape + extent/pivot/same-span
+  annotations cannot express. No hand-written predicate, no input re-scan.
+- **Uniform.** Five relations (forward/backward start-of / end-of, containment), both
+  polarities, all one query family over the BSR. Terminal operands are the degenerate case.
+- **Language-agnostic.** A C++/Rust grammar writes `@excludedFrom(theirNT)` / `>->(theirNT)`
+  over its own symbols; the engine evaluates predicates generically, no per-language Swift.
+- **Cheap.** The BSR is the memo; for disambiguation the answer is already computed.
+
+## Status & remaining work
+
+**Built and validated:**
+
+- Forward lookahead `>->(N)`/`>+>(N)` with nonterminal operand, Way-1 BSR query
+  (`LookaheadPredicateRule`) — fixes `open⏎var`.
+- **Both containment polarities** `@confinedTo(N)` / `@excludedFrom(N)` (one `ContainmentRule`
+  with a `negated` flag; positive prunes where ¬contained-in-all, negative prunes where
+  contained-in-all). RHS-alternate placement (parsed in `sequence()` alongside `@prefer`/`@avoid`;
+  fields `GrammarNode.confinedToContainers` / `.excludedFromContainers`; registered on the
+  alternate's first body symbol). `@confinedTo(memberDeclaration)` fixes `testEnum11`;
+  `@excludedFrom` has no customer until B2. (2026-08-22, increment A — behaviour-neutral,
+  probe-confirmed.)
+
+- **The B2 rewrite (increment B).** Both discriminators are now fully declarative — normal
+  partitioned alternates that the parser produces and `@excludedFrom` prunes; NO procedural filter,
+  NO Oracle input re-read. (2026-08-23, probe-confirmed; full sweep: accept-failures 0, reject count
+  in-band, `testTrailingClosureInIfCondition#1` and `testTrailingClosureInGuard#1–4` REJECT,
+  statement-level `foo {⏎ bar⏎}` ACCEPTs, `testEnum11` still rejects top-level `case`.) It rests on
+  one engine addition and two grammar partitions:
+
+  1. **Forward gate at nonterminal completion.** The token-set `>+>`/`>->` gate was always a
+     PARSE-TIME follow gate, but it only fired after a *terminal* (inline in `tokenMatch`). It now
+     also fires at *nonterminal / bracket completion* via a single shared helper
+     `MessageParser.forwardGateAllows(slot:at:)`, called at the four CRF continuation sites
+     (`call` pop-replay, `rtn`, `bracketCall`, `bracketRtn`) alongside `continuationViable`. One
+     logical gate, one helper; the two invocation points only exist because GLL surfaces "the
+     position after this slot" at different moments for terminals (inline) vs nonterminals (CRF
+     return). This honours the invariant *the Oracle never re-reads input*: a token-set lookahead is
+     a scanner query and belongs at parse time; only the nonterminal-*derivation* predicate
+     (`>->(N)`) is an Oracle BSR query. Blast radius is exactly disc-3 — every other `>+>`/`>->` in
+     `Swift.apus` sits after a terminal or is the leading derivation predicate.
+  2. **disc-3** (`}`→`else`): `trailingClosures` is partitioned by the now-live gate into two
+     disjoint alternates, and `@excludedFrom` prunes the `else`-following one inside a condition:
+     ```apus
+     trailingClosures = closureExpression >-> ("else") labeledTrailingClosures? .
+     trailingClosures = @excludedFrom(conditionExpression) closureExpression >+> ("else") labeledTrailingClosures? .
+     ```
+  3. **disc-1** (newline-after-`{`): the layout is folded into a real nonterminal so `<n>` fires at
+     parse time, and `@excludedFrom` prunes it in a condition / as a trailing closure:
+     ```apus
+     newlineOpenedClosure = "{" <n> closureSignature? statements? "}" .
+     closureExpression    = @excludedFrom(conditionExpression) @excludedFrom(trailingClosures) newlineOpenedClosure .
+     ```
+  The procedural path is deleted: `WithinRule` (`Gate` enum + `openBraceStartsNewLine`/`wordAt`
+  input re-reads), `registerFilter`, `Grammar.FilterProduction`/`grammar.filters`, and the
+  production-level `@within` parse in `ApusParser.production()`. `Within Filter Design.md` is
+  superseded by this section.
+
+**Remaining:** backward `<+<(N)`/`<-<(N)` with nonterminal operands and the Way-2 seeded sub-parse
+are designed but unbuilt — no customer yet.
+
+**Methodology note:** the reject-count seed variance (~54–57) means per-fix progress is measured by
+snippet-level probes, not the aggregate count. (Worth capturing in `TESTING.md`.)

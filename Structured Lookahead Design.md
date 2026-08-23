@@ -14,11 +14,14 @@
 >
 > `>…>` = forward, `<…<` = backward; middle `+`/`-` = polarity. These replaced the old
 > `>>1`→`>+>` and `++1`/`--1`→`<+<`/`<-<`; the distance-2 variants (`>>2`/`++2`/`--2`)
-> were dropped (unused). Forward gates are **slot-local** (one terminal-use in one
-> production) and **fire only on a real TERMINAL** — on a nonterminal or epsilon they
-> are a silent no-op (see the postfix `!rightBound` example in "Consolidated learnings"
-> at the end of this file, and `Structured Lookahead Design` there for the anchoring
-> rule).
+> were dropped (unused). Forward gates are **slot-local** (one symbol-use in one
+> production). They fire after a **terminal** inline in `tokenMatch()`, and — since
+> 2026-08-23 — also at **nonterminal / bracket completion** via the shared
+> `MessageParser.forwardGateAllows()` helper wired at the CRF continuation sites (so
+> `closureExpression >-> ("else")` is now a live gate, not a no-op). One logical gate,
+> two invocation points, because GLL surfaces "the position after this slot" at different
+> moments for terminals (inline) vs nonterminals (CRF return). See `Grammar Predicate
+> Lookahead Design.md`.
 >
 > **`@unless(X)` was implemented, then RETIRED (2026-07-30).** It was used by no grammar
 > by the end — its "prefer the reading that continues with X" job is covered by
@@ -29,8 +32,9 @@
 > *The rise and fall of Schrödinger, Frankenstein and other dead-ends.md*.
 >
 > The "≈32 `canParseAsXxx` predicates" goal (Pillar 2 in `SwiftSyntax Mapping.md`)
-> remains — but it is being met with the directional lookahead above + structural
-> grammar fixes, NOT with `@unless`.
+> remains — met with the directional lookahead above, the **grammar-predicate lookahead**
+> family (`>->(N)` derivation predicate + `@confinedTo`/`@excludedFrom` containment, see
+> `Grammar Predicate Lookahead Design.md`), and structural grammar fixes — NOT with `@unless`.
 
 ## Problem
 
@@ -565,10 +569,12 @@ whose next terminal lexes at `m.triviaEnd`). Lookbehind stays scanner-side on te
   terminal lexes at all based on the previous token; can't see grammatical context.
   Used for regex-vs-division.
 
-**`>+>`/`>->` only fire on a real TERMINAL** (checked in `tokenMatch` at lex time).
-On a nonterminal or the epsilon `""` they are a silent no-op → the restriction
-vanishes. This is why the postfix `!rightBound` fix anchors on
-`postfixOperatorToken`/`dotOperator`, not on the `postfixOperator` nonterminal:
+**`>+>`/`>->` fire after a TERMINAL** (checked in `tokenMatch` at lex time) **and, since
+2026-08-23, at nonterminal / bracket COMPLETION** (via `MessageParser.forwardGateAllows()`
+at the CRF continuation sites). On the epsilon `""` they remain a silent no-op. When this
+example was written, nonterminal-completion was NOT yet a firing site, so the postfix
+`!rightBound` fix anchors on the `postfixOperatorToken`/`dotOperator` TERMINAL rather than
+the `postfixOperator` nonterminal — a choice that still works and reads clearly:
 ```
 postfixExpression = postfixExpression >s< postfixOperator <s> .                                  // spaced/newline after
 postfixExpression = postfixExpression >s< postfixOperatorToken >+>("." ")" "]" "}" "," ";" ":") . // tight delim / EOF

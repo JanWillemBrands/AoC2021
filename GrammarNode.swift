@@ -188,7 +188,11 @@ final class GrammarNode {
     /// span is CONTAINED in a yield of EACH named container `N` (BSR containment = the GLL
     /// substitute for an inherited context/flavor), pruning otherwise. The declarative
     /// replacement for the procedural `@within` filter. See `Grammar Predicate Lookahead Design.md`.
-    var withinContainers: [String] = []
+    /// `@confinedTo(N…)` — positive containment: keep this alternate only where its span is
+    /// contained in a yield of EACH `N`. `@excludedFrom(N…)` — negative: prune where contained.
+    /// Both stack (conjunction over the containers). See `Grammar Predicate Lookahead Design.md`.
+    var confinedToContainers: [String] = []
+    var excludedFromContainers: [String] = []
 
     /// `=|` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at lex
     /// time and emitted as a SINGLE token (like `=:` trivia, but a token not trivia). References
