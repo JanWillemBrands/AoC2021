@@ -468,7 +468,13 @@ keyPathDot      - /\./ .
 infixOperator = operator .
 infixOperator = "&" .                    // reserved bitwise-and; bare "&" is not in the overloadable operator set
 
-prefixOperator = operator .
+// `preferRegexOverBinaryOperator`: a leading `/` is a prefix operator ONLY when no complete regex
+// lexes there. `>->( regularExpressionLiteral )` is a speculative "no regex parses here" gate (the
+// predicate snapshots the RAW forest, so it sees a regex even when the enclosing parse fails). The
+// resulting prune cascades via the greatest-fixpoint `pruneUnsupported`. So `_ = /x` / `_ = /E.e`
+// (no closing `/`, no regex yield) keep the prefix-`/`, while `_ = /foo/ {}` (a `/foo/` regex yield
+// exists) loses the `prefix-/ + foo{} + postfix-/` escape → reject (C3).
+prefixOperator = >->( regularExpressionLiteral ) operator .
 
 postfixOperator = postfixOperatorToken .   // postfix ops cannot begin with `!`/`?` (those split into force/optional)
 postfixOperator = dotOperator .            // postfix ranges: `1...`, `1..<5` (dotOperator can't end in `?`/`!`, so `.?`/`.!`/`.??!` aren't postfix operators)

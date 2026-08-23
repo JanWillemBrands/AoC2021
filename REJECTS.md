@@ -449,27 +449,122 @@ These are scanner-level (not grammar-level) checks.
 
 ---
 
-## Open: C3 — Forward Slash Regex Edge Cases
+## Open: C3 — Forward-Slash Regex: greedy-commit escape reading (same family as C1)
 
 **Test cases:**
 
 | Label | Source | Issue |
 |-------|--------|-------|
-| `testLiteralWithTrailingClosure#6` | `_ = /foo/ { return /foo/ }` | Regex literal not in `literalExpression`; B1 exclusion doesn't apply |
-| `testForwardSlashRegex116#1` | `_ = qux(/, 1) / 2` + multiline | Regex literal in argument position where `/` would be binary divide |
-| `testForwardSlashRegex142#1` | (forward-slash regex vs. divide) | Same regex/divide scanner ambiguity family |
-| `testForwardSlashRegex150a#1` | `_ = ^/"/"` | Custom operator `^/` preceding regex/string |
-| `testForwardSlashRegex150b#1` | (same source, duplicate) | Same |
-| `testForwardSlashRegex151a#1` | `_ = ^/"[/"` | Same with bracket inside |
-| `testForwardSlashRegex151b#1` | (same source, duplicate) | Same |
+| `testLiteralWithTrailingClosure#6` | `_ = /foo/ { return /foo/ }` | A non-regex reading makes `foo { … }` a trailing-closure call |
+| `testForwardSlashRegex116#1` | `_ = qux(/, 1) / 2` + multiline | `/` should be a bare operator arg; a regex reading survives |
+| `testForwardSlashRegex142#1` | `_ = /\()/` | Invalid regex body (`\(` escaped + unbalanced `)`); a non-regex reading survives |
+| `testForwardSlashRegex150a#1` / `150b#1` | `_ = ^/"/"` | Custom operator `^/` ending in `/` vs. regex/string boundary |
+| `testForwardSlashRegex151a#1` / `151b#1` | `_ = ^/"[/"` | Same, bracket inside the string |
 
-**Root cause:** Three distinct sub-issues:
-1. Regex literals (`/foo/`) are not part of `literalExpression`, so the B1 `nonLiteralPostfix`
-   exclusion doesn't catch trailing closures on regex literals.
-2. `qux(/, 1) / 2` — the `/` after `qux(` should be a binary-divide in that argument context;
-   the scanner is treating it as the start of a regex literal.
-3. `^/"/"` — the custom operator `^/` ends with `/`, which then starts a regex or string;
-   the scanner needs to recognise that `^/` is a prefix operator and the next token starts fresh.
+**Root cause (corrected 2026-08-23): same family as C1 (greedy-commit escape reading).**
+`regularExpressionLiteral` *is* part of `literal → literalExpression` (Swift.apus:358), so
+`nonLiteralPrimary` already excludes it and the B1 machinery *would* reject `/foo/{}` on the regex
+reading. The over-accept is NOT a missing grammar exclusion — it is the identical structure to the
+disabled C1 reject `testKeyPathSubscript#2` (`\Foo.Bar.?.[1]`):
+
+> swift-syntax **commits** greedily to one reading (regex / keypath), then **errors**; that committed
+> reading yields nothing, so `@longest`/`@prefer` have no competitor to prune Advent's shorter,
+> valid-shaped **escape reading**, which then survives → wrong accept.
+
+- `/foo/{}` — swift commits to the regex `/foo/`, which can't take `{}` → error. Advent's escape is
+  the division/operator lexicalization (`foo{}` becomes a trailing-closure call, the `/`s operators).
+- `/\()/` — swift commits to the regex, whose body is unbalanced (`\(` escaped + stray `)`) → error.
+  Advent's escape is a non-regex reading.
+- `qux(/, 1)` — the position-dependence: here swift does NOT commit to regex (`/` is a bare operator
+  arg). So the rule is contextual — exactly swift-syntax's `preferRegexOverBinaryOperator`.
+- `^/"…"` — maximal-munch commit of the `^/` operator vs. a `/`-started regex/string.
+
+So the fix is a **commit** primitive, not a scanner rewrite: once a regex is lexed at a
+regex-eligible position (`preferRegexOverBinaryOperator`), the competing non-regex lexicalization must
+be pruned **even though the regex-containing parse fails to complete** — the same "commit and prune
+the escape reading" that C1 needs for keypaths. See `Regex CFG Discussion.md`,
+`Regex Lookbehind Design.md`, `reference_regex_handling.md`.
+
+**Testing (2026-08-23) — where it goes wrong (probe on `_ = <body>/ {}`):**
+| body | advent | swift | note |
+|------|--------|-------|------|
+| `/foo/ {}` | accept | reject | leaks — identifier body |
+| `/123/ {}` | reject | reject | only the `plainRegularExpressionLiteral` reading is tried, fails at `{}` |
+| `/+/ {}` | reject | reject | operator body — no escape |
+| `/foo/()`, `/foo/ + 1`, `/foo/.count`, `/foo/` | accept | accept | valid, unaffected |
+
+The escape **requires an identifier body** — the scanner exposes `foo` as a bare identifier so
+`foo { … }` becomes a trailing-closure call; a numeric/operator body has no such reading.
+
+**Exact leak (per-position lexicalization dump of `_ = /foo/ {}`):**
+```
+P4 '/' : operatorToken='/'   regexOpenSlash='/'        ← both committed
+P5 'foo': identifier='foo'   regexNonOperatorAtom='f'
+P8 '/' : operatorToken='/'   postfixOperatorToken='/'  regexCloseSlash='/'
+```
+At P4 (right after `=`, a regex-eligible position) the leading `/` is committed as BOTH
+`regexOpenSlash` AND `operatorToken` (via `operatorToken @splitBefore(regexOpenSlash)`). The escape
+reading is: prefix `/` applied to `foo { }` (a trailing-closure call), then postfix `/` — a valid
+prefix/postfix-operator expression. swift-syntax `preferRegexOverBinaryOperator` commits to the regex
+at P4 and never offers the operator `/`, so only the (erroring) regex reading exists.
+
+**Two grammar-level fixes tried and rejected (2026-08-23):**
+- *Forbid a leading-`/` prefix operator.* Unfaithful: `_ = /x` and `_ = /E.e` (`testForwardSlashRegex21`,
+  `testPrefixSlash4/6/8`) are VALID prefix-slash expressions — swift lexes a leading `/` as a prefix
+  operator precisely when NO complete regex closes. Broke 36–84 regex accepts.
+- *`prefixOperator = >->(regularExpressionLiteral) operator`* (the forward-derivation predicate that
+  fixed `open⏎var`). Does not fire: for `/foo/{}` the `regularExpressionLiteral` reading spans `/foo/`
+  but the enclosing parse fails at `{}`, so that yield is **dead-wood-pruned before the predicate
+  runs** — the very reason `@longest` can't see the greedy reading in C1. The predicate only works when
+  the target reading COMPLETES (a declaration does; a failing regex does not).
+
+**The actual derivation (native `ParseTreeNode` dump of `_ = /foo/ {}`):**
+```
+expression [4,12]
+  prefixExpression [4,12]
+    <prefix-operator slot> [4,5]      ← the leading `/`
+    postfixExpression [5,12]
+      functionCallExpression
+        nonLiteralPostfix: postfixExpression(foo [5,8])  postfixOperator(postfixOperatorToken "/" [8,10])
+        trailingClosures: closureExpression "{" "}" [10,12]
+```
+So the escape is `/(foo/ {})` — prefix `/`, then a trailing-closure call whose callee is `foo` with a
+postfix `/`.
+
+**Raw-yield speculative predicate tried, and DISPROVEN as a fix (2026-08-23).** The
+`regularExpressionLiteral` yield DOES exist in the RAW forest (`[4,10]`); the dead-wood sweep deletes
+it before the predicate runs, so snapshotting the predicate's target starts from the RAW forest (a
+faithful `canParseAsXxx`) makes `>->(regularExpressionLiteral)` on `prefixOperator` FIRE correctly —
+instrumentation confirms it prunes `operator#1181[4,5]` to `remaining=0`. **Yet `/foo/ {}` still
+accepts:** `buildAST` reconstructs a full-span tree *around* the emptied slot (the `[4,5]`
+prefix-operator node above still appears, unpopulated). So the yield-keying was fine and the prune
+cascaded — but post-hoc Oracle/grammar pruning of the operator yield does NOT force a reject here,
+because the builder still spans the input. (The earlier `MissingExpr` I saw was just a
+`SwiftSyntaxGenerator` render fallback, not an accept-criterion issue — ignore it.)
+
+**Why the predicate prune didn't cascade (dead-wood reachability, 2026-08-23).** `pruneUnproductive`
+(`Oracle.swift`) marks a node-span reachable from its **cached per-node yields** (via `endPositions` /
+`visitSymbol` marking on own-yield), NOT by verifying its body still tiles from *surviving* yields.
+`tileBody` returns `true` for any non-empty candidate `mids` and ignores the recursive results; the
+predicate pruned `operator#1181` (inside `prefixOperator`), but `prefixOperator`'s own cached `[4,5]`
+yield kept every ancestor "feasible", so the root survived and `buildAST` tiled around it. Attempting a
+STRICT recursive reachability (propagate results; mark only when the body genuinely tiles) **broke 2541
+accepts**: the walk's single-pass cycle guard (`expanding` → `false` on re-entry) under-marks every
+span reachable only through a recursive cycle — pervasive in the Swift grammar. The generous
+cached-yield approach is load-bearing: it never under-marks. A correct cascade needs the reachability
+rewritten as a **least-fixpoint** (iterate marking to convergence), a real algorithm change, not the
+"return the ignored value" tweak.
+
+**Conclusion.** Two viable fixes, both real work: (1) scanner-side `preferRegexOverBinaryOperator` — do
+NOT emit the operator lexicalization of a `/` where a complete regex lexes, so the escape never forms
+(swift-syntax's `tryLexRegexLiteral`); or (2) a fixpoint dead-wood reachability so a targeted Oracle
+prune cascades (which would also let the raw-yield `>->(regularExpressionLiteral)` predicate work).
+Deferred. All exploratory changes reverted to the clean baseline (reject 46 / accept 0 / ambiguity 0).
+
+**Separate latent bug found:** `---( namedTerminal )` crashes at grammar load. The `---(…)` operand
+parser (`ApusParser`, `while token.kind == "literal"`) accepts ONLY quoted literals, not named
+terminals (unlike `>+>`/`>->`/`<-<`), so a named-terminal operand isn't consumed, `expect(")")` fails,
+and the load error surfaces as a crash. Should accept named terminals (or error cleanly).
 
 ---
 

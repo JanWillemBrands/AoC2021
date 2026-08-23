@@ -159,12 +159,16 @@ private struct SpanKey: Hashable {
 /// where it does NOT. Removal cascades to the whole alternate via the dead-wood sweep.
 struct LookaheadPredicateRule: DisambiguationRule {
     let negated: Bool
-    let targetYields: () -> Set<BinarySpan>
+    /// Start positions where the target derives, SNAPSHOT from the RAW forest at Oracle registration
+    /// (before dead-wood). This is swift-syntax's `canParseAsXxx`: a SPECULATIVE "could N parse here?",
+    /// independent of whether the enclosing parse survives — so a target that lexes/parses but whose
+    /// enclosing parse fails still counts (e.g. `/foo/` in `_ = /foo/ {}`, C3). The resulting prune
+    /// cascades to a reject via the greatest-fixpoint `pruneUnsupported`.
+    let targetStarts: Set<CharPosition>
     func prune(_ yields: inout Set<BinarySpan>) -> Int {
-        let starts = Set(targetYields().map(\.i))          // positions where N starts a derivation
         var pruned = 0
         for span in yields {
-            let derivesHere = starts.contains(span.i)
+            let derivesHere = targetStarts.contains(span.i)
             if negated ? derivesHere : !derivesHere { yields.remove(span); pruned += 1 }
         }
         return pruned
@@ -224,6 +228,16 @@ class Oracle {
     private struct NodeSpan: Hashable { let id: ObjectIdentifier; let from, to: CharPosition }
     private struct NodePos: Hashable  { let id: ObjectIdentifier; let from: CharPosition }
 
+    // MARK: - Support maps for the greatest-fixpoint dead-wood prune (`pruneUnsupported`).
+    // Built once from the (static) grammar. Keyed by node.number. Unknown/missing entries are
+    // treated as "keep" so a map gap can never over-remove a yield.
+    private var supportMapsBuilt = false
+    private var predecessorOf: [Int: GrammarNode] = [:]   // occurrence → previous body symbol
+    private var isFirstBody: Set<Int> = []                 // occurrence is first in its body
+    private var lastSymsOf: [Int: [GrammarNode]] = [:]     // definition (LHS/bracket) → alternates' last symbols
+    private var hasEmptyAlt: Set<Int> = []                 // definition has an empty/nullable alternate
+    private var allYieldNodes: [GrammarNode] = []          // every grammar node (for the sweep)
+
     init(parser: MessageParser, input: String) {
         self.parser = parser
         self.grammar = parser.grammar
@@ -261,10 +275,11 @@ class Oracle {
             // Leading forward lookahead predicate on an ALT node (`>->(N)`/`>+>(N)`, N a
             // nonterminal). Anchor the prune on the alternate's first body symbol.
             if let tname = node.predicateTargetName {
-                let p = parser
                 if let target = grammar.nonTerminals[tname], let anchor = node.bodySymbols.first {
+                    // Snapshot RAW target starts NOW (Oracle init runs before dead-wood) — canParseAsXxx.
+                    let targetStarts = Set(parser.yield(of: target).map(\.i))
                     rules.append((anchor, LookaheadPredicateRule(negated: node.predicateNegated,
-                                                                 targetYields: { p.yield(of: target) })))
+                                                                 targetStarts: targetStarts)))
                 } else {
                     assertionFailure("lookahead predicate: unresolved target '\(tname)' or empty alternate")
                 }
@@ -391,7 +406,7 @@ class Oracle {
 
         var deadYields = 0
         while true {
-            let pruned = pruneUnproductive(endPosition: n)
+            let pruned = pruneUnsupported() + pruneUnproductive(endPosition: n)
             deadYields += pruned
             if pruned == 0 { break }
         }
@@ -417,7 +432,7 @@ class Oracle {
         // parent .N yields are now unreachable. Cascade to a fixed point.
         var secondDead = 0
         while true {
-            let pruned = pruneUnproductive(endPosition: n)
+            let pruned = pruneUnsupported() + pruneUnproductive(endPosition: n)
             secondDead += pruned
             if pruned == 0 { break }
         }
@@ -435,6 +450,109 @@ class Oracle {
     private func isUnambiguous(endPosition n: CharPosition) -> Bool {
         // TODO: implement full ambiguity check across all reachable nonterminals
         return true
+    }
+
+    // MARK: - Greatest-fixpoint support prune (cascades a targeted yield removal)
+
+    /// Build the (grammar-static) support maps once. For each alternate body of every definition
+    /// (LHS nonterminal or bracket), record: each symbol's predecessor / first-ness, and the
+    /// definition's per-alternate last symbols + whether it has an empty alternate. OPT/KLN are
+    /// always nullable.
+    private func buildSupportMaps() {
+        guard !supportMapsBuilt else { return }
+        supportMapsBuilt = true
+        var seen = Set<Int>()
+        func collect(_ node: GrammarNode?) {
+            guard let node, seen.insert(node.number).inserted else { return }
+            allYieldNodes.append(node)
+            if node.kind != .END { collect(node.seq) }
+            collect(node.alt)
+        }
+        for nt in grammar.nonTerminals.values { collect(nt) }
+        collect(grammar.root)
+
+        // A definition is a node that OWNS alternates: an LHS nonterminal or a bracket.
+        func indexDefinition(_ def: GrammarNode) {
+            if def.kind == .OPT || def.kind == .KLN { hasEmptyAlt.insert(def.number) }  // nullable
+            var alt = def.alt
+            while let a = alt {
+                defer { alt = a.alt }
+                let body = a.bodySymbols
+                if body.isEmpty { hasEmptyAlt.insert(def.number); continue }
+                lastSymsOf[def.number, default: []].append(body[body.count - 1])
+                for m in body.indices {
+                    if m == 0 { isFirstBody.insert(body[m].number) }
+                    else { predecessorOf[body[m].number] = body[m - 1] }
+                }
+            }
+        }
+        for node in allYieldNodes {
+            if node.isLHS || node.kind.isBracket { indexDefinition(node) }
+        }
+    }
+
+    /// Greatest-fixpoint (decreasing) removal of yields whose BSR support is gone. A yield
+    /// `(i,k,j)` on a node means: the symbol derives `[k,j]` and the production-prefix before it
+    /// derives `[i,k]` (for a definition/LHS completion `i==k`, span `[i,j]`). We remove a yield
+    /// ONLY when its support is provably absent, iterating to a fixed point — so a targeted Oracle
+    /// prune cascades to every ancestor, while grounded recursion keeps its base (cycle-safe, unlike
+    /// a least-fixpoint). Unknown map entries and closures are kept, so this never over-removes.
+    private func pruneUnsupported() -> Int {
+        buildSupportMaps()
+
+        // prefix `[i,k]` derivable: first symbol ⇒ i==k; else the predecessor ended at k with the
+        // same production-left i. Unknown predecessor ⇒ keep.
+        func prefixOK(_ N: GrammarNode, _ y: BinarySpan) -> Bool {
+            // A first body symbol has an EMPTY prefix → trivially satisfied. (Do NOT require i==k:
+            // in a closure body, iterations after the first have i = closure-start ≠ k = iteration-
+            // start, yet their prefix is still empty relative to the iteration.)
+            if isFirstBody.contains(N.number) { return true }
+            guard let p = predecessorOf[N.number] else { return true }
+            return parser.yields[p.number].contains { $0.i == y.i && $0.j == y.k }
+        }
+        // Some alternate of `def` has a last symbol spanning [from,to] (body-left == from).
+        func lastSymSpans(_ def: GrammarNode, from: CharPosition, to: CharPosition) -> Bool {
+            guard let syms = lastSymsOf[def.number] else { return true }  // unknown ⇒ keep
+            for s in syms where parser.yields[s.number].contains(where: { $0.i == from && $0.j == to }) { return true }
+            return false
+        }
+        func supported(_ N: GrammarNode, _ y: BinarySpan) -> Bool {
+            switch N.kind {
+            case .N where N.isLHS:
+                // Completion (a,a,b): supported iff some alternate's body tiled [a,b] (its last
+                // symbol carries i==a, j==b), or an empty alternate covers a==b.
+                if y.i == y.j && hasEmptyAlt.contains(N.number) { return true }
+                return lastSymSpans(N, from: y.i, to: y.j)
+            case .N:  // reference occurrence
+                guard prefixOK(N, y) else { return false }
+                guard let X = N.alt else { return true }            // no LHS ⇒ keep
+                return parser.yields[X.number].contains { $0.i == y.k && $0.j == y.j }  // X derives [k,j]
+            case .T, .TI, .C, .B, .EPS:
+                return prefixOK(N, y)                                // terminal/boundary: leaf
+            case .DO, .OPT, .POS, .KLN:
+                guard prefixOK(N, y) else { return false }
+                if N.kind == .KLN || N.kind == .POS { return true }  // closures kept (conservative)
+                if y.k == y.j && hasEmptyAlt.contains(N.number) { return true }
+                return lastSymSpans(N, from: y.k, to: y.j)           // bracket body over [k,j]
+            default:
+                return true                                          // EOS/END/ALT: keep
+            }
+        }
+
+        var total = 0
+        var changed = true
+        while changed {
+            changed = false
+            for node in allYieldNodes {
+                let num = node.number
+                guard !parser.yields[num].isEmpty else { continue }
+                let before = parser.yields[num].count
+                parser.yields[num] = parser.yields[num].filter { supported(node, $0) }
+                let removed = before - parser.yields[num].count
+                if removed > 0 { total += removed; changed = true }
+            }
+        }
+        return total
     }
 
     // MARK: - Phase 1: Prune Unproductive Yields
