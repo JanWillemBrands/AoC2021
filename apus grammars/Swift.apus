@@ -157,8 +157,19 @@ regexClassAtom       - /[^\\\]\r\n]/ .
 // Excludes `/` (the regex delimiter, matched by regexOpenSlash/regexCloseSlash).
 regexOperatorChar    - /[-+*%|^~<>=!?&.]/ .
 
-// Opening slash — position-gated. `<-<` (negative lookbehind) blocks a regex start right
-// after an operand-ender, the `preferRegexOverBinaryOperator` analog.
+// Opening slash — position-gated. `<-<` (negative lookbehind) blocks a regex start right after an
+// operand-ender. This is the analog of swift-syntax `isInRegexLiteralPosition()` (RegexLiteralLexer
+// .swift:598) — the previous-token test — NOT of `preferRegexOverBinaryOperator`, which is a much
+// narrower flag meaning "we just saw `try?`/`try!`, so prefer a regex even though a postfix `?`/`!`
+// would normally imply a BINARY operator follows" (see `tryScanOperatorAsRegexLiteral`).
+// Note `optionalMark` (postfix `a?`) blocks a regex, but the TERNARY `"?"` does not — swift returns
+// false for `.postfixQuestionMark` and true for `.infixQuestionMark`, so `_ = /x/??/x/` reads the
+// third `/` as infix while `b ? /1/ : /2/` keeps the regex. Advent spells those two differently
+// (`optionalMark` vs the literal `"?"`), so only the postfix form is listed.
+// Entries must name the terminal that ACTUALLY commits. Postfix `?`/`!`/`>` commit as the
+// munch-exempt REGEX terminals (`optionalMark`/`forceMark`/`closeAngle`, operator dev 6), not as
+// literals — the bare `"!"`/`">"` entries only match the productions that spell them as literals
+// (prefix `!x`, `try!`), so the terminal names are listed alongside them.
 regexOpenSlash  - /\// .
      <-< ( "true" "false" "nil" "self" "Self" "super" "Any"
          "func" "operator"
@@ -166,8 +177,10 @@ regexOpenSlash  - /\// .
          binaryLiteral octalLiteral decimalLiteral hexadecimalLiteral
          decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
          regexCloseSlash extendedRegularExpressionLiteral
-         "_" ")" "]" "}" ">"
-         "!"
+         "_" ")" "]" "}"
+         ">" closeAngle
+         "!" forceMark
+         optionalMark
          "->" "..." "." "@" )
 regexCloseSlash - /\// .
 // Ungated opening slash for a NEWLINE-leading regex. A `/…/ ` that starts a new line after a
@@ -415,7 +428,20 @@ operatorToken - @builder .
 @lexicalClass
 dotOperator - @builder .
 
-operator = operatorToken .
+// Regex-vs-operator (swift-syntax `tryLexOperatorAsRegexLiteral`): a `/`-led operator is only an
+// operator where NO complete regex lexes — swift's lexer tries the regex FIRST and commits to it.
+// `regexOpenSlash`'s `<-<` already gates WHERE a regex may start (prefix position only); this
+// predicate adds WHETHER one completes, which only the CFG-modelled regex can know. It lives on
+// `operator` so every use inherits it — prefix (`_ = /foo/ {}`), operator-as-argument
+// (`qux(/, "(")/2`), infix, operator-as-value — rather than being repeated per slot. The predicate
+// snapshots the RAW forest (swift's `canParseAsXxx`), so it sees a viable regex even when the
+// enclosing parse fails; the prune then cascades via the Oracle's greatest-fixpoint
+// `pruneUnsupported`. Readings where no regex completes keep the operator: `_ = /x` (never closes),
+// `qux(/, 1)` (unbalanced `)` fails the regex CFG), and any infix `/` (blocked by the `<-<` gate).
+// Start-anchored, so it does NOT cover an operator that SWALLOWS a regex opener (`_ = ^/"/"`: the
+// operator `^/` is [4,6] while the regex `/"/` it eats is [5,8]) — see REJECTS.md C3 for why that
+// case additionally needs a speculative sub-parse.
+operator = >->( regularExpressionLiteral ) operatorToken .
 operator = dotOperator .
 
 postfixOperatorToken - @builder .
@@ -468,13 +494,7 @@ keyPathDot      - /\./ .
 infixOperator = operator .
 infixOperator = "&" .                    // reserved bitwise-and; bare "&" is not in the overloadable operator set
 
-// `preferRegexOverBinaryOperator`: a leading `/` is a prefix operator ONLY when no complete regex
-// lexes there. `>->( regularExpressionLiteral )` is a speculative "no regex parses here" gate (the
-// predicate snapshots the RAW forest, so it sees a regex even when the enclosing parse fails). The
-// resulting prune cascades via the greatest-fixpoint `pruneUnsupported`. So `_ = /x` / `_ = /E.e`
-// (no closing `/`, no regex yield) keep the prefix-`/`, while `_ = /foo/ {}` (a `/foo/` regex yield
-// exists) loses the `prefix-/ + foo{} + postfix-/` escape → reject (C3).
-prefixOperator = >->( regularExpressionLiteral ) operator .
+prefixOperator = operator .   // the regex-vs-operator gate lives on `operator` itself (see there)
 
 postfixOperator = postfixOperatorToken .   // postfix ops cannot begin with `!`/`?` (those split into force/optional)
 postfixOperator = dotOperator .            // postfix ranges: `1...`, `1..<5` (dotOperator can't end in `?`/`!`, so `.?`/`.!`/`.??!` aren't postfix operators)
@@ -1089,9 +1109,16 @@ postfixExpression = primaryExpression .
 // past trailing trivia), so for `postfixOp <whitespace> <delimiter>` (e.g. `*!*`⏎`}`) BOTH the `<s>` alt
 // and a `>+>` alt match the same span. They're same-span, so @prefer collapses the dual to the `<s>`
 // reading; the `>+>` alts still uniquely cover the TIGHT delimiter / EOF cases where `<s>` can't match.
-postfixExpression = @prefer postfixExpression >s< postfixOperator <s>
-                  | postfixExpression >s< postfixOperatorToken >+> ( "." ")" "]" "}" "," ";" ":" )
-                  | postfixExpression >s< dotOperator          >+> ( "." ")" "]" "}" "," ";" ":" ) .
+// `>->( keyPathExpression )`: a postfix OPERATOR may not follow a key-path expression. Probed against
+// swift-syntax: `_ = \.foo` accepts and `_ = x/` accepts (postfix `/` is fine on an ordinary operand),
+// but `_ = \.foo/` and `_ = \()/` both reject — hence `_ = /\()/` (C3 testForwardSlashRegex142, whose
+// only swift diagnostic is "unexpected code '/'" on the TRAILING slash). `?`/`!`/`.member`/subscript
+// after a keypath are keypath COMPONENTS (handled inside `keyPathExpression`), not outer postfix, so
+// they are unaffected. The gate is exact because a `keyPathExpression` yield can only start at a `\`,
+// and a `postfixExpression` starting at `\` can only be that keypath.
+postfixExpression = @prefer >->( keyPathExpression ) postfixExpression >s< postfixOperator <s>
+                  | >->( keyPathExpression ) postfixExpression >s< postfixOperatorToken >+> ( "." ")" "]" "}" "," ";" ":" )
+                  | >->( keyPathExpression ) postfixExpression >s< dotOperator          >+> ( "." ")" "]" "}" "," ";" ":" ) .
 postfixExpression = functionCallExpression .
 postfixExpression = initializerExpression .
 postfixExpression = explicitMemberExpression .

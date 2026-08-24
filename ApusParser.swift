@@ -256,62 +256,7 @@ class ApusParser {
             // `TokenPattern.transitions` are gone; LCNP per-terminal lex
             // makes mode gating unnecessary.
 
-            // handle parser-side lookbehind: <+<(...) / <-<(...)
-            // Each line is a comma-separated chain of rules (AND); polarity must be uniform within a line.
-            // Multiple lines on the same terminal accumulate (OR). Single-token distance only.
-            let lookbehindHeads: Set<String> = ["<+<", "<-<"]
-            while lookbehindHeads.contains(token.kind) {
-                var rules: [LookbehindRule] = []
-                var linePolarity: LookbehindPolarity?
-                repeat {
-                    let head = token.kind
-                    let polarity: LookbehindPolarity = head == "<+<" ? .positive : .negative
-                    let distance = 1
-                    if let lp = linePolarity, lp != polarity {
-                        Logger.parse.error("lookbehind line mixes polarities: \(head, privacy: .public) cannot follow opposite polarity in the same comma chain")
-                        throw ApusParserError.unexpectedToken(explanation: "mixed-polarity lookbehind chain")
-                    }
-                    linePolarity = polarity
-                    cI += 1
-                    try expect(["("])
-                    cI += 1
-                    var kinds: [String] = []
-                    while token.kind == "literal" || token.kind == "identifier" {
-                        // Operand must resolve to a Token.kind value (matched against tokens at scan time).
-                        //   quoted "X"     → kind is the full quoted form `"X"` (matches literal terminals)
-                        //   alias name     → look up in literalAliases (already quoted form)
-                        //   bare identifier (regex terminal name) → use as-is
-                        let kind: String
-                        if token.kind == "literal" {
-                            kind = String(token.image)
-                        } else {
-                            let id = token.stripped
-                            kind = literalAliases[id] ?? id
-                        }
-                        kinds.append(kind)
-                        cI += 1
-                    }
-                    try expect([")"])
-                    cI += 1
-                    rules.append(LookbehindRule(polarity: polarity, distance: distance, kinds: kinds))
-                    if token.kind == "," {
-                        cI += 1
-                    } else {
-                        break
-                    }
-                } while lookbehindHeads.contains(token.kind)
-
-                guard grammar.terminals[terminal.name] != nil else {
-                    Logger.parse.warning("WARNING: terminal \(terminal.name, privacy: .public) not found when parsing lookbehind")
-                    continue
-                }
-                let line = LookbehindLine(rules: rules)
-                if linePolarity == .positive {
-                    grammar.terminals[terminal.name]?.lookbehind.positiveLines.append(line)
-                } else {
-                    grammar.terminals[terminal.name]?.lookbehind.negativeLines.append(line)
-                }
-            }
+            try lookbehindAnnotations(attachingTo: terminal.name)
 
         } else {
             // production rule — `=` for emit, `=:` for trivia (Phase E Step 2),
@@ -365,9 +310,79 @@ class ApusParser {
             }
             try expect(["."])
             cI += 1
+
+            // A `=|` LHS is registered as a terminal, so it can carry the same position gates as any
+            // other terminal. Attaching them HERE (not inside the body) is the point: the recogniser
+            // sub-parse has no commit history of its own, so an operand-ender gate written on an inner
+            // terminal is structurally bypassed. At this level the gate is evaluated against the OUTER
+            // parser's commit log, where the recogniser's token competes with other lexicalisations.
+            // See REJECTS.md C3 and TODO #19 (unify which LHS forms can carry / be named by these lists).
+            if isLexical {
+                try lookbehindAnnotations(attachingTo: nonTerminalName)
+            }
         }
     }
-    
+
+    /// Parse zero or more `<+<(…)` / `<-<(…)` lookbehind lines and attach them to
+    /// `grammar.terminals[targetName]`. Each line is a comma-separated chain (AND); polarity must be
+    /// uniform within a line; separate lines accumulate (OR). Single-token distance only.
+    /// Shared by a terminal definition (`name - /re/ .`) and a `=|` lexical nonterminal.
+    private func lookbehindAnnotations(attachingTo targetName: String) throws {
+        let lookbehindHeads: Set<String> = ["<+<", "<-<"]
+        while lookbehindHeads.contains(token.kind) {
+            var rules: [LookbehindRule] = []
+            var linePolarity: LookbehindPolarity?
+            repeat {
+                let head = token.kind
+                let polarity: LookbehindPolarity = head == "<+<" ? .positive : .negative
+                let distance = 1
+                if let lp = linePolarity, lp != polarity {
+                    Logger.parse.error("lookbehind line mixes polarities: \(head, privacy: .public) cannot follow opposite polarity in the same comma chain")
+                    throw ApusParserError.unexpectedToken(explanation: "mixed-polarity lookbehind chain")
+                }
+                linePolarity = polarity
+                cI += 1
+                try expect(["("])
+                cI += 1
+                var kinds: [String] = []
+                while token.kind == "literal" || token.kind == "identifier" {
+                    // Operand must resolve to a Token.kind value (matched against tokens at scan time).
+                    //   quoted "X"     → kind is the full quoted form `"X"` (matches literal terminals)
+                    //   alias name     → look up in literalAliases (already quoted form)
+                    //   bare identifier (regex terminal name) → use as-is
+                    let kind: String
+                    if token.kind == "literal" {
+                        kind = String(token.image)
+                    } else {
+                        let id = token.stripped
+                        kind = literalAliases[id] ?? id
+                    }
+                    kinds.append(kind)
+                    cI += 1
+                }
+                try expect([")"])
+                cI += 1
+                rules.append(LookbehindRule(polarity: polarity, distance: distance, kinds: kinds))
+                if token.kind == "," {
+                    cI += 1
+                } else {
+                    break
+                }
+            } while lookbehindHeads.contains(token.kind)
+
+            guard grammar.terminals[targetName] != nil else {
+                Logger.parse.warning("WARNING: terminal \(targetName, privacy: .public) not found when parsing lookbehind")
+                continue
+            }
+            let line = LookbehindLine(rules: rules)
+            if linePolarity == .positive {
+                grammar.terminals[targetName]?.lookbehind.positiveLines.append(line)
+            } else {
+                grammar.terminals[targetName]?.lookbehind.negativeLines.append(line)
+            }
+        }
+    }
+
     func message() {
         trace("message", token)
         grammar.messages.append(token.stripped)

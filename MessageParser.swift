@@ -323,24 +323,26 @@ class MessageParser {
         lookbehindByTerminalID.removeAll(keepingCapacity: true)
         for (name, pat) in grammar.terminals {
             guard let id = grammar.symbolToID[name] else { continue }
-            if pat.isLexicalToken {
-                // `=|` lexical nonterminal — match computed by a GLL sub-parse below, not a
-                // regex/literal. Skip the regex/literal registration.
-                continue
-            }
-            if pat.isLiteral {
-                literalSourceByID[id] = pat.source
-            } else if !pat.isSkip {
-                // Regex terminal: answer from input directly. Any lookbehind
-                // annotation is enforced at `tokenMatch` via parser state.
-                regexByID[id] = pat.regex
-            }
-            if pat.isSkip, !isSubParser {
-                // Trivia (whitespace, line comment, etc.) applies only to the
-                // full parse. Sub-parsers running a `=:` body don't strip
-                // outer trivia — inside a multiline comment, what would
-                // otherwise be skipped whitespace IS comment content.
-                triviaRegexes.append(pat.regex)
+            // `=|` lexical nonterminal — its match extent is computed by a GLL sub-parse below, not
+            // by a regex/literal, so skip ONLY that registration. It must still pick up its
+            // lookbehind spec at the bottom of this loop: the gate belongs at the OUTER level (the
+            // recogniser sub-parse has no commit history of its own), and `continue`-ing here silently
+            // dropped it. See REJECTS.md C3.
+            if !pat.isLexicalToken {
+                if pat.isLiteral {
+                    literalSourceByID[id] = pat.source
+                } else if !pat.isSkip {
+                    // Regex terminal: answer from input directly. Any lookbehind
+                    // annotation is enforced at `tokenMatch` via parser state.
+                    regexByID[id] = pat.regex
+                }
+                if pat.isSkip, !isSubParser {
+                    // Trivia (whitespace, line comment, etc.) applies only to the
+                    // full parse. Sub-parsers running a `=:` body don't strip
+                    // outer trivia — inside a multiline comment, what would
+                    // otherwise be skipped whitespace IS comment content.
+                    triviaRegexes.append(pat.regex)
+                }
             }
             if !pat.lookbehind.isEmpty {
                 lookbehindByTerminalID[id] = resolveLookbehindSpec(pat.lookbehind)
