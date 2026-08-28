@@ -54,7 +54,7 @@ struct TokenPattern {
     /// (`for` inside `foreach`). Grammar-declared; see TODO #0 / `Multiple
     /// Lexicalisation` §4.1 (suffix-property longest-across).
     var isLexicalClass: Bool = false
-    /// `@splitBefore(X)` — besides its maximal match, this (regex) terminal also
+    /// `@preempt(X, …)` first operand — besides its maximal match, this (regex) terminal also
     /// offers the prefix ending before each *internal* position where terminal `X`
     /// begins a non-empty match. Ports swift-syntax's `lexOperatorIdentifier`
     /// regex-scan (Cursor.swift:2275): an operator token is split before an internal
@@ -64,7 +64,16 @@ struct TokenPattern {
     /// the split inherit `X`'s `<-<` position gate — see the split-gate in
     /// `MessageParser.tokenMatch`. Stores the terminal *name*; resolved to an ID at
     /// parser build.
-    var splitBeforeTerminal: String? = nil
+    var preemptStart: String? = nil
+    /// `@preempt(X, N)` second operand — the COMMIT half. The first operand only *offers* the split
+    /// ("give X a chance"); this says the shorter reading WINS where the named construct `N` actually
+    /// parses. Among the candidate matches at one position (all sharing the start), if `N` is viable at
+    /// the end of a shorter candidate, every longer candidate is dropped — so the maximal-munch token
+    /// never swallows the start of a real `N`. Viability is answered by a memoised speculative
+    /// recogniser sub-parse of `N` (not FOLLOW-gated), mirroring swift's `tryLexOperatorAsRegexLiteral`,
+    /// which scans an operator for an internal `/`, tries the regex, and COMMITS when it scans — while
+    /// keeping the whole operator when it does not (`^/x`). Stores the nonterminal *name*.
+    var preemptConstruct: String? = nil
     /// `=|` lexical-nonterminal marker. This terminal has no regex/literal source; its match
     /// is computed by a GLL sub-parse of the same-named nonterminal (see `GrammarNode.isLexicalToken`
     /// and `MessageParser` lexicalTokenRecognisers). Skipped when building regexByID/literalSourceByID.

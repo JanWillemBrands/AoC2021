@@ -154,8 +154,7 @@ enum ApusRegexLibrary {
     /// NOTE: U+2000 and U+2001 are *canonically decomposable* (→ U+2002 / U+2003), so
     /// they trap Swift's regex engine at match time if used as RANGE BOUNDS (see the
     /// header note on `identifierHead`). They are given via `.anyOf` (membership, not a
-    /// range bound) — the safe range starts at U+2002. This mirrors the original grammar
-    /// regex `\u{2000}\u{2001}\u{2002}-\u{200A}` exactly.
+    /// range bound) — the safe range starts at U+2002.
     static let forbiddenRawIdentifierWhitespace = CharacterClass(
         "\u{0009}"..."\u{000D}",   // HT, LF, VT, FF, CR
         "\u{0085}"..."\u{0085}",   // NEL
@@ -245,7 +244,7 @@ enum ApusRegexLibrary {
     /// `poundName` — `#` followed by an identifier (N1518 ranges, same as `identifier`).
     /// Swift-syntax lexes `#macroName` as two tokens (`.pound` + `.identifier`); we
     /// combine them into one scanner terminal. Character classes are identical to
-    /// `identifierHead`/`identifierCharacter` — no XID or `\p{So}` approximation.
+    /// `identifierHead`/`identifierCharacter`.
     static let poundName = Regex {
         "#"
         identifierHead

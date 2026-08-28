@@ -8,7 +8,6 @@
 import OSLog
 import Foundation
 import RegexBuilder
-//import AdventMacros
 
 enum ApusParserError: Error {
     case terminalNonterminalConflict(symbols: Set<String>)
@@ -194,17 +193,29 @@ class ApusParser {
             isLexicalClassAnnotation = true
             cI += 1
         }
-        // `@splitBefore(X)` — regex terminal also offers prefixes ending before
-        // each internal position where terminal `X` begins (ports swift-syntax's
-        // operator regex-split). Keyed on a terminal name, not a raw char, so the
-        // split inherits `X`'s `<-<` position gate. See TODO #0.
-        var splitBeforeTerminalName: String? = nil
-        if token.kind == "pragma", token.stripped == "splitBefore" {
+        // `@preempt(X)` / `@preempt(X, N)` — this terminal's maximal munch must not swallow something
+        // of higher priority. Both regex literals and generics were bolted onto an already-mature
+        // Swift, so its lexer has to pre-empt operator munching for them; this states that directly.
+        //   X — the terminal whose start positions define the SPLIT POINTS, and whose `<-<` gate
+        //       (checked at the operator's own start) decides whether a split is offered at all. That
+        //       gate is swift's `isLeftBound` analogue, which is why it must name a specific terminal
+        //       rather than be derived from `FIRST(N)` (whose members may differ in gating).
+        //   N — OPTIONAL: the construct that must actually PARSE at a split point for the shorter
+        //       reading to win. Without it the split is merely offered (today's generics use).
+        var preemptStartName: String? = nil
+        var preemptConstructName: String? = nil
+        if token.kind == "pragma", token.stripped == "preempt" {
             cI += 1
             try expect(["("]); cI += 1
             try expect(["identifier"])
-            splitBeforeTerminalName = String(token.image)
+            preemptStartName = String(token.image)
             cI += 1
+            if token.kind == "," {
+                cI += 1
+                try expect(["identifier"])
+                preemptConstructName = String(token.image)
+                cI += 1
+            }
             try expect([")"]); cI += 1
         }
         // `@scalar` — unicode-scalar matching semantics for this regex terminal.
@@ -227,7 +238,8 @@ class ApusParser {
                 terminalAlias = nonTerminalName
                 terminal = try regex()
                 if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
-                if let st = splitBeforeTerminalName { grammar.terminals[nonTerminalName]?.splitBeforeTerminal = st }
+                if let ps = preemptStartName { grammar.terminals[nonTerminalName]?.preemptStart = ps }
+                if let pc = preemptConstructName { grammar.terminals[nonTerminalName]?.preemptConstruct = pc }
             case "literal":
                 terminal = literal()
                 literalAliases[nonTerminalName] = terminal.name
@@ -238,7 +250,8 @@ class ApusParser {
                 //   name - @builder(key) .     → ApusRegexLibrary.patterns["key"]
                 terminal = try regexBuilder(name: nonTerminalName)
                 if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
-                if let st = splitBeforeTerminalName { grammar.terminals[nonTerminalName]?.splitBeforeTerminal = st }
+                if let ps = preemptStartName { grammar.terminals[nonTerminalName]?.preemptStart = ps }
+                if let pc = preemptConstructName { grammar.terminals[nonTerminalName]?.preemptConstruct = pc }
             default:
                 try expect(["regex", "literal"])
             }

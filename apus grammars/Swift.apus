@@ -1,6 +1,7 @@
-// SWIFT 6.3 GRAMMAR
+/// SWIFT 6.3 GRAMMAR
 
-// Grammar of a top-level declaration
+/// Grammar of a top-level declaration
+/// top-level-declaration → statements?
 
 // swift-syntax parseSourceFile (TopLevel.swift:47) consumes an optional leading `.shebang`
 // (`#!…` interpreter line) before the top-level items. `shebang?` appears only here, in the
@@ -8,44 +9,66 @@
 // a true leading shebang. `.*` stops at end of line; the newline is then whitespace trivia.
 // `shebang` must be defined before it is referenced (named terminals require prior definition).
 shebang - /#!.*/ .
-
 topLevelDeclaration = shebang? statements? .
 
-// WHITESPACE AND COMMENT
-
-// Grammar of whitespace
+/// WHITESPACE AND COMMENT
+/// Grammar of whitespace
+/// whitespace → whitespace-item whitespace?
+/// whitespace-item → line-break
+/// whitespace-item → inline-space
+/// whitespace-item → comment
+/// whitespace-item → multiline-comment
+/// whitespace-item → U+0000, U+000B, or U+000C
+/// line-break → U+000A
+/// line-break → U+000D
+/// line-break → U+000D followed by U+000A
+/// inline-spaces → inline-space inline-spaces?
+/// inline-space → U+0009 or U+0020
+/// comment → //  comment-text line-break
+/// multiline-comment → /* multiline-comment-text */
+/// comment-text → comment-text-item comment-text?
+/// comment-text-item → Any Unicode scalar value except U+000A or U+000D
+/// multiline-comment-text → multiline-comment-text-item multiline-comment-text?
+/// multiline-comment-text-item → multiline-comment
+/// multiline-comment-text-item → comment-text-item
+/// multiline-comment-text-item → Any Unicode scalar value except /* or */
 
 whitespace : /[\u{0000}\u{0009}\u{000A}\u{000B}\u{000C}\u{000D}\u{0020}\u{00A0}\u{FEFF}]+/ .
-//whitespace = whitespaceItem whitespace? .
-//whitespaceItem = lineBreak .
-//whitespaceItem = inlineSpace .
-//whitespaceItem = comment .
-//whitespaceItem = multilineComment .
-//whitespaceItem = U+0000, U+000B, or U+000C.               // NULL or \0 or \u{0000}, VERTICAL TAB or \u{000B}, or FORM FEED or \u{000C}
-
-//lineBreak = U+000A                                        // NEWLINE or \n or \u{000A}
-//lineBreak = U+000D                                        // CARRIAGE RETURN or \r or \u{000D}
-//lineBreak = U+000D followed by U+000A
-
-//inlineSpaces = inlineSpace inlineSpaces? .
-//inlineSpace = U+0009 or U+0020                            // HORIZONTAL TAB or \t or \u{0009}, SPACE or \u{0020}
 
 comment : /\/\/.*\r?\n?/ .
-//comment = "//" commentText lineBreak .
-//commentText = commentTextItem commentText? .
-//commentTextItem = Any Unicode scalar value except U+000A or U+000D
 
 multilineComment =: "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineComment } "*/" .
-//multilineComment = "/*" multilineCommentText "*/" .
-//multilineCommentText = multilineCommentTextItem multilineCommentText? .
-//multilineCommentTextItem = multilineComment .
-//multilineCommentTextItem = commentTextItem .
-//multilineCommentTextItem = Any Unicode scalar value except "/*" or "*/"
 
 
-//IDENTIFIERS
-
-// Grammar of an identifier
+/// IDENTIFIERS
+/// Grammar of an identifier
+/// identifier → identifier-head identifier-characters?
+/// identifier → ` identifier-head identifier-characters? `
+/// identifier → implicit-parameter-name
+/// identifier → property-wrapper-projection
+/// identifier-list → identifier | identifier , identifier-list
+/// identifier-head → Upper- or lowercase letter A through Z
+/// identifier-head → _
+/// identifier-head → U+00A8, U+00AA, U+00AD, U+00AF, U+00B2–U+00B5, or U+00B7–U+00BA
+/// identifier-head → U+00BC–U+00BE, U+00C0–U+00D6, U+00D8–U+00F6, or U+00F8–U+00FF
+/// identifier-head → U+0100–U+02FF, U+0370–U+167F, U+1681–U+180D, or U+180F–U+1DBF
+/// identifier-head → U+1E00–U+1FFF
+/// identifier-head → U+200B–U+200D, U+202A–U+202E, U+203F–U+2040, U+2054, or U+2060–U+206F
+/// identifier-head → U+2070–U+20CF, U+2100–U+218F, U+2460–U+24FF, or U+2776–U+2793
+/// identifier-head → U+2C00–U+2DFF or U+2E80–U+2FFF
+/// identifier-head → U+3004–U+3007, U+3021–U+302F, U+3031–U+303F, or U+3040–U+D7FF
+/// identifier-head → U+F900–U+FD3D, U+FD40–U+FDCF, U+FDF0–U+FE1F, or U+FE30–U+FE44
+/// identifier-head → U+FE47–U+FFFD
+/// identifier-head → U+10000–U+1FFFD, U+20000–U+2FFFD, U+30000–U+3FFFD, or U+40000–U+4FFFD
+/// identifier-head → U+50000–U+5FFFD, U+60000–U+6FFFD, U+70000–U+7FFFD, or U+80000–U+8FFFD
+/// identifier-head → U+90000–U+9FFFD, U+A0000–U+AFFFD, U+B0000–U+BFFFD, or U+C0000–U+CFFFD
+/// identifier-head → U+D0000–U+DFFFD or U+E0000–U+EFFFD
+/// identifier-character → decimal-digit
+/// identifier-character → U+0300–U+036F, U+1DC0–U+1DFF, U+20D0–U+20FF, or U+FE20–U+FE2F
+/// identifier-character → identifier-head
+/// identifier-characters → identifier-character identifier-characters?
+/// implicit-parameter-name → $ decimal-digits
+/// property-wrapper-projection → $ identifier-characters
 
 // @lexicalClass = keywords longest-matched.
 // @builder regex defined in GrammarRegexLibrary.swift (SwiftGrammarRegexLibrary.identifier). Bare `_` is the wildcard, so every NAME-CONSUMING use excludes it via `---("_")`: hardIdentifier, softIdentifier, typeName, moduleGenericIdentifier, keyPathArgumentLabel, macroHead.
@@ -58,7 +81,6 @@ escapedIdentifier - @builder .
 //`implicitParameterName` ($0/$1) is NOT an identifier — swift-syntax lexes it as
 // `.dollarIdentifier` and parses it as a distinct primary expression form via `parseAnonymousClosureArgument`
 // (Expressions.swift:1348). It appears as its own `primaryExpression` alternate below.
-
 implicitParameterName - /\$[0-9]+/ .
 
 propertyWrapperProjection - @builder .   // `$name`, `$0abc` — at least one non-digit identChar after `$`; excludes `$0`, `$1` (closure shorthand)
@@ -89,45 +111,170 @@ identifierList = hardIdentifier | hardIdentifier "," identifierList .
 // and swift-syntax parses it as a plain identifier — a module selector's `::x` is left as unexpected
 // code → hasError (`case let Optional.some(Swift::decl)`, `case let Swift::decl?`). A module selector
 // only qualifies a REFERENCE, so prune it wherever it lands inside a binding pattern.
-moduleSelector = @excludedFrom(valueBindingPattern) hardIdentifier "::" >n< . // TODO: I don't think escapedIdentifier and propertyWrapperProjection should be moduleSelector.
-
-//identifier = identifierHead identifierCharacters? .
-//identifier = "`" identifierHead identifierCharacters? "`" .
-//identifier = implicitParameterName .
-//identifier = propertyWrapperProjection .
-
-//identifierHead = Upper or lowercase letter A through Z
-//identifierHead = "_" .
-//identifierHead = U+00A8, U+00AA, U+00AD, U+00AF, U+00B2–U+00B5, or U+00B7–U+00BA
-//identifierHead = U+00BC–U+00BE, U+00C0–U+00D6, U+00D8–U+00F6, or U+00F8–U+00FF
-//identifierHead = U+0100–U+02FF, U+0370–U+167F, U+1681–U+180D, or U+180F–U+1DBF
-//identifierHead = U+1E00–U+1FFF
-//identifierHead = U+200B–U+200D, U+202A–U+202E, U+203F–U+2040, U+2054, or U+2060–U+206F
-//identifierHead = U+2070–U+20CF, U+2100–U+218F, U+2460–U+24FF, or U+2776–U+2793
-//identifierHead = U+2C00–U+2DFF or U+2E80–U+2FFF
-//identifierHead = U+3004–U+3007, U+3021–U+302F, U+3031–U+303F, or U+3040–U+D7FF
-//identifierHead = U+F900–U+FD3D, U+FD40–U+FDCF, U+FDF0–U+FE1F, or U+FE30–U+FE44
-//identifierHead = U+FE47–U+FFFD
-//identifierHead = U+10000–U+1FFFD, U+20000–U+2FFFD, U+30000–U+3FFFD, or U+40000–U+4FFFD
-//identifierHead = U+50000–U+5FFFD, U+60000–U+6FFFD, U+70000–U+7FFFD, or U+80000–U+8FFFD
-//identifierHead = U+90000–U+9FFFD, U+A0000–U+AFFFD, U+B0000–U+BFFFD, or U+C0000–U+CFFFD
-//identifierHead = U+D0000–U+DFFFD or U+E0000–U+EFFFD
-
-//identifierCharacter = Digit 0 through 9
-//identifierCharacter = U+0300–U+036F, U+1DC0–U+1DFF, U+20D0–U+20FF, or U+FE20–U+FE2F
-//identifierCharacter = identifierHead .
-//identifierCharacters = identifierCharacter identifierCharacters? .
-
-//implicitParameterName = "$" decimalDigits .
-//propertyWrapperProjection = "$" identifierCharacters .
+moduleSelector = @excludedFrom(valueBindingPattern) hardIdentifier "::" >n< .
+// TODO: I don't think escapedIdentifier and propertyWrapperProjection should be moduleSelector.
+// TODO: can we avoid using '@excludedFrom' by modifying the grammar slightly ?
 
 
-// REGULAR EXPRESSIONS
+/// LITERALS
+/// Grammar of a literal
+/// literal → numeric-literal | string-literal | regular-expression-literal | boolean-literal | nil-literal
+/// numeric-literal → signed-integer-literal | signed-floating-point-literal
+/// boolean-literal → true | false
+/// nil-literal → nil
+/// Grammar of an integer literal
+/// signed-integer-literal → -? integer-literal
+/// integer-literal → binary-literal
+/// integer-literal → octal-literal
+/// integer-literal → decimal-literal
+/// integer-literal → hexadecimal-literal
+/// binary-literal → 0b binary-digit binary-literal-characters?
+/// binary-digit → Digit 0 or 1
+/// binary-literal-character → binary-digit | _
+/// binary-literal-characters → binary-literal-character binary-literal-characters?
+/// octal-literal → 0o octal-digit octal-literal-characters?
+/// octal-digit → Digit 0 through 7
+/// octal-literal-character → octal-digit | _
+/// octal-literal-characters → octal-literal-character octal-literal-characters?
+/// decimal-literal → decimal-digit decimal-literal-characters?
+/// decimal-digit → Digit 0 through 9
+/// decimal-digits → decimal-digit decimal-digits?
+/// decimal-literal-character → decimal-digit | _
+/// decimal-literal-characters → decimal-literal-character decimal-literal-characters?
+/// hexadecimal-literal → 0x hexadecimal-digit hexadecimal-literal-characters?
+/// hexadecimal-digit → Digit 0 through 9, a through f, or A through F
+/// hexadecimal-literal-character → hexadecimal-digit | _
+/// hexadecimal-literal-characters → hexadecimal-literal-character hexadecimal-literal-characters?
+/// Grammar of a floating-point literal
+/// signed-floating-point-literal → > -? floating-point-literal floating-point-literal → decimal-literal decimal-fraction? decimal-exponent?
+/// floating-point-literal → hexadecimal-literal hexadecimal-fraction? hexadecimal-exponent
+/// decimal-fraction → . decimal-literal
+/// decimal-exponent → floating-point-e sign? decimal-literal
+/// hexadecimal-fraction → . hexadecimal-digit hexadecimal-literal-characters?
+/// hexadecimal-exponent → floating-point-p sign? decimal-literal
+/// floating-point-e → e | E
+/// floating-point-p → p | P
+/// sign → + | -
 
-// Grammar of a regular expression literal
+binaryLiteral - /0b[0-1][0-1_]*/ .
+
+octalLiteral - /0o[0-7][0-7_]*/ .
+
+decimalLiteral - /[0-9][0-9_]*/ .   // terminal (`-`, not `=`): must commit under its own name so `regexOpenSlash`'s `<-<` operand-ender list (which names `decimalLiteral`) actually matches after a number — otherwise the `@preempt` operator split isn't suppressed in infix position (e.g. `1/^/3` → spurious `/^`+`/3`). All other numeric literals are already `-` terminals.
+
+decimalDigits = /[0-9]+/ .
+
+hexadecimalLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*/ .
+
+// Requires a fraction OR an exponent (else a bare `1` would match, colliding with decimalLiteral):
+// `1.5`, `1.5e3`, and exponent-only `1e3` all match; `1` does not. (Fixes `1e3` failing to parse.)
+decimalFloatingPointLiteral     - /[0-9][0-9_]*(?:\.[0-9][0-9_]*(?:[eE][+-]?[0-9][0-9_]*)?|[eE][+-]?[0-9][0-9_]*)/ .
+
+hexadecimalFloatingPointLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/ .
+
+signedFloatingPointLiteral = [ "-" >s< ] floatingPointLiteral .
+
+floatingPointLiteral = decimalFloatingPointLiteral | hexadecimalFloatingPointLiteral .
+
+literal = numericLiteral | stringLiteral | regularExpressionLiteral | booleanLiteral | nilLiteral .
+
+// Numeric maximal munch (`1.5`→float not `1`·`.5`; `0xFF`→hex not `0`·`xFF`) is handled by
+// `@longest numericLiteral`, NOT by lexer-level suppression: a context-blind longest-
+// across in the lexer is unsafe (Scott/Johnstone/Walsh "Multiple Lexicalisation" §2 — it broke
+// availability version numbers `10.9`). Post-parse `@longest` on the BSR is the paper's SAFE
+// disambiguation, and it is context-scoped for free — version/tuple digits reach `decimalDigits`,
+// not `numericLiteral`, so `10.9` stays int·period·int while `1.5` collapses to the float.
+// `@longest` = numeric maximal munch, done post-parse on the BSR
+@longest
+numericLiteral = signedIntegerLiteral | signedFloatingPointLiteral .
+
+booleanLiteral = "true" | "false" .
+nilLiteral = "nil" .
+
+signedIntegerLiteral = [ "-" >s< ] integerLiteral .
+
+integerLiteral = binaryLiteral .
+integerLiteral = octalLiteral .
+integerLiteral = decimalLiteral .
+integerLiteral = hexadecimalLiteral .
 
 
-// ──────────────────────────────────────────────────────────────────────────
+/// STRINGS
+/// Grammar of a string literal
+/// string-literal → static-string-literal | interpolated-string-literal
+/// string-literal-opening-delimiter → extended-string-literal-delimiter? "
+/// string-literal-closing-delimiter → " extended-string-literal-delimiter?
+/// static-string-literal → string-literal-opening-delimiter quoted-text? string-literal-closing-delimiter
+/// static-string-literal → multiline-string-literal-opening-delimiter multiline-quoted-text? multiline-string-literal-closing-delimiter
+/// multiline-string-literal-opening-delimiter → extended-string-literal-delimiter? """
+/// multiline-string-literal-closing-delimiter → """ extended-string-literal-delimiter?
+/// extended-string-literal-delimiter → # extended-string-literal-delimiter?
+/// quoted-text → quoted-text-item quoted-text?
+/// quoted-text-item → escaped-character
+/// quoted-text-item → Any Unicode scalar value except ", \, U+000A, or U+000D
+/// multiline-quoted-text → multiline-quoted-text-item multiline-quoted-text?
+/// multiline-quoted-text-item → escaped-character
+/// multiline-quoted-text-item → Any Unicode scalar value except \
+/// multiline-quoted-text-item → escaped-newline
+/// interpolated-string-literal → string-literal-opening-delimiter interpolated-text? string-literal-closing-delimiter
+/// interpolated-string-literal → multiline-string-literal-opening-delimiter multiline-interpolated-text? multiline-string-literal-closing-delimiter
+/// interpolated-text → interpolated-text-item interpolated-text?
+/// interpolated-text-item → \( expression ) | quoted-text-item
+/// multiline-interpolated-text → multiline-interpolated-text-item multiline-interpolated-text?
+/// multiline-interpolated-text-item → \( expression ) | multiline-quoted-text-item
+/// escape-sequence → \ extended-string-literal-delimiter
+/// escaped-character → escape-sequence 0 | escape-sequence \ | escape-sequence t | escape-sequence n | escape-sequence r | escape-sequence " | escape-sequence '
+/// escaped-character → escape-sequence u { unicode-scalar-digits }
+/// unicode-scalar-digits → Between one and eight hexadecimal digits
+/// escaped-newline → escape-sequence inline-spaces? line-break
+
+stringLiteral = staticStringLiteral | interpolatedStringLiteral .
+
+singleLineStringLiteral         - /"(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ . // start with " end with " same line, no \( interpolation start
+extendedSinglelineStringLiteral - /(#+)"(?:[^"\n\r]|"(?!\1))*?"\1/ .   // backref: closing #s must equal opening
+
+multilineStringLiteral          - /"""(?![\s\S]*\\\()(?:[^"\\]|\\[\s\S]|"(?!""))*"""/ . // start """ end """; body's `\<x>` uses `[\s\S]` so `\<NL>` (multiline line-continuation per swift-syntax Cursor.swift:1766) is body content; lookahead uses `[\s\S]` so it crosses newlines
+extendedMultilineStringLiteral  - /(#+)"""[ \t]*\r?\n(?s:.)*?"""\1/ .   // backref: closing #s must equal opening. `[ \t]*\r?\n` after the opening `#"""`: swift requires a multiline opener to be followed by a newline (Cursor.swift advanceIfMultilineDelimiter). Without it, `#"""…"""#` is a SINGLE-line raw string with `"` content ("false delimiters" — probe: `#""""""#` → stringQuote, not multilineStringQuote), which resolves the extendedSingleline-vs-extendedMultiline ambiguity on quote-only raw bodies.
+
+staticStringLiteral             = singleLineStringLiteral
+                                | extendedSinglelineStringLiteral
+                                | multilineStringLiteral
+                                | extendedMultilineStringLiteral .
+                                
+// Under LCNP these terminals are queried per-slot, so the spurious matches that
+// would happen outside an interpolated-string context are never asked for.
+interpolatedStringLiteralHead   - /"(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .     // start with ", end with \( same line
+
+interpolatedStringLiteralPart   - /\)(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .    // start with ), end with \( same line
+
+interpolatedStringLiteralTail   - /\)(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ . // start with ), end with " same line, no \(
+
+// Multiline variants — structurally symmetric to the single-line trio above.
+// Differences: open is """ (Head), close is """ (Tail); content alternation adds `"(?!"")` so a single `"`
+// (not followed by `""`) is valid body content — the only multiline-specific feature.
+// Multiline body's catch-all backslash uses `[\s\S]` (not `.`) so `\<NL>` line-continuation per swift-syntax Cursor.swift:1766 is body content.
+multilineInterpolatedStringLiteralHead - /"""(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\[\s\S]|"(?!""))*?\\\(/ .  // start with """, end with \(
+
+multilineInterpolatedStringLiteralPart - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\[\s\S]|"(?!""))*?\\\(/ .   // start with ),    end with \(
+
+multilineInterpolatedStringLiteralTail - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\(?!\()[\s\S]|"(?!""))*?"""/ . // start with ), end with """; body's `\<x>` (x ≠ `(`) uses [\s\S] so `\<NL>` is body content
+
+interpolatedStringLiteral       = interpolatedStringLiteralHead
+                                  functionCallArgumentList { interpolatedStringLiteralPart functionCallArgumentList }
+                                  interpolatedStringLiteralTail .
+interpolatedStringLiteral       = multilineInterpolatedStringLiteralHead
+                                  functionCallArgumentList { multilineInterpolatedStringLiteralPart functionCallArgumentList }
+                                  multilineInterpolatedStringLiteralTail .
+
+
+/// REGULAR EXPRESSIONS
+/// Grammar of a regular expression literal
+/// regular-expression-literal → regular-expression-literal-opening-delimiter regular-expression regular-expression-literal-closing-delimiter
+/// regular-expression → Any regular expression
+/// regular-expression-literal-opening-delimiter → extended-regular-expression-literal-delimiter? /
+/// regular-expression-literal-closing-delimiter → / extended-regular-expression-literal-delimiter?
+/// extended-regular-expression-literal-delimiter → # extended-regular-expression-literal-delimiter?
+
 // Plain slash-regex literal — parser-level CFG, position-gated at the opening `/`.
 //
 // The CFG body (regexBody/regexItem/regexGroup/regexCharacterClass) correctly balances
@@ -141,15 +288,19 @@ moduleSelector = @excludedFrom(valueBindingPattern) hardIdentifier "::" >n< . //
 //     only when NOT preceded by an operand-ender; in infix position a leading `/` stays
 //     division/operator. The CLOSING slash (`regexCloseSlash`) is ungated — a regex body
 //     may legitimately end in `)`/`]`, which would wrongly trip the operand-ender list.
-//   • Operator maximal-munch — `@lexicalClass operatorToken` (no `@splitBefore`) makes
+//   • Operator maximal-munch — `@lexicalClass operatorToken` (no `@preempt`) makes
 //     `=/`, `+/`, `.../` single operators and suppresses the lone `+`/`=`/`.`, so no
 //     `op` + `/regex/` split survives in infix position (`/x/+/y/`, `_=/0/`, `0 /^/ 1`).
 //   • regexOpenSlash/regexCloseSlash are REGEX terminals → exempt from operator
 //     maximal-munch, so a regex's own `/` is never eaten as an operator char.
-// ──────────────────────────────────────────────────────────────────────────
 
 regexEscape          - /\\[^\r\n]/ .
-regexNonOperatorAtom - /[^\/\\\[\]\(\)\r\n\+\-\*%&\|\^~<>=!\?\.#;:,]/ .
+regexNonOperatorAtom - /[^\/\\\[\]\(\)\r\n\u{20}\u{09}\+\-\*%&\|\^~<>=!\?\.#;:,]/ .
+// Space/tab are body content, split out so the DELIMITER-ADJACENCY rule can be stated structurally
+// (see `regexBody`). swift bans an *unescaped* space/tab immediately after the opening `/` or
+// immediately before the closing `/` of a bare `/…/` — `scanRegexLiteral` returns `.notARegex` when
+// `!mustBeRegex` — so that `0 / 1 / 2` stays an operator chain. Interior spaces are legal (`/a b/`).
+regexSpaceAtom       - /[\u{20}\u{09}]/ .
 regexClassAtom       - /[^\\\]\r\n]/ .
 // A single operator character inside a regex body. A REGEX terminal (not the shared
 // operator literals) so it is exempt from operatorToken maximal munch — otherwise
@@ -195,9 +346,17 @@ regexOpenSlashNL - /\// .
 plainRegularExpressionLiteral = >n< regexOpenSlash   >s< regexBody >s< regexCloseSlash .
 plainRegularExpressionLiteral = <n> regexOpenSlashNL >s< regexBody >s< regexCloseSlash .
 
-regexBody       = regexItem | regexItem regexBody .
+// Delimiter-adjacency rule, stated structurally: the FIRST and LAST items are `regexItem` (never a
+// bare space/tab), while interior items may be a `regexSpaceAtom`. This CANNOT be done with the `>s<`
+// gates around `regexBody` — those measure the trivia GAP, but a boundary space is body CONTENT, so
+// GLL always finds the derivation that consumes it as an atom (probe-confirmed). An ESCAPED space at
+// a boundary stays legal, matching swift's "unespaced" wording, because `regexEscape` is a `regexItem`.
+regexBody       = regexItem | regexItem regexBodyTail .
+regexBodyTail   = regexItem | ( regexSpaceAtom | regexItem ) regexBodyTail .
 regexItem       = regexEscape | regexCharacterClass | regexGroup | regexAtom .
-regexGroup      = "(" regexBody ")" .
+// A GROUP's delimiters are parens, not the literal's slashes, so the adjacency rule does not apply
+// inside it — spaces are free here.
+regexGroup      = "(" { regexSpaceAtom | regexItem } ")" .
 regexCharacterClass = "[" regexClassBody "]" .
 regexClassBody  = regexClassItem | regexClassItem regexClassBody .   // Swift forbids []
 regexClassItem  = regexEscape | regexClassAtom .
@@ -221,190 +380,49 @@ extendedRegularExpressionLiteral    - /(#+)\/(?:[^\/]|\/(?!\1))*?\/\1/ .
 
 regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpressionLiteral .
 
-//regularExpressionLiteral = regularExpressionLiteralOpeningDelimiter regularExpression regularExpressionLiteralClosingDelimiter .
-//regularExpression = Any regular expression
-//regularExpressionLiteralOpeningDelimiter = extendedRegularExpressionLiteralDelimiter? "/" .
-//regularExpressionLiteralClosingDelimiter = "/" extendedRegularExpressionLiteralDelimiter? .
-//extendedRegularExpressionLiteralDelimiter = "#" extendedRegularExpressionLiteralDelimiter? .
 
+/// OPERATORS
+/// Grammar of operators
+/// operator → operator-head operator-characters?
+/// operator → dot-operator-head dot-operator-characters
+/// operator-head → / | = | - | + | ! | * | % | < | > | & | | | ^ | ~ | ?
+/// operator-head → U+00A1–U+00A7
+/// operator-head → U+00A9 or U+00AB
+/// operator-head → U+00AC or U+00AE
+/// operator-head → U+00B0–U+00B1
+/// operator-head → U+00B6, U+00BB, U+00BF, U+00D7, or U+00F7
+/// operator-head → U+2016–U+2017
+/// operator-head → U+2020–U+2027
+/// operator-head → U+2030–U+203E
+/// operator-head → U+2041–U+2053
+/// operator-head → U+2055–U+205E
+/// operator-head → U+2190–U+23FF
+/// operator-head → U+2500–U+2775
+/// operator-head → U+2794–U+2BFF
+/// operator-head → U+2E00–U+2E7F
+/// operator-head → U+3001–U+3003
+/// operator-head → U+3008–U+3020
+/// operator-head → U+3030
+/// operator-character → operator-head
+/// operator-character → U+0300–U+036F
+/// operator-character → U+1DC0–U+1DFF
+/// operator-character → U+20D0–U+20FF
+/// operator-character → U+FE00–U+FE0F
+/// operator-character → U+FE20–U+FE2F
+/// operator-character → U+E0100–U+E01EF
+/// operator-characters → operator-character operator-characters?
+/// dot-operator-head → .
+/// dot-operator-character → . | operator-character
+/// dot-operator-characters → dot-operator-character dot-operator-characters?
+/// infix-operator → operator
+/// prefix-operator → operator
+/// postfix-operator → operator
 
-// STRINGS
-
-// Grammar of a string literal
-
-stringLiteral = staticStringLiteral | interpolatedStringLiteral .
-
-singleLineStringLiteral         - /"(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ . // start with " end with " same line, no \( interpolation start
-extendedSinglelineStringLiteral - /(#+)"(?:[^"\n\r]|"(?!\1))*?"\1/ .   // backref: closing #s must equal opening
-
-multilineStringLiteral          - /"""(?![\s\S]*\\\()(?:[^"\\]|\\[\s\S]|"(?!""))*"""/ . // start """ end """; body's `\<x>` uses `[\s\S]` so `\<NL>` (multiline line-continuation per swift-syntax Cursor.swift:1766) is body content; lookahead uses `[\s\S]` so it crosses newlines
-extendedMultilineStringLiteral  - /(#+)"""[ \t]*\r?\n(?s:.)*?"""\1/ .   // backref: closing #s must equal opening. `[ \t]*\r?\n` after the opening `#"""`: swift requires a multiline opener to be followed by a newline (Cursor.swift advanceIfMultilineDelimiter). Without it, `#"""…"""#` is a SINGLE-line raw string with `"` content ("false delimiters" — probe: `#""""""#` → stringQuote, not multilineStringQuote), which resolves the extendedSingleline-vs-extendedMultiline ambiguity on quote-only raw bodies.
-
-staticStringLiteral             = singleLineStringLiteral
-                                | extendedSinglelineStringLiteral
-                                | multilineStringLiteral
-                                | extendedMultilineStringLiteral .
-                                
-// Under LCNP these terminals are queried per-slot, so the spurious matches that
-// would happen outside an interpolated-string context are never asked for.
-interpolatedStringLiteralHead   - /"(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .     // start with ", end with \( same line
-
-interpolatedStringLiteralPart   - /\)(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .    // start with ), end with \( same line
-
-interpolatedStringLiteralTail   - /\)(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ . // start with ), end with " same line, no \(
-
-// Multiline variants — structurally symmetric to the single-line trio above.
-// Differences: open is """ (Head), close is """ (Tail); content alternation adds `"(?!"")` so a single `"`
-// (not followed by `""`) is valid body content — the only multiline-specific feature.
-// Multiline body's catch-all backslash uses `[\s\S]` (not `.`) so `\<NL>` line-continuation per swift-syntax Cursor.swift:1766 is body content.
-multilineInterpolatedStringLiteralHead - /"""(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\[\s\S]|"(?!""))*?\\\(/ .  // start with """, end with \(
-
-multilineInterpolatedStringLiteralPart - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\[\s\S]|"(?!""))*?\\\(/ .   // start with ),    end with \(
-
-multilineInterpolatedStringLiteralTail - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\(?!\()[\s\S]|"(?!""))*?"""/ . // start with ), end with """; body's `\<x>` (x ≠ `(`) uses [\s\S] so `\<NL>` is body content
-
-interpolatedStringLiteral       = interpolatedStringLiteralHead
-                                  functionCallArgumentList { interpolatedStringLiteralPart functionCallArgumentList }
-                                  interpolatedStringLiteralTail .
-interpolatedStringLiteral       = multilineInterpolatedStringLiteralHead
-                                  functionCallArgumentList { multilineInterpolatedStringLiteralPart functionCallArgumentList }
-                                  multilineInterpolatedStringLiteralTail .
-
-
-
-//stringLiteralOpeningDelimiter = extendedStringLiteralDelimiter? "\"" .
-//stringLiteralClosingDelimiter = "\"" extendedStringLiteralDelimiter? .
-
-//staticStringLiteral = stringLiteralOpeningDelimiter quotedText? stringLiteralClosingDelimiter .
-//staticStringLiteral = multilineStringLiteralOpeningDelimiter multilineQuotedText? multilineStringLiteralClosingDelimiter .
-
-//multilineStringLiteralOpeningDelimiter = extendedStringLiteralDelimiter? "\"\"\"" .
-//multilineStringLiteralClosingDelimiter = "\"\"\"" extendedStringLiteralDelimiter? .
-//extendedStringLiteralDelimiter = "#" extendedStringLiteralDelimiter? .
-
-//quotedText = quotedTextItem quotedText? .
-//quotedTextItem = escapedCharacter .
-//quotedTextItem = Any Unicode scalar value except ", \, U+000A, or U+000D
-
-//multilineQuotedText = multilineQuotedTextItem multilineQuotedText? .
-//multilineQuotedTextItem = escapedCharacter .
-//multilineQuotedTextItem = Any Unicode scalar value except \
-//multilineQuotedTextItem = escapedNewline .
-
-//interpolatedStringLiteral = stringLiteralOpeningDelimiter interpolatedText? stringLiteralClosingDelimiter .
-//interpolatedStringLiteral = multilineStringLiteralOpeningDelimiter multilineInterpolatedText? multilineStringLiteralClosingDelimiter .
-
-//interpolatedText = interpolatedTextItem interpolatedText? .
-//interpolatedTextItem = "\\(" expression ")" | quotedTextItem .
-
-//multilineInterpolatedText = multilineInterpolatedTextItem multilineInterpolatedText? .
-//multilineInterpolatedTextItem = "\\(" expression ")" | multilineQuotedTextItem .
-
-//escapeSequence = "\\" extendedStringLiteralDelimiter .
-//escapedCharacter = escapeSequence "0" | escapeSequence "\\" | escapeSequence "t" | escapeSequence "n" | escapeSequence "r" | escapeSequence """ | escapeSequence "'" .
-//escapedCharacter = escapeSequence "u" "{" unicodeScalarDigits "}" .
-//unicodeScalarDigits = Between one and eight hexadecimal digits
-
-//escapedNewline = escapeSequence inlineSpaces? lineBreak .
-
-
-
-
-
-// LITERALS
-
-// Grammar of a literal
-
-binaryLiteral - /0b[0-1][0-1_]*/ .
-//binaryLiteral = "0b" binaryDigit binaryLiteralCharacters? .
-//binaryDigit = Digit 0 or 1
-//binaryLiteralCharacter = binaryDigit | "_" .
-//binaryLiteralCharacters = binaryLiteralCharacter binaryLiteralCharacters? .
-
-octalLiteral - /0o[0-7][0-7_]*/ .
-//octalLiteral = "0o" octalDigit octalLiteralCharacters? .
-//octalDigit = Digit 0 through 7
-//octalLiteralCharacter = octalDigit | "_" .
-//octalLiteralCharacters = octalLiteralCharacter octalLiteralCharacters? .
-
-decimalLiteral - /[0-9][0-9_]*/ .   // terminal (`-`, not `=`): must commit under its own name so `regexOpenSlash`'s `<-<` operand-ender list (which names `decimalLiteral`) actually matches after a number — otherwise the `@splitBefore` operator split isn't suppressed in infix position (e.g. `1/^/3` → spurious `/^`+`/3`). All other numeric literals are already `-` terminals.
-//decimalLiteral = decimalDigit decimalLiteralCharacters? .
-//decimalDigit = Digit 0 through 9
-
-decimalDigits = /[0-9]+/ .
-//decimalDigits = decimalDigit decimalDigits? .
-//decimalLiteralCharacter = decimalDigit | "_" .
-//decimalLiteralCharacters = decimalLiteralCharacter decimalLiteralCharacters? .
-
-hexadecimalLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*/ .
-//hexadecimalLiteral = "0x" hexadecimalDigit hexadecimalLiteralCharacters? .
-//hexadecimalDigit = Digit 0 through 9, a through f, or A through F
-//hexadecimalLiteralCharacter = hexadecimalDigit | "_" .
-//hexadecimalLiteralCharacters = hexadecimalLiteralCharacter hexadecimalLiteralCharacters? .
-
-// Grammar of a floating-point literal
-
-// Requires a fraction OR an exponent (else a bare `1` would match, colliding with decimalLiteral):
-// `1.5`, `1.5e3`, and exponent-only `1e3` all match; `1` does not. (Fixes `1e3` failing to parse.)
-
-decimalFloatingPointLiteral     - /[0-9][0-9_]*(?:\.[0-9][0-9_]*(?:[eE][+-]?[0-9][0-9_]*)?|[eE][+-]?[0-9][0-9_]*)/ .
-
-hexadecimalFloatingPointLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/ .
-
-//floatingPointLiteral = decimalLiteral decimalFraction? decimalExponent? .
-//floatingPointLiteral = hexadecimalLiteral hexadecimalFraction? hexadecimalExponent .
-
-signedFloatingPointLiteral = [ "-" >s< ] floatingPointLiteral .
-
-floatingPointLiteral = decimalFloatingPointLiteral | hexadecimalFloatingPointLiteral .
-
-//decimalFraction = "." decimalLiteral .
-//decimalExponent = floatingPointE sign? decimalLiteral .
-
-//hexadecimalFraction = "." hexadecimalDigit hexadecimalLiteralCharacters? .
-//hexadecimalExponent = floatingPointP sign? decimalLiteral .
-
-//floatingPointE = "e" | "E" .
-//floatingPointP = "p" | "P" .
-//sign = "+" | "-" .
-
-literal = numericLiteral | stringLiteral | regularExpressionLiteral | booleanLiteral | nilLiteral .
-
-// Numeric maximal munch (`1.5`→float not `1`·`.5`; `0xFF`→hex not `0`·`xFF`) is handled by
-// `@longest numericLiteral`, NOT by lexer-level suppression: a context-blind longest-
-// across in the lexer is unsafe (Scott/Johnstone/Walsh "Multiple Lexicalisation" §2 — it broke
-// availability version numbers `10.9`). Post-parse `@longest` on the BSR is the paper's SAFE
-// disambiguation, and it is context-scoped for free — version/tuple digits reach `decimalDigits`,
-// not `numericLiteral`, so `10.9` stays int·period·int while `1.5` collapses to the float.
-// `@longest` = numeric maximal munch, done post-parse on the BSR
-
-@longest
-numericLiteral = signedIntegerLiteral | signedFloatingPointLiteral .
-
-booleanLiteral = "true" | "false" .
-nilLiteral = "nil" .
-
-// Grammar of an integer literal
-
-signedIntegerLiteral = [ "-" >s< ] integerLiteral .
-
-integerLiteral = binaryLiteral .
-integerLiteral = octalLiteral .
-integerLiteral = decimalLiteral .
-integerLiteral = hexadecimalLiteral .
-
-
-// OPERATORS
-
-// Grammar of operators
-
-// TSPL builds operators char-by-char (operator-head operator-characters). Advent instead
-// lexes each operator as ONE greedy `@lexicalClass` terminal. Deviations from TSPL (each
-// faithful to swift-syntax's lexer/parser):
+// Deviations from TSPL by swift-syntax:
 //
 //  1. Maximal munch: `&&`, `<<`, `->`, `.../` lex as one token; a lone `&`/`<`/`.` survives
 //     only where no longer operator follows.  e.g. `a && b`, not `a & (&b)`.
-//  2. operatorToken @splitBefore(regexOpenSlash): an operator may end before an internal
+//  2. operatorToken @preempt(regexOpenSlash, …): an operator may end before an internal
 //     regex opener so a regex can follow a prefix operator — `^^/regex/` → `^^` `/regex/`.
 //     Offered only in prefix position: keyed on the terminal `regexOpenSlash`, so it inherits
 //     that terminal's `<-<` = `preferRegexOverBinaryOperator` (hence operatorToken needs no
@@ -414,7 +432,7 @@ integerLiteral = hexadecimalLiteral .
 //     e.g. `\Foo?.?.?.blah` = keypath `\Foo?.?` + `.?.` + `blah`.  Cursor.swift (trailing `!?` split).
 //  4. postfixOperatorToken drops the `!?`-led alternatives: a prefix/postfix operator may not
 //     begin with `!`/`?`.  e.g. `x!!` = two force-unwraps, never a `!!` operator.
-//  5. operatorName @splitBefore(openAngle): an operator function name ends before a generic `<`.
+//  5. operatorName @preempt(openAngle): an operator function name ends before a generic `<`.
 //     e.g. `func %%%%<T,U>`.  swift-syntax SwiftParser (decl context only).
 //  6. Munch-exempt single-char regex terminals — openAngle `<`, closeAngle `>`, optionalMark `?`,
 //     forceMark `!`, keyPathDot `.` — match one char even inside a longer operator run, mirroring
@@ -422,7 +440,16 @@ integerLiteral = hexadecimalLiteral .
 //     `Int??` (optionalMark). keyPathDot lets a keypath `.?` pivot coexist with the `.?.` operator
 //     (regex-vs-regex, neither suppresses the other; see the keypath section).
 
-@lexicalClass @splitBefore(regexOpenSlash)
+// `@preempt`'s first operand only OFFERS the shorter prefix ("give the regex a chance");
+// the second makes it WIN where a regex actually parses at that split point
+// — swift's `tryLexOperatorAsRegexLiteral` tries the regex first and COMMITS when it scans, keeping
+// the whole operator when it does not (`^/x`). Viability comes from a memoised speculative recogniser
+// sub-parse, so it holds even where the enclosing parse cannot continue (`_ = ^/"/"`).
+// The target is `plainRegularExpressionLiteral`, not `regularExpressionLiteral`: the `isSubParser`
+// FOLLOW/EOF exemption in `followCheck` applies only to the sub-parse ROOT, so an inner nonterminal
+// would still be FOLLOW-gated and could never complete here. (The `#/…/#` extended form needs no
+// cover — `#` is not an operator character, so no operator can swallow its start.)
+@lexicalClass @preempt(regexOpenSlash, plainRegularExpressionLiteral)
 operatorToken - @builder .
 
 @lexicalClass
@@ -446,8 +473,8 @@ operator = dotOperator .
 
 postfixOperatorToken - @builder .
 
-@splitBefore(openAngle)
-operatorName - @builder .
+@preempt(openAngle)
+operatorName    - @builder .
 
 // munch-exempt single-char regex terminals
 openAngle       - /</ .
@@ -456,54 +483,34 @@ optionalMark    - /\?/ .
 forceMark       - /!/ .
 keyPathDot      - /\./ .
 
-//operator = operatorHead operatorCharacters? .
-//operator = dotOperatorHead dotOperatorCharacters .
+infixOperator   = operator
+                | "&" .                    // reserved bitwise-and; bare "&" is not in the overloadable operator set
+// TODO: double check that prefix- and postfixOperator really need '&' excluded as in:
+// static let operatorHeadStandalone = operatorHead.subtracting(.anyOf("=!?&"))
 
-//operatorHead = "/" | "=" | "-" | "+" | "!" | "*" | "%" | "<" | ">" | "&" | "|" | "^" | "~" | "?" .
-//operatorHead = U+00A1–U+00A7
-//operatorHead = U+00A9 or U+00AB
-//operatorHead = U+00AC or U+00AE
-//operatorHead = U+00B0–U+00B1
-//operatorHead = U+00B6, U+00BB, U+00BF, U+00D7, or U+00F7
-//operatorHead = U+2016–U+2017
-//operatorHead = U+2020–U+2027
-//operatorHead = U+2030–U+203E
-//operatorHead = U+2041–U+2053
-//operatorHead = U+2055–U+205E
-//operatorHead = U+2190–U+23FF
-//operatorHead = U+2500–U+2775
-//operatorHead = U+2794–U+2BFF
-//operatorHead = U+2E00–U+2E7F
-//operatorHead = U+3001–U+3003
-//operatorHead = U+3008–U+3020
-//operatorHead = U+3030
+prefixOperator  = operator .   // the regex-vs-operator gate lives on `operator` itself (see there)
 
-//operatorCharacter = operatorHead .
-//operatorCharacter = U+0300–U+036F
-//operatorCharacter = U+1DC0–U+1DFF
-//operatorCharacter = U+20D0–U+20FF
-//operatorCharacter = U+FE00–U+FE0F
-//operatorCharacter = U+FE20–U+FE2F
-//operatorCharacter = U+E0100–U+E01EF
-//operatorCharacters = operatorCharacter operatorCharacters? .
-
-//dotOperatorHead = "." .
-//dotOperatorCharacter = "." | operatorCharacter .
-//dotOperatorCharacters = dotOperatorCharacter dotOperatorCharacters? .
-
-infixOperator = operator .
-infixOperator = "&" .                    // reserved bitwise-and; bare "&" is not in the overloadable operator set
-
-prefixOperator = operator .   // the regex-vs-operator gate lives on `operator` itself (see there)
-
-postfixOperator = postfixOperatorToken .   // postfix ops cannot begin with `!`/`?` (those split into force/optional)
-postfixOperator = dotOperator .            // postfix ranges: `1...`, `1..<5` (dotOperator can't end in `?`/`!`, so `.?`/`.!`/`.??!` aren't postfix operators)
+postfixOperator = postfixOperatorToken     // postfix ops cannot begin with `!`/`?` (those split into force/optional)
+                | dotOperator .            // postfix ranges: `1...`, `1..<5` (dotOperator can't end in `?`/`!`, so `.?`/`.!`/`.??!` aren't postfix operators)
 
 
 
-// TYPES
-
-// Grammar of a type
+/// TYPES
+/// Grammar of a type
+/// type → function-type
+/// type → array-type
+/// type → dictionary-type
+/// type → type-identifier
+/// type → tuple-type
+/// type → optional-type
+/// type → implicitly-unwrapped-optional-type
+/// type → protocol-composition-type
+/// type → opaque-type
+/// type → boxed-protocol-type
+/// type → metatype-type
+/// type → any-type
+/// type → self-type
+/// type → ( type )
 
 type = functionType .
 type = arrayType .
@@ -542,14 +549,16 @@ type = attribute type .
 // arg form stays on parameterModifier (type = parameterModifier type, above).
 type = "nonisolated" functionType .
 
-// Grammar of a type annotation
+/// Grammar of a type annotation
+/// type-annotation → : attributes? type
 
 typeAnnotation = ":" type .   // specifiers/attributes carried by `type` (single source of truth)
 
+/// Grammar of a type identifier
+/// type-identifier → type-name generic-argument-clause? | type-name generic-argument-clause? . type-identifier
+/// type-name → identifier
 
-// Grammar of a type identifier
 // swift-syntax canParseTypeIdentifier (Types.swift:1041): base name + optional generic args, dotted.
-
 typeIdentifier = typeName typeGenericArgumentClause? | typeName typeGenericArgumentClause? "." typeIdentifier .
 typeName = hardIdentifier .
 typeName = selfType .           // TODO: verify fix for https://github.com/swiftlang/swift-book/issues/293
@@ -559,7 +568,11 @@ typeName = selfType .           // TODO: verify fix for https://github.com/swift
 // and attribute names via typeIdentifier.
 typeName = moduleSelector identifier ---( "_" ) .
 
-// Grammar of a tuple type
+/// Grammar of a tuple type
+/// tuple-type → ( ) | ( tuple-type-element , tuple-type-element-list )
+/// tuple-type-element-list → tuple-type-element | tuple-type-element , tuple-type-element-list
+/// tuple-type-element → element-name type-annotation | type
+/// element-name → identifier
 
 tupleType = "(" ")" | "(" tupleTypeElement "," tupleTypeElementList ","? ")" .   // SE-0470 trailing comma
 tupleTypeElementList = tupleTypeElement | tupleTypeElement "," tupleTypeElementList .
@@ -567,37 +580,44 @@ tupleTypeElementList = tupleTypeElement | tupleTypeElement "," tupleTypeElementL
 tupleTypeElement = elementName typeAnnotation | type .  // element specifiers carried by `type`
 elementName = hardIdentifier | "_" .   // `_` = wildcard tuple-type label, e.g. `(_: Int, y: Int)` (swiftc -parse accepts; single label only — two labels is a tuple-type error)
 
+/// Grammar of a function type
+/// function-type → attributes? function-type-argument-clause async? throws-clause? -> type
+/// function-type-argument-clause → ( )
+/// function-type-argument-clause → ( function-type-argument-list ...? )
+/// function-type-argument-list → function-type-argument | function-type-argument , function-type-argument-list
+/// function-type-argument → attributes? parameter-modifier? type | argument-label type-annotation
+/// argument-label → identifier
+/// throws-clause → throws | throws ( type )
+
 // Leading attributes on a function type are carried by `type = attribute type`
 // (swift-syntax always nests `AttributedTypeSyntax > FunctionTypeSyntax`), so functionType
-// itself takes no `attributes?` — that path was a same-span redundant reading.
-
-// Grammar of a function type
-
+// itself takes no `attributes?`.
 functionType = functionTypeArgumentClause "async"? throwsClause? "->" type .
 
 functionTypeArgumentClause = "(" ")" .
 functionTypeArgumentClause = "(" functionTypeArgumentList "..."? ","? ")" .   // SE-0470 trailing comma
 
 functionTypeArgumentList = functionTypeArgument | functionTypeArgument "," functionTypeArgumentList .
-//functionTypeArgument = attributes? parameterModifier? type | argumentLabel typeAnnotation .
 functionTypeArgument = type | externalArgumentLabel? localArgumentLabel typeAnnotation . // specifiers/attributes carried by `type`
 
-//argumentLabel = softIdentifier .
 externalArgumentLabel = softIdentifier | "_" .  // accept all keywords except let, var, inout; `_` = wildcard name in function-type params
 localArgumentLabel = softIdentifier | "_" .     // but references to the parameter in the function body must use backticks
 
 throwsClause = "throws" | "throws" "(" type ")" .
 
-// Grammar of an array type
+/// Grammar of an array type
+/// array-type → [ type ]
 
 arrayType = "[" type "]" .
+// TODO: can we add arrayType = inlineArrayType . and get rid of inlineArrayType elsewhere?
 
 // SE-0453 InlineArray sugar `[count of element]`. swift-syntax parseInlineArrayType
 // (Types.swift:699): both count and element are generic-argument positions (a type or
 // a value literal), `of` is a contextual keyword. `genericArgument = type | signedIntegerLiteral`.
 inlineArrayType = "[" genericArgument "of" genericArgument "]" .
 
-// Grammar of a dictionary type
+/// Grammar of a dictionary type
+/// dictionary-type → [ type : type ]
 
 dictionaryType = "[" type ":" type "]" .
 
@@ -613,11 +633,13 @@ simpleType = typeIdentifier | tupleType | arrayType | inlineArrayType | dictiona
            | optionalType | implicitlyUnwrappedOptionalType | metatypeType | anyType
            | "(" tupleTypeElement ")" .
 
-// Grammar of an optional type
+/// Grammar of an optional type
+/// optional-type → type ?
 
 optionalType = simpleType >s< optionalMark .                          // disallow space before '?'
 
-// Grammar of an implicitly unwrapped optional type
+/// Grammar of an implicitly unwrapped optional type
+/// implicitly-unwrapped-optional-type → type !
 
 implicitlyUnwrappedOptionalType = simpleType >s< forceMark .       // disallow space before '!'
 
@@ -626,36 +648,44 @@ implicitlyUnwrappedOptionalType = simpleType >s< forceMark .       // disallow s
 // tuple/array/etc. are syntactically accepted by swift-syntax but compiler-rejected and would add
 // GLL ambiguity, so they're omitted.
 
-// Grammar of a protocol composition type
+/// Grammar of a protocol composition type
+/// protocol-composition-type → type-identifier & protocol-composition-continuation
+/// protocol-composition-continuation → type-identifier | protocol-composition-type
 
 protocolCompositionType = protocolCompositionElement "&" protocolCompositionContinuation .
 protocolCompositionContinuation = protocolCompositionElement | protocolCompositionType .
 protocolCompositionElement = typeIdentifier | anyType .   // `Self` is already a typeIdentifier (typeName = selfType)
 
-// Grammar of an opaque type
+/// Grammar of an opaque type
+/// opaque-type → some type
 
 opaqueType = "some" type .
 
-// Grammar of a boxed protocol type
+/// Grammar of a boxed protocol type
+/// boxed-protocol-type → any type
 
 boxedProtocolType = "any" type .
 
-// Grammar of a metatype type
+/// Grammar of a metatype type
+/// metatype-type → type . Type | type . Protocol
 
 metatypeType = simpleType "." "Type" | simpleType "." "Protocol" .   // metatype suffix is a simple-type postfix (see simpleType above)
 
-// Grammar of an Any type
+/// Grammar of an Any type
+/// any-type → Any
 
 anyType = "Any" .
 
-// Grammar of a Self type
+/// Grammar of a Self type
+/// self-type → Self
 
 selfType = "Self" .
 
-// Grammar of a type inheritance clause
+/// Grammar of a type inheritance clause
+/// type-inheritance-clause → : type-inheritance-list
+/// type-inheritance-list → attributes? ~? type-identifier | attributes? ~? type-identifier , type-inheritance-list
 
 typeInheritanceClause = ":" typeInheritanceList .
-//typeInheritanceList = attributes? "~"? typeIdentifier | attributes? "~"? typeIdentifier "," typeInheritanceList .
 typeInheritanceList = attributes? "~"? "nonisolated"? typeIdentifier
                     | attributes? "~"? "nonisolated"? typeIdentifier "," typeInheritanceList .
 // SE-0414 nonisolated conformance is BARE only — swift-syntax rejects `struct S: nonisolated(unsafe) P` (probe: hasError). The `(arg)` form belongs to the decl modifier / type specifier, not conformance.
@@ -664,15 +694,23 @@ typeInheritanceList = attributes? "~"? "nonisolated"? typeIdentifier
 //typeInheritanceClause = ":" typeInheritance { "," typeInheritance } .
 //typeInheritance = attributes? "~"? "nonisolated"? typeIdentifier .
 
-// EXPRESSIONS
 
-// Grammar of an expression
+
+
+
+
+/// EXPRESSIONS
+/// Grammar of an expression
+/// expression → try-operator? await-operator? prefix-expression infix-expressions?
 
 // if/switch expressions may have at most one "as"/"as?"/"as!" coercion but not "is" or any other
 // infix operator. Mirrors swift-syntax's parseSingleValueStmt path.
-
 expression = tryOperator? awaitOperator? conditionalExpression coercingOperator? .
 expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
+
+/// Grammar of a prefix expression
+/// prefix-expression → prefix-operator? postfix-expression
+/// prefix-expression → in-out-expression
 
 // `@shortest [ … ]` the optional prefix operator: at expression-start `/abc/` parses both as a
 // regex literal (operator skipped) AND as prefix-`/`(postfix-`/`(abc)) (operator taken);
@@ -687,9 +725,6 @@ expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 // not `(any P) & Q`. The two readings give prefixExpression different extents at the same start;
 // keep the longest. Only fires where an operand genuinely has multiple extents (any/some + `&`
 // composition); ordinary operands are single-extent so it's a no-op elsewhere.
-
-// Grammar of a prefix expression
-
 @longest
 prefixExpression = @shortest [ prefixOperator >s< ] postfixExpression .   // >s<: a prefix operator is rightBound (tight to its operand) — `/ 1` (space after) is NOT prefix, so a line-leading spaced operator can't begin a statement; it stays infix, continuing the previous line (`0⏎/ 1 /⏎2` = one `0 / 1 / 2`, not a split)
 prefixExpression = "!" >s< postfixExpression .
@@ -713,19 +748,30 @@ prefixExpression = @prefer "borrow"  <s> >n< prefixExpression .
 prefixExpression = @prefer "copy"    <s> >n< prefixExpression .
 prefixExpression = @prefer "unsafe"  <s> >n< prefixExpression .
 
-// Grammar of an in-out expression
+/// Grammar of an in-out expression
+/// in-out-expression → & primary-expression
 
-inOutExpression = "&" >s< postfixExpression .
 // >s<: inout `&` is rightBound (tight to operand) — `&x` is inout, `& x` (spaced) is an error in swift-syntax (probe-verified)
 // `a & b`/`yield & 5` stay binary. operand is an lvalue: `&x`, `&y[0]`, `&obj.prop`
+inOutExpression = "&" >s< postfixExpression .
 
-// Grammar of a try expression
+/// Grammar of a try expression
+/// try-operator → try | try ? | try !
 
 tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .
+// ebnf tryOperator = "try" [ >s< ("?" | "!") ].
 
-// Grammar of an await expression
+/// Grammar of an await expression
+/// await-operator → await
 
 awaitOperator = "await" .
+
+/// Grammar of an infix expression
+/// infix-expression → infix-operator prefix-expression
+/// infix-expression → assignment-operator try-operator? await-operator? prefix-expression
+/// infix-expression → conditional-operator try-operator? await-operator? prefix-expression
+/// infix-expression → type-casting-operator
+/// infix-expressions → infix-expression infix-expressions?
 
 // Whitespace-symmetric infix (swift-syntax classifyOperatorToken: infix ⟺ leftBound==rightBound).
 // The leading `>s<`/`<s>` checks the gap BEFORE the operator (= gap after the left operand);
@@ -738,9 +784,6 @@ awaitOperator = "await" .
 // spurious `-> ()` tail to re-parse as infix. Same shape as `@longest genericIdentifier` (`A` vs
 // `A<B>`). No-op for ordinary operator chains: each infixExpression is one operator + one operand,
 // so it has a single extent and shares no start with a longer sibling.
-
-// Grammar of an infix expression
-
 @longest
 infixExpression = >s< infixOperator >s< tryOperator? awaitOperator? prefixExpression .
 infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
@@ -761,16 +804,25 @@ conditionInfixExpressions = conditionInfixExpression conditionInfixExpressions? 
 conditionExpression = tryOperator? awaitOperator? conditionalExpression coercingOperator? .
 conditionExpression = tryOperator? awaitOperator? prefixExpression conditionInfixExpressions? .
 
-// Grammar of an assignment operator
+/// Grammar of an assignment operator
+/// assignment-operator → =
 
 assignmentOperator = <s> "=" <s>
                    | >s< "=" >s< .
 
-// Grammar of a conditional operator
+/// Grammar of a conditional operator
+/// conditional-operator → ? expression :
 
-conditionalOperator = <s> "?" expression ":" .      // <s> before `?` only: swift-syntax requires whitespace (space OR newline) BEFORE the ternary `?` — a tight `a?`/`a? ` is postfix optional-chaining, not ternary (probe: `a?b:c`,`a? b:c` error). The char AFTER `?` is free: `a ?b : c` is a valid ternary, so no `<s>` there.
+// <s> before `?` only: swift-syntax requires whitespace (space OR newline) BEFORE the ternary `?`.
+// A tight `a?`/`a? ` is postfix optional-chaining, not ternary (probe: `a?b:c`,`a? b:c` error).
+// The char AFTER `?` is free: `a ?b : c` is a valid ternary.
+conditionalOperator = <s> "?" expression ":" .
 
-// Grammar of a type-casting operator
+/// Grammar of a type-casting operator
+/// type-casting-operator → is type
+/// type-casting-operator → as type
+/// type-casting-operator → as ? type
+/// type-casting-operator → as ! type
 
 typeCastingOperator = "is" type .
 typeCastingOperator = "as" type .
@@ -782,7 +834,21 @@ coercingOperator = "as" type .
 coercingOperator = "as" >s< "?" type .
 coercingOperator = "as" >s< "!" type .
 
-// Grammar of a primary expression
+/// Grammar of a primary expression
+/// primary-expression → identifier generic-argument-clause?
+/// primary-expression → literal-expression
+/// primary-expression → self-expression
+/// primary-expression → superclass-expression
+/// primary-expression → conditional-expression
+/// primary-expression → closure-expression
+/// primary-expression → parenthesized-expression
+/// primary-expression → tuple-expression
+/// primary-expression → implicit-member-expression
+/// primary-expression → wildcard-expression
+/// primary-expression → macro-expansion-expression
+/// primary-expression → key-path-expression
+/// primary-expression → selector-expression
+/// primary-expression → key-path-string-expression
 
 primaryExpression = genericIdentifier .
 // `@longest`: `A<B>` (identifier + genericArgumentClause) vs bare `A` is an EXTENT choice — keep the
@@ -853,7 +919,18 @@ nonLiteralPrimary = genericIdentifier | moduleGenericIdentifier | moduleSelector
                   | selfType | anyType | "(" moduleSelector? operator ")"
                   | attribute type | boxedProtocolType | "(" functionType ")" .
 
-// Grammar of a literal expression
+/// Grammar of a literal expression
+/// literal-expression → literal
+/// literal-expression → array-literal | dictionary-literal | playground-literal
+/// array-literal → [ array-literal-items? ,? ]
+/// array-literal-items → array-literal-item | array-literal-item , array-literal-items
+/// array-literal-item → expression
+/// dictionary-literal → [ dictionary-literal-items ,? ] | [ : ]
+/// dictionary-literal-items → dictionary-literal-item | dictionary-literal-item , dictionary-literal-items
+/// dictionary-literal-item → expression : expression
+/// playground-literal → #colorLiteral ( red : expression , green : expression , blue : expression , alpha : expression )
+/// playground-literal → #fileLiteral ( resourceName : expression )
+/// playground-literal → #imageLiteral ( resourceName : expression )
 
 literalExpression = literal | arrayLiteral | dictionaryLiteral .
 
@@ -880,20 +957,36 @@ dictionaryLiteralElement = typeExpression .        // TypeExpr key/value, e.g. `
 // playgroundLiteral rules removed: swift-syntax has no object-literal node — `#colorLiteral(…)`,
 // `#fileLiteral(…)`, `#imageLiteral(…)` are plain MacroExpansionExpr (probe-verified)
 
-// Grammar of a self expression
+/// Grammar of a self expression
+/// self-expression → self | self-method-expression | self-subscript-expression | self-initializer-expression
+/// self-method-expression → self . identifier
+/// self-subscript-expression → self [ function-call-argument-list ]
+/// self-initializer-expression → self . init
 
-selfExpression = "self" .   // self is a bare reference; self.foo / self[i] / self.init go through explicitMember/subscript (swift-syntax: DeclReferenceExpr + MemberAccess/SubscriptCall)
+// self is a bare reference; self.foo / self[i] / self.init go through explicitMember/subscript (swift-syntax: DeclReferenceExpr + MemberAccess/SubscriptCall)
+selfExpression = "self" .
+
+/// Grammar of a superclass expression
+/// superclass-expression → superclass-method-expression | superclass-subscript-expression | superclass-initializer-expression
+/// superclass-method-expression → super . identifier
+/// superclass-subscript-expression → super [ function-call-argument-list ]
+/// superclass-initializer-expression → super . init
 
 // `super` is likewise a bare primary (swift-syntax SuperExpr): super.foo / super.init / super[i]
 // attach via the normal postfix machinery (explicitMemberExpression / subscriptExpression), the
 // same as self. The TSPL-style superclassMethod/Subscript/Initializer productions duplicated
 // those suffixes and made `super.init` ambiguous (softIdentifier also matches `init`).
-
-// Grammar of a superclass expression
-
 superclassExpression = "super" .
 
-// Grammar of a conditional expression
+/// Grammar of a conditional expression
+/// conditional-expression → if-expression | switch-expression
+/// if-expression → if condition-list { statement } if-expression-tail
+/// if-expression-tail → else if-expression
+/// if-expression-tail → else { statement }
+/// switch-expression → switch expression { switch-expression-cases }
+/// switch-expression-cases → switch-expression-case switch-expression-cases?
+/// switch-expression-case → case-label statement
+/// switch-expression-case → default-label statement
 
 conditionalExpression = ifExpression | switchExpression .
 
@@ -904,18 +997,48 @@ conditionalExpression = ifExpression | switchExpression .
 // ifStatement/switchStatement); `statement = expression` carries them at statement position,
 // and branchStatement keeps only `guard` (a real GuardStmt).
 
-// Grammar of an if expression
-
 // `>-> ( "{" )` (B2 discriminator 2): a condition may never open with `{` — a leading brace is the
 // statement body, so `if {x}() {}` is a reject (swift-syntax: condition = MissingExpr). See REJECTS §B2.
 ifExpression = "if" >-> ( "{" ) conditionList codeBlock elseClause? .
 elseClause = "else" codeBlock | "else" ifExpression .
 
-// Grammar of a switch expression
+// B2 discriminator 2: subject may not open with `{` (`switch { 42 } {…}` is a reject)
+switchExpression = "switch" >-> ( "{" ) expression "{" switchCases? "}" .
 
-switchExpression = "switch" >-> ( "{" ) expression "{" switchCases? "}" .   // B2 discriminator 2: subject may not open with `{` (`switch { 42 } {…}` is a reject)
+switchCases = switchCase switchCases? .
+switchCase = caseLabel statements .
+switchCase = defaultLabel statements .
+switchCase = conditionalSwitchCase .
 
-// Grammar of a closure expression
+caseLabel = attributes? "case" caseItemList ":" .
+caseItemList = matchPattern whereClause? | matchPattern whereClause? "," caseItemList .
+defaultLabel = attributes? "default" ":" .
+
+whereClause = "where" whereExpression .
+whereExpression = conditionExpression .
+
+conditionalSwitchCase = switchIfDirectiveClause switchElseifDirectiveClauses? switchElseDirectiveClause? endifDirective .
+switchIfDirectiveClause = ifDirective compilationCondition switchCases? .
+switchElseifDirectiveClauses = switchElseifDirectiveClause switchElseifDirectiveClauses? .
+switchElseifDirectiveClause = elseifDirective compilationCondition switchCases? .
+switchElseDirectiveClause = elseDirective switchCases? .
+
+
+/// Grammar of a closure expression
+/// closure-expression → { attributes? closure-signature? statements? }
+/// closure-signature → capture-list? closure-parameter-clause async? throws-clause? function-result? in
+/// closure-signature → capture-list in
+/// closure-parameter-clause → ( ) | ( closure-parameter-list ,? ) | identifier-list
+/// closure-parameter-list → closure-parameter | closure-parameter , closure-parameter-list
+/// closure-parameter → closure-parameter-name type-annotation?
+/// closure-parameter → closure-parameter-name type-annotation ...
+/// closure-parameter-name → identifier
+/// capture-list → [ capture-list-items ,? ]
+/// capture-list-items → capture-list-item | capture-list-item , capture-list-items
+/// capture-list-item → capture-specifier? identifier
+/// capture-list-item → capture-specifier? identifier = expression
+/// capture-list-item → capture-specifier? self-expression
+/// capture-specifier → weak | unowned | unowned(safe) | unowned(unsafe)
 
 // Partitioned by the open-brace layout so the two readings are DISJOINT (no ambiguity): `>n<`
 // = no newline after `{` (tight), `<n>` = newline after `{`. B2 disc-1: a newline-opened trailing
@@ -934,11 +1057,11 @@ closureSignature = attributes? captureList? closureParameterClause "async"? thro
 closureSignature = attributes? captureList "in" .
 closureSignature = attributes "in" .
 
-closureParameterClause = "(" ")" | "(" closureParameterList ","? ")" | identifierList .
+closureParameterClause = "(" ")"
+                       | "(" closureParameterList ","? ")"
+                       | identifierList .
 closureParameterList = closureParameter | closureParameter "," closureParameterList .
 
-//closureParameter = attributes? closureParameterName typeAnnotation? .
-//closureParameter = attributes? closureParameterName typeAnnotation "..." .
 // swift-syntax parseClosureParameter (Parameters.swift:194-200) uses parseParameterNames
 // which returns two names (firstName / secondName) — same `external? internal: Type` shape
 // as regular parameters. `_ x: Type` and `x y: Type` are both valid.
@@ -957,27 +1080,34 @@ captureListItem = captureSpecifier? hardIdentifier assignmentOperator expression
 captureListItem = captureSpecifier? selfExpression .
 captureSpecifier = "weak" | "unowned" | "unowned" "(" "safe" ")" | "unowned" "(" "unsafe" ")" . // no >s<: swift-syntax accepts `unowned (safe)`/`unowned (unsafe)` with a space (probe: hasError=false). Only type specifiers and @attribute arg clauses require a tight `(`.
 
-// Grammar of an implicit member expression
+/// Grammar of an implicit member expression
+/// implicit-member-expression → . identifier
+/// implicit-member-expression → . identifier . postfix-expression
 
 implicitMemberExpression = "." moduleSelector? softIdentifier .          // allows e.g. '.public', '.Swift::min' (SE-0491)
 implicitMemberExpression = "." moduleSelector? softIdentifier "." postfixExpression .
 
-// Grammar of a parenthesized expression
+/// Grammar of a parenthesized expression
+/// parenthesized-expression → ( expression )
 
 parenthesizedExpression = "(" expression ")" .
 
-// Grammar of a tuple expression
+/// Grammar of a tuple expression
+/// tuple-expression → ( ) | ( tuple-element , tuple-element-list ,? )
+/// tuple-element-list → tuple-element | tuple-element , tuple-element-list
+/// tuple-element → expression | identifier : expression
 
 tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ","? ")" .
 tupleElementList = tupleElement | tupleElement "," tupleElementList .
 tupleElement = expression | softIdentifier ":" expression .
 
-// Grammar of a wildcard expression
+/// Grammar of a wildcard expression
+/// wildcard-expression → _
 
 wildcardExpression = "_" .
 
-
-// Grammar of a macro-expansion expression
+/// Grammar of a macro-expansion expression
+/// macro-expansion-expression → # identifier generic-argument-clause? function-call-argument-clause? trailing-closures?
 
 // `@longest`: a macro greedily takes its (single) argument clause. `#foo(bar)` is macro-with-args,
 // not argless-`#foo` + call `(bar)` (probe-verified: swift-syntax yields MacroExpansionExpr with
@@ -985,17 +1115,14 @@ wildcardExpression = "_" .
 // readings give macroExpansionExpression different extents at the same start; keep the longest.
 @longest
 macroExpansionExpression = macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
-//macroExpansionExpression = "#" identifier genericArgumentClause? functionCallArgumentClause? trailingClosures? .
 
 
-// Grammar of a key-path expression
-
-//keyPathExpression = "\" type? "." keyPathComponents .
-//keyPathComponents = keyPathComponent | keyPathComponent "." keyPathComponents .
-//keyPathComponent = identifier keyPathPostfixes? | keyPathPostfixes .
-
-//keyPathPostfixes = keyPathPostfix keyPathPostfixes? .
-//keyPathPostfix = "?" | "!" | "self" | "[" functionCallArgumentList "]" .
+/// Grammar of a key-path expression
+/// key-path-expression → \ type? . key-path-components
+/// key-path-components → key-path-component | key-path-component . key-path-components
+/// key-path-component → identifier key-path-postfixes? | key-path-postfixes
+/// key-path-postfixes → key-path-postfix key-path-postfixes?
+/// key-path-postfix → ? | ! | self | [ function-call-argument-list ]
 
 // swift-syntax parseKeyPathExpression (Expressions.swift:1107+). Deviations from the TSPL
 // grammar above (each faithful to swift-syntax):
@@ -1031,7 +1158,7 @@ macroExpansionExpression = macroHead genericArgumentClause? functionCallArgument
 
 @longest
 keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents? .   // components optional (`\Foo`, `\X?`).
-// TODO: why do we need @prefer here if the alternate always starts with a '.', and this one can't?F
+// TODO: why do we need @prefer here if the alternate always starts with a '.', and this one can't?
 @longest
 keyPathExpression =         "\\" keyPathComponents .                    // root-absent (`\.foo`): keyPathComponents must start with `.`
 
@@ -1088,10 +1215,27 @@ keyPathArgumentLabels = keyPathArgumentLabel keyPathArgumentLabels? .
 keyPathArgumentLabel = identifier ---( "inout" "_" ) ":" .   // swift-syntax isArgumentLabel (Names.swift:410): a label is an identifier or ANY keyword EXCEPT `inout`, or `_`. Exclude `inout` (per that rule) and `_` (the wildcard label is the separate production below; without excluding it here `.method(_:)` is ambiguous).
 keyPathArgumentLabel = "_" ":" .
 
+/// Grammar of a selector expression
+/// selector-expression → #selector ( expression )
+/// selector-expression → #selector ( getter: expression )
+/// selector-expression → #selector ( setter: expression )
+///
+/// Grammar of a key-path string expression
+/// key-path-string-expression → #keyPath ( expression )
+
 // selectorExpression / keyPathStringExpression removed: `#selector(…)` and `#keyPath(…)` are
 // MacroExpansionExpr in swift-syntax (probe-verified), covered by macroExpansionExpression.
 
-// Grammar of a postfix expression
+/// Grammar of a postfix expression
+/// postfix-expression → primary-expression
+/// postfix-expression → postfix-expression postfix-operator
+/// postfix-expression → function-call-expression
+/// postfix-expression → initializer-expression
+/// postfix-expression → explicit-member-expression
+/// postfix-expression → postfix-self-expression
+/// postfix-expression → subscript-expression
+/// postfix-expression → forced-value-expression
+/// postfix-expression → optional-chaining-expression
 
 postfixExpression = primaryExpression .
 // A postfix operator is left-bound: tight to its operand, no preceding whitespace
@@ -1142,7 +1286,16 @@ nonLiteralPostfix = nonLiteralPrimary
                   | functionCallExpression | initializerExpression | explicitMemberExpression
                   | subscriptExpression | forcedValueExpression | optionalChainingExpression .
 
-// Grammar of a function call expression
+/// Grammar of a function call expression
+/// function-call-expression → postfix-expression function-call-argument-clause
+/// function-call-expression → postfix-expression function-call-argument-clause? trailing-closures
+/// function-call-argument-clause → ( ) | ( function-call-argument-list ,? )
+/// function-call-argument-list → function-call-argument | function-call-argument , function-call-argument-list
+/// function-call-argument → expression | identifier : expression
+/// function-call-argument → operator | identifier : operator
+/// trailing-closures → closure-expression labeled-trailing-closures?
+/// labeled-trailing-closures → labeled-trailing-closure labeled-trailing-closures?
+/// labeled-trailing-closure → identifier : closure-expression
 
 functionCallExpression = postfixExpression >n< functionCallArgumentClause .   // >n<: a call `(` may not start a new line (swift-syntax `allowAtStartOfLine:false`) — `g()⏎(x)` is two statements, not `g()(x)`
 // A trailing closure belongs to the SAME call as the argument clause: `f() { a }` = call `f` with args
@@ -1208,11 +1361,9 @@ labeledTrailingClosure = trailingClosureLabel ":" closureExpression .
 // false. All other keywords (including `case`, `return`, `for`, …) are valid trailing closure labels.
 trailingClosureLabel = identifier ---( "_" "let" "var" "inout" "default" ) | "_" .
 
-
-// Grammar of an initializer expression
-
-//initializerExpression = postfixExpression "." init .
-//initializerExpression = postfixExpression "." init "(" argumentNames ")" .
+/// Grammar of an initializer expression
+/// initializer-expression → postfix-expression . init
+/// initializer-expression → postfix-expression . init ( argument-names )
 
 // `x.init` / `A.Module::init` / `x.init(a:b:)` need NO dedicated postfix rules: swift-syntax has
 // no initializer-expression node — `super.init()` is FunctionCall(MemberAccess(…, init)) — and
@@ -1224,7 +1375,13 @@ trailingClosureLabel = identifier ---( "_" "let" "var" "inout" "default" ) | "_"
 // postfix machinery. `init` is excluded from `identifier`, hence this dedicated alternate.
 initializerExpression = "init" .
 
-// Grammar of an explicit member expression
+/// Grammar of an explicit member expression
+/// explicit-member-expression → postfix-expression . decimal-digits
+/// explicit-member-expression → postfix-expression . identifier generic-argument-clause?
+/// explicit-member-expression → postfix-expression . identifier ( argument-names )
+/// explicit-member-expression → postfix-expression conditional-compilation-block
+/// argument-names → argument-name argument-names?
+/// argument-name → identifier :
 
 // swift-syntax parseDottedExpressionSuffix (Expressions.swift:699) calls
 // parseDeclReferenceExpr with `.keywords` flag (Names.swift:218-220), which accepts
@@ -1236,19 +1393,23 @@ initializerExpression = "init" .
 
 explicitMemberExpression = postfixExpression "." decimalDigits .
 explicitMemberExpression = postfixExpression "." moduleSelector? softIdentifier .
-explicitMemberExpression = @prefer postfixExpression "." moduleSelector? softIdentifier genericArgumentClause .
+explicitMemberExpression = @prefer postfixExpression "." moduleSelector? softIdentifier genericArgumentClause . // TODO: why @prefer here and not @longest to include genericArgumentClause?
 explicitMemberExpression = postfixExpression "." moduleSelector? softIdentifier "(" argumentNames ")" .
 explicitMemberExpression = postfixExpression conditionalCompilationBlock .
 
 argumentNames = argumentName argumentNames? .
 argumentName = softIdentifier ":" .
 
-// Grammar of a subscript expression
+/// Grammar of a postfix self expression
+/// postfix-self-expression → postfix-expression . self
 
 // postfixSelfExpression removed — swift-syntax parses `Foo.self` as a MemberAccessExpr
 // (Expressions.swift:689 consumes `self`/tuple-index as the declName baseName), i.e. via
 // explicitMemberExpression (softIdentifier matches `self`). The separate production was
 // redundant and produced the `[explicitMemberExpression]|[postfixSelfExpression]` ambiguity.
+
+/// Grammar of a subscript expression
+/// subscript-expression → postfix-expression [ function-call-argument-list ]
 
 // Split empty vs non-empty (NOT `functionCallArgumentList?`): the `?` OPT wrapping the
 // `@prefer functionCallArgument` list breaks multi-arg subscripts (`a[0, 1]`, `data[position,
@@ -1259,21 +1420,32 @@ argumentName = softIdentifier ":" .
 // with the full expression grammar (NOT a general @prefer/OPT flaw: minimal @prefer-under-OPT,
 // even left-recursive, is proven sound in CoreGrammarTests/OracleDisambiguation). Empty `a[]` is
 // valid, so both alternates are needed. Mirrors functionCallArgumentClause's `"(" ")" | "(" list ")"`.
-subscriptExpression = postfixExpression >n< "[" functionCallArgumentList? "]" .   // clean OPT (empty `a[]` + multi `a[0,1]`); works now that the obsolete @prefer on functionCallArgumentList is gone. >n<: a subscript `[` may not start a new line.
+subscriptExpression = postfixExpression >n< "[" functionCallArgumentList? "]" .
+// clean OPT (empty `a[]` + multi `a[0,1]`); works now that the obsolete @prefer on functionCallArgumentList is gone. >n<: a subscript `[` may not start a new line.
 
-// Grammar of a forced-value expression
+/// Grammar of a forced-value expression
+/// forced-value-expression → postfix-expression !
 
 forcedValueExpression = postfixExpression >s< forceMark .
 
-// Grammar of an optional-chaining expression
+/// Grammar of an optional-chaining expression
+/// optional-chaining-expression → postfix-expression ?
 
 optionalChainingExpression = postfixExpression >s< optionalMark .
 
 
-
-// STATEMENTS
- 
-// Grammar of a statement
+/// STATEMENTS
+/// Grammar of a statement
+/// statement → expression ;?
+/// statement → declaration ;?
+/// statement → loop-statement ;?
+/// statement → branch-statement ;?
+/// statement → labeled-statement ;?
+/// statement → control-transfer-statement ;?
+/// statement → defer-statement ;?
+/// statement → do-statement ;?
+/// statement → compiler-control-statement
+/// statements → statement statements?
 
 statement = >->(declaration) expression .   // an expression-statement only where a declaration does NOT start here (swift-syntax atStartOfDeclaration-first). Resolves the `open⏎var` modifier-vs-reference ambiguity: `open` before a decl is the declaration's modifier, not a bare reference. See `Grammar Predicate Lookahead Design.md`.
 // `@prefer`: where a declaration and an expression parse the SAME span (`init() {}` = decl vs
@@ -1317,19 +1489,22 @@ yieldStatement = "yield" >-> ( "(" "[" "." ) <s> >n< expression .
 
 discardStatement = "discard" >-> ( "(" "[" "." ) <s> >n< expression .
 
-//statements = statement statements? .
 statements = statement ";"? .
 statements = statement statementSeparator statements .
 statementSeparator = <n> | ";" .
 //statements = statement { (<n> | ";") statement } [";"] . // ebnf
 
-// Grammar of a loop statement
+/// Grammar of a loop statement
+/// loop-statement → for-in-statement
+/// loop-statement → while-statement
+/// loop-statement → repeat-while-statement
 
 loopStatement = forInStatement .
 loopStatement = whileStatement .
 loopStatement = repeatWhileStatement .
 
-// Grammar of a for-in statement
+/// Grammar of a for-in statement
+/// for-in-statement → for case? pattern in expression where-clause? code-block
 
 //forInStatement = "for" "case" matchPattern "in" expression whereClause? codeBlock .
 //forInStatement = "for" bindingPattern "in" expression whereClause? codeBlock .
@@ -1341,7 +1516,12 @@ loopStatement = repeatWhileStatement .
 forInStatement = "for" "try"? "await"? "unsafe"? "case" matchPattern "in" expression whereClause? codeBlock .
 forInStatement = "for" "try"? "await"? "unsafe"? bindingPattern "in" expression whereClause? codeBlock .
 
-// Grammar of a while statement
+/// Grammar of a while statement
+/// while-statement → while condition-list code-block
+/// condition-list → condition | condition , condition-list
+/// condition → expression | availability-condition | case-condition | optional-binding-condition
+/// case-condition → case pattern initializer
+/// optional-binding-condition → let pattern initializer? | var pattern initializer?
 
 whileStatement = "while" >-> ( "{" ) conditionList codeBlock .   // B2 discriminator 2: `while { true } {}` is a reject
 
@@ -1355,39 +1535,56 @@ condition = conditionExpression
 caseCondition = "case" matchPattern initializer .
 optionalBindingCondition = "let" bindingPattern initializer? | "var" bindingPattern initializer? .
 
-// Grammar of a repeat-while statement
+/// Grammar of a repeat-while statement
+/// repeat-while-statement → repeat code-block while expression
 
 repeatWhileStatement = "repeat" codeBlock "while" >-> ( "{" ) conditionExpression .   // B2 discriminator 2: `repeat {} while { true }()` is a reject (testRecovery28)
 
-// Grammar of a branch statement
+/// Grammar of a branch statement
+/// branch-statement → if-statement
+/// branch-statement → guard-statement
+/// branch-statement → switch-statement
+
+/// Grammar of an if statement
+/// if-statement → if condition-list code-block else-clause?
+/// else-clause → else code-block | else if-statement
+
+/// Grammar of a switch statement
+/// switch-statement → switch expression { switch-cases? }
+/// switch-cases → switch-case switch-cases?
+/// switch-case → case-label statements
+/// switch-case → default-label statements
+/// switch-case → conditional-switch-case
+/// case-label → attributes? case case-item-list :
+/// case-item-list → pattern where-clause? | pattern where-clause? , case-item-list
+/// default-label → attributes? default :
+/// where-clause → where where-expression
+/// where-expression → expression
+/// conditional-switch-case → switch-if-directive-clause switch-elseif-directive-clauses? switch-else-directive-clause? endif-directive
+/// switch-if-directive-clause → if-directive compilation-condition switch-cases?
+/// switch-elseif-directive-clauses → elseif-directive-clause switch-elseif-directive-clauses?
+/// switch-elseif-directive-clause → elseif-directive compilation-condition switch-cases?
+/// switch-else-directive-clause → else-directive switch-cases?
 
 // `if`/`switch` moved to conditionalExpression (they are IfExpr/SwitchExpr in swift-syntax);
 // only `guard` remains a branch statement (GuardStmt).
+
 branchStatement = guardStatement .
 
-// Grammar of a guard statement
+/// Grammar of a guard statement
+/// guard-statement → guard condition-list else code-block
 
-guardStatement = "guard" >-> ( "{" ) conditionList "else" codeBlock .   // B2 discriminator 2: a guard condition may not open with `{`
+guardStatement = "guard" >-> ( "{" ) conditionList "else" codeBlock .
+// B2 discriminator 2: a guard condition may not start with `{`
 
-switchCases = switchCase switchCases? .
-switchCase = caseLabel statements .
-switchCase = defaultLabel statements .
-switchCase = conditionalSwitchCase .
 
-caseLabel = attributes? "case" caseItemList ":" .
-caseItemList = matchPattern whereClause? | matchPattern whereClause? "," caseItemList .
-defaultLabel = attributes? "default" ":" .
-
-whereClause = "where" whereExpression .
-whereExpression = conditionExpression .
-
-conditionalSwitchCase = switchIfDirectiveClause switchElseifDirectiveClauses? switchElseDirectiveClause? endifDirective .
-switchIfDirectiveClause = ifDirective compilationCondition switchCases? .
-switchElseifDirectiveClauses = switchElseifDirectiveClause switchElseifDirectiveClauses? .
-switchElseifDirectiveClause = elseifDirective compilationCondition switchCases? .
-switchElseDirectiveClause = elseDirective switchCases? .
-
-// Grammar of a labeled statement
+/// Grammar of a labeled statement
+/// labeled-statement → statement-label loop-statement
+/// labeled-statement → statement-label if-statement
+/// labeled-statement → statement-label switch-statement
+/// labeled-statement → statement-label do-statement
+/// statement-label → label-name :
+/// label-name → identifier
 
 labeledStatement = statementLabel loopStatement .
 // labeled `if`/`switch` are LabeledStmt wrapping the if/switch EXPRESSION (swift-syntax).
@@ -1397,39 +1594,55 @@ labeledStatement = statementLabel doStatement .
 statementLabel = labelName ":" .
 labelName = hardIdentifier .
 
-// Grammar of a control transfer statement
+/// Grammar of a control transfer statement
+/// control-transfer-statement → break-statement
+/// control-transfer-statement → continue-statement
+/// control-transfer-statement → fallthrough-statement
+/// control-transfer-statement → return-statement
+/// control-transfer-statement → throw-statement
 
-controlTransferStatement = breakStatement .
-controlTransferStatement = continueStatement .
-controlTransferStatement = fallthroughStatement .
-controlTransferStatement = returnStatement .
-controlTransferStatement = throwStatement .
+controlTransferStatement = breakStatement
+                         | continueStatement
+                         | fallthroughStatement
+                         | returnStatement
+                         | throwStatement .
 
-// Grammar of a break statement
+/// Grammar of a break statement
+/// break-statement → break label-name?
 
 breakStatement = "break" labelName? .
 
-// Grammar of a continue statement
+/// Grammar of a continue statement
+/// continue-statement → continue label-name?
 
 continueStatement = "continue" labelName? .
 
-// Grammar of a fallthrough statement
+/// Grammar of a fallthrough statement
+/// fallthrough-statement → fallthrough
 
 fallthroughStatement = "fallthrough" .
 
-// Grammar of a return statement
+/// Grammar of a return statement
+/// return-statement → return expression?
 
 returnStatement = "return" expression? .
 
-// Grammar of a throw statement
+/// Grammar of a throw statement
+/// throw-statement → throw expression
 
 throwStatement = "throw" expression .
 
-// Grammar of a defer statement
+/// Grammar of a defer statement
+/// defer-statement → defer code-block
 
 deferStatement = "defer" codeBlock .
 
-// Grammar of a do statement
+/// Grammar of a do statement
+/// do-statement → do throws-clause? code-block catch-clauses?
+/// catch-clauses → catch-clause catch-clauses?
+/// catch-clause → catch catch-pattern-list? code-block
+/// catch-pattern-list → catch-pattern | catch-pattern , catch-pattern-list
+/// catch-pattern → pattern where-clause?
 
 doStatement = "do" throwsClause? codeBlock catchClauses? .
 catchClauses = catchClause catchClauses? .
@@ -1441,14 +1654,44 @@ catchPattern = matchPattern whereClause? .
 // pattern is optional when a where-clause is present.
 catchPattern = whereClause .
 
-// Grammar of a compiler control statement
+/// Grammar of a compiler control statement
+/// compiler-control-statement → conditional-compilation-block
+/// compiler-control-statement → line-control-statement
+/// compiler-control-statement → diagnostic-statement
 
 compilerControlStatement = conditionalCompilationBlock .
 compilerControlStatement = lineControlStatement .
 // diagnosticStatement removed: `#warning(…)`/`#error(…)` are MacroExpansionExpr in swift-syntax
 // (probe-verified) — reached via expression → macroExpansionExpression, no dedicated rule needed.
 
-// Grammar of a conditional compilation block
+/// Grammar of a conditional compilation block
+/// conditional-compilation-block → if-directive-clause elseif-directive-clauses? else-directive-clause? endif-directive
+/// if-directive-clause → if-directive compilation-condition statements?
+/// elseif-directive-clauses → elseif-directive-clause elseif-directive-clauses?
+/// elseif-directive-clause → elseif-directive compilation-condition statements?
+/// else-directive-clause → else-directive statements?
+/// if-directive → #if
+/// elseif-directive → #elseif
+/// else-directive → #else
+/// endif-directive → #endif
+/// compilation-condition → platform-condition
+/// compilation-condition → identifier
+/// compilation-condition → boolean-literal
+/// compilation-condition → ( compilation-condition )
+/// compilation-condition → ! compilation-condition
+/// compilation-condition → compilation-condition && compilation-condition
+/// compilation-condition → compilation-condition || compilation-condition
+/// platform-condition → os ( operating-system )
+/// platform-condition → arch ( architecture )
+/// platform-condition → swift ( >= swift-version ) | swift ( < swift-version )
+/// platform-condition → compiler ( >= swift-version ) | compiler ( < swift-version )
+/// platform-condition → canImport ( import-path )
+/// platform-condition → targetEnvironment ( environment )
+/// operating-system → macOS | iOS | watchOS | tvOS | visionOS | Linux | Windows
+/// architecture → arm | arm64 | i386 | wasm32 | x86_64
+/// swift-version → decimal-digits swift-version-continuation?
+/// swift-version-continuation → . decimal-digits swift-version-continuation?
+/// environment → simulator | macCatalyst
 
 conditionalCompilationBlock = ifDirectiveClause elseifDirectiveClauses? elseDirectiveClause? endifDirective .
 
@@ -1476,24 +1719,45 @@ compilationCondition = compilationCondition "||" compilationCondition .
 // `canImport(A, _version: >=2.2)` parse via this generic call with `>=5` as a tight-prefix
 // operator expression — exactly swift-syntax's reading. (The former versionComparison specials
 // duplicated it once prefix operators became rightBound → the [identifier-call]|[platformCondition] dual.)
-compilationCondition = hardIdentifier functionCallArgumentClause .   // reuse the general call-argument clause (handles multi-arg + labels + trailing comma); the inline "(" functionCallArgumentList? ","? ")" form failed on multi-arg conditions like canImport(A, _version: 2)
+compilationCondition = hardIdentifier functionCallArgumentClause .
+// reuse the general call-argument clause (handles multi-arg + labels + trailing comma); the inline "(" functionCallArgumentList? ","? ")" form failed on multi-arg conditions like canImport(A, _version: 2)
 
-// Grammar of a line control statement
+/// Grammar of a line control statement
+/// line-control-statement → #sourceLocation ( file: file-path , line: line-number )
+/// line-control-statement → #sourceLocation ( )
+/// line-number → A decimal integer greater than zero
+/// file-path → static-string-literal
 
-lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .
-lineControlStatement = "#sourceLocation" "(" ")" .
+//lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .
+//lineControlStatement = "#sourceLocation" "(" ")" .
 
-//lineNumber = A decimal integer greater than zero .
+lineControlStatement = "#sourceLocation" "(" [ "file" ":" filePath "," "line" ":" lineNumber ] ")" .
+
 lineNumber = /0*[1-9][0-9]*/ .
 
 filePath = staticStringLiteral .
 
-// Grammar of an availability condition
+/// Grammar of an availability condition
+/// availability-condition → #available ( availability-arguments )
+/// availability-condition → #unavailable ( availability-arguments )
+/// availability-arguments → availability-argument | availability-argument , availability-arguments
+/// availability-argument → platform-name platform-version
+/// availability-argument → *
+/// platform-name → iOS | iOSApplicationExtension
+/// platform-name → macOS | macOSApplicationExtension
+/// platform-name → macCatalyst | macCatalystApplicationExtension
+/// platform-name → watchOS | watchOSApplicationExtension
+/// platform-name → tvOS | tvOSApplicationExtension
+/// platform-name → visionOS | visionOSApplicationExtension
+/// platform-version → decimal-digits
+/// platform-version → decimal-digits . decimal-digits
+/// platform-version → decimal-digits . decimal-digits . decimal-digits
 
 availabilityCondition = "#available" "(" availabilityArguments ")" .
 availabilityCondition = "#unavailable" "(" availabilityArguments ")" .
 availabilityArguments = availabilityArgument | availabilityArgument "," availabilityArguments .
-availabilityArgument = platformName platformVersion? .   // version optional: `#available(OSX)`, `#available(…, unavailable)` are bare identifiers (swift-syntax parses them syntactically, diagnoses the missing version later). Previously only accepted via the #available-macro reading, now removed.
+availabilityArgument = platformName platformVersion? .
+// version optional: `#available(OSX)`, `#available(…, unavailable)` are bare identifiers (swift-syntax parses them syntactically, diagnoses the missing version later). Previously only accepted via the #available-macro reading, now removed.
 availabilityArgument = "*" .
 
 // swift-syntax parsePlatformVersion (Availability.swift:202) accepts any identifier
@@ -1504,10 +1768,25 @@ platformVersion = decimalDigits "." decimalDigits .
 platformVersion = decimalDigits "." decimalDigits "." decimalDigits .
 
 
-
-// DECLARATIONS
-
-// Grammar of a declaration
+/// DECLARATIONS
+/// Grammar of a declaration
+/// declaration → import-declaration
+/// declaration → constant-declaration
+/// declaration → variable-declaration
+/// declaration → typealias-declaration
+/// declaration → function-declaration
+/// declaration → enum-declaration
+/// declaration → struct-declaration
+/// declaration → class-declaration
+/// declaration → actor-declaration
+/// declaration → protocol-declaration
+/// declaration → initializer-declaration
+/// declaration → deinitializer-declaration
+/// declaration → extension-declaration
+/// declaration → subscript-declaration
+/// declaration → macro-declaration
+/// declaration → operator-declaration
+/// declaration → precedence-group-declaration
 
 declaration = importDeclaration .
 declaration = constantDeclaration .
@@ -1569,23 +1848,33 @@ macroHead = "#" >s< moduleSelector identifier ---( "_" ) .   // SE-0491 #Module:
 //  "#error" "#warning" "#fileLiteral" "#colorLiteral" "#imageLiteral" "#keyPath" "#selector"
 
 
-// Grammar of a code block
+/// Grammar of a code block
+/// code-block → { statements? }
 
 codeBlock = "{" statements? "}" .
 
-// Grammar of an import declaration
+/// Grammar of an import declaration
+/// import-declaration → attributes? import import-kind? import-path
+/// import-kind → typealias | struct | class | enum | protocol | let | var | func
+/// import-path → identifier | identifier . import-path
 
 importDeclaration = attributes? "import" importKind? importPath .
-importDeclaration = attributes? "import" importKind moduleSelector ( hardIdentifier | operatorName ) .   // SE-0491 module-selected symbol import: `import struct Mod::A`, `import func Mod::+`. Requires a kind AND single symbols either side of `::`. The imported declName is swift-syntax `parseAnyIdentifier` = an identifier OR an operator (`import func Mod::+`/`::<`), NOT a keyword (`import struct Mod::class` rejects) — probe-verified. No-kind `import Mod::A`, dotted `Mod.Sub::A`/`Mod::A.B`, double `::` all reject.
+importDeclaration = attributes? "import" importKind moduleSelector ( hardIdentifier | operatorName ) .
+// SE-0491 module-selected symbol import: `import struct Mod::A`, `import func Mod::+`. Requires a kind AND single symbols either side of `::`. The imported declName is swift-syntax `parseAnyIdentifier` = an identifier OR an operator (`import func Mod::+`/`::<`), NOT a keyword (`import struct Mod::class` rejects) — probe-verified. No-kind `import Mod::A`, dotted `Mod.Sub::A`/`Mod::A.B`, double `::` all reject.
 
 importKind = "typealias" | "struct" | "class" | "enum" | "protocol" | "let" | "var" | "func" .
-importPath = hardIdentifier | hardIdentifier "." importPath .   // NO moduleSelector: SE-0491 `::` disambiguates reference expressions, NOT import paths — swift-syntax rejects `import a::b` / `import struct M.S::A` (probe-verified hasError). Import paths are plain dotted identifiers.
+importPath = hardIdentifier | hardIdentifier "." importPath .
+// NO moduleSelector: SE-0491 `::` disambiguates reference expressions, NOT import paths — swift-syntax rejects `import a::b` / `import struct M.S::A` (probe-verified hasError). Import paths are plain dotted identifiers.
 
 // No dedicated `"async"?` slot: `async` is already a declarationModifier (as in swift-syntax,
 // where `async let` puts `async` in VariableDecl.modifiers), so a separate slot only duplicated
 // that reading. (TSPL lacks async-let entirely — https://github.com/swiftlang/swift-book/issues/425.)
 
-// Grammar of a constant declaration
+/// Grammar of a constant declaration
+/// constant-declaration → attributes? declaration-modifiers? let pattern-initializer-list
+/// pattern-initializer-list → pattern-initializer | pattern-initializer , pattern-initializer-list
+/// pattern-initializer → pattern initializer?
+/// initializer → = expression
 
 constantDeclaration = attributes? declarationModifiers? "let" patternInitializerList .
 
@@ -1593,7 +1882,29 @@ patternInitializerList = patternInitializer | patternInitializer "," patternInit
 patternInitializer = bindingPattern initializer? .
 initializer = assignmentOperator expression .
 
-// Grammar of a variable declaration
+/// Grammar of a variable declaration
+/// variable-declaration → variable-declaration-head pattern-initializer-list
+/// variable-declaration → variable-declaration-head variable-name type-annotation code-block
+/// variable-declaration → variable-declaration-head variable-name type-annotation getter-setter-block
+/// variable-declaration → variable-declaration-head variable-name type-annotation getter-setter-keyword-block
+/// variable-declaration → variable-declaration-head variable-name initializer willSet-didSet-block
+/// variable-declaration → variable-declaration-head variable-name type-annotation initializer? willSet-didSet-block
+/// variable-declaration-head → attributes? declaration-modifiers? var
+/// variable-name → identifier
+/// getter-setter-block → code-block
+/// getter-setter-block → { getter-clause setter-clause? }
+/// getter-setter-block → { setter-clause getter-clause }
+/// getter-clause → attributes? mutation-modifier? get code-block
+/// setter-clause → attributes? mutation-modifier? set setter-name? code-block
+/// setter-name → ( identifier )
+/// getter-setter-keyword-block → { getter-keyword-clause setter-keyword-clause? }
+/// getter-setter-keyword-block → { setter-keyword-clause getter-keyword-clause }
+/// getter-keyword-clause → attributes? mutation-modifier? get
+/// setter-keyword-clause → attributes? mutation-modifier? set
+/// willSet-didSet-block → { willSet-clause didSet-clause? }
+/// willSet-didSet-block → { didSet-clause willSet-clause? }
+/// willSet-clause → attributes? willSet setter-name? code-block
+/// didSet-clause → attributes? didSet setter-name? code-block
 
 variableDeclaration = variableDeclarationHead patternInitializerList .
 // `… typeAnnotation codeBlock` removed: subsumed by `… getterSetterBlock` (getterSetterBlock
@@ -1601,15 +1912,13 @@ variableDeclaration = variableDeclarationHead patternInitializerList .
 variableDeclaration = variableDeclarationHead variableName typeAnnotation getterSetterBlock .
 variableDeclaration = variableDeclarationHead variableName initializer willSetDidSetBlock .
 variableDeclaration = variableDeclarationHead variableName typeAnnotation initializer? willSetDidSetBlock .
-variableDeclaration = variableDeclarationHead variableName typeAnnotation initializer getterSetterBlock .   // TODO: SE-0400 init accessors with default value (swift-syntax: PatternBindingSyntax accepts initializer + accessorBlock, Declarations.swift:1622-1644)
+variableDeclaration = variableDeclarationHead variableName typeAnnotation initializer getterSetterBlock .
+// TODO: SE-0400 init accessors with default value (swift-syntax: PatternBindingSyntax accepts initializer + accessorBlock, Declarations.swift:1622-1644)
 
 variableDeclarationHead = attributes? declarationModifiers? "var" .
 variableName = hardIdentifier | "_" .   // `_` = wildcard-named computed property, e.g. `static var _: Int { 0 }` (swift-syntax accepts; stored `var _ = 0` goes via bindingPattern)
 
 getterSetterBlock = codeBlock .
-//getterSetterBlock = "{" getterClause setterClause? "}" .
-//getterSetterBlock = "{" setterClause getterClause "}" .
-//getterClause = attributes? mutationModifier? "get" codeBlock .
 // `@prefer` the accessor reading: `{ get {} set {} }` parses both as accessors AND as a codeBlock
 // (get/set as identifiers with trailing closures); swift-syntax commits to accessors when accessor
 // keywords are present. A plain getter body (`{ return 1 }`) has no accessor parse, so codeBlock stands.
@@ -1639,24 +1948,43 @@ accessorModifier = "mutating" | "nonmutating" | "borrowing" | "consuming" | "__c
 // `{ get }` / `{ get set }` / `{ set get }` is now an accessorClauseList of bodyless get/set
 // clauses (see `codeBlock?` above), matching swift-syntax's single AccessorBlock model.
 
-willSetDidSetBlock = "{" willSetClause didSetClause? "}" .
-willSetDidSetBlock = "{" didSetClause willSetClause? "}" .
+willSetDidSetBlock = "{" willSetClause didSetClause? "}"
+                   | "{" didSetClause willSetClause? "}" .
+
 willSetClause = attributes? "willSet" setterName? accessorEffects? codeBlock .
 didSetClause = attributes? "didSet" setterName? accessorEffects? codeBlock .
 
 // Shared `parseAccessorEffectSpecifiers` shape (Specifiers.swift): `throws` alone, or `async` optionally
 // followed by `throws`. Typed throws (`throws(E)`) parsing in accessor positions is handled by `throwsClause`
 // elsewhere — kept simple here per current grammar style.
-accessorEffects = "throws" .
-accessorEffects = "async" "throws"? .
+accessorEffects = "throws" | "async" "throws"? .
 
-// Grammar of a type alias declaration
+/// Grammar of a type alias declaration
+/// typealias-declaration → attributes? access-level-modifier? typealias typealias-name generic-parameter-clause? typealias-assignment
+/// typealias-name → identifier
+/// typealias-assignment → = type
 
 typealiasDeclaration = attributes? accessLevelModifier? "typealias" typealiasName genericParameterClause? typealiasAssignment .
 typealiasName = hardIdentifier .
 typealiasAssignment = assignmentOperator type .
 
-// Grammar of a function declaration
+/// Grammar of a function declaration
+/// function-declaration → function-head function-name generic-parameter-clause? function-signature generic-where-clause? function-body?
+/// function-head → attributes? declaration-modifiers? func
+/// function-name → identifier | operator
+/// function-signature → parameter-clause async? throws-clause? function-result?
+/// function-signature → parameter-clause async? rethrows function-result?
+/// function-result → -> attributes? type
+/// function-body → code-block
+/// parameter-clause → ( ) | ( parameter-list ,? )
+/// parameter-list → parameter | parameter , parameter-list
+/// parameter → external-parameter-name? local-parameter-name parameter-type-annotation default-argument-clause?
+/// parameter → external-parameter-name? local-parameter-name parameter-type-annotation
+/// parameter → external-parameter-name? local-parameter-name parameter-type-annotation ...
+/// external-parameter-name → identifier
+/// local-parameter-name → identifier
+/// parameter-type-annotation → : attributes? parameter-modifier? type
+/// parameter-modifier → inout | borrowing | consuming default-argument-clause → = expression
 
 // `functionBody?` is optional — swift-syntax parses funcs with `parseOptionalCodeBlock`, so a
 // bodiless `func f()` is syntactically valid EVERYWHERE (top-level too; a missing body is a
@@ -1707,7 +2035,25 @@ parameterDeclarationModifiers = parameterDeclarationModifier parameterDeclaratio
 parameterDeclarationModifier = "_const" | "isolated" .    // TODO: verify parameter-declaration modifiers (swift-syntax ParameterModifier, TokenSpecSet.swift:814)
 defaultArgumentClause = assignmentOperator expression .
 
-// Grammar of an enumeration declaration
+/// Grammar of an enumeration declaration
+/// enum-declaration → attributes? access-level-modifier? union-style-enum
+/// enum-declaration → attributes? access-level-modifier? raw-value-style-enum
+/// union-style-enum → indirect? enum enum-name generic-parameter-clause? type-inheritance-clause? generic-where-clause? { union-style-enum-members? }
+/// union-style-enum-members → union-style-enum-member union-style-enum-members?
+/// union-style-enum-member → declaration | union-style-enum-case-clause | compiler-control-statement
+/// union-style-enum-case-clause → attributes? indirect? case union-style-enum-case-list
+/// union-style-enum-case-list → union-style-enum-case | union-style-enum-case , union-style-enum-case-list
+/// union-style-enum-case → enum-case-name tuple-type?
+/// enum-name → identifier
+/// enum-case-name → identifier
+/// raw-value-style-enum → enum enum-name generic-parameter-clause? type-inheritance-clause generic-where-clause? { raw-value-style-enum-members }
+/// raw-value-style-enum-members → raw-value-style-enum-member raw-value-style-enum-members?
+/// raw-value-style-enum-member → declaration | raw-value-style-enum-case-clause | compiler-control-statement
+/// raw-value-style-enum-case-clause → attributes? case raw-value-style-enum-case-list
+/// raw-value-style-enum-case-list → raw-value-style-enum-case | raw-value-style-enum-case , raw-value-style-enum-case-list
+/// raw-value-style-enum-case → enum-case-name raw-value-assignment?
+/// raw-value-assignment → = raw-value-literal
+/// raw-value-literal → numeric-literal | static-string-literal | boolean-literal
 
 // ONE enum declaration — swift-syntax has a single EnumDeclSyntax; the raw-value-style
 // vs union-style distinction is SEMANTIC (compiler-enforced), not syntactic. The old
@@ -1745,7 +2091,12 @@ enumCaseElementList = enumCaseElement | enumCaseElement "," enumCaseElementList 
 enumCaseElement = enumCaseName associatedValues? enumCaseRawValueInitializer? .
 enumCaseRawValueInitializer = assignmentOperator expression .
 
-// Grammar of a structure declaration
+/// Grammar of a structure declaration
+/// struct-declaration → attributes? access-level-modifier? struct struct-name generic-parameter-clause? type-inheritance-clause? generic-where-clause? struct-body
+/// struct-name → identifier
+/// struct-body → { struct-members? }
+/// struct-members → struct-member struct-members?
+/// struct-member → declaration | compiler-control-statement
 
 structDeclaration = attributes? accessLevelModifier? "struct" structName genericParameterClause? typeInheritanceClause? genericWhereClause? structBody .
 structName = hardIdentifier .
@@ -1756,7 +2107,13 @@ structMembers = structMember statementSeparator structMembers .
 structMember = memberDeclaration | compilerControlStatement .
 // TODO: Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
-// Grammar of a class declaration
+/// Grammar of a class declaration
+/// class-declaration → attributes? access-level-modifier? final? class class-name generic-parameter-clause? type-inheritance-clause? generic-where-clause? class-body
+/// class-declaration → attributes? final access-level-modifier? class class-name generic-parameter-clause? type-inheritance-clause? generic-where-clause? class-body
+/// class-name → identifier
+/// class-body → { class-members? }
+/// class-members → class-member class-members?
+/// class-member → declaration | compiler-control-statement
 
 classDeclaration = attributes? accessLevelModifier? "final"? "class" className genericParameterClause? typeInheritanceClause? genericWhereClause? classBody .
 classDeclaration = attributes? "final" accessLevelModifier? "class" className genericParameterClause? typeInheritanceClause? genericWhereClause? classBody .
@@ -1768,7 +2125,12 @@ classMembers = classMember statementSeparator classMembers .
 classMember = memberDeclaration | compilerControlStatement .
 // TODO: Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
-// Grammar of an actor declaration
+/// Grammar of an actor declaration
+/// actor-declaration → attributes? access-level-modifier? actor actor-name generic-parameter-clause? type-inheritance-clause? generic-where-clause? actor-body
+/// actor-name → identifier
+/// actor-body → { actor-members? }
+/// actor-members → actor-member actor-members?
+/// actor-member → declaration | compiler-control-statement
 
 actorDeclaration = attributes? accessLevelModifier? "actor" actorName genericParameterClause? typeInheritanceClause? genericWhereClause? actorBody .
 actorName = hardIdentifier .
@@ -1779,7 +2141,34 @@ actorMembers = actorMember statementSeparator actorMembers .
 actorMember = memberDeclaration | compilerControlStatement .
 // TODO: Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
-// Grammar of a protocol declaration
+/// Grammar of a protocol declaration
+/// protocol-declaration → attributes? access-level-modifier? protocol protocol-name type-inheritance-clause? generic-where-clause? protocol-body
+/// protocol-name → identifier
+/// protocol-body → { protocol-members? }
+/// protocol-members → protocol-member protocol-members?
+/// protocol-member → protocol-member-declaration | compiler-control-statement
+/// protocol-member-declaration → protocol-property-declaration
+/// protocol-member-declaration → protocol-method-declaration
+/// protocol-member-declaration → protocol-initializer-declaration
+/// protocol-member-declaration → protocol-subscript-declaration
+/// protocol-member-declaration → protocol-associated-type-declaration
+/// protocol-member-declaration → typealias-declaration
+///
+/// Grammar of a protocol property declaration
+/// protocol-property-declaration → variable-declaration-head variable-name type-annotation getter-setter-keyword-block
+
+/// Grammar of a protocol method declaration
+/// protocol-method-declaration → function-head function-name generic-parameter-clause? function-signature generic-where-clause?
+
+/// Grammar of a protocol initializer declaration
+/// protocol-initializer-declaration → initializer-head generic-parameter-clause? parameter-clause throws-clause? generic-where-clause?
+/// protocol-initializer-declaration → initializer-head generic-parameter-clause? parameter-clause rethrows generic-where-clause?
+
+/// Grammar of a protocol subscript declaration
+/// protocol-subscript-declaration → subscript-head subscript-result generic-where-clause? getter-setter-keyword-block
+
+/// Grammar of a protocol associated type declaration
+/// protocol-associated-type-declaration → attributes? access-level-modifier? associatedtype typealias-name type-inheritance-clause? typealias-assignment? generic-where-clause?
 
 protocolDeclaration = attributes? accessLevelModifier? "protocol" protocolName primaryAssociatedTypeClause? typeInheritanceClause? genericWhereClause? protocolBody .  // TODO: SE-0346 primary associated types
 protocolName = hardIdentifier .
@@ -1800,10 +2189,16 @@ protocolMembers = protocolMember statementSeparator protocolMembers .
 protocolMember = memberDeclaration | compilerControlStatement .
 // TODO: Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
-// protocolAssociatedTypeDeclaration = attributes? accessLevelModifier? "associatedtype" typealiasName typeInheritanceClause? typealiasAssignment? genericWhereClause? .
 associatedTypeDeclaration = attributes? declarationModifiers? "associatedtype" typealiasName typeInheritanceClause? typealiasAssignment? genericWhereClause? .  // TODO: verify grammar fix
 
-// Grammar of an initializer declaration
+
+/// Grammar of an initializer declaration
+/// initializer-declaration → initializer-head generic-parameter-clause? parameter-clause async? throws-clause? generic-where-clause? initializer-body
+/// initializer-declaration → initializer-head generic-parameter-clause? parameter-clause async? rethrows generic-where-clause? initializer-body
+/// initializer-head → attributes? declaration-modifiers? init
+/// initializer-head → attributes? declaration-modifiers? init ?
+/// initializer-head → attributes? declaration-modifiers? init !
+/// initializer-body → code-block
 
 // swift-syntax parseInitializerDeclaration (Declarations.swift:1269) uses
 // parseOptionalCodeBlock — body is syntactically optional, compiler enforces it.
@@ -1822,25 +2217,19 @@ initializerHead = attributes? declarationModifiers? "init" "?" .   // space allo
 initializerHead = attributes? declarationModifiers? "init" "!" .
 initializerBody = codeBlock .
 
-// Grammar of a deinitializer declaration
+/// Grammar of a deinitializer declaration
+/// deinitializer-declaration → attributes? deinit code-block
 
-//deinitializerDeclaration = attributes? "deinit" codeBlock .
 // swift-syntax: modifiers before deinit (Modifiers.swift), `async` effect after deinit
 // via parseDeinitEffectSpecifiers (Specifiers.swift:721); body optional via parseOptionalCodeBlock.
 deinitializerDeclaration = attributes? declarationModifiers? "deinit" "async"? codeBlock? .
 
-// Declaration types allowed as the argument to `@abi(...)` — mirrors swift-syntax
-// ABIAttributeArgumentsSyntax.Provider (8 cases; import/class/struct/etc. are NOT included).
-abiDeclaration = associatedTypeDeclaration | deinitializerDeclaration | enumCaseDeclaration
-               | functionDeclaration | initializerDeclaration | bodylessInitializerDeclaration
-               | subscriptDeclaration | abiSubscriptDeclaration
-               | typealiasDeclaration | variableDeclaration | constantDeclaration | abiVariableDeclaration .
-// ABI signatures may be bodyless (they are declarations-without-implementation):
-abiSubscriptDeclaration = subscriptHead subscriptResult genericWhereClause? .        // `subscript(i:) -> E` with no accessor block
-abiVariableDeclaration  = variableDeclarationHead variableName getterSetterBlock .   // `var v { get set }` with no type annotation
 
-
-// Grammar of an extension declaration
+/// Grammar of an extension declaration
+/// extension-declaration → attributes? access-level-modifier? extension type-identifier type-inheritance-clause? generic-where-clause? extension-body
+/// extension-body → { extension-members? }
+/// extension-members → extension-member extension-members?
+/// extension-member → declaration | compiler-control-statement
 
 extensionDeclaration = attributes? accessLevelModifier? "extension" typeIdentifier typeInheritanceClause? genericWhereClause? extensionBody .
 extensionBody = "{" extensionMembers? "}" .
@@ -1850,7 +2239,12 @@ extensionMembers = extensionMember statementSeparator extensionMembers .
 extensionMember = memberDeclaration | compilerControlStatement .
 // Swift 6.3 grammar bug see issue https://github.com/swiftlang/swift-book/issues/201
 
-// Grammar of a subscript declaration
+/// Grammar of a subscript declaration
+/// subscript-declaration → subscript-head subscript-result generic-where-clause? code-block
+/// subscript-declaration → subscript-head subscript-result generic-where-clause? getter-setter-block
+/// subscript-declaration → subscript-head subscript-result generic-where-clause? getter-setter-keyword-block
+/// subscript-head → attributes? declaration-modifiers? subscript generic-parameter-clause? parameter-clause
+/// subscript-result → -> attributes? type
 
 // A bare `{ stmts }` body (implicit getter) is already covered by `getterSetterBlock = codeBlock`
 // (see above), so no separate `… codeBlock` alternate is needed — it only duplicated this one.
@@ -1859,7 +2253,12 @@ subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterS
 subscriptHead = attributes? declarationModifiers? "subscript" genericParameterClause? parameterClause .
 subscriptResult = "->" type .   // result-type attributes carried by `type`
 
-// Grammar of a macro declaration
+/// Grammar of a macro declaration
+/// macro-declaration → macro-head identifier generic-parameter-clause? macro-signature macro-definition? generic-where-clause
+/// macro-head → attributes? declaration-modifiers? macro
+/// macro-signature → parameter-clause macro-function-signature-result?
+/// macro-function-signature-result → -> type
+/// macro-definition → = expression
 
 macroDeclaration = macroHead hardIdentifier genericParameterClause? macroSignature macroDefinition? genericWhereClause? . // TODO: verify that genericWhereClause? is a correct grammar fix.
 macroHead = attributes? declarationModifiers? "macro" .
@@ -1867,22 +2266,38 @@ macroSignature = parameterClause macroFunctionSignatureResult? .
 macroFunctionSignatureResult = "->" type .
 macroDefinition = assignmentOperator expression .
 
-// Grammar of an operator declaration
+/// Grammar of an operator declaration
+/// operator-declaration → prefix-operator-declaration | postfix-operator-declaration | infix-operator-declaration
+/// prefix-operator-declaration → prefix operator operator
+/// postfix-operator-declaration → postfix operator operator
+/// infix-operator-declaration → infix operator operator infix-operator-group?
+/// infix-operator-group → : precedence-group-name
 
-operatorDeclaration = prefixOperatorDeclaration | postfixOperatorDeclaration | infixOperatorDeclaration .
+//operatorDeclaration = prefixOperatorDeclaration | postfixOperatorDeclaration | infixOperatorDeclaration .
+//prefixOperatorDeclaration = "prefix" "operator" operator infixOperatorGroup? .   // TODO: swift-syntax accepts ':' clause syntactically on all fixities
+//postfixOperatorDeclaration = "postfix" "operator" operator infixOperatorGroup? .
+//infixOperatorDeclaration = "infix" "operator" operator infixOperatorGroup? .
 
-//prefixOperatorDeclaration = "prefix" "operator" operator .
-//postfixOperatorDeclaration = "postfix" "operator" operator .
-prefixOperatorDeclaration = "prefix" "operator" operator infixOperatorGroup? .   // TODO: swift-syntax accepts ':' clause syntactically on all fixities
-postfixOperatorDeclaration = "postfix" "operator" operator infixOperatorGroup? .
-infixOperatorDeclaration = "infix" "operator" operator infixOperatorGroup? .
+operatorDeclaration = ( "prefix" | "postfix" | "infix" ) "operator" operator infixOperatorGroup? .
 
-//infixOperatorGroup = ":" precedenceGroupName .
 infixOperatorGroup = ":" precedenceGroupName designatedTypes? . // TODO: grammar fix
 designatedTypes = "," | "," designatedType designatedTypes? .   // trailing comma allowed (swift-syntax tolerates `operator : Prec,`)
 designatedType = identifier | escapedIdentifier | nonWordToken | literal | operator .   // swift-syntax consumes ANY token here (deprecated feature) — identifier/escapedIdentifier catch all word tokens, nonWordToken the rest
 
-// Grammar of a precedence group declaration
+/// Grammar of a precedence group declaration
+/// precedence-group-declaration → precedencegroup precedence-group-name { precedence-group-attributes? }
+/// precedence-group-attributes → precedence-group-attribute precedence-group-attributes?
+/// precedence-group-attribute → precedence-group-relation
+/// precedence-group-attribute → precedence-group-assignment
+/// precedence-group-attribute → precedence-group-associativity
+/// precedence-group-relation → higherThan : precedence-group-names
+/// precedence-group-relation → lowerThan : precedence-group-names
+/// precedence-group-assignment → assignment : boolean-literal
+/// precedence-group-associativity → associativity : left
+/// precedence-group-associativity → associativity : right
+/// precedence-group-associativity → associativity : none
+/// precedence-group-names → precedence-group-name | precedence-group-name , precedence-group-names
+/// precedence-group-name → identifier
 
 precedenceGroupDeclaration = "precedencegroup" precedenceGroupName "{" precedenceGroupAttributes? "}" .
 
@@ -1896,14 +2311,30 @@ precedenceGroupRelation = "lowerThan" ":" precedenceGroupNames .
 
 precedenceGroupAssignment = "assignment" ":" booleanLiteral .
 
-precedenceGroupAssociativity = "associativity" ":" "left" .
-precedenceGroupAssociativity = "associativity" ":" "right" .
-precedenceGroupAssociativity = "associativity" ":" "none" .
+//precedenceGroupAssociativity = "associativity" ":" "left" .
+//precedenceGroupAssociativity = "associativity" ":" "right" .
+//precedenceGroupAssociativity = "associativity" ":" "none" .
+
+precedenceGroupAssociativity = "associativity" ":" ( "left" | "right" | "none" ) .
+
 
 precedenceGroupNames = precedenceGroupName | precedenceGroupName "," precedenceGroupNames .
 precedenceGroupName = hardIdentifier .
 
-// Grammar of a declaration modifier
+/// Grammar of a declaration modifier
+/// declaration-modifier → class | convenience | dynamic | final | infix | lazy | optional | override | postfix | prefix | required | static | unowned | unowned ( safe ) | unowned ( unsafe ) | weak
+/// declaration-modifier → access-level-modifier
+/// declaration-modifier → mutation-modifier
+/// declaration-modifier → actor-isolation-modifier
+/// declaration-modifiers → declaration-modifier declaration-modifiers?
+/// access-level-modifier → private | private ( set )
+/// access-level-modifier → fileprivate | fileprivate ( set )
+/// access-level-modifier → internal | internal ( set )
+/// access-level-modifier → package | package ( set )
+/// access-level-modifier → public | public ( set )
+/// access-level-modifier → open | open ( set )
+/// mutation-modifier → mutating | nonmutating
+/// actor-isolation-modifier → nonisolated
 
 // Mirrors swift-syntax DeclarationModifier set (TokenSpecSet.swift:350-386).
 // Position constraints (e.g. async only after parameter clause) are semantic, not syntactic;
@@ -1929,9 +2360,18 @@ actorIsolationModifier = "nonisolated" | "nonisolated" "(" "unsafe" ")" | "nonis
 
 
 
-// ATTRIBUTES
-
-// Grammar of an attribute
+/// ATTRIBUTES
+/// Grammar of an attribute
+/// attribute → @ attribute-name attribute-argument-clause?
+/// attribute-name → identifier
+/// attribute-argument-clause → ( balanced-tokens? )
+/// attributes → attribute attributes?
+/// balanced-tokens → balanced-token balanced-tokens?
+/// balanced-token → ( balanced-tokens? )
+/// balanced-token → [ balanced-tokens? ]
+/// balanced-token → { balanced-tokens? }
+/// balanced-token → Any identifier, keyword, literal, or operator
+/// balanced-token → Any punctuation except (, ), [, ], {, or }
 
 // `@longest`: an attribute greedily takes its (tight) argument clause. Without this,
 // `@derivative(of: x)⏎func f()` is ambiguous — the attribute could skip its args, leaving
@@ -1946,10 +2386,23 @@ actorIsolationModifier = "nonisolated" | "nonisolated" "(" "unsafe" ")" | "nonis
 // TODO: why no @longest here?
 attribute = "@" >s< "abi" >s< "(" abiDeclaration ")" .
 
+// Declaration types allowed as the argument to `@abi(...)` — mirrors swift-syntax
+// ABIAttributeArgumentsSyntax.Provider (8 cases; import/class/struct/etc. are NOT included).
+abiDeclaration = associatedTypeDeclaration | deinitializerDeclaration | enumCaseDeclaration
+               | functionDeclaration | initializerDeclaration | bodylessInitializerDeclaration
+               | subscriptDeclaration | abiSubscriptDeclaration
+               | typealiasDeclaration | variableDeclaration | constantDeclaration | abiVariableDeclaration .
+// ABI signatures may be bodyless (they are declarations-without-implementation):
+abiSubscriptDeclaration = subscriptHead subscriptResult genericWhereClause? .        // `subscript(i:) -> E` with no accessor block
+abiVariableDeclaration  = variableDeclarationHead variableName getterSetterBlock .   // `var v { get set }` with no type annotation
+
+
+
 // `@isolated(x)` (SE-0431) — the argument is a plain identifier (`any` in valid code; swift-syntax's
 // parser accepts any identifier here and defers the `any`-only check to sema, so `@isolated(sdfhsdfi)`
 // parses). A dedicated rule so the argument is NOT the balanced-token soup: `@isolated(Swift::any)`
 // rejects (a module selector leaves `::any` as unexpected code — testModuleSelectorAttrs).
+// TODO: why no @longest here?
 attribute = "@" >s< "isolated" >s< "(" identifier ")" .
 
 // @attached / @freestanding — swift-syntax parseMacroRoleArguments: role (identifier or `extension`)
@@ -2024,35 +2477,30 @@ balancedToken = @prefer identifier
               | literal
               | operator .
 // @prefer identifier over literal: `true`/`false`/`nil` are keyword-shaped and match BOTH; in attribute token-soup (`@_specialize(exported: true, …)`) they are raw keyword tokens, so take the identifier reading. Numbers/strings match only `literal`, so they're unaffected.
-//balancedToken = Any identifier, keyword, literal, or operator .
-//balancedToken = Any punctuation except (, ), [, ], {, or } .
 
 balancedTokens = balancedToken balancedTokens? .
 
-balancedToken = "(" balancedTokens? ")" .
-balancedToken = "[" balancedTokens? "]" .
-balancedToken = "{" balancedTokens? "}" .
+balancedToken = "(" balancedTokens? ")"
+              | "[" balancedTokens? "]"
+              | "{" balancedTokens? "}" .
 
 
-// PATTERNS
+/// PATTERNS
+/// Grammar of a pattern
+/// pattern → wildcard-pattern type-annotation?
+/// pattern → identifier-pattern type-annotation?
+/// pattern → value-binding-pattern
+/// pattern → tuple-pattern type-annotation?
+/// pattern → enum-case-pattern
+/// pattern → optional-pattern
+/// pattern → type-casting-pattern
+/// pattern → expression-pattern
 
 //bindingPattern / matchPattern split, see https://raw.githubusercontent.com/swiftlang/swift-book/main/TSPL.docc/ReferenceManual/Patterns.md
-
-// Grammar of a pattern
-
-//pattern = wildcardPattern typeAnnotation? .
-//pattern = identifierPattern typeAnnotation? .
-//pattern = valueBindingPattern .
-//pattern = tuplePattern typeAnnotation? .
-//pattern = enumCasePattern .
-//pattern = optionalPattern .
-//pattern = typeCastingPattern .
-//pattern = expressionPattern .
-
 // Binding patterns — let/var declarations, optional binding conditions (if let, guard let)
-bindingPattern = wildcardPattern typeAnnotation? .
-bindingPattern = identifierPattern typeAnnotation? .
-bindingPattern = tupleBindingPattern typeAnnotation? .
+bindingPattern = wildcardPattern typeAnnotation?
+               | identifierPattern typeAnnotation?
+               | tupleBindingPattern typeAnnotation? .
 
 tupleBindingPattern = "(" tupleBindingElementList? ")" .
 tupleBindingElementList = tupleBindingElement | tupleBindingElement "," tupleBindingElementList .
@@ -2087,34 +2535,18 @@ matchPattern = typeCastingPattern .
 // the pattern-vs-expression fork; `let`/`var`/`is` are the true pattern forms, everything else is an expression.
 matchPattern = @prefer expressionPattern .
 
-// Grammar of a tuple pattern
-
-tupleMatchPattern = "(" tupleMatchElementList? ")" .
-tupleMatchElementList = tupleMatchElement | tupleMatchElement "," tupleMatchElementList .
-tupleMatchElement = matchPattern | softIdentifier ":" matchPattern .
-
-// Grammar of a wildcard pattern
+/// Grammar of a wildcard pattern
+/// wildcard-pattern → _
 
 wildcardPattern = "_" .
 
-// Grammar of an identifier pattern
+/// Grammar of an identifier pattern
+/// identifier-pattern → identifier
 
-//identifierPattern = identifier .
 identifierPattern = hardIdentifier | "self" .       // Swift syntax error, 'self' is allowed as an identifier in optional-binding-condition  TODO: WTF???
 
-//valueBindingPattern = "var" pattern | "let" pattern .
-
-//tuplePattern = "(" tuplePatternElementList? ")" .
-//tuplePatternElementList = tuplePatternElement | tuplePatternElement "," tuplePatternElementList .
-//tuplePatternElement = pattern | softIdentifier ":" pattern .
-
-//enumCasePattern = typeIdentifier? "." enumCaseName tuplePattern? .
-
-// Grammar of an optional pattern
-
-optionalPattern = identifierPattern >s< optionalMark .                       // disallow space before '?'
-
-// Grammar of a value-binding pattern
+/// Grammar of a value-binding pattern
+/// value-binding-pattern → var pattern | let pattern
 
 // Match-only patterns
 // swift-syntax ValueBindingPatternSyntax.BindingSpecifierOptions (Parser+TokenSpecSet.swift:4112-4142):
@@ -2134,30 +2566,61 @@ valueBindingPattern = "_borrowing" >+> ( identifier "_" ) matchPattern
 // pattern `borrowing(…)`, not a binding. Only these two introducers are gated in swift; let/var/inout/
 // _consuming/_mutating are unconditional.
 
-// Grammar of an enumeration case pattern
+
+/// Grammar of a tuple pattern
+/// tuple-pattern → ( tuple-pattern-element-list? )
+/// tuple-pattern-element-list → tuple-pattern-element | tuple-pattern-element , tuple-pattern-element-list
+/// tuple-pattern-element → pattern | identifier : pattern
+
+tupleMatchPattern = "(" tupleMatchElementList? ")" .
+tupleMatchElementList = tupleMatchElement | tupleMatchElement "," tupleMatchElementList .
+tupleMatchElement = matchPattern | softIdentifier ":" matchPattern .
+
+/// Grammar of an enumeration case pattern
+/// enum-case-pattern → type-identifier? . enum-case-name tuple-pattern?
 
 enumCasePattern = typeIdentifier? "." enumCaseName tupleMatchPattern? .
 // SE-0036 — leading-dot-less enum-case pattern. swift-syntax's `parseMatchingPattern` accepts
 // a bare `Name(args)` form when the enum type is inferable from context; the compiler validates.
 enumCasePattern = enumCaseName tupleMatchPattern .
 
-// Grammar of a type casting pattern
+/// Grammar of an optional pattern
+/// optional-pattern → identifier-pattern ?
+
+optionalPattern = identifierPattern >s< optionalMark .                       // disallow space before '?'
+
+/// Grammar of a type casting pattern
+/// type-casting-pattern → is-pattern | as-pattern
+/// is-pattern → is type
+/// as-pattern → pattern as type
 
 typeCastingPattern = isPattern .
 isPattern = "is" type .
 
 // asPattern removed: `x as T` in a pattern is a SequenceExpr → already covered by `@prefer expressionPattern` (probe: dump-parse shows sequence_expr).
 //The dedicated `asPattern = matchPattern "as" type` only ever added the spurious `(let x) as T` reading (let binds outermost) — a residual matchPattern ambiguity — and was never the faithful shape.
-//asPattern = matchPattern "as" type .
 
-// Grammar of an expression pattern
+/// Grammar of an expression pattern
+/// expression-pattern → expression
 
 expressionPattern = expression .
 
 
-// GENERIC PARAMETERS AND ARGUMENTS
-
-// Grammar of a generic parameter clause
+/// GENERIC PARAMETERS AND ARGUMENTS
+/// Grammar of a generic parameter clause
+/// generic-parameter-clause → < generic-parameter-list ,? >
+/// generic-parameter-list → generic-parameter | generic-parameter , generic-parameter-list
+/// generic-parameter → type-name
+/// generic-parameter → type-name : type-identifier
+/// generic-parameter → type-name : protocol-composition-type
+/// generic-parameter → let type-name : type \
+/// generic-where-clause → where requirement-list
+/// requirement-list → requirement | requirement , requirement-list
+/// requirement → conformance-requirement | same-type-requirement
+/// conformance-requirement → type-identifier : type-identifier
+/// conformance-requirement → type-identifier : protocol-composition-type
+/// same-type-requirement → type-identifier == type
+/// same-type-requirement → type-identifier == signed-integer-literal
 
 // declaration-position generic params are unambiguous — no follow-restriction (unlike expression-position genericArgumentClause)
 genericParameterClause  = openAngle genericParameterList ","? closeAngle .
@@ -2169,16 +2632,12 @@ genericParameter = attributes? typeName .
 genericParameter = attributes? typeName ":" "~"? typeIdentifier .          // TODO: T: P or T: ~Copyable (SE-0390)
 genericParameter = attributes? typeName ":" "~"? protocolCompositionType . // TODO: T: P & Q or T: ~(P & Q)
 genericParameter = attributes? "let" typeName ":" type .
-//genericParameter = typeName ":" typeIdentifier .
-//genericParameter = typeName ":" protocolCompositionType .
 
 genericWhereClause = "where" requirementList .
 requirementList = requirement | requirement "," requirementList .
 
 requirement = conformanceRequirement | sameTypeRequirement .
 
-//conformanceRequirement = typeIdentifier ":" typeIdentifier .
-//conformanceRequirement = typeIdentifier ":" protocolCompositionType .
 // TODO: LHS is typeIdentifier (compiler-correct — only nominal types can have constraints).
 // RHS allows "~"? for SE-0390 suppressed conformance (T: ~Copyable in where clauses).
 // swift-syntax accepts function types etc. on LHS but compiler rejects those — we follow compiler.
@@ -2188,7 +2647,10 @@ conformanceRequirement = typeIdentifier ":" "~"? protocolCompositionType .
 sameTypeRequirement = typeIdentifier "==" type .
 sameTypeRequirement = typeIdentifier "==" signedIntegerLiteral .
 
-// Grammar of a generic argument clause
+/// Grammar of a generic argument clause
+/// generic-argument-clause → < generic-argument-list ,? >
+/// generic-argument-list → generic-argument | generic-argument , generic-argument-list
+/// generic-argument → type | signed-integer-literal
 
 // Expression-position generic args: the `>+>(...)` follow-restriction is swift-syntax's
 // `isGenericTypeDisambiguatingToken` set (Types.swift:1478) — what may legally follow `>` for the

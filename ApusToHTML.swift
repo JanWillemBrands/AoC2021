@@ -334,7 +334,7 @@ private final class ApusHTMLConverter {
         let startLine = curLine
         var pragmas: [String] = []
 
-        // leading pragmas: @longest / @scalar / @lexicalClass / @splitBefore("c") / …
+        // leading pragmas: @longest / @scalar / @lexicalClass / @preempt(X, N) / …
         while k == "pragma" {
             pragmas.append(t)
             pos += 1

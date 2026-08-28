@@ -377,5 +377,6 @@ struct SwiftSyntaxTests {
             #expect(switchCaseTree.contains("ExpressionPattern"))
             #expect(switchCaseTree.contains("PatternExpr"))
         }
+
     }
 }

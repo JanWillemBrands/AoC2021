@@ -592,6 +592,56 @@ why the straddle feels alien; what is dead is this route to avoiding it. Grammar
 **Open.** No credible path yet that avoids the straddle. Speculative parsing is untouched by this
 failure — the recogniser query is sound; it was the edge-pruning consumer that collapsed.
 
+**OUTCOME (2026-08-28) — `@preempt` landed; `150a/b` FIXED, `151a/b` remain. Sweep 41/0/0.**
+
+The straddle was avoided exactly as hoped: the decision sits at the operator's START, where every
+candidate match shares the position, so it is a plain choice among sibling EXTENTS — no span geometry,
+no Oracle rule. `@splitBefore` + `@yieldTo` were folded into ONE annotation, second operand optional:
+
+```apus
+@lexicalClass @preempt(regexOpenSlash, plainRegularExpressionLiteral)   -- offer split + COMMIT
+operatorToken - @builder .
+@preempt(openAngle)                                                     -- offer only (generics)
+operatorName  - @builder .
+```
+
+Two operands are irreducible: the first names the terminal whose `<-<` gate (swift's `isLeftBound`
+analogue, checked at the operator's start) decides whether a split is offered; it cannot be derived
+from `FIRST(N)`, whose members differ in gating (`regexOpenSlashNL` is ungated, so "some member
+passes" would never block infix `x+/y/`). Viability comes from a MEMOISED speculative recogniser
+sub-parse — the reuse the design doc prescribed.
+
+Enablers found along the way:
+- The `isSubParser` FOLLOW exemption covers only the sub-parse ROOT, so the target must be
+  `plainRegularExpressionLiteral`, not `regularExpressionLiteral` (an inner nonterminal stays gated).
+- The predict filter must be skipped for recognisers, else the query inherits an outer FOLLOW
+  obligation and answers NO for a well-formed regex.
+- **Regex boundary spaces, stated structurally.** swift bans an *unescaped* space/tab adjacent to a
+  bare `/…/` delimiter but allows INTERIOR ones. `>s<` cannot express this — it measures the trivia
+  GAP, while a boundary space is body CONTENT, so GLL always finds the atom derivation (probe-proved:
+  even with trivia stripping enabled the space still matched as an atom). Encoded instead as
+  `regexBody = regexItem | regexItem regexBodyTail` with `regexSpaceAtom` only interior; `/a b/` still
+  parses and `/a\ /` (escaped) stays legal, matching swift's "unespaced". The `>s<` gates STAY — they
+  block the trivia route, which the structural rule cannot see (removing them wrongly accepts `/ a/`).
+
+**Latent bug found and FIXED: `boundaryMatches` was universally quantified.** Commits sharing a
+`triviaEnd` are ALTERNATIVE lexicalisations, so requiring all to satisfy let one veto another — in
+`_ = /\ /` the literal `"\\"[5,6]` (space as trailing trivia) vetoed `regexEscape[5,7]` (gap empty).
+That broke MONOTONICITY: an extra surviving lexicalisation could REMOVE a parse. Now existential.
+Behaviour-neutral today (41/0/0) because the predict filter happened to prune the loser — which is
+precisely why it would have bitten later, blamed on whatever change exposed it.
+
+**Predict filter: considered, measured, KEPT.** It is not the pure optimisation the design doc claims.
+Removing the FOLLOW-derived half (keeping the grammar-authored `>+>`, which shares the block) gives
+reject 40 / accept 4 under the old boundary semantics, and 41 / 14 / ambiguity 1 with the existential
+fix — the extra derivations change what `@prefer`/`@longest` see and they mis-prune. Also DEAD CODE
+REMOVED: the `lexLKH` protocol method (no overrides, no call sites) and the whole `LCNPLexer` protocol
+(one conformer, one use site — an existential on the hot path).
+
+**Open lead:** without the filter, rejects went 41 → 40, so one current over-accept is failing only
+because of it. Worth re-checking now that boundaries are existential.
+
+
 **Test-harness caveat:** a grammar LOAD failure makes every suite abort before running, and
 `tools/run_tests.sh` then prints `PASS` with `reject 0 / accept 0 / ambiguity 0 / trees differ 0`.
 All-zero counts (especially `trees differ: 0`) mean "nothing ran", not "everything passed" — the

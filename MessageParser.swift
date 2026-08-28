@@ -85,7 +85,12 @@ class MessageParser {
     /// Backed by `OnDemandLiteralLexer` against `input` directly: literals via
     /// `hasPrefix`, regex via `prefixMatch`, trivia (whitespace + `=:`
     /// non-terminal recognisers) via `skipTrivia`.
-    var lexer: LCNPLexer!
+    var lexer: OnDemandLiteralLexer!
+
+    /// `@preempt(X, N)` viability queries, keyed by the ID of the terminal carrying the annotation:
+    /// "can `N` parse starting here?", answered by a memoised speculative recogniser sub-parse.
+    /// Built in `prepareInput`; empty for sub-parsers. Consumed by the commit rule in `tokenMatch`.
+    var preemptViable: [Int: (CharPosition) -> Bool] = [:]
 
     /// True when this parser instance is a recogniser sub-parser (a `=:` trivia or `=|` lexical
     /// nonterminal, prepared with `isSubParser: true`). Such a root is a RECOGNISER: it may
@@ -383,6 +388,32 @@ class MessageParser {
                 }
             }
         }
+        // `@preempt(X, N)` viability recognisers, keyed by the ID of the terminal carrying the
+        // annotation: "can `N` parse starting at `pos`?" A SPECULATIVE recogniser sub-parse — an
+        // `isSubParser` root is not FOLLOW/EOF-gated (see `followCheck`), so this answers the purely
+        // LEXICAL question independently of whether the enclosing parse can continue afterwards. That
+        // is the whole point: in `_ = ^/"/"` the regex `/"/` is perfectly well-formed, yet the main
+        // parse can never complete it because the trailing `"` leaves nothing legal to follow.
+        // Mirrors swift's `scanRegexLiteral`. Memoised per position, so the cost is one sub-parse per
+        // distinct candidate split point. Skipped for sub-parsers (would recurse).
+        preemptViable.removeAll(keepingCapacity: true)
+        if !isSubParser {
+            for (name, pat) in grammar.terminals {
+                guard let tid = grammar.symbolToID[name],
+                      let targetName = pat.preemptConstruct,
+                      let target = grammar.nonTerminals[targetName] else { continue }
+                let sub = MessageParser(grammar: grammar)
+                sub.prepareInput(input: input, isSubParser: true)
+                var memo: [CharPosition: Bool] = [:]
+                preemptViable[tid] = { pos in
+                    if let hit = memo[pos] { return hit }
+                    sub.runGLL(root: target, start: pos)
+                    let viable = sub.yield(of: target).contains { $0.i == pos }
+                    memo[pos] = viable
+                    return viable
+                }
+            }
+        }
         // Phase G: synthetic layout tokens (Python INDENT/DEDENT, etc.) are
         // resolved by `OnDemandLiteralLexer` from a precomputed source-position
         // table instead of being injected into `tokens[]`. Gated on
@@ -406,22 +437,23 @@ class MessageParser {
         // strictly longer match at the same start. Collect the class terminal
         // IDs; the runtime prefix-match lives in `OnDemandLiteralLexer.lex`.
         var lexicalClassIDs: [Int] = []
-        // `@splitBefore(X)`: terminal ID → the ID of the terminal `X` whose start
+        
+        // `@preempt(X, …)`: terminal ID → the ID of the terminal `X` whose start
         // positions define the split points. Terminal-keyed (not char-keyed) so the
         // split inherits `X`'s `<-<` gate (see the split-gate in `tokenMatch`).
-        var splitBeforeByID: [Int: Int] = [:]
+        var preemptStartByID: [Int: Int] = [:]
         for (name, pat) in grammar.terminals {
             guard let id = grammar.symbolToID[name] else { continue }
             if pat.isLexicalClass { lexicalClassIDs.append(id) }
-            if let st = pat.splitBeforeTerminal, let stID = grammar.symbolToID[st] {
-                splitBeforeByID[id] = stID
+            if let st = pat.preemptStart, let stID = grammar.symbolToID[st] {
+                preemptStartByID[id] = stID
             }
         }
         lexer = OnDemandLiteralLexer(
             input: input,
             literalSourceByID: literalSourceByID,
             regexByID: regexByID,
-            splitBeforeByID: splitBeforeByID,
+            preemptStartByID: preemptStartByID,
             lexicalClassIDs: lexicalClassIDs,
             triviaRegexes: triviaRegexes,
             triviaRecognisers: triviaRecognisers,
@@ -670,7 +702,7 @@ class MessageParser {
         }
 
         let predictBS = slot.followAheadBS.isEmpty ? slot.followBS : slot.followAheadBS
-        let predictKind = slot.followAheadBS.isEmpty ? "followBS" : "followAheadBS (>>1)"
+        let predictKind = slot.followAheadBS.isEmpty ? "followBS" : "followAheadBS (>+>)"
         if !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
             let idToName = Dictionary(uniqueKeysWithValues: grammar.symbolToID.map { ($0.value, $0.key) })
             let names = predictBS.compactMap { idToName[$0] }.sorted()
@@ -823,7 +855,7 @@ class MessageParser {
             // (e.g. at the very start of input or the first token of a fresh
             // clause). Use the *departing* trivia — the gap the lexer would
             // skip FROM this position to reach the next token's content start.
-            let contentStart = lexer.triviaSkipEnd(from: position)
+            let contentStart = lexer.skipTrivia(from: position)
             let gap = input[position..<contentStart]
             switch boundary {
             case "<s>": return !gap.isEmpty
@@ -833,6 +865,15 @@ class MessageParser {
             default: fatalError("\(#function): unexpected boundary \(boundary)")
             }
         }
+        // EXISTENTIAL over the commits ending here, not universal. Under multi-lex the commits
+        // sharing a `triviaEnd` are ALTERNATIVE lexicalisations — disjuncts, not conjuncts — and this
+        // check cannot know which one the current derivation used. Requiring ALL to satisfy let one
+        // alternative VETO another: in `_ = /\ /` the commits at 7 are `regexEscape[5,7]` (the escaped
+        // space, gap empty → `>s<` holds) and the literal `"\\"[5,6]` (backslash only, so the space is
+        // trailing trivia → `>s<` fails), and the second killed the first. That also broke
+        // MONOTONICITY: adding a surviving lexicalisation could REMOVE a parse, which is why deleting
+        // the FOLLOW-derived predict filter (which happened to prune the loser) wrongly rejected
+        // `_ = /\ /`. Existential restores it — more commits can only ever make a boundary pass.
         for i in idxs {
             let c = commits[i]
             let gap = input[c.end..<position]
@@ -844,9 +885,9 @@ class MessageParser {
             case ">n<": satisfied = !gap.contains(where: isLineBreak)
             default: fatalError("\(#function): unexpected boundary \(boundary)")
             }
-            if !satisfied { return false }
+            if satisfied { return true }
         }
-        return true
+        return false
     }
 
     @inline(always)
@@ -914,15 +955,15 @@ class MessageParser {
         // doesn't satisfy the grammar's lookbehind annotation. Cheap when the
         // terminal has no lookbehind (most do not).
         // Own-lookbehind gate (`++N`/`--N`): for a terminal carrying its own
-        // lookbehind that is NOT a `@splitBefore` terminal, a failing lookbehind
+        // lookbehind that is NOT a `@preempt` terminal, a failing lookbehind
         // blocks it entirely — the regex-vs-division case (`regexOpenSlash` after an
         // operand-ender is division, not a regex start).
-        if grammar.terminals[cL.name]?.splitBeforeTerminal == nil,
+        if grammar.terminals[cL.name]?.preemptStart == nil,
            let lookbehind = lookbehindByTerminalID[cL.nameID],
            !lookbehindAllows(lookbehind, at: cI) {
             return []
         }
-        // Inherited split gate: a `@splitBefore(X)` terminal offers its SPLIT
+        // Inherited split gate: a `@preempt(X, …)` terminal offers its SPLIT
         // (shorter) matches only where terminal `X` could legitimately begin — i.e.
         // when `X`'s own `<-<` lookbehind passes at `cI`. `X = regexOpenSlash` carries
         // the operand-ender exclusion (swift-syntax `preferRegexOverBinaryOperator`),
@@ -930,12 +971,27 @@ class MessageParser {
         // would expose a competing regex — is dropped and maximal munch wins; the
         // maximal base match always survives (operators legitimately follow operands).
         // Keying on `X` means the operator terminal needs no duplicated `<-<` list.
-        if let splitName = grammar.terminals[cL.name]?.splitBeforeTerminal,
+        if let splitName = grammar.terminals[cL.name]?.preemptStart,
            let splitID = grammar.symbolToID[splitName],
            let splitLookbehind = lookbehindByTerminalID[splitID],
            !lookbehindAllows(splitLookbehind, at: cI) {
             let maxEnd = matches.map(\.end).max()!
             matches = matches.filter { $0.end == maxEnd }
+        }
+
+        // `@preempt(X, N)` COMMIT — the mirror of the gate above, at the same anchor. The first operand
+        // only OFFERS the shorter reading ("give the regex a chance"); this makes it WIN wherever `N`
+        // genuinely parses, so maximal munch cannot swallow the start of a real `N`
+        // (`_ = ^/"/"` → `^` + regex, not `^/` + string). Every candidate here shares the start `cI`,
+        // so this is a plain choice among sibling EXTENTS — no span geometry, no post-parse rule.
+        // Commit at the EARLIEST viable split: swift's `lexOperatorIdentifier` scans the operator
+        // left-to-right for its first internal `/` and `break`s (keeping the whole operator) if the
+        // regex there fails, so `^/a/b/` must commit at the first slash, not at any.
+        if matches.count > 1, let viable = preemptViable[cL.nameID] {
+            let maxEnd = matches.map(\.end).max()!
+            if let commitEnd = Set(matches.map(\.end)).filter({ $0 < maxEnd }).sorted().first(where: viable) {
+                matches = matches.filter { $0.end <= commitEnd }
+            }
         }
 
         // Exclude: `---(…)` — for each candidate end, if any excluded terminal
@@ -956,22 +1012,27 @@ class MessageParser {
             if matches.isEmpty { return [] }
         }
 
-        // Predict-set lookahead — Phase F's `lexLKH`. For each candidate end,
-        // some terminal that can legally follow this slot must lex at the end
-        // (or we're at EOS / past the input). Prunes matches whose end has no
-        // viable continuation, saving the descriptor that would otherwise die
-        // one slot later.
+        // This block does DOUBLE DUTY:
+        //   • `cL.followAheadBS` non-empty → the grammar-authored POSITIVE forward gate `>+>(…)`.
+        //     Semantics the grammar asked for.
+        //   • otherwise → the FOLLOW-derived predict set ("Phase F's `lexLKH`"): some terminal that
+        //     can legally follow this slot must lex at the match end, else the match is dropped.
         //
-        // The predict set is the grammar-computed `cL.followBS` ("FIRST of the
-        // suffix after this slot, with epsilon look-through") — except when
-        // the grammar author wrote a manual `>>1(…)` annotation, in which
-        // case `cL.followAheadBS` is a stricter override and wins. Skip the
-        // filter when:
-        //   - the predict set is empty (no follow info), or
-        //   - the predict set contains ε (suffix fully nullable — anything
-        //     can be a valid end including end-of-input).
+        // Deleting the second half was TRIED and REVERTED (2026-08-28). It is not the pure
+        // optimisation the design doc describes: removing it left extra derivations alive, which
+        // changed what the Oracle's `@prefer`/`@longest` rules see, and two valid inputs (`_ = /\ /`,
+        // a regex whose whole body is an escaped space) were then WRONGLY REJECTED — a pruning filter
+        // cannot lose a parse directly, so the loss came via disambiguation. Measured: reject 41 → 40,
+        // accept 0 → 4. It also masks one over-accept (hence the 40), which is a separate lead.
+        //
+        // Skipped for a RECOGNISER sub-parse: the predict set is a claim about the ENCLOSING context,
+        // which a recogniser does not have (same rationale as `followCheck`). Without this skip, a
+        // speculative viability query inherits the outer FOLLOW obligation and dies on the last token
+        // of the very construct it is asked about — for `_ = ^/"/"`, `regexCloseSlash` was refused
+        // because nothing legal lexes at the trailing `"`, so "is a regex viable here?" answered NO
+        // for a perfectly well-formed regex.
         let predictBS = cL.followAheadBS.isEmpty ? cL.followBS : cL.followAheadBS
-        if !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
+        if !isSubParser, !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
             matches = matches.filter { m in
                 // Past the end of input acts as EOS — always allowed.
                 if m.triviaEnd >= input.endIndex { return true }

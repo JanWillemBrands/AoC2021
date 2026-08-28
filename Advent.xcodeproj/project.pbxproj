@@ -29,6 +29,9 @@
 		4ED118792FAAED5C0055DAC7 /* SwiftBasicFormat in Frameworks */ = {isa = PBXBuildFile; productRef = 4ED118782FAAED5C0055DAC7 /* SwiftBasicFormat */; };
 		4ED1187B2FAAED6A0055DAC7 /* SwiftBasicFormat in Frameworks */ = {isa = PBXBuildFile; productRef = 4ED1187A2FAAED6A0055DAC7 /* SwiftBasicFormat */; };
 		4ED1187D2FAAEDC80055DAC7 /* SwiftSyntaxBuilder in Frameworks */ = {isa = PBXBuildFile; productRef = 4ED1187C2FAAEDC80055DAC7 /* SwiftSyntaxBuilder */; };
+		4ED277C6304185E900C05B68 /* Lexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED277C53041858900C05B68 /* Lexer.swift */; };
+		4ED277C7304185E900C05B68 /* Lexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED277C53041858900C05B68 /* Lexer.swift */; };
+		4ED277C8304185E900C05B68 /* Lexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED277C53041858900C05B68 /* Lexer.swift */; };
 		4EEBC98D2F9DECF000E838A7 /* GrammarDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC9812F9DECF000E838A7 /* GrammarDiagnostics.swift */; };
 		4EEBC98E2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */; };
 		4EEBC98F2F9DECF000E838A7 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEBC98C2F9DECF000E838A7 /* StringExtensions.swift */; };
@@ -130,6 +133,9 @@
 		4EC3D237301E03F200E27741 /* REJECTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REJECTS.md; sourceTree = "<group>"; };
 		4ECF5BE62F3748DB008E692B /* claude.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = claude.md; sourceTree = "<group>"; };
 		4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "SwiftSyntax Mapping.md"; sourceTree = "<group>"; };
+		4ED277C3303DA56B00C05B68 /* Untitled.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Untitled.md; sourceTree = "<group>"; };
+		4ED277C53041858900C05B68 /* Lexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lexer.swift; sourceTree = "<group>"; };
+		4ED277C93041AC8100C05B68 /* tinyGLL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = tinyGLL.swift; sourceTree = "<group>"; };
 		4EEBC9782F9DECF000E838A7 /* ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParser.swift; sourceTree = "<group>"; };
 		4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusTerminals.swift; sourceTree = "<group>"; };
 		4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinarySubtreeRepresentation.swift; sourceTree = "<group>"; };
@@ -413,6 +419,7 @@
 				4E12037B2FA857210061BD96 /* apus.md */,
 				4ECF5BE62F3748DB008E692B /* claude.md */,
 				4E4E48C22FA219ED0094DFC6 /* codex.md */,
+				4ED277C53041858900C05B68 /* Lexer.swift */,
 				4E4E48C32FA219ED0094DFC6 /* Frankenstein Tokens.md */,
 				4E6A470E3039B4E400A4FCCC /* Grammar Predicate Lookahead Design.md */,
 				4E4E48C42FA219ED0094DFC6 /* Layout Sensitive Parsing.md */,
@@ -424,6 +431,7 @@
 				4E2CC1402FD4AC2200719D65 /* Regex CFG Discussion.md */,
 				4E2CC13E2FC8C9F100719D65 /* Regex Lookbehind Design.md */,
 				4EC3D237301E03F200E27741 /* REJECTS.md */,
+				4ED277C3303DA56B00C05B68 /* Untitled.md */,
 				4E4E48C52FA219ED0094DFC6 /* Scanner Mode Design.md */,
 				4E4E48C62FA219ED0094DFC6 /* Schrodinger Tokens.md */,
 				4E2CC13F2FD46F3400719D65 /* Structured Lookahead Design.md */,
@@ -436,6 +444,7 @@
 				4E8D05A92F701D560081C6D2 /* Derivations.svg */,
 				4E5754B42F5894BB0067165C /* SPPF.svg */,
 				4EEBC9782F9DECF000E838A7 /* ApusParser.swift */,
+				4ED277C93041AC8100C05B68 /* tinyGLL.swift */,
 				4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */,
 				4EF57BB33020ACB800549D7B /* ApusToHTML.swift */,
 				4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */,
@@ -639,6 +648,7 @@
 				4EEBC99C2F9DECF000E838A7 /* ManualOutput.swift in Sources */,
 				4E6933492FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift in Sources */,
 				4EEBC99D2F9DECF000E838A7 /* GenerateParser.swift in Sources */,
+				4ED277C7304185E900C05B68 /* Lexer.swift in Sources */,
 				4EEBC99E2F9DECF000E838A7 /* OutputTools.swift in Sources */,
 				4E95A4ED30151FFC000C251E /* SwiftGrammarRegexLibrary.swift in Sources */,
 				4EBFE0673025D9AE001F3FF2 /* ApusToHTML.swift in Sources */,
@@ -653,6 +663,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4E4E48CC2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */,
+				4ED277C8304185E900C05B68 /* Lexer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -680,6 +691,7 @@
 				4E12037E2FA8B07C0061BD96 /* Oracle.swift in Sources */,
 				4EEBC9B02F9DECF000E838A7 /* main.swift in Sources */,
 				4EEBC9B12F9DECF000E838A7 /* ManualOutput.swift in Sources */,
+				4ED277C6304185E900C05B68 /* Lexer.swift in Sources */,
 				4EEBC9B22F9DECF000E838A7 /* GenerateParser.swift in Sources */,
 				4EEBC9B32F9DECF000E838A7 /* OutputTools.swift in Sources */,
 				4EEBC9B42F9DECF000E838A7 /* Descriptor.swift in Sources */,
