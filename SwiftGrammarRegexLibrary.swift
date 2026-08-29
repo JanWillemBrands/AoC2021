@@ -281,6 +281,310 @@ enum ApusRegexLibrary {
         "`"
     }.matchingSemantics(.unicodeScalar)
 
+    // ── String literal escape components ────────────────────────────────────────
+    // Shared by the single-line and multiline forms. Written out as NAMED components even
+    // though the trailing catch-alls below subsume them, because that is exactly what
+    // Group B1 (REJECTS.md § C2) has to change: dropping the catch-all leaves the legal
+    // escape set behind, which is what makes `"\1"` / `"\#"` invalid in swift.
+
+    static let hexDigit = CharacterClass("0"..."9", "a"..."f", "A"..."F")
+
+    /// `\u{…}` — unicode scalar escape.
+    static let unicodeScalarEscape = Regex {
+        "\\u{"
+        OneOrMore { hexDigit }
+        "}"
+    }
+
+    /// The simple escapes swift recognises: `\0 \\ \t \n \r \" \'`.
+    static let simpleEscape = Regex {
+        "\\"
+        CharacterClass.anyOf("0\\tnr\"'")
+    }
+
+    // The two `\` + anything CATCH-ALLS that used to live here are deleted (Group B1). They were
+    // the faithful translation of the old `\\(?!\().` / `\\.`, and they were also what let every
+    // invalid escape through. Historical note kept because it is a live trap for whoever
+    // reintroduces one: they used `.anyNonNewline`, NOT `.any` — a regex `.` does not match a
+    // newline but `CharacterClass.any` does, so `.any` would silently admit `\`+newline inside a
+    // SINGLE-LINE string. The multiline forms use `.any` deliberately, since there `\`+newline is
+    // a legal line continuation.
+
+    /// Any scalar that is not a `"` or `\` and not a line break — single-line body filler.
+    static let singleLinePlainScalar = CharacterClass.anyOf("\"\\\r\n").inverted
+
+    /// Single-line body item: a plain scalar or one of the LEGAL escapes, and nothing else.
+    ///
+    /// The `\` + anything catch-all is GONE (Group B1, REJECTS.md § C2). swift's escape set is
+    /// closed — `\0 \\ \t \n \r \" \'`, `\u{…}`, and `\(` — so `"\1"`, `"\#"`, `"\q"` are
+    /// *"invalid escape sequence in literal"*. With no catch-all they are simply unmatchable.
+    ///
+    /// This also collapses what used to be two components. `\(` needs no special handling in
+    /// either direction: for the STATIC literal a `\(` now ends the body and the required
+    /// closing `"` fails, so the literal is rejected and the interpolated Head/Part/Tail path
+    /// takes it; for HEAD/PART the `\(` is the terminator, which the reluctant body stops at.
+    /// `"\\(x)"` still works — `simpleEscape` takes the `\\`, then `(x)` is plain scalars.
+    static let singleLineBodyItem = ChoiceOf {
+        singleLinePlainScalar
+        unicodeScalarEscape
+        simpleEscape
+    }
+
+    // ── Single-line string literals ─────────────────────────────────────────────
+
+    /// `singleLineStringLiteral` — `"…"`, one line, no interpolation.
+    static let singleLineStringLiteral = Regex {
+        "\""
+        ZeroOrMore(.reluctant) { singleLineBodyItem }
+        "\""
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `extendedSinglelineStringLiteral` — `#"…"#`, raw: no escape processing, and a `"` is
+    /// ordinary content unless followed by the matching `#` run.
+    static let extendedSinglelinePoundDelimiter = Reference(Substring.self)
+    static let extendedSinglelineStringLiteral = Regex {
+        Capture(poundRun, as: extendedSinglelinePoundDelimiter)
+        "\""
+        ZeroOrMore(.reluctant) {
+            ChoiceOf {
+                CharacterClass.anyOf("\"\\\r\n").inverted
+                // Group B2 — "too many '#' characters to start string interpolation".
+                // In an N-`#` raw string, interpolation is `\` + exactly N `#`s + `(`; MORE than N
+                // is an error (`#"\##("invalid")"#`). Expressed with the delimiter BACKREFERENCE
+                // inside a negative lookahead: a `\` is body content only if it is not followed by
+                // the pound run PLUS at least one further `#`. With N=1, `\##` trips it while
+                // `\#(` does not — no predicate over the token text needed after all.
+                Regex {
+                    "\\"
+                    NegativeLookahead {
+                        extendedSinglelinePoundDelimiter
+                        OneOrMore { "#" }
+                    }
+                }
+                Regex {
+                    "\""
+                    NegativeLookahead { extendedSinglelinePoundDelimiter }
+                }
+            }
+        }
+        "\""
+        extendedSinglelinePoundDelimiter
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `interpolatedStringLiteralHead` — `"` … up to the first `\(`.
+    static let interpolatedStringLiteralHead = Regex {
+        "\""
+        ZeroOrMore(.reluctant) { singleLineBodyItem }
+        "\\("
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `interpolatedStringLiteralPart` — `)` … up to the next `\(`.
+    static let interpolatedStringLiteralPart = Regex {
+        ")"
+        ZeroOrMore(.reluctant) { singleLineBodyItem }
+        "\\("
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `interpolatedStringLiteralTail` — `)` … up to the closing `"`.
+    static let interpolatedStringLiteralTail = Regex {
+        ")"
+        ZeroOrMore(.reluctant) { singleLineBodyItem }
+        "\""
+    }.matchingSemantics(.unicodeScalar)
+
+    // ── Multiline string literals ───────────────────────────────────────────────
+    // The DELIMITER SHAPE below is probe-confirmed against swift-syntax (2026-08-29)
+    // and holds identically for all four multiline forms — plain, raw, and the
+    // interpolated Head/Tail:
+    //
+    //   • "content must begin on a new line" — a line break must follow the opening
+    //     `"""` IMMEDIATELY. Not even a space or tab: `"""␠␠⏎"""` and `"""⇥⏎"""` both
+    //     error; only `"""⏎` is legal. (The old `extendedMultilineStringLiteral`
+    //     allowed `[ \t]*` here, which was wrong — `#"""␠␠⏎"""#` errors too.)
+    //   • "closing delimiter must begin on a new line" — the closing `"""` may be
+    //     preceded on its own line by horizontal whitespace only.
+    //
+    // `#"""A"""#` and `#""""""#` are NOT counter-examples: with content on the opener
+    // line they are SINGLE-line raw strings holding `"` characters ("false
+    // delimiters"), handled by `extendedSinglelineStringLiteral`.
+    //
+    // NOT enforced here (Group D in REJECTS.md § C2): the indentation rule — every
+    // line must be indented at least as far as the closing delimiter — and the ban on
+    // an escaped newline in the last body line. Both are post-lex checks on the
+    // matched text, not shape.
+    //
+    // These carry `.matchingSemantics(.unicodeScalar)` like every other terminal here.
+    // That matters for line breaks: under the default GRAPHEME semantics `\r\n` is ONE
+    // Character, so a component matching `"\n"` alone would not match the `\n` of a
+    // CRLF pair.
+
+    /// Swift's line terminators — CRLF first, so it is consumed as a unit. Deliberately
+    /// NOT `CharacterClass.newlineSequence`, which also matches U+000B/U+000C/U+0085/
+    /// U+2028/U+2029; those are not line terminators for Swift's lexer.
+    static let lineBreak = ChoiceOf {
+        "\r\n"
+        "\n"
+        "\r"
+    }
+
+    static let horizontalWhitespace = CharacterClass.anyOf(" \t")
+
+    static let tripleQuote = "\"\"\""
+
+    /// Body item of a NON-raw multiline string. The three alternatives are DISJOINT on
+    /// their first character, which keeps matching linear — an earlier overlapping
+    /// alternation here caused catastrophic backtracking on large inputs:
+    ///   • any scalar that is neither `"` nor `\` (newlines included — the body spans lines)
+    ///   • `\` + ANY scalar, so a `\⏎` line-continuation is body content (Cursor.swift:1766)
+    ///   • a `"` that does not begin the closing `"""`
+    static let multilineBodyItem = ChoiceOf {
+        CharacterClass.anyOf("\"\\").inverted
+        Regex {
+            "\\"
+            CharacterClass.any
+        }
+        Regex {
+            "\""
+            NegativeLookahead { "\"\"" }
+        }
+    }
+
+    /// As `multilineBodyItem`, but a `\` may not introduce an interpolation — used by the
+    /// Tail, where a `\(` would instead start another `…Part`.
+    static let multilineTailBodyItem = ChoiceOf {
+        CharacterClass.anyOf("\"\\").inverted
+        Regex {
+            "\\"
+            NegativeLookahead { "(" }
+            CharacterClass.any
+        }
+        Regex {
+            "\""
+            NegativeLookahead { "\"\"" }
+        }
+    }
+
+    static let poundRun = OneOrMore { "#" }
+    static let poundDelimiter = Reference(Substring.self)
+
+    /// As `multilineBodyItem` but never crossing a line break — the line-partition model below
+    /// delimits lines explicitly. `\` + any scalar is still admitted, so a `\⏎` continuation
+    /// remains body content and a LOGICAL line may still span physical lines.
+    static let multilineLineItem = ChoiceOf {
+        CharacterClass.anyOf("\"\\\r\n").inverted
+        Regex {
+            "\\"
+            CharacterClass.any
+        }
+        Regex {
+            "\""
+            NegativeLookahead { "\"\"" }
+        }
+    }
+
+    /// The closing delimiter's indentation, bound by a zero-width lookahead so it can be used
+    /// as a BACKREFERENCE while matching the body lines that PRECEDE it.
+    static let closerIndent = Reference(Substring.self)
+
+    /// `multilineStringLiteral` — static (non-interpolated) plain multiline string, modelled as a
+    /// SEQUENCE OF LINES each carrying a layout prefix.
+    ///
+    /// This shape encodes swift's indentation rule declaratively. Transcribed from
+    /// `StringLiterals.swift` (`visitTokenNode`): the rule is
+    /// `SyntaxText(rebasing: leadingTrivia[indentationStartIndex...]).hasPrefix(expectedIndentation)`
+    /// — a PREFIX test against the closing delimiter's indentation, not column arithmetic. So tabs
+    /// and spaces must match literally, and a line indented DEEPER than the closer is fine because
+    /// the closer's whitespace is still a prefix of it. Expressed here as `closerIndent` at the
+    /// start of every line.
+    ///
+    /// Truly EMPTY lines are exempt — swift-syntax's own `testEmptyLineInMultilineStringLiteral`
+    /// shows a zero-character line parsing as `.stringSegment("\n")` with no leading trivia, while
+    /// `testUnderIndentedWhitespaceonlyLineInMultilineStringLiteral` shows a whitespace-only line
+    /// with 7 of 8 spaces IS an error. Hence the bare-`lineBreak` alternative, and hence a
+    /// whitespace-only line still has to carry the full prefix.
+    ///
+    /// The line loop cannot swallow the closer's own line: that line is `<indent>"""`, and `"""`
+    /// fails the `"(?!"")` item, so no item consumes it and the required trailing `lineBreak`
+    /// never arrives.
+    static let multilineStringLiteral = Regex {
+        tripleQuote
+        // Preserved verbatim from the previous `/…/`: a `\(` anywhere ahead means the
+        // INTERPOLATED Head/Part/Tail path owns this literal, not the static one.
+        NegativeLookahead {
+            ZeroOrMore { CharacterClass.any }
+            "\\("
+        }
+        // Zero-width: scan to the closing delimiter and bind its indentation. The reluctant scan
+        // can only stop at the real closer (a `"""` inside the body would itself close the
+        // literal), and the captured run is forced to be MAXIMAL because `"""` is not whitespace.
+        //
+        // Placed BEFORE the opener's line break is consumed, not after. For an EMPTY literal
+        // (`_ = """⏎␠␠␠␠"""`) the closer sits on the line that the opener's newline starts, so
+        // there is no SECOND line break — running this after the opener's `lineBreak` demanded one
+        // and rejected every empty multiline string with an indented closer.
+        Lookahead {
+            ZeroOrMore(.reluctant) { CharacterClass.any }
+            lineBreak
+            Capture(ZeroOrMore(horizontalWhitespace), as: closerIndent)
+            tripleQuote
+        }
+        lineBreak
+        ZeroOrMore {
+            ChoiceOf {
+                lineBreak                       // truly empty line — exempt
+                Regex {
+                    closerIndent                // every other line must carry the closer's prefix
+                    ZeroOrMore { multilineLineItem }
+                    lineBreak
+                }
+            }
+        }
+        closerIndent
+        tripleQuote
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `extendedMultilineStringLiteral` — raw multiline string. Raw means NO escape
+    /// processing, so the body is any scalar run; the closing `#` count must equal the
+    /// opening one, matched via the `poundDelimiter` backreference.
+    static let extendedMultilineStringLiteral = Regex {
+        Capture(poundRun, as: poundDelimiter)
+        tripleQuote
+        lineBreak
+        Optionally {
+            ZeroOrMore(.reluctant) { CharacterClass.any }
+            lineBreak
+        }
+        ZeroOrMore { horizontalWhitespace }
+        tripleQuote
+        poundDelimiter
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `multilineInterpolatedStringLiteralHead` — `"""⏎` … up to the first `\(`.
+    static let multilineInterpolatedStringLiteralHead = Regex {
+        tripleQuote
+        lineBreak
+        ZeroOrMore(.reluctant) { multilineBodyItem }
+        "\\("
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `multilineInterpolatedStringLiteralPart` — `)` … up to the next `\(`. Touches no
+    /// delimiter, so the Group A shape rule does not apply to it.
+    static let multilineInterpolatedStringLiteralPart = Regex {
+        ")"
+        ZeroOrMore(.reluctant) { multilineBodyItem }
+        "\\("
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `multilineInterpolatedStringLiteralTail` — `)` … up to the closing `"""`, which must
+    /// begin its own line.
+    static let multilineInterpolatedStringLiteralTail = Regex {
+        ")"
+        ZeroOrMore(.reluctant) { multilineTailBodyItem }
+        lineBreak
+        ZeroOrMore { horizontalWhitespace }
+        tripleQuote
+    }.matchingSemantics(.unicodeScalar)
+
     // ── Registry (key == `.apus` terminal name) ─────────────────────────────────
     static let patterns: [String: Regex<AnyRegexOutput>] = [
         "identifier":                  Regex<AnyRegexOutput>(identifier.regex),
@@ -291,5 +595,17 @@ enum ApusRegexLibrary {
         "poundName":                   Regex<AnyRegexOutput>(poundName.regex),
         "propertyWrapperProjection":   Regex<AnyRegexOutput>(propertyWrapperProjection.regex),
         "escapedIdentifier":           Regex<AnyRegexOutput>(escapedIdentifier.regex),
+
+        "singleLineStringLiteral":                Regex<AnyRegexOutput>(singleLineStringLiteral.regex),
+        "extendedSinglelineStringLiteral":        Regex<AnyRegexOutput>(extendedSinglelineStringLiteral.regex),
+        "interpolatedStringLiteralHead":          Regex<AnyRegexOutput>(interpolatedStringLiteralHead.regex),
+        "interpolatedStringLiteralPart":          Regex<AnyRegexOutput>(interpolatedStringLiteralPart.regex),
+        "interpolatedStringLiteralTail":          Regex<AnyRegexOutput>(interpolatedStringLiteralTail.regex),
+
+        "multilineStringLiteral":                 Regex<AnyRegexOutput>(multilineStringLiteral.regex),
+        "extendedMultilineStringLiteral":         Regex<AnyRegexOutput>(extendedMultilineStringLiteral.regex),
+        "multilineInterpolatedStringLiteralHead": Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralHead.regex),
+        "multilineInterpolatedStringLiteralPart": Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralPart.regex),
+        "multilineInterpolatedStringLiteralTail": Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralTail.regex),
     ]
 }

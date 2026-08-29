@@ -230,11 +230,16 @@ integerLiteral = hexadecimalLiteral .
 
 stringLiteral = staticStringLiteral | interpolatedStringLiteral .
 
-singleLineStringLiteral         - /"(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ . // start with " end with " same line, no \( interpolation start
-extendedSinglelineStringLiteral - /(#+)"(?:[^"\n\r]|"(?!\1))*?"\1/ .   // backref: closing #s must equal opening
+singleLineStringLiteral         - @builder .
+extendedSinglelineStringLiteral - @builder .
 
-multilineStringLiteral          - /"""(?![\s\S]*\\\()(?:[^"\\]|\\[\s\S]|"(?!""))*"""/ . // start """ end """; body's `\<x>` uses `[\s\S]` so `\<NL>` (multiline line-continuation per swift-syntax Cursor.swift:1766) is body content; lookahead uses `[\s\S]` so it crosses newlines
-extendedMultilineStringLiteral  - /(#+)"""[ \t]*\r?\n(?s:.)*?"""\1/ .   // backref: closing #s must equal opening. `[ \t]*\r?\n` after the opening `#"""`: swift requires a multiline opener to be followed by a newline (Cursor.swift advanceIfMultilineDelimiter). Without it, `#"""…"""#` is a SINGLE-line raw string with `"` content ("false delimiters" — probe: `#""""""#` → stringQuote, not multilineStringQuote), which resolves the extendedSingleline-vs-extendedMultiline ambiguity on quote-only raw bodies.
+// Both multiline forms are `@builder` — see `SwiftGrammarRegexLibrary.swift` for the delimiter-shape
+// rule they enforce (line break required after the opener; closer alone on its line but for
+// horizontal whitespace), probe-confirmed for every multiline form. RegexBuilder because the shape
+// needs a backreference for the `#` count and CRLF-correct line breaks, and because the components
+// are shared with the interpolated Head/Tail below instead of copy-pasted.
+multilineStringLiteral          - @builder .
+extendedMultilineStringLiteral  - @builder .
 
 staticStringLiteral             = singleLineStringLiteral
                                 | extendedSinglelineStringLiteral
@@ -243,21 +248,24 @@ staticStringLiteral             = singleLineStringLiteral
                                 
 // Under LCNP these terminals are queried per-slot, so the spurious matches that
 // would happen outside an interpolated-string context are never asked for.
-interpolatedStringLiteralHead   - /"(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .     // start with ", end with \( same line
+interpolatedStringLiteralHead   - @builder .
 
-interpolatedStringLiteralPart   - /\)(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\.)*?\\\(/ .    // start with ), end with \( same line
+interpolatedStringLiteralPart   - @builder .
 
-interpolatedStringLiteralTail   - /\)(?:[^"\\\n\r]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\(?!\().)*?"/ . // start with ), end with " same line, no \(
+interpolatedStringLiteralTail   - @builder .
 
 // Multiline variants — structurally symmetric to the single-line trio above.
 // Differences: open is """ (Head), close is """ (Tail); content alternation adds `"(?!"")` so a single `"`
 // (not followed by `""`) is valid body content — the only multiline-specific feature.
 // Multiline body's catch-all backslash uses `[\s\S]` (not `.`) so `\<NL>` line-continuation per swift-syntax Cursor.swift:1766 is body content.
-multilineInterpolatedStringLiteralHead - /"""(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\[\s\S]|"(?!""))*?\\\(/ .  // start with """, end with \(
+// Head and Tail are `@builder`: they carry the multiline DELIMITER, so the shape rule applies to them
+// too (probe: `"""A\(x)⏎"""` → "content must begin on a new line"; `"""⏎\(x)"""` → "closing delimiter
+// must begin on a new line"). Part touches no delimiter, so it stays a plain regex.
+multilineInterpolatedStringLiteralHead - @builder .
 
-multilineInterpolatedStringLiteralPart - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\[0\\tnr"']|\\[\s\S]|"(?!""))*?\\\(/ .   // start with ),    end with \(
+multilineInterpolatedStringLiteralPart - @builder .
 
-multilineInterpolatedStringLiteralTail - /\)(?:[^"\\]|\\u\{[0-9a-fA-F]+\}|\\(?!\()[\s\S]|"(?!""))*?"""/ . // start with ), end with """; body's `\<x>` (x ≠ `(`) uses [\s\S] so `\<NL>` is body content
+multilineInterpolatedStringLiteralTail - @builder .
 
 interpolatedStringLiteral       = interpolatedStringLiteralHead
                                   functionCallArgumentList { interpolatedStringLiteralPart functionCallArgumentList }
@@ -277,10 +285,30 @@ interpolatedStringLiteral       = multilineInterpolatedStringLiteralHead
 
 // Plain slash-regex literal — parser-level CFG, position-gated at the opening `/`.
 //
-// The CFG body (regexBody/regexItem/regexGroup/regexCharacterClass) correctly balances
-// groups `(…)` and classes `[…]` — genuinely context-free structure a flat scanner
-// terminal cannot express. Regex-body atoms reach the body through the SAME operator
-// terminals (regexOperatorChar etc.), so `/^/`, `/(.*?)/` parse cleanly.
+// The CFG body (regexBody/regexItem/regexGroup/regexCharacterClass) balances groups `(…)`
+// and classes `[…]`. Regex-body atoms reach the body through the SAME operator terminals
+// (regexOperatorChar etc.), so `/^/`, `/(.*?)/` parse cleanly.
+//
+// TERMINATION is flat (measured): `/[/]/` and `/(/)/` BOTH error, so the closing `/` is
+// simply the first unescaped one — a `/` inside `[…]` or `(…)` still closes the literal.
+// The balance rule therefore constrains the BODY, never where the literal ends.
+//
+// FLATTENING THE BODY WAS TRIED AND REVERTED (2026-08-29): 39/0/0 → 43 reject / 12 accept.
+// The motivation looked strong — `hasError` is FALSE for `/(/` `/[/` `/]/` `/a]b/` `/(]/`
+// `/((/` `/()/` `/[[]/` `/[(]/` `/[)]/` `/)/`, so swift clearly imposes no balance rule in
+// those cases. But those are all the CONFIDENT scan, and confident is the RARE mode. The
+// gate is `isLeftBound == isRightBound` in `tryScanOperatorAsRegexLiteral`, and for the
+// ordinary shape `_ = /abc/` the slash is space-preceded (not left-bound) but letter-followed
+// (right-bound) → unequal → block skipped → `mustBeRegex` stays FALSE. So nearly every real
+// regex is scanned NON-confidently, where `lexPatternCharacter`'s `)`-at-depth-0 bail applies
+// and a depth-0 `)` must ABORT the regex reading. Flattening lost exactly that: `_ = (/x)/`,
+// `_ = (/[(0)])/`, `foo(/E.e, /E.e)`, `baz(^^/, /)` all wrongly became regexes.
+// `/[(0)])` also shows the class exemption is real — the `)`s inside `[…]` must not balance
+// the trailing one.
+//
+// So: always-balance is the right DEFAULT, and the residual infidelity is confined to the
+// confident mode (`_ = ^/)/`, `_ = /)/`), which needs a second, flat body variant selected by
+// the same lookbehind — see REJECTS.md C3. Not worth duplicating the body for today.
 //
 // Regex-vs-operator disambiguation (mirrors swift-syntax's lexer):
 //   • Position gate — `regexOpenSlash` carries the `<-<` operand-ender exclusion list:
@@ -366,6 +394,45 @@ regexAtom       = regexNonOperatorAtom
                 | regexOperatorChar
                 | "#" | ":" | ";" | "," .
 
+// ── The regex LEXEME SHAPE — swift's scanner, not swift's well-formedness ──────────────────────
+// This models `scanRegexLiteral`: "is there a regex-SHAPED lexeme here?" It is deliberately WEAKER
+// than `plainRegularExpressionLiteral` — no `[…]` balance, no group balance — because swift's lexer
+// commits to a regex token on shape alone and only then errors on the body. It keeps the two
+// questions separate (see `Grammar Predicate Lookahead Design.md` § "Mimicking a deterministic
+// parser"): the strict grammar says what is WELL-FORMED; this says what swift would COMMIT to.
+//
+// Referenced by NO production — it exists solely as the `@preempt` viability target, so it never
+// affects an actual parse. What it does keep from swift's scan: same line, closing `/` before EOL,
+// no unescaped `/` inside, escapes allowed, and the delimiter-adjacency space rule (which is what
+// stops `qux(/, 1)` — body `, 1)` then a SPACE before the `/` — from looking like a lexeme).
+regexShapeAtom   - /[^\/\\\r\n\u{20}\u{09}\(\)]/ .
+// ONE alternate only: `@preempt` queries viability at a split point INSIDE an operator token
+// (`MessageParser.swift` — `commitEnd` is another match end of the same token), so at least one
+// operator character always precedes on the same line. A newline can never immediately precede,
+// which makes the `<n> regexOpenSlashNL` counterpart of `plainRegularExpressionLiteral` DEAD here.
+regexLexemeShape = >n< regexOpenSlash >s< regexShapeBody >s< regexCloseSlash .
+regexShapeBody   = regexShapeItem | regexShapeItem regexShapeTail .
+regexShapeTail   = regexShapeItem | ( regexSpaceAtom | regexShapeItem ) regexShapeTail .
+regexShapeItem   = regexEscape | regexShapeGroup | "(" | regexShapeAtom .
+// Group tracking, transcribed from RegexLiteralLexer.swift `lexPatternCharacter`:
+//     case ")" where !escaped && customCharacterClassDepth == 0:
+//       guard groupDepth > 0 else { if !mustBeRegex { return .notARegex }; break }
+// Two things follow. (a) The rule is NOT "parens balance" — `groupDepth` is never checked at end of
+// scan — but the weaker Dyck-PREFIX condition "no `)` at depth 0": a trailing unclosed `(` still
+// lexes (hence the bare `"("` item), while a bare `)` cannot appear at all. (b) The bail sits under
+// `!mustBeRegex`, so it applies to the NON-CONFIDENT scan ONLY.
+//
+// KNOWN MIS-FACTORING (see REJECTS.md): swift picks confidence from the token before the WHOLE
+// operator (`tryScanOperatorAsRegexLiteral`): previous token ∈ { ( [ , : :: } → non-confident, so
+// the `)` bail applies; anything else → `mustBeRegex = true` and the bail is SKIPPED. This shape
+// applies the bail UNCONDITIONALLY. It is right for `(^/)("/")` and `(^/x)/` (both after `(`), but
+// wrong for `_ = ^/)/` — valid Swift (probe: hasError=false) where we would refuse the cut. Fixing
+// it needs a lookbehind on the token before the operator, which `<-<` cannot see from the slash
+// because the operator's own prefix chars intervene.
+// The ASYMMETRY `151` needs is genuine: `customCharacterClassDepth` exists ONLY to stop parens
+// inside a class counting as groups — nothing bails on an unbalanced `[` — so no class rule here.
+regexShapeGroup  = "(" { regexSpaceAtom | regexShapeItem } ")" .
+
 // backref: closing #s must equal opening; no escapes in extended regex, `/` is body content, only `/#…` closes
 extendedRegularExpressionLiteral    - /(#+)\/(?:[^\/]|\/(?!\1))*?\/\1/ .
      <-< ( "true" "false" "nil" "self" "Self" "super" "Any"
@@ -449,7 +516,7 @@ regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpres
 // FOLLOW/EOF exemption in `followCheck` applies only to the sub-parse ROOT, so an inner nonterminal
 // would still be FOLLOW-gated and could never complete here. (The `#/…/#` extended form needs no
 // cover — `#` is not an operator character, so no operator can swallow its start.)
-@lexicalClass @preempt(regexOpenSlash, plainRegularExpressionLiteral)
+@lexicalClass @preempt(regexOpenSlash, regexLexemeShape)
 operatorToken - @builder .
 
 @lexicalClass

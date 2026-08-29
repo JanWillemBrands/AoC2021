@@ -236,3 +236,96 @@ are designed but unbuilt — no customer yet.
 
 **Methodology note:** the reject-count seed variance (~54–57) means per-fix progress is measured by
 snippet-level probes, not the aggregate count. (Worth capturing in `TESTING.md`.)
+
+---
+
+## Mimicking a deterministic parser: cuts with local viability tests
+
+*(2026-08-29. Written after the C3 regex work; reframes C1, C3 and the B2 family as ONE problem and
+records why the annotation family above cannot solve it.)*
+
+### The pattern
+
+Every persistent over-accept against swift-syntax has the same shape, and none of them is really
+about the construct they appear in (regex, key paths, trailing closures):
+
+> **swift-syntax's accepted language is defined by an ALGORITHM, not by a grammar.** It is
+> deterministic recursive descent: at each decision point it commits to one alternative using a
+> LOCAL test (a lookahead token, a `canParseX` probe, a lexer scan) and never reconsiders. Its
+> language is "the inputs for which *that strategy* succeeds" — strictly smaller than the language of
+> the underlying CFG.
+
+Advent is a general parser: it explores all alternatives and accepts if **any** completes. So the
+over-accepts are not scattered bugs; they are systematically the inputs where swift commits and then
+errors, while a *different* derivation still completes. `\Foo.Bar.?.[1]` (C1), `/foo/{}`,
+`qux(/, "(")/2`, `^/"/"`, `^/"[/"` (C3), the B2 condition trailing closures — one phenomenon.
+
+### Why the annotations above cannot express it
+
+Everything in this document, plus `@prefer`/`@avoid`/`@longest`/`@shortest`/`@left`/`@right`, is a
+**post-parse filter over SURVIVORS**: it chooses among readings that reached the forest.
+
+But the defining feature of the divergence is that the reading which should WIN **has already died**.
+There is nothing to prefer it over. That is why `@longest` cannot see the greedy keypath in C1, why
+the prototyped straddle rule fired with correct data yet changed nothing, and why the
+lexicalisation-DAG reframing collapsed (see REJECTS.md C3). Three failures, one structural mismatch:
+
+| | question answered |
+|---|---|
+| survivor-filtering (all current annotations) | which of the COMPLETED readings do we keep? |
+| determinism (swift) | which alternative do we COMMIT to, before knowing who completes? |
+
+No amount of the former expresses the latter.
+
+### The mechanism: a cut
+
+What is missing is **prioritized choice with commitment**. At a decision point: an order over
+alternatives plus a *local* viability test. The first viable alternative wins and its siblings are
+pruned **at decision time** — even if the winner later fails, in which case the parse fails, which is
+exactly how swift produces its error.
+
+`@preempt(X, N)` is the first instance, and its three parts are the general parts:
+
+1. a **priority** (regex over operator),
+2. a **local viability test** (the memoised speculative recogniser sub-parse — the general form of
+   swift's `canParseX`),
+3. pruning that **survives the winner's failure** (why the viability query must read the RAW forest,
+   and why the recogniser must be exempt from the FOLLOW/predict gates).
+
+What is ad hoc about it today is only that it is wired to ONE choice point — an operator token's
+extent. The general form applies at any choice point, including a nonterminal's alternates.
+
+This is deliberately **un-general parsing at named points**, and each cut must be justified against
+the specific swift decision procedure it mirrors. That is the price of mimicking an algorithm; the
+benefit is that it is declarative and language-agnostic (a C++/Rust grammar writes its own cuts).
+
+### The distinction that matters: grammar ≠ viability test
+
+Two different questions, easy to conflate — and conflating them is how the C3 work went wrong:
+
+- **What is well-formed?** → the grammar. Strict, faithful, and it must NOT be loosened.
+- **What would swift commit to here?** → the cut's viability test, which mirrors swift's own test and
+  is frequently **weaker** than well-formedness.
+
+Worked example (`151a/b`, `_ = ^/"[/"`). swift's test is a lexer scan — "is there a regex-shaped
+lexeme here?" — which does not require a well-formed body; it then commits and errors on the body.
+Advent's current test is "does the regex CFG parse?", strictly stronger, so the cut never fires and
+the `^/`-operator reading survives. The tempting fix — admit `[` as a plain regex atom so the body
+parses — was **tried and rejected**: it buys 41 → 39 rejects but costs `ambiguity 2` (`/([)])/` gains
+a second reading), and more importantly it degrades the balance-aware regex CFG toward "scan to the
+next `/`", which is precisely what the CFG existed to avoid. There is no floor to that slope.
+
+**The correct fix keeps the grammar strict and weakens the TEST**: give `@preempt` a lexeme-level
+viability scan. Predicted outcomes, all consistent and nothing loosened:
+
+| input | lexeme scannable? | cut fires? | result |
+|---|---|---|---|
+| `_ = ^/"[/"` | yes | yes | body `"[` malformed → no parse → **reject** ✓ |
+| `_ = ^/x` | no closing `/` | no | `^/` operator stands ✓ |
+| `_ = /foo/ {}` | yes | yes | regex fine, but `{}` cannot follow → reject ✓ |
+
+### Next step
+
+Implement the lexeme-level viability option for `@preempt` and re-test `151a/b`. Falsifiable: it
+should reach reject 39 with **accept 0 and ambiguity 0** — the ambiguity is the discriminator against
+the grammar-loosening version, which reached 39 but at `ambiguity 2`.

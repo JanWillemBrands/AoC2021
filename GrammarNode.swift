@@ -5,17 +5,13 @@
 //  Created by Johannes Brands on 20/05/2024.
 //
 
-//enum GKind { case EOS, T, EPS, N, ALT, END }
-//enum GKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KLN }
-//enum ApusKind { case EOS, TRM, EPS, NTR, ALT, END, ONE, ZOO, OOM, ZOM }
-//enum SwiftKind { case endOfString, terminal, epsilon, nonTerminal, alternate, end, one, zeroOrOne, oneOrMore, zeroOrMore}
 /*
  EOS    end of string ("$")
  T      terminal (singleton, case sensitive)
  TI     terminal (singleton, case insensitive)
  C      terminal character
  B      terminal builtin (whitespace, comment, etc)
- EPS    empty string ("#" or "")
+ EPS    empty string ("ε" or "")
  N      nonterminal
  ALT    start of alternate
  END    end of alternate
@@ -24,14 +20,12 @@
  POS    one or more <>
  KLN    zero or more (Kleene) {}
  
- END.seq references start of production 'N'
- END.alt references start of alternate 'ALT'
- Extends naturally to EBNF brackets if END.alt references the enclosing bracket 'DO', 'OPT', 'POS', or 'KLN'
+ END.seq references the start of production 'N' or closest 'DO', 'OPT', 'POS', or 'KLN' bracket
+ END.alt references its alternate start 'ALT'
  */
 
 import OSLog
 import Foundation
-//import AdventMacros
 import BitCollections
 
 enum GrammarNodeError: Error {
@@ -354,18 +348,6 @@ extension GrammarNode {
             seq = parent
             alt = alternate
         }
-    }
-}
-
-extension GrammarNode {
-    /// Reset per-parse state on this node and every node transitively reachable
-    /// Walk all reachable grammar nodes from `self` via `.seq` and `.alt`, with
-    /// cycle detection. Since BSR yields moved to `MessageParser.yields`,
-    /// `clearNodes()` no longer touches per-node state — kept for callers that
-    /// still invoke it; reset of `MessageParser.yields` happens at the start
-    /// of `parse()` instead.
-    func clearNodes() {
-        // no-op since BSR yields moved to parser-side storage
     }
 }
 

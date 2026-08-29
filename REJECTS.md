@@ -425,31 +425,202 @@ not a lexical fix.
 
 ## Open: C2 — Malformed String / Multiline String Literals
 
-**Test cases:**
+12 labels, classified 2026-08-29 by probing `Parser.parse` + `ParseDiagnosticsGenerator` for the exact
+rule and its boundary (valid near-misses probed alongside each invalid case). **11 are string issues in
+4 groups; 1 is misfiled.** Each group needs a DIFFERENT mechanism, which is why they never fell to one
+fix.
 
-| Label | Root issue |
-|-------|-----------|
-| `testMultilineString47#1` | `_ = """"""` — empty multiline string with no newline after open quotes |
-| `testMultilineString48#1` | Unterminated multiline string with trailing whitespace |
-| `testPostProcessMultilineStringLiteral#1` | Multiline string with inconsistent indentation |
-| `testUnderIndentedWhitespaceonlyLineInMultilineStringLiteral#1` | Whitespace-only line under-indented |
-| `testWhitespaceAfterOpenQuote#1` | Whitespace after opening `"""` on same line |
-| `testStringLiterals#5` | String literal with invalid content |
-| `testStringLiterals#10` | String literal with invalid content |
-| `testNewlineInInterpolationOfSingleLineString#1` | Literal newline inside `\(...)` in single-line string |
-| `testPoundsInStringInterpolationWhereNotNecessary#1` | `#"..."#` interpolation form where `#` is unnecessary |
-| `testRawStringErrors2#1` | Invalid raw string delimiter |
-| `testUnterminatedString4#1` | Unterminated string literal |
-| `testUnterminatedString5#1` | Unterminated string literal variant |
+### Group A — multiline delimiter shape *(4)* — ✓ RESOLVED 2026-08-29
+`testStringLiterals#5` (`""""""`), `testMultilineString47#1` (`_ = """"""`),
+`testMultilineString48#1` (`_ = """A"""`), `testWhitespaceAfterOpenQuote#1`.
 
-**Root cause:** Advent's string scanner accepts malformed string literals that Swift rejects.
-The scanner doesn't enforce: multiline string indentation rules, the requirement for a
-newline immediately after `"""`, content restrictions in interpolation, or proper termination.
-These are scanner-level (not grammar-level) checks.
+**Sweep 39 → 34, accept 0, ambiguity 0** — all four, plus `testPostProcessMultilineStringLiteral#1`
+from Group D as a bonus (see below). Implemented as RegexBuilder terminals in
+`SwiftGrammarRegexLibrary.swift` (`multilineStringLiteral`, `extendedMultilineStringLiteral`,
+`multilineInterpolatedStringLiteralHead`, `multilineInterpolatedStringLiteralTail` — all now
+`- @builder .`). `…Part` stays a plain regex: it touches no delimiter, so the shape rule cannot apply
+to it. RegexBuilder earns its place here for three reasons, not as a style preference:
+- the raw form needs a BACKREFERENCE for the `#` count (`Reference` + `Capture(_:as:)`);
+- line breaks must be CRLF-correct, and under the default GRAPHEME semantics `\r\n` is ONE
+  `Character`, so a component matching `"\n"` would not match the `\n` of a CRLF pair — hence
+  `.matchingSemantics(.unicodeScalar)` and an explicit CRLF-first `lineBreak` rather than
+  `CharacterClass.newlineSequence` (which wrongly also matches U+000B/U+000C/U+0085/U+2028/U+2029);
+- the body-item components are now SHARED between the static and interpolated forms instead of being
+  copy-pasted across four regexes.
+
+The disjoint-on-first-character body alternation is preserved deliberately — an earlier overlapping
+version caused catastrophic backtracking on large inputs.
+
+**Follow-up: ALL TEN string terminals are now `@builder`** (2026-08-29) — the remaining six
+(`singleLineStringLiteral`, `extendedSinglelineStringLiteral`, the three single-line
+`interpolatedStringLiteral{Head,Part,Tail}`, and `multilineInterpolatedStringLiteralPart`) were
+converted mechanically. **Sweep 34/0/0 with a byte-identical reject set** — behaviour-neutral, as a
+mechanical conversion should be. Duration 14.29s → 14.47s (~1%, within single-run noise).
+
+One hazard worth recording, since a naive conversion would have introduced a silent bug: the
+single-line regexes used `\\(?!\().` and a regex `.` does NOT match a newline, whereas
+`CharacterClass.any` DOES. Translating `.` as `.any` would have started accepting `\`+newline inside a
+single-line string. The two families genuinely differ — multiline uses `[\s\S]`/`.any` on purpose,
+because there `\`+newline is a legal line continuation — so the catch-alls are separate components
+(`singleLineEscapeCatchAll` uses `.anyNonNewline`).
+
+The escape alternatives (`unicodeScalarEscape`, `simpleEscape`) are subsumed by the catch-alls and so
+are redundant for MATCHING, but they are written out as named components on purpose: Group B1 is
+exactly "delete the catch-all and keep these".
+
+Only one literal-terminal regex is left inline, `extendedRegularExpressionLiteral` — regex, not string,
+so out of scope here.
+
+Two diagnostics, both structural:
+- *"content must begin on a new line"* — after the opening `"""` the rest of the line must be EMPTY.
+  Not even a space or tab: `"""  ⏎"""` and `"""⇥⏎"""` both error, only `"""⏎` is legal.
+- *"closing delimiter must begin on a new line"* — the closing `"""` may be preceded on its line by
+  horizontal whitespace only.
+
+`multilineStringLiteral`'s regex requires neither, so `""""""` lexes as a valid empty multiline string.
+**Approach: tighten the regex** — `"""\r?\n` … `\r?\n[ \t]*"""`, keeping the `(?![\s\S]*\\\()`
+interpolation guard. Scanner-only, no engine change. Must sweep: multiline strings are everywhere in
+the accept corpus.
+
+**Latent bug found while probing (untested, no failing case yet):** `extendedMultilineStringLiteral`
+allows `[ \t]*\r?\n` after the opener, but `#"""  ⏎"""#` errors in swift exactly as the plain form
+does — that `[ \t]*` should not be there. Note this does NOT apply to `#"""A"""#` or `#""""""#`, which
+are hasError=FALSE: with content on the opener line they are SINGLE-line raw strings holding `"`
+characters ("false delimiters"), which is what the existing comment on that terminal already records.
+
+### Group B — `#`-count coupling between delimiter and escape *(2)*
+`testPoundsInStringInterpolationWhereNotNecessary#1` (`"\#(1)"` → *"invalid escape sequence in
+literal"*), `testRawStringErrors2#1` (`#"\##("invalid")"#` → *"too many '#' characters to start string
+interpolation"*).
+
+The rule: in a string opened with N `#`s, interpolation is `\` + exactly N `#`s + `(`. Fewer or more is
+an error, and N=0 means `\#(` is simply an invalid escape. Our `extendedSinglelineStringLiteral` treats
+the raw body as opaque, so `\##(` is just content.
+
+**Not expressible as one regex.** The body constraint is "no `\` followed by a `#`-run LONGER than
+backreference `\1`", and a backreference cannot parameterise a quantifier. → needs Group B/D's shared
+mechanism below.
+
+### Group C — interpolation must not span a newline *(3)*
+`testNewlineInInterpolationOfSingleLineString#1`, `testUnterminatedString4#1` (`"abc\(def⏎)"`),
+`testUnterminatedString5#1` (`"abc\(⏎def)"`). Diagnostic *"expected ')' in string literal"*.
+Probed boundary: this holds for MULTILINE strings too (`"""⏎\(b⏎c)⏎"""` errors with *"unexpected code
+'c'"*), so it is a general rule about interpolation contents, not a single-line-string rule.
+
+**Structurally different from A/B/D, and unfixable in the scanner.** Interpolation is the split-token
+hybrid: `interpolatedStringLiteralHead` ends at `\(`, the CFG then parses `functionCallArgumentList`,
+and `Part`/`Tail` resume at `)`. The offending newline is not inside any token — it is in a TRIVIA GAP
+between tokens of the argument list, where the CFG skips it freely. The Head/Part/Tail regexes already
+ban newlines and are not the problem.
+
+`>n<` cannot express it either: it constrains one boundary, while the requirement is a property of the
+whole extent. **Approach: a span-level constraint** — "the extent of this nonterminal contains no
+newline" — checked at nonterminal completion, the same hook `forwardGateAllows` already uses. Cheap to
+evaluate against a precomputed newline-position index. Reusable well beyond strings: Swift is full of
+same-line rules (module selector, tight-`(`, the `>n<` sites), all currently done one boundary at a time.
+
+### Group D — multiline post-process rules *(2 → 1 remaining)*
+`testPostProcessMultilineStringLiteral#1` — ✓ **RESOLVED as a side effect of Group A**, and
+structurally rather than by luck. swift's rule is *"escaped newline at the last line of a multi-line
+string literal is not allowed"*; in our grammar the body ends `line 2 \` + newline, the `\`-escape
+CONSUMES that newline, and the closing delimiter now requires a line break before it — so no match
+remains. The rule is IMPLIED by the delimiter shape and needs no post-lex check.
+
+Still open: `testUnderIndentedWhitespaceonlyLineInMultilineStringLiteral#1` — *"insufficient
+indentation of line in multi-line string literal"*. Probed: applies to whitespace-only AND text lines;
+a whitespace-only line aligned with the closing delimiter is fine (`#"""⏎A⏎␠␠␠"""#` fails on this rule,
+which incidentally confirms horizontal whitespace before the closer is shape-legal).
+
+This one is a property of the matched token's TEXT, decidable from that text alone since the closing
+delimiter's indentation is inside the token. swift applies it as a post-lex pass. It is column-relative,
+so it is not expressible as a regex over the token.
+
+### ✓ Groups B and D RESOLVED 2026-08-29 — and `@check` turned out to be UNNECESSARY
+
+Sweep **34 → 30, accept 0, ambiguity 0**. Fixed: `testPoundsInStringInterpolationWhereNotNecessary#1`,
+`testStringLiterals#10`, `testRawStringErrors2#1`, `testUnderIndentedWhitespaceonlyLineInMultilineStringLiteral#1`.
+All four fell to DECLARATIVE RegexBuilder — no new annotation, no `ApusParser` change, no engine hook.
+The plan below (a named Swift predicate over the token text) was written before trying harder on the
+regex side, and each of its three justifications dissolved:
+
+**B1 — escape set (2 tests, not 1).** Deleting the `\` + anything catch-alls leaves swift's closed
+escape set (`\0 \\ \t \n \r \" \'`, `\u{…}`, `\(`), so `"\#("` and `"\1"` become unmatchable. This is
+why the escape alternatives were written out as named components during the `@builder` conversion.
+It also fixed `testStringLiterals#10` (`""\1 \1""`), which § C2 had filed as "misfiled / keypath" —
+that call was wrong, or at least the fix landed here. No verified account of the exact derivation.
+
+**B2 — `#`-count coupling (1 test).** Claimed "not expressible as one regex" because a backreference
+cannot parameterise a quantifier. True but irrelevant: the rule is expressible by putting the
+backreference INSIDE A NEGATIVE LOOKAHEAD — a `\` is body content only if not followed by the
+delimiter's pound run PLUS at least one further `#`:
+```swift
+Regex { "\\"; NegativeLookahead { extendedSinglelinePoundDelimiter; OneOrMore { "#" } } }
+```
+With N=1, `\##` trips it and `\#(` does not.
+
+**D — indentation (1 test).** Claimed "column-relative, so not expressible as a regex". Wrong on the
+premise: `StringLiterals.swift` `visitTokenNode` does
+`SyntaxText(rebasing: leadingTrivia[indentationStartIndex...]).hasPrefix(expectedIndentation)` — a
+PREFIX test, not column arithmetic. Tabs/spaces must match literally, and a line indented deeper than
+the closer passes because the closer's whitespace is still a prefix of it. So it IS regular, given the
+closer's indentation as a backreference.
+
+**The line-partition model** (suggested in review) is what makes it declarative: model the body as a
+sequence of lines each carrying a layout prefix, and require every line to begin with `closerIndent`.
+The obstacle was DIRECTION — the closer is at the end, and per the `Reference` docs an unbound
+reference "will not match until it has previously been captured", so a forward reference silently never
+matches. Resolved with a zero-width `Lookahead` that scans to the closer and captures its indentation
+BEFORE the body is matched. **Verified empirically: captures made inside a `Lookahead` DO persist for
+later backreference matching in Swift's engine** — undocumented, and the reason to be sure is that the
+failure mode is silent (every multiline string becomes unmatchable, a mass accept regression, rather
+than an error). Two facts made it correct:
+- Empty lines are EXEMPT — swift-syntax's `testEmptyLineInMultilineStringLiteral` parses a
+  zero-character line as `.stringSegment("\n")` with no leading trivia, while a whitespace-only line
+  with 7 of 8 spaces IS an error. Hence the bare-`lineBreak` alternative.
+- The lookahead must bind the indentation BEFORE the opener's line break is consumed. Placing it after
+  demands a second line break, which an EMPTY literal (`_ = """⏎␠␠␠␠"""`) does not have — that cost 2
+  accept failures (`testMultilineString41#1`, `testStringLiterals#3`) until moved.
+
+**Standing lesson:** "not expressible as a regex" was asserted three times here and was wrong three
+times — twice because the rule was prefix/lookahead-shaped rather than arithmetic, once because a
+backreference can appear inside a lookahead. Push on the declarative encoding before reaching for an
+escape hatch into Swift code.
+
+### The mechanism that was PLANNED for B and D — kept for the record, not implemented
+A **named predicate over a terminal's matched text**, resolved from Swift code by name — exactly
+mirroring how `@builder` already resolves a named regex out of `SwiftGrammarRegexLibrary.swift`:
+
+```apus
+extendedSinglelineStringLiteral - /(#+)"(?:[^"\n\r]|"(?!\1))*?"\1/ @check(poundEscapeCount) .
+multilineStringLiteral          - /…/ @check(multilineIndentation) .
+```
+
+It is a lex-match veto, so it drops straight into the existing filter chain in `tokenMatch` alongside
+the lookbehind, forward-gate and `@preempt` steps — `TokenPattern.validator: String?` plus a
+`[String: (Substring) -> Bool]` library. This is also the faithful shape: these rules are post-lex
+validation in swift, not grammar.
+
+### Misfiled
+`testStringLiterals#10` (`""\1 \1""`) is **not a string problem**. Probed: swift's error is
+*"consecutive statements on a line must be separated by newline or ';'"*, and `_ = \1` alone gives
+*"expected root in key path"*. So `\1` lexes as a keypath expression and the violation is statement
+separation. Belongs with C13 (error recovery), not here.
+
+### Status
+1. ~~**A**~~ — ✓ done. 5 tests (4 A + 1 D), reject 39 → 34. Includes the latent
+   `extendedMultilineStringLiteral` `[ \t]*` over-acceptance.
+2. ~~**B + D**~~ — ✓ done. 4 tests, reject 34 → 30. All declarative RegexBuilder; **`@check` was not
+   needed and was not built.**
+3. **C** — the only string group left (3 tests): an interpolation may not span a newline. Still needs
+   a span-level constraint, because the offending newline sits in a TRIVIA GAP between tokens of the
+   CFG-parsed argument list, not inside any token — so no scanner-level encoding can reach it. Given
+   the three wrong "not expressible" calls above, re-examine that claim before building anything.
+
+**String rejects: 12 → 3.** Reject total 39 → 30, accept 0, ambiguity 0 throughout.
 
 ---
 
-## Open: C3 — Forward-Slash Regex vs Operator *(2 of 7 resolved)*
+## Resolved: C3 — Forward-Slash Regex vs Operator *(7 of 7)*
 
 Swift decides regex-vs-operator in the LEXER (`lexOperatorIdentifier` → `tryLexOperatorAsRegexLiteral`
 → `tryScanOperatorAsRegexLiteral`, `RegexLiteralLexer.swift`). The real rule, in order:
@@ -512,7 +683,7 @@ keypath are handled inside `keyPathExpression`, so C1's keypath cases are untouc
 then `@confinedTo`/`@excludedFrom`, then `>->`/`>+>`. Getting it wrong is a grammar LOAD failure, which
 `tools/run_tests.sh` currently reports as "PASS" with all-zero counts — see the caveat below.)
 
-**Still failing (1 source / 4 entries): `150a/b`, `151a/b` (`_ = ^/"/"`, `_ = ^/"[/"`).**
+**Still failing: NONE — all 7 resolved (`150a/b` and `151a/b` were the last).**
 
 Positions in `_ = ^/"/"` — `^`=4, `/`=5, `"`=6, `/`=7, `"`=8. There are exactly two readings:
 
@@ -592,7 +763,8 @@ why the straddle feels alien; what is dead is this route to avoiding it. Grammar
 **Open.** No credible path yet that avoids the straddle. Speculative parsing is untouched by this
 failure — the recogniser query is sound; it was the edge-pruning consumer that collapsed.
 
-**OUTCOME (2026-08-28) — `@preempt` landed; `150a/b` FIXED, `151a/b` remain. Sweep 41/0/0.**
+**OUTCOME — `@preempt` landed 2026-08-28 (`150a/b`, sweep 41/0/0); `151a/b` closed 2026-08-29
+via the lexeme-shape viability test (sweep 39/0/0). No `ForwardSlashRegex` rejects remain.**
 
 The straddle was avoided exactly as hoped: the decision sits at the operator's START, where every
 candidate match shares the position, so it is a plain choice among sibling EXTENTS — no span geometry,
@@ -631,15 +803,99 @@ That broke MONOTONICITY: an extra surviving lexicalisation could REMOVE a parse.
 Behaviour-neutral today (41/0/0) because the predict filter happened to prune the loser — which is
 precisely why it would have bitten later, blamed on whatever change exposed it.
 
-**Predict filter: considered, measured, KEPT.** It is not the pure optimisation the design doc claims.
-Removing the FOLLOW-derived half (keeping the grammar-authored `>+>`, which shares the block) gives
-reject 40 / accept 4 under the old boundary semantics, and 41 / 14 / ambiguity 1 with the existential
-fix — the extra derivations change what `@prefer`/`@longest` see and they mis-prune. Also DEAD CODE
-REMOVED: the `lexLKH` protocol method (no overrides, no call sites) and the whole `LCNPLexer` protocol
-(one conformer, one use site — an existential on the hot path).
+**Predict filter: measured twice, now REMOVED (2026-08-29).** It was never the pure optimisation the
+design doc claims. First measurement (2026-08-28) said KEEP: removing the FOLLOW-derived half (keeping
+the grammar-authored `>+>`, which shares the block) gave reject 40 / accept 4 under the old boundary
+semantics, and 41 / 14 / ambiguity 1 with the existential fix — the extra surviving derivations change
+what `@prefer`/`@longest` see and they mis-prune. Both causes were then fixed independently (existential
+`boundaryMatches`; the `@preempt` viability cut), and re-measurement over **three hash seeds** gives
+39 / 0 / 0 either way — the half is now behaviourally INERT, and marginally *costly* (13.76s with vs
+13.31s without; it spends a `cachedLex` per candidate match). Deleted, with the history kept in the
+comment because it has been reinstated once already. Also DEAD CODE REMOVED earlier: the `lexLKH`
+protocol method (no overrides, no call sites) and the whole `LCNPLexer` protocol (one conformer, one
+use site — an existential on the hot path).
 
-**Open lead:** without the filter, rejects went 41 → 40, so one current over-accept is failing only
-because of it. Worth re-checking now that boundaries are existential.
+**Open lead CLOSED.** The "one over-accept failing only because of the filter" (41 → 40) evaporated:
+it was a C3 regex case, now fixed properly by the viability cut rather than accidentally by the filter.
+Removal holds at 39, not 38. The deeper thread — *why* a pruning filter could interact with
+`@prefer`/`@longest` at all — is answered by the monotonicity analysis above and is no longer live.
+
+**`151a/b` (`_ = ^/"[/"`) — RESOLVED (2026-08-29), grammar-only, via a lexeme-shape viability test.**
+Advent's body `"[` is genuinely malformed (`regexCharacterClass` needs a closing `]`, and `[` is not a
+plain atom), so a CFG-level viability test says "no regex" and `@preempt` never commits — leaving the
+`^/` + string `"[/"` reading to win. swift instead commits to a regex-shaped LEXEME (its scan does not
+require a well-formed body) and then errors on it.
+
+Admitting `[` as a plain regex atom was TRIED and REJECTED: reject 41 → 39 (both fixed), accept 0, but
+**ambiguity 2** — `/([)])/` gains a second reading, and `@avoid` cannot resolve it because the contest
+is body-TILING (one 3-char character class vs atom-by-atom), not same-span. Beyond the ambiguity it
+degrades the balance-aware regex CFG toward "scan to the next `/`", which is what that CFG exists to
+prevent, with no principled floor.
+
+The fix instead keeps the strict grammar untouched and adds `regexLexemeShape` — a deliberately WEAKER
+model of `scanRegexLiteral`, referenced by NO production, existing solely as `@preempt`'s viability
+target. **Sweep: 39 / 0 / 0**, and the ambiguity-0 result is the discriminator that was written into the
+design doc as a falsifiable prediction *before* measuring: the grammar-loosening version also reaches
+39, but at ambiguity 2. `148` (`_ = (^/x)/`) and `152` (`_ = (^/)("/")`) regressed on the first attempt
+and were fixed by transcribing swift's group tracking rather than guessing at it.
+
+**Shape is correct on the suite but MIS-FACTORED — one known latent gap.** Grounded in
+`RegexLiteralLexer.swift`:
+- `groupDepth` is never checked at end of scan, so the rule is not "parens balance" but the weaker
+  Dyck-PREFIX condition *"no `)` at depth 0"*; a trailing unclosed `(` still lexes.
+- `customCharacterClassDepth` exists ONLY to stop parens inside `[…]` counting as groups — nothing
+  bails on an unbalanced `[`. The asymmetry `151` relies on is genuine, not curve-fitted.
+- The `)` bail sits under `!mustBeRegex`. Confidence is decided in `tryScanOperatorAsRegexLiteral` by
+  an OUTER guard and then a previous-token switch:
+  ```swift
+  if isLeftBound == isRightBound {                      // ← outer guard; if unequal, stays FALSE
+    if preferRegexOverBinaryOperator { mustBeRegex = true }        // only after try? / try!
+    if !mustBeRegex && !operatorStart.isInRegexLiteralPosition() { return nil }
+    switch previousTokenKind {
+    case .leftParen, .leftSquare, .comma, .colon, .colonColon: break   // unapplied op legal → FALSE
+    default: mustBeRegex = true
+    }
+  }
+  ```
+  **Confident is the RARE mode.** For the ordinary shape `_ = /abc/` the slash is space-preceded (not
+  left-bound) but letter-followed (right-bound) → guard unequal → block skipped → `mustBeRegex` FALSE.
+  So nearly every real regex is scanned NON-confidently and the `)`-at-depth-0 bail DOES apply.
+
+**Confirmed by experiment: FLATTENING THE STRICT BODY IS WRONG.** `hasError` is false for `/(/` `/[/`
+`/]/` `/a]b/` `/(]/` `/((/` `/()/` `/[[]/` `/[(]/` `/[)]/` `/)/`, which looks like "swift has no balance
+rule". Deleting `regexGroup`/`regexCharacterClass`/`regexClassBody`/`regexClassItem` and admitting
+`( ) [ ]` as plain atoms gave **43 reject / 12 accept / 0 ambiguity** (from 39/0/0). Lost: `_ = (/x)/`,
+`_ = (/[(0)])/`, `foo(/E.e, /E.e)`, `baz(^^/, /)` — all non-confident positions where a depth-0 `)`
+must ABORT the regex. `/[(0)])` additionally proves the class exemption is real (the `)`s inside `[…]`
+must not balance the trailing one). Reverted. **Always-balance is the correct default**; the whole
+"swift's body is unbalanced" family lives in the rare confident mode. Termination, separately, IS flat:
+`/[/]/` and `/(/)/` both error, so the closing `/` is the first unescaped one and the balance rule never
+affects where the literal ends.
+
+So the real discriminator for `148`/`152` is the **confidence flag**, not `groupDepth`; both those
+tests sit after `(`. Our shape applies the bail UNCONDITIONALLY, which is right almost everywhere but
+wrong in confident mode — `_ = ^/)/` and `_ = /)/` are valid Swift (probe: `hasError=false`,
+tokens `regexSlash | regexLiteralPattern(")") | regexSlash`) which advent cannot parse at all, since
+`)` is not reachable as a plain `regexAtom`. **Two missing accept tests, worth adding.**
+
+The fix is NOT a new annotation kit but ONE conditional variant: a second, flat body selected by the
+same confidence predicate. The anchor needed already exists and is already wired — `MessageParser.swift`
+evaluates a `@preempt` gate terminal's `<-<` at `cI`, the operator's START, so a lookbehind on the token
+preceding the whole operator IS expressible (an earlier note here claiming otherwise was wrong). What is
+missing is only ARITY: `preemptStart`/`preemptConstruct` are one gate and one target per terminal, so a
+terminal cannot carry two `(condition → viability)` pairs. Making that a list, first passing gate wins,
+is ~4 sites and needs no new syntax. Deferred: it buys two edge-case inputs at the cost of a duplicated
+body, so it should wait until a second call site justifies it.
+
+Also removed: the `<n> regexOpenSlashNL` shape alternate, provably dead because `@preempt` only queries
+viability at a split point strictly inside an operator token, so a newline can never immediately precede.
+
+This is one instance of a general problem — see
+**`Grammar Predicate Lookahead Design.md` § "Mimicking a deterministic parser: cuts with local
+viability tests"**, which reframes C1, C3 and the B2 family as a single phenomenon (swift's language is
+defined by an algorithm, not a grammar) and records why every survivor-filtering annotation we have is
+structurally unable to express it.
+
 
 
 **Test-harness caveat:** a grammar LOAD failure makes every suite abort before running, and

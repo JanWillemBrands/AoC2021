@@ -1012,26 +1012,27 @@ class MessageParser {
             if matches.isEmpty { return [] }
         }
 
-        // This block does DOUBLE DUTY:
-        //   • `cL.followAheadBS` non-empty → the grammar-authored POSITIVE forward gate `>+>(…)`.
-        //     Semantics the grammar asked for.
-        //   • otherwise → the FOLLOW-derived predict set ("Phase F's `lexLKH`"): some terminal that
-        //     can legally follow this slot must lex at the match end, else the match is dropped.
+        // The grammar-authored POSITIVE forward gate `>+>(…)`: one of the named terminals must lex at
+        // the match end. Semantics the grammar asked for, nothing inferred.
         //
-        // Deleting the second half was TRIED and REVERTED (2026-08-28). It is not the pure
-        // optimisation the design doc describes: removing it left extra derivations alive, which
-        // changed what the Oracle's `@prefer`/`@longest` rules see, and two valid inputs (`_ = /\ /`,
-        // a regex whose whole body is an escaped space) were then WRONGLY REJECTED — a pruning filter
-        // cannot lose a parse directly, so the loss came via disambiguation. Measured: reject 41 → 40,
-        // accept 0 → 4. It also masks one over-accept (hence the 40), which is a separate lead.
+        // This used to do DOUBLE DUTY, falling back to the FOLLOW-derived predict set ("Phase F's
+        // `lexLKH`") when no gate was authored. That half is GONE (2026-08-29). History, because it
+        // was reinstated once already: deleting it in 2026-08-28 cost 4 accepts (`_ = /\ /`, a regex
+        // whose whole body is an escaped space) — a pruning filter cannot lose a parse directly, so
+        // the loss came via disambiguation, the extra surviving derivations changing what the
+        // Oracle's `@prefer`/`@longest` rules saw. Both causes have since been fixed independently
+        // (existential `boundaryMatches`; the `@preempt` viability cut), and the over-accept it was
+        // masking turned out to be a regex case now handled properly. Re-measured over three hash
+        // seeds: reject 39 / accept 0 / ambiguity 0 either way, and marginally FASTER without it
+        // (13.31s vs 13.76s) since it costs a `cachedLex` per candidate match.
         //
-        // Skipped for a RECOGNISER sub-parse: the predict set is a claim about the ENCLOSING context,
-        // which a recogniser does not have (same rationale as `followCheck`). Without this skip, a
-        // speculative viability query inherits the outer FOLLOW obligation and dies on the last token
-        // of the very construct it is asked about — for `_ = ^/"/"`, `regexCloseSlash` was refused
-        // because nothing legal lexes at the trailing `"`, so "is a regex viable here?" answered NO
-        // for a perfectly well-formed regex.
-        let predictBS = cL.followAheadBS.isEmpty ? cL.followBS : cL.followAheadBS
+        // Skipped for a RECOGNISER sub-parse: the gate is a claim about the ENCLOSING context, which
+        // a recogniser does not have (same rationale as `followCheck`). Without this skip, a
+        // speculative viability query inherits the outer obligation and dies on the last token of the
+        // very construct it is asked about — for `_ = ^/"/"`, `regexCloseSlash` was refused because
+        // nothing legal lexes at the trailing `"`, so "is a regex viable here?" answered NO for a
+        // perfectly well-formed regex.
+        let predictBS = cL.followAheadBS
         if !isSubParser, !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
             matches = matches.filter { m in
                 // Past the end of input acts as EOS — always allowed.

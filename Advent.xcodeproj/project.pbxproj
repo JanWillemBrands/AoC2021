@@ -85,6 +85,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
+		4ED277CC3042218F00C05B68 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		CB6B7313257EA9F400B929C6 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -135,7 +144,7 @@
 		4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "SwiftSyntax Mapping.md"; sourceTree = "<group>"; };
 		4ED277C3303DA56B00C05B68 /* Untitled.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Untitled.md; sourceTree = "<group>"; };
 		4ED277C53041858900C05B68 /* Lexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lexer.swift; sourceTree = "<group>"; };
-		4ED277C93041AC8100C05B68 /* tinyGLL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = tinyGLL.swift; sourceTree = "<group>"; };
+		4ED277CE3042218F00C05B68 /* tinyGLL */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = tinyGLL; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EEBC9782F9DECF000E838A7 /* ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParser.swift; sourceTree = "<group>"; };
 		4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusTerminals.swift; sourceTree = "<group>"; };
 		4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinarySubtreeRepresentation.swift; sourceTree = "<group>"; };
@@ -225,6 +234,7 @@
 		4E8D05962F6A183C0081C6D2 /* GeneratedParser */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GeneratedParser; sourceTree = "<group>"; };
 		4EBFE0563024BE06001F3FF2 /* articles */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = articles; sourceTree = "<group>"; };
 		4EBFE065302537A2001F3FF2 /* apus grammars */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {AfroozehHunt.apus = sourcecode.swift; "Swift EBNF.apus" = sourcecode.swift; Swift.apus = sourcecode.swift; TortureSyntax.apus = sourcecode.swift; apus.apus = sourcecode.swift; apusWithAction.apus = sourcecode.swift; layout.apus = sourcecode.swift; "regex-operator.apus" = sourcecode.swift; test.apus = sourcecode.swift; tortureART.apus = sourcecode.swift; tortureEBNF.apus = sourcecode.swift; }; explicitFolders = (); path = "apus grammars"; sourceTree = "<group>"; };
+		4ED277CF3042218F00C05B68 /* tinyGLL */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = tinyGLL; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -245,6 +255,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				4E2C808C2F74D3EC004365DD /* BitCollections in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4ED277CB3042218F00C05B68 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -444,7 +461,6 @@
 				4E8D05A92F701D560081C6D2 /* Derivations.svg */,
 				4E5754B42F5894BB0067165C /* SPPF.svg */,
 				4EEBC9782F9DECF000E838A7 /* ApusParser.swift */,
-				4ED277C93041AC8100C05B68 /* tinyGLL.swift */,
 				4EEBC9792F9DECF000E838A7 /* ApusTerminals.swift */,
 				4EF57BB33020ACB800549D7B /* ApusToHTML.swift */,
 				4EEBC97A2F9DECF000E838A7 /* BinarySubtreeRepresentation.swift */,
@@ -473,6 +489,7 @@
 				4E7709B42F37870300972246 /* AdventTests */,
 				4EBFE065302537A2001F3FF2 /* apus grammars */,
 				4EBFE0563024BE06001F3FF2 /* articles */,
+				4ED277CF3042218F00C05B68 /* tinyGLL */,
 				4E8D058E2F67204C0081C6D2 /* Frameworks */,
 				4E8D05962F6A183C0081C6D2 /* GeneratedParser */,
 				4EEBC9FE2F9EF35000E838A7 /* grammars */,
@@ -486,6 +503,7 @@
 				CB6B7315257EA9F400B929C6 /* Advent */,
 				4E7709B32F37870300972246 /* AdventTests.xctest */,
 				4E8D05952F6A183C0081C6D2 /* GeneratedParser */,
+				4ED277CE3042218F00C05B68 /* tinyGLL */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -543,6 +561,28 @@
 			productReference = 4E8D05952F6A183C0081C6D2 /* GeneratedParser */;
 			productType = "com.apple.product-type.tool";
 		};
+		4ED277CD3042218F00C05B68 /* tinyGLL */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4ED277D23042218F00C05B68 /* Build configuration list for PBXNativeTarget "tinyGLL" */;
+			buildPhases = (
+				4ED277CA3042218F00C05B68 /* Sources */,
+				4ED277CB3042218F00C05B68 /* Frameworks */,
+				4ED277CC3042218F00C05B68 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4ED277CF3042218F00C05B68 /* tinyGLL */,
+			);
+			name = tinyGLL;
+			packageProductDependencies = (
+			);
+			productName = tinyGLL;
+			productReference = 4ED277CE3042218F00C05B68 /* tinyGLL */;
+			productType = "com.apple.product-type.tool";
+		};
 		CB6B7314257EA9F400B929C6 /* Advent */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CB6B731C257EA9F400B929C6 /* Build configuration list for PBXNativeTarget "Advent" */;
@@ -574,7 +614,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastSwiftUpdateCheck = 2630;
+				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					4E7709B22F37870300972246 = {
@@ -582,6 +622,9 @@
 					};
 					4E8D05942F6A183C0081C6D2 = {
 						CreatedOnToolsVersion = 26.3;
+					};
+					4ED277CD3042218F00C05B68 = {
+						CreatedOnToolsVersion = 27.0;
 					};
 					CB6B7314257EA9F400B929C6 = {
 						CreatedOnToolsVersion = 12.2;
@@ -609,6 +652,7 @@
 				CB6B7314257EA9F400B929C6 /* Advent */,
 				4E7709B22F37870300972246 /* AdventTests */,
 				4E8D05942F6A183C0081C6D2 /* GeneratedParser */,
+				4ED277CD3042218F00C05B68 /* tinyGLL */,
 			);
 		};
 /* End PBXProject section */
@@ -664,6 +708,13 @@
 			files = (
 				4E4E48CC2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */,
 				4ED277C8304185E900C05B68 /* Lexer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4ED277CA3042218F00C05B68 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -778,6 +829,41 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		4ED277D33042218F00C05B68 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 3A743G3S42;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		4ED277D43042218F00C05B68 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 3A743G3S42;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
@@ -962,6 +1048,15 @@
 			buildConfigurations = (
 				4E8D059A2F6A183C0081C6D2 /* Debug */,
 				4E8D059B2F6A183C0081C6D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4ED277D23042218F00C05B68 /* Build configuration list for PBXNativeTarget "tinyGLL" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4ED277D33042218F00C05B68 /* Debug */,
+				4ED277D43042218F00C05B68 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
