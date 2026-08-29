@@ -267,8 +267,33 @@ multilineInterpolatedStringLiteralPart - @builder .
 
 multilineInterpolatedStringLiteralTail - @builder .
 
-interpolatedStringLiteral       = interpolatedStringLiteralHead
-                                  functionCallArgumentList { interpolatedStringLiteralPart functionCallArgumentList }
+// `>n<` (no newline in the gap) at every boundary this production OWNS. Transcribed from
+// swift-syntax `Cursor.swift`, which makes newlines non-trivia by LEXER STATE:
+//     func leadingTriviaLexingMode(cursor:) -> TriviaLexingMode? {
+//       case .inStringInterpolation(let stringLiteralKind, _):
+//         switch stringLiteralKind {
+//         case .singleLine, .singleQuote: return .noNewlines
+//         case .multiLine:                return .normal
+//     …and `lexInStringInterpolation` on `case "\r", "\n"` emits an empty `.stringSegment` and
+//     POPS the state — the literal simply ENDS at the newline (hence swift's "expected ')'").
+//
+// PARTIAL by construction. swift's rule holds at any paren depth inside the interpolation, because
+// the state persists; `>n<` only reaches the gaps in THIS production. So `"abc\(⏎def)"` and
+// `"abc\(def⏎)"` are caught, while `"test \(label:⏎foo)"` is NOT — that newline sits between two
+// tokens of the shared `functionCallArgumentList`, which we cannot gate without a trivia policy
+// that inherits into shared nonterminals. See REJECTS.md § C2 group C.
+//
+// Legal cases stay legal: `>n<` bans only newlines, so `"a\( b )"` is fine, and in
+// `"a\("""⏎x⏎""")"` both owned gaps are EMPTY (the newlines are inside the nested literal's token).
+// The MULTILINE production below is deliberately left ungated — swift returns `.normal` there.
+// `@sameLine` covers what `>n<` cannot: a newline between two tokens of the SHARED
+// `functionCallArgumentList` (`"test \(label:⏎foo)"`). It is a span-level Oracle prune — the whole
+// literal's span may not cross a newline that was consumed as trivia — so it needs no gate inside
+// the shared nonterminal. Newlines inside a committed token stay legal, keeping
+// `"a\("""⏎x⏎""")"` parseable.
+interpolatedStringLiteral       = interpolatedStringLiteralHead >n<
+                                  functionCallArgumentList >n<
+                                  { interpolatedStringLiteralPart >n< functionCallArgumentList >n< }
                                   interpolatedStringLiteralTail .
 interpolatedStringLiteral       = multilineInterpolatedStringLiteralHead
                                   functionCallArgumentList { multilineInterpolatedStringLiteralPart functionCallArgumentList }

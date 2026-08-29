@@ -13,20 +13,20 @@ let input = Array("a")
 
 var nonTerminalDefinitions: [Character: GrammarNode] = [:]
 
-//var grammarRoot = GrammarNode(.EOS, "$")
-var grammarRoot: GrammarNode!
+var grammarRoot = GrammarNode(.EOS, "$") // dummy initializer, grammarRoot must not be an optional
+//var grammarRoot: GrammarNode!
 
 func parseGrammar() {
     var i = 0
     var c: Character = "$"
-
+    
     func next(expect predicate: (Character) -> Bool = {$0==$0} ) {
         if !predicate(c) {
             print("found an unexpected '\(c)' at position \(i - 1)")
             exit(1)
         }
         while i < grammar.count && ( grammar[i] == " " || grammar[i] == "\n" ) {
-                i += 1
+            i += 1
         }
         if i < grammar.count {
             c = grammar[i]
@@ -36,10 +36,10 @@ func parseGrammar() {
         }
         print("next '\(c)' at position \(i - 1)")
     }
-
+    
     var nonTerminal: GrammarNode!
     var nonTerminalReferences: [GrammarNode] = []
-
+    
     func production() {
         print("\(#function)")
         let name = c
@@ -50,7 +50,7 @@ func parseGrammar() {
         nonTerminal.alt = alternates()
         next() { $0 == "." }
     }
-
+    
     func alternates() -> GrammarNode {
         print("\(#function)")
         let startOfAlternates = sequence()
@@ -62,7 +62,7 @@ func parseGrammar() {
         }
         return startOfAlternates
     }
-
+    
     func sequence() -> GrammarNode {
         print("\(#function)")
         let startOfSequence = GrammarNode(.ALT, "[")
@@ -70,7 +70,7 @@ func parseGrammar() {
         repeat {
             var factor: GrammarNode
             if c == "ε" {
-               factor = GrammarNode(.EPS, c)
+                factor = GrammarNode(.EPS, c)
             } else if c.isUppercase {
                 factor = GrammarNode(.N, c)
                 nonTerminalReferences.append(factor)
@@ -90,7 +90,7 @@ func parseGrammar() {
         tmp.seq?.alt = startOfSequence
         return startOfSequence
     }
-
+    
     next()
     while c != "$" {
         production()
@@ -100,6 +100,91 @@ func parseGrammar() {
         ref.alt = nonTerminalDefinitions[ref.name]
     }
 }
+
+
+// Lightweight value type for CRF dictionary keys and return edges.
+// Matches the paper's crfNode (L, i).
+struct ParsePosition: Hashable {
+    let slot: GrammarNode
+    let index: Int
+}
+
+// Cluster node in the CRF. Mutable, identity-based.
+// Represents clusterNode (X, k) from the paper.
+final class ParseCluster: CustomStringConvertible {
+    let slot: GrammarNode           // the LHS nonterminal (X)
+    let index: Int                  // input position (k)
+    
+    var returns: Set<ParsePosition> = []
+    var pops: Set<Int> = []         // Paper: P — contingent returns
+    
+    init(slot: GrammarNode, index: Int) {
+        self.slot = slot
+        self.index = index
+    }
+}
+
+
+// Paper: ntAdd(X, j) — add descriptors for all alternates of a bracket/nonterminal
+func addDecscriptorsForAlternates(X: GrammarNode, k: Int, i: Int) {
+    var current = X.alt
+    while let alt = current {
+        if testSelect(slot: alt, bracket: X) {
+            addDescriptor(L: alt.seq!, k: k, i: i)
+        }
+        current = alt.alt
+    }
+}
+
+// Paper: call(L, i, j) — enter a nonterminal
+func call() {
+    // cL points to the RHS nonterminal node
+    // cL.alt points to the LHS nonterminal node
+    
+    // Create the return edge: (L=cL, i=cU)
+    let returnEdge = ParsePosition(slot: cL, index: cU)
+    
+    // Find or create the cluster node for (X=cL.alt!, k=cI)
+    let clusterKey = ParsePosition(slot: cL.alt!, index: cI)
+    
+    if let existingCluster = crf[clusterKey] {
+        if existingCluster.returns.insert(returnEdge).inserted {
+            for pop in existingCluster.pops {
+                if continuationViable(continuation: cL.seq!, at: pop) && forwardGateAllows(slot: cL, at: pop) {
+                    addDescriptor(L: cL.seq!, k: cU, i: pop)
+                    addYield(L: cL, i: cU, k: cI, j: pop)
+                } else {
+                    recordSuppressedContinuation(cL.seq!, at: pop)
+                    suppressedDescriptorCount += 1
+                }
+            }
+        }
+    } else {
+        let newCluster = ParseCluster(slot: cL.alt!, index: cI)
+        crf[clusterKey] = newCluster
+        newCluster.returns.insert(returnEdge)
+        addDecscriptorsForAlternates(X: cL.alt!, k: cI, i: cI)
+    }
+}
+
+// Paper: rtn(X, k, j) — return from a nonterminal
+func rtn(X: GrammarNode) {
+    let clusterKey = ParsePosition(slot: X, index: cU)
+    guard let cluster = crf[clusterKey] else { return }
+    
+    if cluster.pops.insert(cI).inserted {
+        for rtn in cluster.returns {
+            if continuationViable(continuation: rtn.slot.seq!, at: cI) && forwardGateAllows(slot: rtn.slot, at: cI) {
+                addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
+                addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
+            } else {
+                recordSuppressedContinuation(rtn.slot.seq!, at: cI)
+                suppressedDescriptorCount += 1
+            }
+        }
+    }
+}
+
 
 func parseInput() {
     currentParseRoot = root
@@ -126,29 +211,29 @@ func parseInput() {
     furthestMismatchIndex = origin
     furthestMismatchSlot = currentParseRoot
     furthestMismatchExpected = []
-
+    
     // Set up root cluster (root may be a `=:` non-terminal for a sub-parse)
     let rootNode = currentParseRoot!
     let rootCluster = ParseCluster(slot: rootNode, index: origin)
     crf[ParsePosition(slot: rootNode, index: origin)] = rootCluster
-
+    
     // Seed initial descriptors (Paper: ntAdd for start symbol)
     addDecscriptorsForAlternates(X: rootNode, k: origin, i: origin)
-
+    
     // Run GLL algorithm
     var progressCounter = 0
     let progressInterval = 10_000
     nextDescriptor: while getDescriptor() {
         progressCounter += 1
         if progressCounter % progressInterval == 0 {
-//                print("  progress: \(progressCounter) descriptors processed, token \(cI.tokenIndex)/\(totalTokens), pending \(remaining.count), crf \(crf.count)")
+            //                print("  progress: \(progressCounter) descriptors processed, token \(cI.tokenIndex)/\(totalTokens), pending \(remaining.count), crf \(crf.count)")
         }
-
+        
         while true {
-
-//                trace = false
-//                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) at: \(input.linePosition(of: cI))")
-
+            
+            //                trace = false
+            //                trace("slot: \(String(format: "%2d", cL.number)) \(cL.ebnfDot()) first \(cL.first) follow \(cL.follow) at: \(input.linePosition(of: cI))")
+            
             switch cL.kind {
             case .EPS:
                 addYield(L: cL, i: cU, k: cI, j: cI)
@@ -216,7 +301,7 @@ func parseInput() {
             case .END:
                 // the seq link of an END node always points back to a starting bracket node (N, DO, OPT, POS, KLN)
                 let bracket = cL.seq!
-
+                
                 switch bracket.kind {
                 case .N:
                     if let seq = bracket.seq {
@@ -242,7 +327,7 @@ func parseInput() {
                 case .DO, .OPT, .KLN, .POS:
                     bracketRtn(bracket: bracket)
                     continue nextDescriptor
-               default:
+                default:
                     fatalError("\(#function) unexpected bracket kind at END seq link \(bracket.kind)")
                 }
             case .EOS:
@@ -250,7 +335,7 @@ func parseInput() {
             }
         }
     }
-
+    
     // For a full parse this counts root yields covering [origin..input.endIndex].
     // For a sub-parse (root != grammar.root), the caller will read yield(of: root)
     // directly to discover accepting end positions.
@@ -264,7 +349,7 @@ func parseInput() {
         if y.j == input.endIndex { return true }
         return !lexer.lex(at: y.j, terminalID: grammar.eosID).isEmpty
     }.count
-//        trace = false
+    //        trace = false
     // Skip the diagnostic prints for sub-parses (`=:` recogniser runs);
     // they fire at every trivia-skip position and drown out the console.
     guard root === grammar.root else { return }
@@ -297,9 +382,9 @@ enum GrammarNodeKind { case EOS, T, EPS, N, ALT, END }
 class GrammarNode: Hashable {
     let kind: GrammarNodeKind
     let name: Character
-
+    
     var alt, seq: GrammarNode?
-
+    
     let number: Int
     static var count = 0
     

@@ -347,3 +347,74 @@ in the overloadable `operator` production (not merely excluded from `prefixOpera
 It has exactly two roles: prefix inout (`inOutExpression = "&" primaryExpression`) and
 infix bitwise-and. Treating `&` as a general `prefixOperator` makes `&Y` double-parse
 (prefixOperator + inOutExpression) — the root of the `[X] & [Y]` pivot cluster.
+
+
+## Interpolated strings: tree shape vs our tokenisation (2026-08-29)
+
+swift-syntax structures an interpolated string as SEVEN token kinds:
+
+```
+StringLiteralExpr: openingPounds? openingQuote segments closingQuote closingPounds?
+ExpressionSegment: backslash pounds? leftParen expressions rightParen
+segments:          [ StringSegment | ExpressionSegment ]*
+```
+
+Advent fuses these into THREE tokens, because a bare `"` is ambiguous (opening quote / closing quote /
+content) and the scanner has no context to decide:
+
+| advent token | example | fuses these swift tokens |
+|---|---|---|
+| `interpolatedStringLiteralHead` | `"abc\(` | openingQuote + stringSegment + backslash + leftParen |
+| `interpolatedStringLiteralPart` | `)def\(` | rightParen + stringSegment + backslash + leftParen |
+| `interpolatedStringLiteralTail` | `)ghi"`  | rightParen + stringSegment + closingQuote |
+
+So the shape gap is a TOKENISATION mismatch, not a missing mapping — no post-hoc mapping can recover
+swift's tree without splitting these tokens apart. It has the same root cause as REJECTS.md § C2
+group C (a newline may not appear in interpolation trivia): swift decides both with lexer STATE, which
+we do not have. Matching the shape therefore requires context-dependent lexing.
+
+**Measured before treating this as a priority: only 32 of 1652 `trees differ` labels even CONTAIN a
+`\(`** — 1.9%, and not all of those need differ because of interpolation. So decomposing the fused
+tokens is NOT a significant lever on the tree-fidelity frontier. If it is ever done, do it for
+faithfulness to swift's tokenisation in general, not for these 3 reject tests or for the frontier.
+
+Error shape, for reference — swift does not record an "illegal newline" node. For `_ = "abc\(def⏎ghi)"`
+it CLOSES the literal at the newline (`rightParen MISSING`, `closingQuote MISSING`), makes `ghi` a
+separate top-level statement, and puts the trailing `)"` in `UnexpectedNodesSyntax`.
+
+### Landed 2026-08-29: interpolated-string tree shape, WITHOUT touching the grammar
+
+The fused tokens do NOT have to be split in the grammar. `GenerateSwiftSyntaxAST.swift` has the token
+text and the span positions, so `convertInterpolatedStringLiteral` reassembles swift's shape directly —
+one string segment per fused token:
+
+    Head = `"` + segment + `\(`     Part = `)` + segment + `\(`     Tail = `)` + segment + `"`
+
+Probe-confirmed target: segments strictly ALTERNATE and always both begin and end with a string
+segment, so N interpolations give N+1 string segments INCLUDING empty ones (`"\(x)"` → `""`, expr, `""`).
+
+This avoids the grammar decomposition entirely, which would have needed a new trivia-suppression
+mechanism: `Lexer.lex` calls `skipTrivia` unconditionally, so separate string-internal tokens would
+silently eat spaces in string content (`"a\(b) c"` loses its space).
+
+LIMITATION: only the single-interpolation form. A non-empty `{ Part args }` returns nil and falls back
+to the old one-segment tree. Extending it needs iteration over the KLN bracket.
+
+### Latent bug found on the way: bare identifiers never converted
+
+`convertPrimaryExpression` had a `find("identifier", …)` branch that could NEVER fire. The path is
+`primaryExpression = genericIdentifier` → `genericIdentifier = hardIdentifier …` →
+`hardIdentifier = identifier`, and `identifier` is a TERMINAL while `findNonterminal` digs only through
+brackets (OPT/DO/KLN/POS), never through non-matching nonterminals. So every bare identifier reference
+produced `MissingExpr`. Fixed by descending the two named levels explicitly; a `genericArgumentClause`
+(`f<Int>`) still falls through to `MissingExpr` rather than silently dropping type arguments.
+
+**Measured: `trees differ` 1629 → 1617/1619** (two seeds), 13 trees fixed including both interpolation
+targets (`testStringLiterals#12`, `testTriviaEndingInterpolation#1`). Reject/accept/ambiguity unchanged
+at 30/0/0 — an AST-builder change cannot affect parsing, and did not.
+
+**Caution for future measurements:** 4 labels (`testForwardSlashRegex71#1`, `#78`, `testIdentifiers10#1`,
+`testNonisolatedSpecifier#12`) FLAP between runs under non-deterministic hashing — they appeared as
+"fixed" in one run and "broken" in the next. Do not read a single-run tree diff as signal; and the
+harness reject COUNT can differ by one while the label SET is identical, so compare sets, not counts.
+

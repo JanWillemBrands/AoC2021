@@ -501,7 +501,73 @@ the raw body as opaque, so `\##(` is just content.
 backreference `\1`", and a backreference cannot parameterise a quantifier. → needs Group B/D's shared
 mechanism below.
 
-### Group C — interpolation must not span a newline *(3)*
+### Group C — interpolation must not span a newline *(3 → 1 remaining)*
+
+**✓ PARTIAL FIX 2026-08-29: reject 30 → 28.** `testUnterminatedString4#1` and `testUnterminatedString5#1`
+fixed with two `>n<` gates on the boundaries the `interpolatedStringLiteral` production OWNS
+(after Head, before Tail, and around each Part). Grammar-only, accept 0, ambiguity 0, trees unchanged.
+
+**THE EXACT RULE, found in swift-syntax.** It is not a check — it is a per-lexer-state TRIVIA MODE.
+`Cursor.swift`:
+```swift
+func leadingTriviaLexingMode(cursor:) -> TriviaLexingMode? {
+  case .inStringInterpolation(let stringLiteralKind, _):
+    switch stringLiteralKind {
+    case .singleLine, .singleQuote: return .noNewlines
+    case .multiLine:                return .normal
+    }
+```
+and in `lexInStringInterpolation`:
+```swift
+case "\r", "\n":
+  precondition(stringLiteralKind != .multiLine)
+  return Lexer.Result(.stringSegment, stateTransition: .pop)   // literal simply ENDS here
+```
+So: while in `inStringInterpolation`, a newline is NOT trivia; it emits an empty `.stringSegment` and
+pops the state, i.e. the literal ends — which is why the diagnostic is the parser's "expected ')'"
+rather than an "illegal newline". Multiline gets `.normal`, so our multiline production is correctly
+left ungated. Nested string literals are exempt because entering one PUSHES a different state.
+
+**Why `>n<` cannot finish the job.** The state persists at ANY paren depth (`parenCount` is tracked in
+the same enum), so swift's rule covers gaps we do not own. `testNewlineInInterpolationOfSingleLineString#1`
+(`"test \(label:⏎foo)"`) puts the newline between two tokens of the shared
+`functionCallArgumentList`. Gating that needs a trivia policy that INHERITS into shared nonterminals.
+
+**Design note for whoever picks this up:** the mechanism sketched earlier in this file as
+"region-scoped trivia policy" is exactly what swift implements — a small `TriviaLexingMode` enum
+(`.normal` / `.noNewlines` / nil) selected by a STACK of lexer states. That is a strong argument that
+the abandoned scanner-mode system was the right shape, and that the missing piece is per-state trivia
+modes rather than per-terminal ones. The GLL obstacle stands: the state must be derivable from the
+grammar slot or the sub-parse identity, not from mutable parser state.
+
+**`@sameLine` — mechanism BUILT, not yet applied (2026-08-30).** The containment machinery
+(`@confinedTo`/`@excludedFrom`) turns out to be the right family to reuse: a `DisambiguationRule`
+registered per-alternate whose closure CAPTURES THE PARSER, so it can query anything the parser knows.
+That corrects an earlier claim in this file — the committed-token cover IS reachable post-parse, via
+`parser.commits` (`TerminalCommit` carries `[start, end)`).
+
+Implemented: `GrammarNode.requiresSameLine`, an `@sameLine` alternate pragma in `ApusParser`, and
+`SameLineSpanRule` in `Oracle.swift` — prune a yield whose span contains a newline NOT covered by any
+committed token. Newlines inside a token stay legal, which is what keeps the nested-multiline case
+parseable. The cover over-approximates (the log includes commits from derivations that later died), so
+the rule can only MISS a prune, never remove a legitimate parse.
+
+NOT applied to the grammar, because anchoring is wrong: rules attach to a BODY SYMBOL, whose yield is
+`(i = production start, k = symbol start, j = SYMBOL end)`. Anchoring on the FIRST symbol inspects only
+`[literal start, Head end)` — never contains the newline, so nothing fired (28/0/0 unchanged). Anchoring
+on the LAST symbol over-fires: **reject 27 but accept 6** — `testTry24#1` (three single-line
+interpolations on separate lines), `testUnsafeExpr#16` (`func f() { "\(unsafe)" }`, function spans
+lines), `testMultilineString46#1`. None has a newline inside the literal, so the inspected span is
+larger than the literal.
+
+What it needs: split `interpolatedStringLiteral` into `interpolatedStringLiteral =
+singleLineInterpolatedStringLiteral | multilineInterpolatedStringLiteral`, put `@sameLine` on the
+single-line nonterminal, and anchor the prune on its LHS COMPLETION yields (`i == k`, `j` = true end).
+That gives an exact span AND the right scope — the current shared LHS makes per-alternate scoping
+impossible. Once it works, the `>n<` gates in that production become redundant and should be removed:
+`@sameLine` subsumes them.
+
+### Group C — original analysis *(kept for the reasoning)*
 `testNewlineInInterpolationOfSingleLineString#1`, `testUnterminatedString4#1` (`"abc\(def⏎)"`),
 `testUnterminatedString5#1` (`"abc\(⏎def)"`). Diagnostic *"expected ')' in string literal"*.
 Probed boundary: this holds for MULTILINE strings too (`"""⏎\(b⏎c)⏎"""` errors with *"unexpected code
@@ -513,11 +579,76 @@ and `Part`/`Tail` resume at `)`. The offending newline is not inside any token �
 between tokens of the argument list, where the CFG skips it freely. The Head/Part/Tail regexes already
 ban newlines and are not the problem.
 
-`>n<` cannot express it either: it constrains one boundary, while the requirement is a property of the
-whole extent. **Approach: a span-level constraint** — "the extent of this nonterminal contains no
-newline" — checked at nonterminal completion, the same hook `forwardGateAllows` already uses. Cheap to
-evaluate against a precomputed newline-position index. Reusable well beyond strings: Swift is full of
-same-line rules (module selector, tight-`(`, the `>n<` sites), all currently done one boundary at a time.
+`>n<` cannot express it either: `boundaryMatches(cL.name, at: cI)` tests ONE position (the gap
+`triviaStart..<start` of a single `TerminalCommit`), while the requirement covers every boundary in the
+extent. Nor can it be placed at the use site: the interpolation's contents are `functionCallArgumentList`,
+shared with ordinary calls, which legitimately span lines.
+
+**The constraint's exact shape, probed 2026-08-29 — and it is NOT "the extent contains no newline":**
+
+| input | `hasError` | consequence |
+|---|---|---|
+| `_ = "a\("""⏎x⏎""")"` | **false** | a nested MULTILINE string inside a single-line interpolation is LEGAL, newlines and all |
+| `_ = "a\(f(⏎b))"` | true | the rule reaches into NESTED trivia gaps, not just the argument list's top level |
+| `_ = "a\(  b  )"` | false | horizontal whitespace in the gaps is fine |
+
+So the rule is: **no newline in any TRIVIA GAP within the interpolation; newlines inside tokens are
+fine.** A raw span scan would wrongly reject the first row. And the cheap encoding — "Head and Tail on
+the same line" — is also wrong, because in that same legal case the Tail sits three lines below the Head.
+
+**Why this is hard in a GENERAL parser, which is the real obstacle.** The natural formulation is a
+region-scoped trivia policy: on entering the interpolation, newlines stop counting as trivia; on
+leaving, they resume. That is the `Scanner Mode Design.md` concept — but note the live `Scanner.swift`
+has NO mode machinery (only the `AllSources.swift` archive still carries a `mode` field on
+`TokenPattern`), and `Swift.apus` uses no mode annotations at all. Reviving it as parser STATE will not
+work: GLL processes descriptors from an unordered worklist, so "currently inside the region" is not a
+well-defined global during the parse — it would have to become part of the descriptor/CRF identity, or
+be derived from the input position alone. That is very likely why the mode system was dropped.
+
+Sound alternatives, both non-trivial:
+- **Position-derived table.** Precompute per input position whether a newline is trivia or inside a
+  literal, by scanning nested delimiters — exactly what `LayoutTokenInjection.swift`'s
+  `skipPythonStringLiteral` already does for Python. Language-specific, but GLL-safe because it is a
+  pure function of the input.
+- **Completion-time check over committed tokens.** Test at the completion of the single-line
+  `interpolatedStringLiteral` production (a dedicated production, so no shared nonterminal is
+  affected) whether any newline in the extent falls outside every committed token. Needs the token
+  cover for the derivation, which the BSR does not currently expose at that point.
+
+**What the swift-syntax TREE SHAPE suggests — the most promising direction.** For `_ = "abc\(def⏎ghi)"`
+swift records NO "illegal newline" node. It CLOSES THE LITERAL at the newline:
+```
+├─[1]: ExpressionSegmentSyntax
+│ ├─expressions: … identifier("def")
+│ ╰─rightParen: rightParen MISSING
+╰─closingQuote: stringQuote MISSING
+├─[1]: CodeBlockItemSyntax ╰─ identifier("ghi")        ← separate TOP-LEVEL statement
+╰─[2]: UnexpectedCodeDeclSyntax ╰─ rightParen, stringQuote
+```
+So the model is not "a newline is illegal inside interpolation" but "the single-line literal's TOKEN
+STREAM is bounded, and the newline ends it". The legal nested case confirms the exemption mechanism:
+the nested multiline string appears as a COMPLETE token pair (`multilineStringQuote … multilineStringQuote`),
+so no newline is ever taken as whitespace.
+
+**Region = SUB-PARSE.** This dissolves the GLL objection above. "Inside the region" cannot be parser
+STATE (unordered worklist), but a sub-parse is a separate `MessageParser` instance, so the region
+becomes that instance's identity. The seam already exists and already varies policy per instance:
+`isSubParser` switches off the FOLLOW obligation and the predict filter, and `@preempt` constructs
+sub-parsers exactly this way. "Newlines are not trivia in this sub-parse" is the same kind of
+per-instance policy and needs no descriptor/CRF identity change. Mechanically: make the single-line
+interpolated string a `=|` lexical nonterminal — one token spanning the literal, body recognised by a
+newline-free sub-parse — which mirrors swift emitting it as one bounded token stream.
+
+Caveats to weigh first:
+- The `=|` attempt earlier in this session failed (76/26/1), for an unrelated cause since fixed
+  (`prepareInput` skipped lookbehind resolution for lexical tokens). Less proven than it looks.
+- If the literal becomes ONE token, the interpolation's expressions leave the main forest — moving
+  `trees differ` and affecting AST generation. That trades a reject fix against tree fidelity, which
+  is the current frontier, so it is not free.
+
+**PARKED** at 3 tests. The "not expressible" claim is recorded WITH its probe evidence so it can be
+re-challenged: what is actually ruled out is a raw-span constraint and a Head/Tail same-line
+constraint, both by the legal nested-multiline row — not the sub-parse route above.
 
 ### Group D — multiline post-process rules *(2 → 1 remaining)*
 `testPostProcessMultilineStringLiteral#1` — ✓ **RESOLVED as a side effect of Group A**, and
@@ -616,7 +747,8 @@ separation. Belongs with C13 (error recovery), not here.
    CFG-parsed argument list, not inside any token — so no scanner-level encoding can reach it. Given
    the three wrong "not expressible" calls above, re-examine that claim before building anything.
 
-**String rejects: 12 → 3.** Reject total 39 → 30, accept 0, ambiguity 0 throughout.
+**String rejects: 12 → 1.** Reject total 39 → 28, accept 0, ambiguity 0 throughout.
+Only `testNewlineInInterpolationOfSingleLineString#1` remains, cause fully understood (above).
 
 ---
 

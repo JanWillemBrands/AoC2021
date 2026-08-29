@@ -469,6 +469,17 @@ class ApusParser {
             try expect([")"]); cI += 1
         }
 
+        // `@sameLine` — this alternate's SPAN may not cross a newline that the parse consumed as
+        // TRIVIA. Newlines inside a token (a nested multiline string, a block comment) are fine.
+        // Same family as the containment predicates above: a post-parse Oracle prune anchored on the
+        // alternate's first body symbol. Models swift-syntax's per-lexer-state trivia mode
+        // (`Cursor.swift` → `leadingTriviaLexingMode` returns `.noNewlines` inside
+        // `inStringInterpolation` for a single-line literal).
+        if token.kind == "pragma", token.stripped == "sameLine" {
+            startOfSequence.requiresSameLine = true
+            cI += 1
+        }
+
         // Leading forward lookahead predicate with a NONTERMINAL operand — `>->(N)` (negative)
         // or `>+>(N)` (positive) at the alternate start. Captured on this ALT node; the Oracle
         // anchors the prune on the alternate's first body symbol (yield start = alternate start).

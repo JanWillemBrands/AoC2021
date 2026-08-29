@@ -199,6 +199,39 @@ struct ContainmentRule: DisambiguationRule {
     }
 }
 
+/// `@sameLine`. Prunes a yield whose span contains a newline that the parse crossed as TRIVIA —
+/// i.e. a newline not inside any committed terminal's content. Newlines INSIDE a token (a nested
+/// multiline string, a block comment) are fine, which is what keeps `"a\("""⏎x⏎""")"` legal.
+///
+/// Models swift-syntax's per-lexer-state trivia mode rather than a check: `Cursor.swift`
+/// `leadingTriviaLexingMode` returns `.noNewlines` while `inStringInterpolation` for a single-line
+/// literal, and `lexInStringInterpolation` pops the state on `\r`/`\n`. The state persists at any
+/// paren depth, which is why a `>n<` gate on the owned boundaries cannot cover every case and this
+/// SPAN-level rule can.
+///
+/// The token cover comes from `commits`, a flat log of every commit including ones from derivations
+/// that later died. That over-approximates the cover, so the rule can only ever MISS a prune, never
+/// remove a legitimate parse — the safe direction.
+struct SameLineSpanRule: DisambiguationRule {
+    let newlines: () -> [CharPosition]
+    let tokenSpans: () -> [(CharPosition, CharPosition)]
+    func prune(_ yields: inout Set<BinarySpan>) -> Int {
+        let nls = newlines()
+        guard !nls.isEmpty else { return 0 }
+        let covers = tokenSpans()
+        var pruned = 0
+        for span in yields {
+            let inside = nls.filter { $0 >= span.i && $0 < span.j }
+            guard !inside.isEmpty else { continue }
+            let crossedAsTrivia = inside.contains { nl in
+                !covers.contains { $0.0 <= nl && nl < $0.1 }
+            }
+            if crossedAsTrivia { yields.remove(span); pruned += 1 }
+        }
+        return pruned
+    }
+}
+
 private func pruneByPivot(
     yields: inout Set<BinarySpan>,
     keep: ([CharPosition]) -> CharPosition
@@ -299,6 +332,22 @@ class Oracle {
                     rules.append((anchor, ContainmentRule(containers: containers, negated: negated)))
                 } else {
                     assertionFailure("containment predicate on an empty alternate")
+                }
+            }
+            // `@sameLine` — same family as the containment predicates, but anchored on the LAST body
+            // symbol, not the first. A body-symbol yield is `(i = production start, k = symbol start,
+            // j = SYMBOL end)`, so only the last symbol's yield spans the whole production; anchoring
+            // on the first gave `[literal start, Head token end)`, which can never contain the
+            // offending newline.
+            if node.requiresSameLine {
+                let p = parser
+                if let anchor = node.bodySymbols.last {
+                    rules.append((anchor, SameLineSpanRule(
+                        newlines: { p.input.indices.filter { p.input[$0] == "\n" || p.input[$0] == "\r" } },
+                        tokenSpans: { p.commits.map { ($0.start, $0.end) } }
+                    )))
+                } else {
+                    assertionFailure("@sameLine on an empty alternate")
                 }
             }
             if node.kind != .END { walk(node.seq) }

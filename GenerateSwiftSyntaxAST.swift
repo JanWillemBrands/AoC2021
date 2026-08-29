@@ -506,6 +506,23 @@ struct SwiftSyntaxGenerator {
             let name = collectTerminalText(from: idNT.from, to: idNT.to)
             return ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier(name)))
         }
+        // `primaryExpression = genericIdentifier` → `genericIdentifier = hardIdentifier …`
+        // → `hardIdentifier = identifier`. The branch above can never fire for this path:
+        // `identifier` is a TERMINAL, and `findNonterminal` digs only through brackets, not
+        // through non-matching nonterminals. So a bare identifier reference produced
+        // `MissingExpr`. Handled here by descending the two named levels explicitly.
+        //
+        // A `genericArgumentClause` (`f<Int>`) is NOT handled yet — fall through to
+        // `MissingExpr` rather than silently dropping the type arguments.
+        if let genNT = find("genericIdentifier", in: spans),
+           let (_, genSpans) = tileAlternate(genNT.nt, from: genNT.from, to: genNT.to),
+           find("genericArgumentClause", in: genSpans) == nil,
+           let hardNT = find("hardIdentifier", in: genSpans) {
+            let name = collectTerminalText(from: hardNT.from, to: hardNT.to)
+            if !name.isEmpty {
+                return ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier(name)))
+            }
+        }
         return ExprSyntax(MissingExprSyntax())
     }
 
@@ -552,6 +569,12 @@ struct SwiftSyntaxGenerator {
     }
 
     private mutating func convertStringLiteral(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
+        // stringLiteral = staticStringLiteral | interpolatedStringLiteral .
+        if let (_, spans) = tileAlternate(nt, from: from, to: to),
+           let interp = find("interpolatedStringLiteral", in: spans),
+           let expr = convertInterpolatedStringLiteral(interp.nt, from: interp.from, to: interp.to) {
+            return expr
+        }
         // Collect all text between quotes
         let fullText = collectTerminalText(from: from, to: to)
         // SwiftSyntax models string literals with quote tokens and segment lists.
@@ -576,6 +599,88 @@ struct SwiftSyntaxGenerator {
             ]),
             closingQuote: .stringQuoteToken()
         ))
+    }
+
+    /// Interpolated string → swift-syntax's `StringLiteralExpr` shape.
+    ///
+    /// Probe-confirmed target (`_ = "\(x)"`): segments strictly ALTERNATE and always both start
+    /// and end with a string segment, so N interpolations give N+1 string segments — including
+    /// EMPTY ones. `"\(x)"` yields three segments: `""`, the expression, `""`.
+    ///
+    /// Our scanner fuses delimiters with content (see `SwiftSyntax Mapping.md`), which lines up
+    /// exactly one segment per token:
+    ///
+    ///     Head = `"` + segment + `\(`      Part = `)` + segment + `\(`      Tail = `)` + segment + `"`
+    ///
+    /// so the tree can be reassembled here without splitting the tokens in the grammar — which
+    /// would need a trivia-suppression mechanism, because `Lexer.lex` skips trivia
+    /// unconditionally and would silently eat spaces inside string content (`"a\(b) c"`).
+    ///
+    /// LIMITED to the single-interpolation form: a non-empty `{ Part args }` returns nil and the
+    /// caller falls back to the old one-segment tree. Extending this needs iteration over the KLN
+    /// bracket, which is the obvious next step.
+    private mutating func convertInterpolatedStringLiteral(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax? {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return nil }
+        // Multi-interpolation (non-empty repetition bracket) — not handled yet.
+        if spans.contains(where: { $0.0.kind == .KLN && $0.1 != $0.2 }) { return nil }
+        guard let head = spans.first(where: { $0.0.name == "interpolatedStringLiteralHead" }),
+              let tail = spans.first(where: { $0.0.name == "interpolatedStringLiteralTail" }),
+              let args = find("functionCallArgumentList", in: spans)
+        else { return nil }
+
+        let headText = String(input[head.1..<head.2])      // `"abc\(`
+        let tailText = String(input[tail.1..<tail.2])      // `)ghi"`
+        guard headText.hasPrefix("\""), headText.hasSuffix("\\("),
+              tailText.hasPrefix(")"), tailText.hasSuffix("\"")
+        else { return nil }
+        let leadingSegment  = String(headText.dropFirst().dropLast(2))
+        let trailingSegment = String(tailText.dropFirst().dropLast())
+
+        return ExprSyntax(StringLiteralExprSyntax(
+            openingQuote: .stringQuoteToken(),
+            segments: StringLiteralSegmentListSyntax([
+                .stringSegment(StringSegmentSyntax(content: .stringSegment(leadingSegment))),
+                .expressionSegment(ExpressionSegmentSyntax(
+                    backslash: .backslashToken(),
+                    leftParen: .leftParenToken(),
+                    expressions: convertArgumentList(args.nt, from: args.from, to: args.to),
+                    rightParen: .rightParenToken()
+                )),
+                .stringSegment(StringSegmentSyntax(content: .stringSegment(trailingSegment))),
+            ]),
+            closingQuote: .stringQuoteToken()
+        ))
+    }
+
+    /// `functionCallArgumentList` → `LabeledExprListSyntax`. The list is right-recursive
+    /// (`arg | arg "," list`), so this walks the tail and adds separating commas afterwards.
+    private mutating func convertArgumentList(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> LabeledExprListSyntax {
+        var items: [LabeledExprSyntax] = []
+        collectArguments(nt, from: from, to: to, into: &items)
+        return LabeledExprListSyntax(items.enumerated().map { index, item in
+            index == items.count - 1 ? item : item.with(\.trailingComma, .commaToken())
+        })
+    }
+
+    private mutating func collectArguments(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into items: inout [LabeledExprSyntax]) {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return }
+        if let argNT = find("functionCallArgument", in: spans),
+           let (_, argSpans) = tileAlternate(argNT.nt, from: argNT.from, to: argNT.to),
+           let exprNT = find("expression", in: argSpans) {
+            let expr = convertExpression(exprNT.nt, from: exprNT.from, to: exprNT.to)
+            if let labelNT = find("argumentLabel", in: argSpans) {
+                items.append(LabeledExprSyntax(
+                    label: .identifier(collectTerminalText(from: labelNT.from, to: labelNT.to)),
+                    colon: .colonToken(),
+                    expression: expr
+                ))
+            } else {
+                items.append(LabeledExprSyntax(expression: expr))
+            }
+        }
+        if let restNT = find("functionCallArgumentList", in: spans) {
+            collectArguments(restNT.nt, from: restNT.from, to: restNT.to, into: &items)
+        }
     }
 
     // MARK: - Types

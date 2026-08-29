@@ -188,6 +188,10 @@ final class GrammarNode {
     var confinedToContainers: [String] = []
     var excludedFromContainers: [String] = []
 
+    /// `@sameLine` — this alternate's span may not cross a newline that was consumed as TRIVIA.
+    /// Newlines INSIDE a committed token (nested multiline string, block comment) are permitted.
+    var requiresSameLine: Bool = false
+
     /// `=|` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at lex
     /// time and emitted as a SINGLE token (like `=:` trivia, but a token not trivia). References
     /// to it in other productions resolve to a terminal (`.T`) — the outer parser never sees the
