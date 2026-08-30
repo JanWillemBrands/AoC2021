@@ -213,20 +213,33 @@ struct ContainmentRule: DisambiguationRule {
 /// that later died. That over-approximates the cover, so the rule can only ever MISS a prune, never
 /// remove a legitimate parse — the safe direction.
 struct SameLineSpanRule: DisambiguationRule {
-    let newlines: () -> [CharPosition]
-    let tokenSpans: () -> [(CharPosition, CharPosition)]
+    /// Newline positions in the input.
+    let newlines: [CharPosition]
+    /// Content spans of the only tokens that may legitimately contain a newline (nested multiline
+    /// strings, block comments). Pre-filtered to those, so the cover is tiny and the intent is
+    /// explicit: a newline is legal ONLY inside such a token.
+    let newlineBearingTokens: [(CharPosition, CharPosition)]
+    /// Content start of every committed token, used to tell a CROSSED newline from a trailing one.
+    let tokenStarts: [CharPosition]
+
     func prune(_ yields: inout Set<BinarySpan>) -> Int {
-        let nls = newlines()
-        guard !nls.isEmpty else { return 0 }
-        let covers = tokenSpans()
+        guard !newlines.isEmpty else { return 0 }
         var pruned = 0
         for span in yields {
-            let inside = nls.filter { $0 >= span.i && $0 < span.j }
-            guard !inside.isEmpty else { continue }
-            let crossedAsTrivia = inside.contains { nl in
-                !covers.contains { $0.0 <= nl && nl < $0.1 }
+            let crossedAsTrivia = newlines.contains { nl in
+                nl >= span.i && nl < span.j
+                    // Not inside a token that may legitimately contain newlines.
+                    && !newlineBearingTokens.contains { $0.0 <= nl && nl < $0.1 }
+                    // The parse must actually have CONTINUED past this newline inside the span.
+                    // A yield's `j` is `triviaEnd`, so every span includes its own TRAILING trivia —
+                    // `"\(x)"⏎` and `"\(x)"⏎// comment` both end with a newline that was never
+                    // crossed. Requiring a token to START after the newline (still inside the span)
+                    // distinguishes "crossed it" from "it merely trails".
+                    && tokenStarts.contains { $0 > nl && $0 < span.j }
             }
-            if crossedAsTrivia { yields.remove(span); pruned += 1 }
+            if crossedAsTrivia {
+                yields.remove(span); pruned += 1
+            }
         }
         return pruned
     }
@@ -258,6 +271,28 @@ class Oracle {
     let input: String
     private var rules: [(node: GrammarNode, rule: DisambiguationRule)] = []
 
+    /// `@sameLine` — anchored on the LHS, whose completion yields have `i == k` and `j` = the true
+    /// end, i.e. the EXACT span of the construct. A body-symbol anchor cannot work: its yield is
+    /// `(i = production start, k = symbol start, j = SYMBOL end)`, so the first symbol gives too
+    /// little and the last gives an extent that measured wrong in practice (6 valid inputs pruned).
+    ///
+    /// Because the prune removes LHS yields, the annotated nonterminal must have exactly ONE
+    /// alternate — otherwise it would take its siblings' yields too. That is why the grammar splits
+    /// `interpolatedStringLiteral` into a single-line and a multiline nonterminal.
+    private func registerSameLine(nonTerminal nt: GrammarNode) {
+        guard nt.requiresSameLine else { return }
+        assert(nt.alt?.alt == nil, "@sameLine needs a single-alternate nonterminal (it prunes LHS yields)")
+        let newlines = input.indices.filter { input[$0] == "\n" || input[$0] == "\r" }
+        // Only tokens that actually contain a newline can excuse one, so pre-filter to those.
+        let bearing = parser.commits.compactMap { c -> (CharPosition, CharPosition)? in
+            input[c.start..<c.end].contains { $0 == "\n" || $0 == "\r" } ? (c.start, c.end) : nil
+        }
+        let starts = parser.commits.map(\.start)
+        rules.append((nt, SameLineSpanRule(
+            newlines: newlines, newlineBearingTokens: bearing, tokenStarts: starts
+        )))
+    }
+
     private struct NodeSpan: Hashable { let id: ObjectIdentifier; let from, to: CharPosition }
     private struct NodePos: Hashable  { let id: ObjectIdentifier; let from: CharPosition }
 
@@ -282,6 +317,8 @@ class Oracle {
             registerNodeDisambiguation(owner: nt)
             // Alternate-level @prefer / @avoid on the nonterminal's own alt chain.
             registerPrefer(altChainHead: nt.alt)
+            // `@sameLine` — anchored on the LHS, see below.
+            registerSameLine(nonTerminal: nt)
         }
 
         // Full-graph walk for the pragmas that live on a NESTED node — every ALT-bearing
@@ -334,22 +371,8 @@ class Oracle {
                     assertionFailure("containment predicate on an empty alternate")
                 }
             }
-            // `@sameLine` — same family as the containment predicates, but anchored on the LAST body
-            // symbol, not the first. A body-symbol yield is `(i = production start, k = symbol start,
-            // j = SYMBOL end)`, so only the last symbol's yield spans the whole production; anchoring
-            // on the first gave `[literal start, Head token end)`, which can never contain the
-            // offending newline.
-            if node.requiresSameLine {
-                let p = parser
-                if let anchor = node.bodySymbols.last {
-                    rules.append((anchor, SameLineSpanRule(
-                        newlines: { p.input.indices.filter { p.input[$0] == "\n" || p.input[$0] == "\r" } },
-                        tokenSpans: { p.commits.map { ($0.start, $0.end) } }
-                    )))
-                } else {
-                    assertionFailure("@sameLine on an empty alternate")
-                }
-            }
+            // `@sameLine` is registered per NONTERMINAL (`registerSameLine`), not here — it must
+            // anchor on LHS completion yields to get the construct's exact span.
             if node.kind != .END { walk(node.seq) }
             walk(node.alt)
         }

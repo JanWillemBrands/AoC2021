@@ -121,8 +121,6 @@ extension ParsePosition: Comparable, CustomStringConvertible {
     var description: String { "\(slot).\(index)" }
 }
 
-// Cluster node in the CRF. Mutable, identity-based.
-// Represents clusterNode (X, k) from the paper.
 extension ParseCluster: CustomStringConvertible {
     var description: String { "\(slot).\(index)" }
 }

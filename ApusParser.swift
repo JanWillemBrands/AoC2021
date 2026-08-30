@@ -186,6 +186,14 @@ class ApusParser {
             disambiguationAnnotation = d
             cI += 1
         }
+        // `@sameLine` — a whole-nonterminal span property, so it sits at the production start next to
+        // `@longest`/`@shortest` rather than after the `=`: the Oracle prunes this nonterminal's LHS
+        // completion yields, which is not an alternate-level notion.
+        var sameLineAnnotation = false
+        if token.kind == "pragma", token.stripped == "sameLine" {
+            sameLineAnnotation = true
+            cI += 1
+        }
         // `@lexicalClass` — marks a regex terminal as a lexical class for the
         // maximal-munch (longest-across) default. See TODO #0.
         var isLexicalClassAnnotation = false
@@ -320,6 +328,9 @@ class ApusParser {
             }
             if let d = disambiguationAnnotation {
                 lhsNode.disambiguation = d
+            }
+            if sameLineAnnotation {
+                lhsNode.requiresSameLine = true
             }
             try expect(["."])
             cI += 1
@@ -467,17 +478,6 @@ class ApusParser {
             else       { startOfSequence.confinedToContainers.append(String(token.image)) }
             cI += 1
             try expect([")"]); cI += 1
-        }
-
-        // `@sameLine` — this alternate's SPAN may not cross a newline that the parse consumed as
-        // TRIVIA. Newlines inside a token (a nested multiline string, a block comment) are fine.
-        // Same family as the containment predicates above: a post-parse Oracle prune anchored on the
-        // alternate's first body symbol. Models swift-syntax's per-lexer-state trivia mode
-        // (`Cursor.swift` → `leadingTriviaLexingMode` returns `.noNewlines` inside
-        // `inStringInterpolation` for a single-line literal).
-        if token.kind == "pragma", token.stripped == "sameLine" {
-            startOfSequence.requiresSameLine = true
-            cI += 1
         }
 
         // Leading forward lookahead predicate with a NONTERMINAL operand — `>->(N)` (negative)

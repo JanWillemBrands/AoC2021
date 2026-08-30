@@ -101,17 +101,17 @@ func parseGrammar() {
     }
 }
 
+// Paper: CRF - Call Return Forest
+var crf: [ParsePosition: ParseCluster] = [:]
 
-// Lightweight value type for CRF dictionary keys and return edges.
-// Matches the paper's crfNode (L, i).
+// Paper: crfNode (L, i)
 struct ParsePosition: Hashable {
     let slot: GrammarNode
     let index: Int
 }
 
-// Cluster node in the CRF. Mutable, identity-based.
-// Represents clusterNode (X, k) from the paper.
-final class ParseCluster: CustomStringConvertible {
+// Paper: clusterNode (X, k)
+final class ParseCluster {
     let slot: GrammarNode           // the LHS nonterminal (X)
     let index: Int                  // input position (k)
     
@@ -125,17 +125,6 @@ final class ParseCluster: CustomStringConvertible {
 }
 
 
-// Paper: ntAdd(X, j) — add descriptors for all alternates of a bracket/nonterminal
-func addDecscriptorsForAlternates(X: GrammarNode, k: Int, i: Int) {
-    var current = X.alt
-    while let alt = current {
-        if testSelect(slot: alt, bracket: X) {
-            addDescriptor(L: alt.seq!, k: k, i: i)
-        }
-        current = alt.alt
-    }
-}
-
 // Paper: call(L, i, j) — enter a nonterminal
 func call() {
     // cL points to the RHS nonterminal node
@@ -144,19 +133,15 @@ func call() {
     // Create the return edge: (L=cL, i=cU)
     let returnEdge = ParsePosition(slot: cL, index: cU)
     
-    // Find or create the cluster node for (X=cL.alt!, k=cI)
+    // Create the index key: (X=cL.alt!, k=cI)
     let clusterKey = ParsePosition(slot: cL.alt!, index: cI)
-    
+
+    // Find or create the parseCluster in the crf
     if let existingCluster = crf[clusterKey] {
         if existingCluster.returns.insert(returnEdge).inserted {
             for pop in existingCluster.pops {
-                if continuationViable(continuation: cL.seq!, at: pop) && forwardGateAllows(slot: cL, at: pop) {
-                    addDescriptor(L: cL.seq!, k: cU, i: pop)
-                    addYield(L: cL, i: cU, k: cI, j: pop)
-                } else {
-                    recordSuppressedContinuation(cL.seq!, at: pop)
-                    suppressedDescriptorCount += 1
-                }
+                addDescriptor(L: cL.seq!, k: cU, i: pop)
+                addYield(L: cL, i: cU, k: cI, j: pop)
             }
         }
     } else {
@@ -174,13 +159,8 @@ func rtn(X: GrammarNode) {
     
     if cluster.pops.insert(cI).inserted {
         for rtn in cluster.returns {
-            if continuationViable(continuation: rtn.slot.seq!, at: cI) && forwardGateAllows(slot: rtn.slot, at: cI) {
-                addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
-                addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
-            } else {
-                recordSuppressedContinuation(rtn.slot.seq!, at: cI)
-                suppressedDescriptorCount += 1
-            }
+            addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
+            addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
         }
     }
 }
@@ -238,15 +218,7 @@ func parseInput() {
             case .EPS:
                 addYield(L: cL, i: cU, k: cI, j: cI)
                 cL = cL.seq!
-            case .B:
-                if boundaryMatches(cL.name, at: cI) {
-                    addYield(L: cL, i: cU, k: cI, j: cI)
-                    cL = cL.seq!
-                } else {
-                    recordMismatch(expected: cL.name)
-                    continue nextDescriptor
-                }
-            case .T, .TI, .C:
+            case .T:
                 let matches = tokenMatch()
                 if matches.isEmpty {
                     recordMismatch(expected: cL.name)
@@ -283,23 +255,8 @@ func parseInput() {
                 trace("  cL.seq: \(String(describing: cL.seq))")
                 trace("  cL.alt: \(String(describing: cL.alt))")
                 fatalError(#function + ": ALT should not happen here")
-            case .DO, .POS:
-                bracketCall(bracket: cL)
-                continue nextDescriptor
-            case .OPT, .KLN:
-                // OPT/KLN: also offer skip-past-bracket path (they're nullable).
-                // Use the same viability predicate as return replay so an optional
-                // at the end of a production can skip to END.
-                if continuationViable(continuation: cL.seq!, at: cI) {
-                    addDescriptor(L: cL.seq!, k: cU, i: cI)
-                    addYield(L: cL, i: cU, k: cI, j: cI)  // empty bracket BSR
-                } else {
-                    recordSuppressedContinuation(cL.seq!, at: cI)
-                }
-                bracketCall(bracket: cL)
-                continue nextDescriptor
             case .END:
-                // the seq link of an END node always points back to a starting bracket node (N, DO, OPT, POS, KLN)
+                // the seq link of an END node always points back to the nonTerminal node
                 let bracket = cL.seq!
                 
                 switch bracket.kind {
@@ -324,9 +281,6 @@ func parseInput() {
                         }
                         continue nextDescriptor
                     }
-                case .DO, .OPT, .KLN, .POS:
-                    bracketRtn(bracket: bracket)
-                    continue nextDescriptor
                 default:
                     fatalError("\(#function) unexpected bracket kind at END seq link \(bracket.kind)")
                 }
@@ -420,6 +374,17 @@ func addDescriptor(L: GrammarNode, k: Int, i: Int) {
     let d = Descriptor(L: L, k: k, i: i)
     if unique.insert(d).inserted {
         remaining.append(d)
+    }
+}
+
+// Paper: ntAdd(X, j) — add descriptors for all alternates of a nonterminal
+func addDecscriptorsForAlternates(X: GrammarNode, k: Int, i: Int) {
+    var current = X.alt
+    while let alt = current {
+        if testSelect(slot: alt, bracket: X) {
+            addDescriptor(L: alt.seq!, k: k, i: i)
+        }
+        current = alt.alt
     }
 }
 

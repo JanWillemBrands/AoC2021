@@ -501,7 +501,7 @@ the raw body as opaque, so `\##(` is just content.
 backreference `\1`", and a backreference cannot parameterise a quantifier. → needs Group B/D's shared
 mechanism below.
 
-### Group C — interpolation must not span a newline *(3 → 1 remaining)*
+### Group C — interpolation must not span a newline *(3 of 3 RESOLVED)*
 
 **✓ PARTIAL FIX 2026-08-29: reject 30 → 28.** `testUnterminatedString4#1` and `testUnterminatedString5#1`
 fixed with two `>n<` gates on the boundaries the `interpolatedStringLiteral` production OWNS
@@ -540,7 +540,36 @@ the abandoned scanner-mode system was the right shape, and that the missing piec
 modes rather than per-terminal ones. The GLL obstacle stands: the state must be derivable from the
 grammar slot or the sub-parse identity, not from mutable parser state.
 
-**`@sameLine` — mechanism BUILT, not yet applied (2026-08-30).** The containment machinery
+**✓ ALL THREE RESOLVED 2026-08-30 with `@sameLine`: reject 28 → 27, accept 0, ambiguity 0.**
+The four `>n<` gates were REMOVED in the same change — `@sameLine` subsumes them. Verified by
+instrumenting the rule: it prunes exactly the three offending literals (`"abc\(<NL>def)"`,
+`"abc\(def<NL>)"`, `"test \(label:<NL>foo)"`) and nothing else.
+
+Three things had to be right, and each was wrong first:
+
+1. **Annotation home.** `@sameLine` is a whole-nonterminal span property, so it belongs at the
+   production start beside `@longest`/`@shortest`, NOT after the `=`. It was initially parsed in
+   `sequence()` (alternate level) purely because that was convenient; that placement is misleading
+   once the prune anchors on the LHS. Now parsed in `production()`.
+2. **Anchor.** The prune must attach to the LHS, whose completion yields have `i == k` and `j` = the
+   true end — the exact span. Body-symbol anchors give
+   `(i = production start, k = symbol start, j = SYMBOL end)`: the first symbol sees too little
+   (nothing fired), the last mis-measures (6 valid inputs pruned). Because pruning LHS yields would
+   also take sibling alternates' yields, the grammar had to be SPLIT:
+   `interpolatedStringLiteral = singleLineInterpolatedStringLiteral | multilineInterpolatedStringLiteral`.
+   That split is a faithfulness win in its own right — swift returns `.normal` for the multiline kind,
+   so only the single-line form should ever carry the rule.
+3. **Trailing trivia.** A yield's `j` is `triviaEnd`, so EVERY span includes the trivia that followed
+   it. `"\(unsafe)"<NL>` and `"a\(maybeThrow())b"<NL>` were pruned as if they crossed a newline. The
+   fix distinguishes crossing from trailing: require a committed token to START after the newline and
+   still inside the span. That also handles a trailing comment (`"…"<NL>// c`), where a
+   "followed by non-whitespace" test would have failed.
+
+Also note the token cover only needs the tokens that may legitimately CONTAIN a newline (nested
+multiline strings, block comments), which keeps it tiny and states the intent directly: a newline is
+legal only inside such a token.
+
+**Superseded design note — kept because the reasoning still applies elsewhere.** The containment machinery
 (`@confinedTo`/`@excludedFrom`) turns out to be the right family to reuse: a `DisambiguationRule`
 registered per-alternate whose closure CAPTURES THE PARSER, so it can query anything the parser knows.
 That corrects an earlier claim in this file — the committed-token cover IS reachable post-parse, via
@@ -747,8 +776,7 @@ separation. Belongs with C13 (error recovery), not here.
    CFG-parsed argument list, not inside any token — so no scanner-level encoding can reach it. Given
    the three wrong "not expressible" calls above, re-examine that claim before building anything.
 
-**String rejects: 12 → 1.** Reject total 39 → 28, accept 0, ambiguity 0 throughout.
-Only `testNewlineInInterpolationOfSingleLineString#1` remains, cause fully understood (above).
+**String rejects: 12 → 0.** Reject total 39 → 27, accept 0, ambiguity 0 throughout.
 
 ---
 

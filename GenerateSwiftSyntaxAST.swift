@@ -570,9 +570,13 @@ struct SwiftSyntaxGenerator {
 
     private mutating func convertStringLiteral(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         // stringLiteral = staticStringLiteral | interpolatedStringLiteral .
+        // interpolatedStringLiteral = singleLineInterpolatedStringLiteral | multilineInterpolatedStringLiteral .
+        // `find` digs through brackets but not through nonterminals, so descend both levels.
         if let (_, spans) = tileAlternate(nt, from: from, to: to),
            let interp = find("interpolatedStringLiteral", in: spans),
-           let expr = convertInterpolatedStringLiteral(interp.nt, from: interp.from, to: interp.to) {
+           let (_, interpSpans) = tileAlternate(interp.nt, from: interp.from, to: interp.to),
+           let single = find("singleLineInterpolatedStringLiteral", in: interpSpans),
+           let expr = convertInterpolatedStringLiteral(single.nt, from: single.from, to: single.to) {
             return expr
         }
         // Collect all text between quotes
