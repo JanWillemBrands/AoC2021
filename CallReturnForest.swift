@@ -31,21 +31,12 @@ struct ParsePosition: Hashable, Comparable, CustomStringConvertible {
 }
 
 // Cluster node in the CRF. Mutable, identity-based.
-// Represents clusterNode (X, k) from the paper.
-final class ParseCluster: CustomStringConvertible {
-    let slot: GrammarNode           // the LHS nonterminal (X)
-    let index: CharPosition         // input position (k)
-
+// Represents clusterNode (X, k) from the paper. The (X, k) label is the `crf`
+// dictionary key (a ParsePosition), so it is not duplicated here — what a cluster
+// adds over its identity is these two sets.
+final class ParseCluster {
     var returns: Set<ParsePosition> = []
     var pops: Set<CharPosition> = []   // Paper: P — contingent returns
-
-    init(slot: GrammarNode, index: CharPosition) {
-        self.slot = slot
-        self.index = index
-    }
-
-    var description: String { "\(slot).\(index)" }
-    var ebnfDot: String { "\(slot.ebnfDot()),\(index)" }
 }
 
 
@@ -54,7 +45,7 @@ final class ParseCluster: CustomStringConvertible {
 extension MessageParser {
 
     // Paper: ntAdd(X, j) — add descriptors for all alternates of a bracket/nonterminal
-    func addDecscriptorsForAlternates(X: GrammarNode, k: CharPosition, i: CharPosition) {
+    func addDescriptorsForAlternates(X: GrammarNode, k: CharPosition, i: CharPosition) {
         assert([.N, .DO, .OPT, .ALT, .KLN, .POS].contains(X.kind), "Called \(#function) on a GrammarNode \(X) which is not a bracket")
         // LL(1) early-termination: once a matching alternate is found, the
         // remaining alternates cannot also match. This is a property of the
@@ -107,10 +98,10 @@ extension MessageParser {
                 }
             }
         } else {
-            let newCluster = ParseCluster(slot: cL.alt!, index: cI)
+            let newCluster = ParseCluster()
             crf[clusterKey] = newCluster
             newCluster.returns.insert(returnEdge)
-            addDecscriptorsForAlternates(X: cL.alt!, k: cI, i: cI)
+            addDescriptorsForAlternates(X: cL.alt!, k: cI, i: cI)
         }
     }
 
@@ -120,12 +111,12 @@ extension MessageParser {
         guard let cluster = crf[clusterKey] else { return }
 
         if cluster.pops.insert(cI).inserted {
-            for rtn in cluster.returns {
-                if continuationViable(continuation: rtn.slot.seq!, at: cI) && forwardGateAllows(slot: rtn.slot, at: cI) {
-                    addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
-                    addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
+            for edge in cluster.returns {
+                if continuationViable(continuation: edge.slot.seq!, at: cI) && forwardGateAllows(slot: edge.slot, at: cI) {
+                    addDescriptor(L: edge.slot.seq!, k: edge.index, i: cI)
+                    addYield(L: edge.slot, i: edge.index, k: cU, j: cI)
                 } else {
-                    recordSuppressedContinuation(rtn.slot.seq!, at: cI)
+                    recordSuppressedContinuation(edge.slot.seq!, at: cI)
                     suppressedDescriptorCount += 1
                 }
             }
@@ -151,10 +142,10 @@ extension MessageParser {
                 }
             }
         } else {
-            let newCluster = ParseCluster(slot: bracket, index: cI)
+            let newCluster = ParseCluster()
             crf[clusterKey] = newCluster
             newCluster.returns.insert(returnEdge)
-            addDecscriptorsForAlternates(X: bracket, k: cI, i: cI)
+            addDescriptorsForAlternates(X: bracket, k: cI, i: cI)
         }
     }
 
@@ -165,12 +156,12 @@ extension MessageParser {
         guard let cluster = crf[clusterKey] else { return }
 
         if cluster.pops.insert(cI).inserted {
-            for rtn in cluster.returns {
-                if continuationViable(continuation: rtn.slot.seq!, at: cI) && forwardGateAllows(slot: rtn.slot, at: cI) {
-                    addYield(L: rtn.slot, i: rtn.index, k: cU, j: cI)
-                    addDescriptor(L: rtn.slot.seq!, k: rtn.index, i: cI)
+            for edge in cluster.returns {
+                if continuationViable(continuation: edge.slot.seq!, at: cI) && forwardGateAllows(slot: edge.slot, at: cI) {
+                    addYield(L: edge.slot, i: edge.index, k: cU, j: cI)
+                    addDescriptor(L: edge.slot.seq!, k: edge.index, i: cI)
                 } else {
-                    recordSuppressedContinuation(rtn.slot.seq!, at: cI)
+                    recordSuppressedContinuation(edge.slot.seq!, at: cI)
                     suppressedDescriptorCount += 1
                 }
             }
@@ -185,7 +176,7 @@ extension MessageParser {
                 // that arrived after it). The DerivationBuilder reconstructs iteration
                 // boundaries by re-tiling the BODY yields, so it never reads the
                 // closure node's own yields — this change is tree-invariant.
-                addDecscriptorsForAlternates(X: bracket, k: cU, i: cI)
+                addDescriptorsForAlternates(X: bracket, k: cU, i: cI)
             }
         }
     }

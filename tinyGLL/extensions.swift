@@ -7,6 +7,15 @@
 
 import Foundation
 
+extension GrammarNode: Hashable {
+    static func == (lhs: GrammarNode, rhs: GrammarNode) -> Bool {
+        lhs.number == rhs.number
+    }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(number)
+    }
+}
+
 extension GrammarNode: CustomStringConvertible {
     var description: String { "\(number) \(name)" }
 }
@@ -48,7 +57,7 @@ extension GrammarNode {
     func emit(into ebnf: inout String, dottedSlot: GrammarNode) throws {
         let middleDot = "\u{00B7}"
         switch kind {
-        case .EOS, .T, .EPS:
+        case .T, .EPS:
             ebnf.append(name)
             if self == dottedSlot { ebnf += middleDot }
             if let seq { try seq.emit(into: &ebnf, dottedSlot: dottedSlot) }
@@ -122,6 +131,16 @@ extension ParsePosition: Comparable, CustomStringConvertible {
 }
 
 extension ParseCluster: CustomStringConvertible {
-    var description: String { "\(slot).\(index)" }
+    // The cluster's (X, k) identity lives in its crf key, so only the contents print here.
+    var description: String { "returns \(returns.sorted()) pops \(pops.sorted())" }
 }
 
+extension BinarySpan: Comparable, CustomStringConvertible {
+    var description: String { "\(left):\(pivot):\(right)" }
+    
+    static func < (lhs: BinarySpan, rhs: BinarySpan) -> Bool {
+        if lhs.left != rhs.left { return lhs.left < rhs.left }
+        if lhs.pivot != rhs.pivot { return lhs.pivot < rhs.pivot }
+        return lhs.right < rhs.right
+    }
+}

@@ -40,12 +40,16 @@ enum ApusRegexLibrary {
     // deviations (this is the tested-working set; the "faithful" variants either
     // crash or aren't expressible as regex character classes):
     //
-    //   1. `F8FF` instead of `F900` as the CJK-compat block start. TSPL starts at
-    //      U+F900, but U+F900 (豈) is canonically decomposable → an invalid range
-    //      bound (regex engine traps at match time). U+F8FF (last Private-Use char)
-    //      is a valid bound. Consequence: the class WRONGLY INCLUDES U+F8FF (a PUA
-    //      code point) as an identifier character. (F900…FD3D itself stays covered,
-    //      since F8FF…FD3D ⊇ F900…FD3D.)
+    //   1. `F8FF` as the CJK-compat block's lower bound, with U+F8FF then SUBTRACTED.
+    //      TSPL starts at U+F900, but U+F900 (豈) is canonically decomposable → an
+    //      invalid range bound (the regex engine traps at match time), and so is every
+    //      other scalar at the start of that block (the CJK compatibility ideographs
+    //      decompose by design), so there is no safe bound to move the range to.
+    //      U+F8FF (last Private-Use char) IS a valid bound, so the range starts there
+    //      and the one over-included scalar is removed with `.subtracting(.anyOf(…))`
+    //      — membership, not a range bound, the same trick
+    //      `forbiddenRawIdentifierWhitespace` uses for U+2000/U+2001.
+    //      This matters: `testIdentifiers6#1` is U+F8FF + `()`, which swift rejects.
     //   2. `1681…1DBF` (head) / `1681…1FFF` (continuation) merged across the TSPL
     //      gap `…180D` / `180F…`. Consequence: WRONGLY INCLUDES U+180E (Mongolian
     //      vowel separator), which TSPL excludes.
@@ -68,14 +72,14 @@ enum ApusRegexLibrary {
         "\u{2054}"..."\u{2054}", "\u{2060}"..."\u{20CF}", "\u{2100}"..."\u{218F}",
         "\u{2460}"..."\u{24FF}", "\u{2776}"..."\u{2793}", "\u{2C00}"..."\u{2DFF}",
         "\u{2E80}"..."\u{2FFF}", "\u{3004}"..."\u{3007}", "\u{3021}"..."\u{302F}",
-        "\u{3031}"..."\u{D7FF}", "\u{F8FF}"..."\u{FD3D}", "\u{FD40}"..."\u{FDCF}",
+        "\u{3031}"..."\u{D7FF}", "\u{F8FF}"..."\u{FD3D}", "\u{FD40}"..."\u{FDCF}",  // F8FF instead of F900 (an invalid range bound)
         "\u{FDF0}"..."\u{FE1F}", "\u{FE30}"..."\u{FE44}", "\u{FE47}"..."\u{FFF8}",  // swift-syntax uses FE47–FFF8 (TSPL says FE47–FFFD; FFF9–FFFD excluded)
         "\u{10000}"..."\u{1FFFD}", "\u{20000}"..."\u{2FFFD}", "\u{30000}"..."\u{3FFFD}",
         "\u{40000}"..."\u{4FFFD}", "\u{50000}"..."\u{5FFFD}", "\u{60000}"..."\u{6FFFD}",
         "\u{70000}"..."\u{7FFFD}", "\u{80000}"..."\u{8FFFD}", "\u{90000}"..."\u{9FFFD}",
         "\u{A0000}"..."\u{AFFFD}", "\u{B0000}"..."\u{BFFFD}", "\u{C0000}"..."\u{CFFFD}",
         "\u{D0000}"..."\u{DFFFD}", "\u{E0000}"..."\u{EFFFD}"
-    )
+    ).subtracting(.anyOf("\u{F8FF}"))   // U+F8FF is a PUA code point, not an identifier char
 
     static let identifierCharacter = CharacterClass(
         "A"..."Z", "a"..."z", "0"..."9", "_"..."_",
@@ -86,14 +90,14 @@ enum ApusRegexLibrary {
         "\u{203F}"..."\u{2040}", "\u{2054}"..."\u{2054}", "\u{2060}"..."\u{218F}",
         "\u{2460}"..."\u{24FF}", "\u{2776}"..."\u{2793}", "\u{2C00}"..."\u{2DFF}",
         "\u{2E80}"..."\u{2FFF}", "\u{3004}"..."\u{3007}", "\u{3021}"..."\u{302F}",
-        "\u{3031}"..."\u{D7FF}", "\u{F8FF}"..."\u{FD3D}", "\u{FD40}"..."\u{FDCF}",
-        "\u{FDF0}"..."\u{FE44}", "\u{FE47}"..."\u{FFF8}",  // swift-syntax uses FE47–FFF8
+        "\u{3031}"..."\u{D7FF}", "\u{F8FF}"..."\u{FD3D}", "\u{FD40}"..."\u{FDCF}",  // F8FF instead of F900 (an invalid range bound)
+        "\u{FDF0}"..."\u{FE44}", "\u{FE47}"..."\u{FFF8}",                           // swift-syntax uses FE47–FFF8
         "\u{10000}"..."\u{1FFFD}", "\u{20000}"..."\u{2FFFD}", "\u{30000}"..."\u{3FFFD}",
         "\u{40000}"..."\u{4FFFD}", "\u{50000}"..."\u{5FFFD}", "\u{60000}"..."\u{6FFFD}",
         "\u{70000}"..."\u{7FFFD}", "\u{80000}"..."\u{8FFFD}", "\u{90000}"..."\u{9FFFD}",
         "\u{A0000}"..."\u{AFFFD}", "\u{B0000}"..."\u{BFFFD}", "\u{C0000}"..."\u{CFFFD}",
         "\u{D0000}"..."\u{DFFFD}", "\u{E0000}"..."\u{EFFFD}"
-    )
+    ).subtracting(.anyOf("\u{F8FF}"))   // U+F8FF is a PUA code point, not an identifier char
 
     // ── Operator code-point classes (exact TSPL) ────────────────────────────────
     // TSPL `operator-head` / `operator-character`, exact (no decomposable range
@@ -585,6 +589,41 @@ enum ApusRegexLibrary {
         tripleQuote
     }.matchingSemantics(.unicodeScalar)
 
+    // ── Extended regex literal `#/…/#` ──────────────────────────────────────────
+    // TWO MODES, probe-confirmed (2026-08-30), exactly parallel to the multiline strings:
+    //   `#/a/#`      → ok          `#/a⏎b/#`   → "expected '/#' to end regex literal"
+    //   `#/⏎a⏎/#`    → ok          `#/\⏎/#`    → same error  (testRegexParseError17)
+    //   `#/⏎␠␠a⏎␠␠/#` → ok
+    // i.e. a line break IMMEDIATELY after `#/` selects the multi-line form (body may span lines);
+    // otherwise the body may contain no newline at all. The previous flat regex allowed newlines
+    // unconditionally, so it accepted the single-line form spread over two lines.
+    //
+    // Extended regexes do NOT process escapes — `\` is ordinary content and only `/` + the matching
+    // pound run closes the literal, which is why the single-line body admits a `/` that is not
+    // followed by the delimiter.
+    static let extendedRegexPoundDelimiter = Reference(Substring.self)
+    static let extendedRegularExpressionLiteral = Regex {
+        Capture(poundRun, as: extendedRegexPoundDelimiter)
+        "/"
+        ChoiceOf {
+            Regex {                                     // multi-line: `#/` then a line break
+                lineBreak
+                ZeroOrMore(.reluctant) { CharacterClass.any }
+            }
+            ZeroOrMore(.reluctant) {                    // single-line: no newline anywhere
+                ChoiceOf {
+                    CharacterClass.anyOf("/\r\n").inverted
+                    Regex {
+                        "/"
+                        NegativeLookahead { extendedRegexPoundDelimiter }
+                    }
+                }
+            }
+        }
+        "/"
+        extendedRegexPoundDelimiter
+    }.matchingSemantics(.unicodeScalar)
+
     // ── Registry (key == `.apus` terminal name) ─────────────────────────────────
     static let patterns: [String: Regex<AnyRegexOutput>] = [
         "identifier":                  Regex<AnyRegexOutput>(identifier.regex),
@@ -602,6 +641,7 @@ enum ApusRegexLibrary {
         "interpolatedStringLiteralPart":          Regex<AnyRegexOutput>(interpolatedStringLiteralPart.regex),
         "interpolatedStringLiteralTail":          Regex<AnyRegexOutput>(interpolatedStringLiteralTail.regex),
 
+        "extendedRegularExpressionLiteral":       Regex<AnyRegexOutput>(extendedRegularExpressionLiteral.regex),
         "multilineStringLiteral":                 Regex<AnyRegexOutput>(multilineStringLiteral.regex),
         "extendedMultilineStringLiteral":         Regex<AnyRegexOutput>(extendedMultilineStringLiteral.regex),
         "multilineInterpolatedStringLiteralHead": Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralHead.regex),

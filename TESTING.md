@@ -347,3 +347,45 @@ not a correctness signal by itself.
 | `grep "wrongly rejected" log` > 0 | Accept regression — fix narrowed the grammar too much |
 | `testEscapedIdentifiers16#1` STATE: Passed in `fullSummaryPath` | C11 fix is live |
 | `fullSummaryPath` missing a test you expect | The test ran in a process that crashed — not a grammar signal |
+
+## Reading the numbers (settled 2026-08-30)
+
+**`trees differ` wobbles by design.** `run_tests.sh` deliberately does NOT set
+`SWIFT_DETERMINISTIC_HASHING` (see the comment at the top of the script): a non-deterministic hash
+seed is a cheap fuzzer for order-dependence. Consequence: the `trees differ` count moves between runs
+(observed 1614–1630 in one session) and a handful of labels FLAP — `testForwardSlashRegex71#1`, `#78`,
+`testIdentifiers10#1`, `testNonisolatedSpecifier#12` appeared as "fixed" in one run and "broken" in
+the next.
+
+Verified: with the seed pinned, the count is exactly reproducible.
+```
+TEST_RUNNER_SWIFT_DETERMINISTIC_HASHING=1 xcodebuild test -scheme Advent \
+  -destination 'platform=macOS,arch=arm64' -only-testing:AdventTests/<suite> …
+```
+Two such runs gave `trees=1619 rejects=21 accepts=0` both times. So:
+- Never read a single-run tree diff as signal — only large moves, or a pinned-seed A/B.
+- `accept` and `ambiguity` have been 0 across every seed, so those ARE stable invariants.
+- The flapping labels are real order-dependence in the Oracle / AST tiling, i.e. the fuzzer working.
+  Worth fixing eventually, but they are not regressions.
+
+**Compare reject label SETS, not counts.** The harness count can differ by one from the number of
+distinct labels (a log line can be truncated mid-label). `comm -23` on sorted label lists is reliable;
+a count delta of ±1 is not.
+
+## Fixture trap: invisible characters
+
+`testIdentifiers6#1` reads as `()` in an editor, a terminal, `grep`, and `sed`. Its actual bytes are
+`EF A3 BF 28 29` — **U+F8FF** (the Apple-logo Private Use Area character) followed by `()`. Retyping
+such a snippet into a probe or a scratch `.swift` file silently drops the invisible scalar and the
+probe then measures a DIFFERENT input. That cost real time: standalone probes and `swiftc -parse` both
+said "valid", while the in-process test correctly said invalid, and the contradiction looked like a
+harness or toolchain-version bug.
+
+When a fixture and a hand-written probe disagree, print the bytes first:
+```swift
+print(Array(snippet.source.utf8))
+```
+A temporary `@Test` inside the suite is the reliable way to observe what the test process actually
+sees; filter it with `-only-testing:'AdventTests/<Suite>/<testName>()'` (swift-testing needs the
+trailing parentheses, or zero tests run).
+

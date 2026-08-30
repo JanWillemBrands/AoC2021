@@ -6,6 +6,12 @@
 //
 
 // Paper: descriptor = (L, k, i) — grammar slot, cluster index, input index
+//
+// The same letters mean different things in a descriptor and in a BinarySpan:
+//   descriptor  (L, k, i):  k = cluster index,  i = input index
+//   BinarySpan  (i, k, j):  i = left extent,    k = pivot,  j = right extent
+// A descriptor's `k` therefore becomes a span's `i`, which is why the yields are
+// added as addYield(L: cL, i: cU, k: cI, ...) — the swap is deliberate.
 import OSLog
 import Foundation
 import BitCollections

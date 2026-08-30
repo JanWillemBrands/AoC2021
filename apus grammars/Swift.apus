@@ -241,10 +241,11 @@ extendedSinglelineStringLiteral - @builder .
 multilineStringLiteral          - @builder .
 extendedMultilineStringLiteral  - @builder .
 
-staticStringLiteral             = singleLineStringLiteral
-                                | extendedSinglelineStringLiteral
-                                | multilineStringLiteral
-                                | extendedMultilineStringLiteral .
+staticStringLiteral             = singleLineStringLiteral | multilineStringLiteral .
+// The RAW ("extended escaping") forms are excluded from `@available` arguments — see the note at
+// `availableAttribute`. Split into their own alternates so the annotation can attach.
+staticStringLiteral             = @excludedFrom(availableAttribute) extendedSinglelineStringLiteral .
+staticStringLiteral             = @excludedFrom(availableAttribute) extendedMultilineStringLiteral .
                                 
 // Under LCNP these terminals are queried per-slot, so the spurious matches that
 // would happen outside an interpolated-string context are never asked for.
@@ -270,8 +271,9 @@ multilineInterpolatedStringLiteralTail - @builder .
 // Split into one nonterminal PER STRING KIND so the single-line form can carry `@sameLine`. The
 // annotation prunes LHS completion yields, whose span is exactly the construct; a shared LHS would
 // make that impossible, since pruning would take the multiline form's yields too.
-interpolatedStringLiteral       = singleLineInterpolatedStringLiteral
-                                | multilineInterpolatedStringLiteral .
+// Interpolated strings are likewise excluded from `@available` arguments.
+interpolatedStringLiteral       = @excludedFrom(availableAttribute) singleLineInterpolatedStringLiteral .
+interpolatedStringLiteral       = @excludedFrom(availableAttribute) multilineInterpolatedStringLiteral .
 
 // `@sameLine` — this literal's span may not cross a newline that was consumed as TRIVIA. Transcribed
 // from swift-syntax `Cursor.swift`, which makes newlines non-trivia by LEXER STATE rather than by a
@@ -460,7 +462,7 @@ regexShapeItem   = regexEscape | regexShapeGroup | "(" | regexShapeAtom .
 regexShapeGroup  = "(" { regexSpaceAtom | regexShapeItem } ")" .
 
 // backref: closing #s must equal opening; no escapes in extended regex, `/` is body content, only `/#…` closes
-extendedRegularExpressionLiteral    - /(#+)\/(?:[^\/]|\/(?!\1))*?\/\1/ .
+extendedRegularExpressionLiteral    - @builder .
      <-< ( "true" "false" "nil" "self" "Self" "super" "Any"
          "func" "operator"
          identifier escapedIdentifier implicitParameterName propertyWrapperProjection
@@ -707,7 +709,10 @@ arrayType = "[" type "]" .
 // SE-0453 InlineArray sugar `[count of element]`. swift-syntax parseInlineArrayType
 // (Types.swift:699): both count and element are generic-argument positions (a type or
 // a value literal), `of` is a contextual keyword. `genericArgument = type | signedIntegerLiteral`.
-inlineArrayType = "[" genericArgument "of" genericArgument "]" .
+// `>n<` — `of` may not start a line. swift-syntax `Types.swift` `parseInlineArrayType`:
+//     self.expect(TokenSpec(.of, allowAtStartOfLine: false))
+// A BOUNDARY rule (unlike the interpolation span rule), so the existing gate expresses it exactly.
+inlineArrayType = "[" genericArgument >n< "of" genericArgument "]" .
 
 /// Grammar of a dictionary type
 /// dictionary-type → [ type : type ]
@@ -1103,9 +1108,19 @@ switchCase = caseLabel statements .
 switchCase = defaultLabel statements .
 switchCase = conditionalSwitchCase .
 
-caseLabel = attributes? "case" caseItemList ":" .
+// `switchCaseAttribute?`, not `attributes?`: swift's parser accepts AT MOST ONE attribute here and
+// no argument clause. `Statements.swift atStartOfSwitchCase` calls `consumeAttributeList()` once, and
+// the diagnostics pin the shape exactly:
+//     `@garbage @moreGarbage default:` -> "unexpected code '@moreGarbage' in switch case"
+//     `@unknown(garbage) case _:`      -> "unexpected code '(garbage)' in switch case"
+//     `@unknown @unknown case _:`      -> "unexpected code '@unknown' in switch case"
+// Note the restriction to `@unknown` SPECIFICALLY is semantic, not syntactic — the comment in
+// `atStartOfSwitchCase` says so — hence any single bare attribute parses (`@garbage default:` alone
+// is accepted by the parser).
+caseLabel = switchCaseAttribute? "case" caseItemList ":" .
 caseItemList = matchPattern whereClause? | matchPattern whereClause? "," caseItemList .
-defaultLabel = attributes? "default" ":" .
+defaultLabel = switchCaseAttribute? "default" ":" .
+switchCaseAttribute = "@" >s< attributeName .
 
 whereClause = "where" whereExpression .
 whereExpression = conditionExpression .
@@ -1466,7 +1481,14 @@ trailingClosureLabel = identifier ---( "_" "let" "var" "inout" "default" ) | "_"
 // swift-syntax parseDeclReferenceBase (Names.swift:204) accepts `.keyword(.init)` as a base name,
 // so `init` is a decl-reference expression; the `(x: 1)` call / `!` build on it via the normal
 // postfix machinery. `init` is excluded from `identifier`, hence this dedicated alternate.
-initializerExpression = "init" .
+// `>->( "{" )` — a bare `init` expression may not be followed by `{`. Probed: bare `init` is legal
+// almost everywhere (`init()`, `_ = init`, `C.init()`, and inside init/func bodies all give
+// hasError=false); the ONE failing shape is `init {}`, where swift commits to an initializer
+// DECLARATION at statement position and then reports "expected parameter clause in function
+// signature". Without the gate, Advent finds the expression reading (`init` + trailing closure) that
+// swift never considers there, and wrongly accepts. Same discriminator shape as
+// `ifExpression = "if" >->( "{" )`.
+initializerExpression = "init" >-> ( "{" ) .
 
 /// Grammar of an explicit member expression
 /// explicit-member-expression → postfix-expression . decimal-digits
@@ -1477,18 +1499,36 @@ initializerExpression = "init" .
 /// argument-name → identifier :
 
 // swift-syntax parseDottedExpressionSuffix (Expressions.swift:699) calls
-// parseDeclReferenceExpr with `.keywords` flag (Names.swift:218-220), which accepts
-// any lexer-classified keyword as the member name (`x.default`, `x.deinit`,
-// `x.subscript`, `x.where`, `x.case`, …). softIdentifier (identifier minus
-// `let`/`var`/`inout`) covers all of these in one rule. The dedicated rules for
-// `x.init` (initializerExpression) and `x.self` (postfixSelfExpression) below
-// still match — GLL keeps the extra parses but they're harmless. TODO: WTF???
+// parseDeclReferenceExpr with the `.keywords` flag (Names.swift:218-220), which accepts any
+// lexer-classified keyword as the member name (`x.default`, `x.deinit`, `x.subscript`,
+// `x.where`, `x.case`, …). `softIdentifier` (identifier minus `let`/`var`/`inout`) covers all of
+// them in ONE rule, so no per-keyword member alternates are needed.
+//
+// (The old note here warned that dedicated rules for `x.init` and `x.self` "still match" and left
+// harmless extra parses. That was stale on both counts. `postfixSelfExpression` has since been
+// REMOVED — see the note further down, it caused the
+// `[explicitMemberExpression]|[postfixSelfExpression]` ambiguity. And `initializerExpression` is
+// the BARE keyword only (`init`, the implicit-`self.init` decl reference), so it cannot form
+// `x.init`: that goes through `softIdentifier` like every other keyword member name. There is no
+// remaining duplication to remove, which the ambiguity-0 invariant across the corpus confirms.)
 
 explicitMemberExpression = postfixExpression "." decimalDigits .
 explicitMemberExpression = postfixExpression "." moduleSelector? softIdentifier .
 explicitMemberExpression = @prefer postfixExpression "." moduleSelector? softIdentifier genericArgumentClause . // TODO: why @prefer here and not @longest to include genericArgumentClause?
 explicitMemberExpression = postfixExpression "." moduleSelector? softIdentifier "(" argumentNames ")" .
-explicitMemberExpression = postfixExpression conditionalCompilationBlock .
+// A POSTFIX `#if` takes its own block: the clause bodies are postfix CONTINUATIONS, not statements.
+// swift-syntax `parseIfConfigExpressionSuffix` (Expressions.swift:737):
+//     if parser.at(.period)       { head = parser.parseDottedExpressionSuffix(nil) }
+//     else if parser.at(.poundIf) { head = parser.parseIfConfigExpressionSuffix(nil, flavor:) }
+//     else                        { return nil }          // TODO: diagnose and skip
+//     let result = parser.parsePostfixExpressionSuffix(head, …)
+//     return .postfixExpression(result)
+// so a clause is a `.member`-rooted postfix chain (or a nested `#if`) and NOTHING else. Using
+// `statements?` here accepted both `.methodOne() + 12` ("unexpected code '+ 12' in conditional
+// compilation block") and a bare `return` ("unexpected 'return' keyword …"). `postfixExpression`
+// rooted at `implicitMemberExpression` gives the leading dot for free, and excludes infix operators
+// and statements by construction.
+explicitMemberExpression = postfixExpression postfixConditionalCompilationBlock .
 
 argumentNames = argumentName argumentNames? .
 argumentName = softIdentifier ":" .
@@ -1787,6 +1827,16 @@ compilerControlStatement = lineControlStatement .
 /// environment → simulator | macCatalyst
 
 conditionalCompilationBlock = ifDirectiveClause elseifDirectiveClauses? elseDirectiveClause? endifDirective .
+
+// Postfix-position variant — same directive skeleton, but each clause body is a postfix continuation
+// (see the note at `explicitMemberExpression`). `postfixIfBody` also admits a nested block, matching
+// swift's `parser.at(.poundIf)` branch, where the nested `#if` has no base expression of its own.
+postfixConditionalCompilationBlock = postfixIfDirectiveClause postfixElseifDirectiveClauses? postfixElseDirectiveClause? endifDirective .
+postfixIfDirectiveClause = ifDirective compilationCondition <n> postfixIfBody? .
+postfixElseifDirectiveClauses = postfixElseifDirectiveClause postfixElseifDirectiveClauses? .
+postfixElseifDirectiveClause = elseifDirective compilationCondition <n> postfixIfBody? .
+postfixElseDirectiveClause = elseDirective postfixIfBody? .
+postfixIfBody = postfixExpression | postfixConditionalCompilationBlock .
 
 // no code on the same line after #if, #elseif, #else, #endif
 ifDirectiveClause = ifDirective compilationCondition <n> statements? .
@@ -2508,13 +2558,25 @@ attribute = "@" >s< "isolated" >s< "(" identifier ")" .
 attribute = "@" >s< "attached"     >s< "(" macroRoleArguments? ")" .
 @longest
 attribute = "@" >s< "freestanding" >s< "(" macroRoleArguments? ")" .
+// `@available` gets its own production purely so it can NAME a region for `@excludedFrom` below:
+// its arguments may not contain an interpolated or a raw ("extended escaping") string literal.
+// Probed: `message: "\(x)"` → "argument cannot be an interpolated string literal";
+//         `renamed: #"g()"#` → "argument cannot be an extended escaping string literal";
+//         `message: "plain"` → ok.
+// The restriction canNOT be put on `attributeArgumentClause` in general: CUSTOM attributes share that
+// clause here and legitimately take both forms (`@Wrapper("\(x)")` and `@Wrapper(#"raw"#)` both parse
+// clean), because swift dispatches on the attribute NAME — known attributes get balanced-token args,
+// unknown ones an expression list.
 @longest
-attribute = "@" >-> ( "abi" "attached" "freestanding" "isolated" ) >s< attributeName attributeArgumentClause? .
+attribute = availableAttribute .
+availableAttribute = "@" >s< "available" attributeArgumentClause .
+@longest
+attribute = "@" >-> ( "abi" "attached" "available" "freestanding" "isolated" ) >s< attributeName attributeArgumentClause? .
 // Module-qualified attribute name = a custom attribute → its args are an EXPRESSION argument list, not
 // the balanced-token soup builtins allow. `@main::available(macOS 10.15, *)` rejects (availability spec
 // is not an expression arg list); `@main::available(foo: bar)` accepts.
 @longest
-attribute = "@" >-> ( "abi" "attached" "freestanding" "isolated" ) >s< moduleSelector attributeName attributeArgumentExprClause? .
+attribute = "@" >-> ( "abi" "attached" "available" "freestanding" "isolated" ) >s< moduleSelector attributeName attributeArgumentExprClause? .
 attributeArgumentExprClause = >s< "(" functionCallArgumentList? ")" .
 
 macroRoleArguments = macroRoleToken macroRoleArguments? .
@@ -2562,7 +2624,12 @@ elseDirectiveAttributes = elseDirective attributes? .
 // (`class`, `async`, `some`, …) and word literals (`true`/`false`/`nil`) are caught by identifier
 // instead — a single word-token route, so no identifier-vs-keyword or keyword-vs-operator duals.
 // Single-char operators `< > | ^ ~ % * + - /` are caught by the `operator` sibling alternate.
-nonWordToken = "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "#" | "&" | "?" | "!" | "_" | "@".
+nonWordToken = "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "&" | "?" | "!" | "_" | "@".
+// A bare `#` may not be followed by a string literal: `#"…"#` is a RAW string delimiter, never a
+// standalone `#` plus a plain string. Without the gate, `@available(…, renamed: #"g()"#)` parsed as
+// `#` + `"g()"` + `#` inside the attribute token soup, which routed around the raw-string terminal and
+// so around the `@excludedFrom(availableAttribute)` restriction on it.
+nonWordToken = "#" >-> ( singleLineStringLiteral multilineStringLiteral ) .
 
 balancedToken = @prefer identifier
               | escapedIdentifier
@@ -2636,7 +2703,15 @@ wildcardPattern = "_" .
 /// Grammar of an identifier pattern
 /// identifier-pattern → identifier
 
-identifierPattern = hardIdentifier | "self" .       // Swift syntax error, 'self' is allowed as an identifier in optional-binding-condition  TODO: WTF???
+// `self` as a BINDING NAME is legal only inside an optional-binding condition — probed:
+//   `if let self = self`, `guard let self = self`, `while let self = self`  → hasError=false
+//   `let self = self`, `var self = self`                                    → hasError=true
+//     ("keyword 'self' cannot be used as an identifier here")
+// `@confinedTo` states that directly: keep this alternate only where its span sits inside an
+// `optionalBindingCondition` yield. Replaces a `| "self"` that admitted it everywhere (the old
+// comment on this line flagged it as wrong but kept it).
+identifierPattern = hardIdentifier .
+identifierPattern = @confinedTo(optionalBindingCondition) "self" .
 
 /// Grammar of a value-binding pattern
 /// value-binding-pattern → var pattern | let pattern

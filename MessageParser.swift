@@ -495,11 +495,10 @@ class MessageParser {
 
         // Set up root cluster (root may be a `=:` non-terminal for a sub-parse)
         let rootNode = currentParseRoot!
-        let rootCluster = ParseCluster(slot: rootNode, index: origin)
-        crf[ParsePosition(slot: rootNode, index: origin)] = rootCluster
+        crf[ParsePosition(slot: rootNode, index: origin)] = ParseCluster()
 
         // Seed initial descriptors (Paper: ntAdd for start symbol)
-        addDecscriptorsForAlternates(X: rootNode, k: origin, i: origin)
+        addDescriptorsForAlternates(X: rootNode, k: origin, i: origin)
 
         // Run GLL algorithm
         var progressCounter = 0
@@ -585,26 +584,17 @@ class MessageParser {
 
                     switch bracket.kind {
                     case .N:
-                        if let seq = bracket.seq {
-                            // the bracket is a RHS nonterminal
-                            cL = seq
+                        // END.seq is the *start* of the production, so a .N here is always
+                        // the LHS nonterminal — never a RHS reference. `resolveGrammarNodeLinks`
+                        // only passes a .N as `parent` when it is not isRHS, and isLHS ⟺ seq == nil.
+                        assert(bracket.isLHS, "END.seq resolved to a RHS nonterminal: \(bracket)")
+                        if followCheck(bracket: bracket) {
+                            addYield(L: bracket, i: cU, k: cU, j: cI)
+                            rtn(X: bracket)
                         } else {
-                            // the bracket is a LHS nonterminal
-                            if followCheck(bracket: bracket) {
-                                addYield(L: bracket, i: cU, k: cU, j: cI)
-                                rtn(X: bracket)
-                            } else {
-                                failedParses += 1
-                                if cI > furthestMismatchIndex {
-                                    furthestMismatchIndex = cI
-                                    furthestMismatchSlot = cL
-                                    furthestMismatchExpected = bracket.follow
-                                } else if cI == furthestMismatchIndex {
-                                    furthestMismatchExpected.formUnion(bracket.follow)
-                                }
-                            }
-                            continue nextDescriptor
+                            recordMismatch(expected: bracket.follow, at: cI, slot: cL)
                         }
+                        continue nextDescriptor
                     case .DO, .OPT, .KLN, .POS:
                         bracketRtn(bracket: bracket)
                         continue nextDescriptor
@@ -612,7 +602,11 @@ class MessageParser {
                         fatalError("\(#function) unexpected bracket kind at END seq link \(bracket.kind)")
                     }
                 case .EOS:
-                    break
+                    // Unreachable: the .EOS root is only a placeholder until ApusParser
+                    // overwrites `grammar.root` with the start nonterminal. A bare `break`
+                    // here would leave the switch but not the `while true`, i.e. hang
+                    // silently — fail loudly instead, as the .ALT arm does.
+                    fatalError(#function + ": EOS should not happen here")
                 }
             }
         }

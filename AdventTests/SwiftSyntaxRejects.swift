@@ -10,7 +10,17 @@
 //
 //  Two categories (see TESTING.md):
 //    • "SwiftSyntax rejects" — baseline, asserts swift-syntax flags an error. A failure
-//      here = a mis-harvested non-error case (warnings-only / valid) → prune candidate.
+//      here is a PRUNE CANDIDATE, not a prune: verify against the COMPILER first.
+//      swift-syntax's parser is built for error recovery and is in places MORE PERMISSIVE
+//      than the compiler, so a failure here can mean the fixture is right and swift-syntax
+//      is lenient. Measured 2026-08-30: `testRecovery28#1` (`repeat {} while { true }()`)
+//      gives hasError=FALSE, yet `swiftc -parse` errors with "missing condition in 'while'
+//      statement" — the fixture is CORRECT and must be kept.
+//      Rule of thumb: on any Advent-vs-swift-syntax conflict, the compiler is the arbiter —
+//      but READ THE SOURCE BYTES FIRST. `testIdentifiers6#1` looks like `()` and is actually
+//      U+F8FF + `()` (bytes EF A3 BF 28 29); the PUA character is invisible in a terminal, so
+//      re-typing the snippet into a probe silently changes the test. Use
+//      `Array(snippet.source.utf8)` when a fixture and a hand-written probe disagree.
 //    • "Advent rejects"      — asserts Advent produces NO full-span parse. Advent's
 //      compiler-faithful grammar correctly rejects most of this negative corpus (GREEN);
 //      the remaining RED cases are the reject-parity frontier — inputs Advent still
@@ -9511,5 +9521,7 @@ struct RejectSyntaxTests {
         let result = try adventParse(snippet)
         #expect(result == nil, "Advent wrongly accepted invalid input '\(snippet.label)': \(snippet.source)")
     }
+
+
 }
 
