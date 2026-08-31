@@ -147,4 +147,66 @@ struct PerformanceTests {
             print("summary,\(grammarName),avgWall=\(wallSum / Double(measuredRuns)),avgCPU=\(cpuSum / Double(measuredRuns))")
         }
     }
+
+    // MARK: - tortureART Growth Curve
+
+    /// Number of discarded warm-up parses before the timed sweep. The first parse in a
+    /// process pays one-off allocation costs, which would otherwise land entirely on the
+    /// shortest — and so most sensitive — input.
+    private static let tortureWarmupRuns = 3
+
+    /// Times every `^^^` message of 'apus grammars/tortureART.apus' separately, so the
+    /// output is a growth curve rather than a single total: the grammar is
+    /// `S = "b" | S S | S S S .` against "b", "bb", … "b"×100, which is the standard
+    /// worst case for a generalised parser (a cubic number of derivations).
+    ///
+    /// Prints one CSV row per message, length and seconds, six decimals. The
+    /// same sweep is available in the tinyGLL target as `tinyGLL --bench`, with the
+    /// same lengths and the same warm-up, so the two curves can be compared row by row.
+    ///
+    /// Only `MessageParser.parse(input:)` is timed — grammar loading and derivation
+    /// extraction are outside the measured region. Numbers are only meaningful from a
+    /// Release build with coverage off:
+    ///
+    ///     xcodebuild test -scheme AdventTests -configuration Release \
+    ///         -destination 'platform=macOS' -enableCodeCoverage NO \
+    ///         '-only-testing:AdventTests/PerformanceTests/tortureARTGrowthCurve()'
+    ///
+    /// The assertion is that every message still parses; the timings are diagnostic
+    /// output, not a pass/fail threshold, since absolute times are machine-dependent.
+    @Test("tortureART growth curve, one timing per message")
+    func tortureARTGrowthCurve() throws {
+        let grammarName = "tortureART"
+        let grammar = try Self.loadGrammar(named: grammarName)
+
+        // The ^^^ blocks carry their trailing newline (and the last one the file's blank
+        // final line). Trimming keeps the reported length equal to the number of b's.
+        let inputs = try Self.buildInputs(grammar: grammar, grammarName: grammarName, limit: 0)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        #expect(!inputs.isEmpty, "No messages found for grammar '\(grammarName)'. Add ^^^ messages.")
+
+        let parser = MessageParser(grammar: grammar)
+
+        for input in inputs.prefix(Self.tortureWarmupRuns) {
+            withParserIsolation { parser.parse(input: input) }
+        }
+
+        print("torture-growth,grammar=\(grammarName),messages=\(inputs.count),warmup=\(Self.tortureWarmupRuns)")
+        print("length,seconds,accepted")
+
+        for input in inputs {
+            let start = DispatchTime.now().uptimeNanoseconds
+            withParserIsolation { parser.parse(input: input) }
+            let elapsed = DispatchTime.now().uptimeNanoseconds - start
+
+            let accepted = parser.yield(of: parser.currentParseRoot).contains {
+                $0.i == input.startIndex && $0.j == input.endIndex
+            }
+            let seconds = String(format: "%.6f", Double(elapsed) / 1_000_000_000)
+            print("\(input.count),\(seconds),\(accepted)")
+
+            #expect(accepted, "tortureART rejected an input of \(input.count) b's.")
+        }
+    }
 }

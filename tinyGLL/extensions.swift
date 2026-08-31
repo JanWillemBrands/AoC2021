@@ -136,11 +136,11 @@ extension ParseCluster: CustomStringConvertible {
 }
 
 extension BinarySpan: Comparable, CustomStringConvertible {
-    var description: String { "\(left):\(pivot):\(right)" }
+    var description: String { "\(i):\(k):\(j)" }
     
     static func < (lhs: BinarySpan, rhs: BinarySpan) -> Bool {
-        if lhs.left != rhs.left { return lhs.left < rhs.left }
-        if lhs.pivot != rhs.pivot { return lhs.pivot < rhs.pivot }
-        return lhs.right < rhs.right
+        if lhs.i != rhs.i { return lhs.i < rhs.i }
+        if lhs.k != rhs.k { return lhs.k < rhs.k }
+        return lhs.j < rhs.j
     }
 }

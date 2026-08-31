@@ -72,7 +72,7 @@ final class GrammarNode {
     /// trivia-skip time via a recursive `MessageParser` sub-instance.
     var isTrivia: Bool = false
     
-    var alt, seq, prv: GrammarNode?
+    var alt, seq: GrammarNode?
 //    var alt: GrammarNode? {
 //        didSet {
 //            // alt is overloaded:
@@ -323,31 +323,24 @@ extension GrammarNode: CustomStringConvertible {
 
 extension GrammarNode {
     // sets the .seq and .alt links for END nodes
-    // sets the .prv links for all nodes (except LHS nonTerminals that have neither valid .seq nor .prv)
-    // TODO: if .prv is useless then remove!
     func resolveGrammarNodeLinks(parent: GrammarNode?, alternate: GrammarNode?, build: GrammarBuild) {
         number = build.nodeCounter
         build.nodeCounter += 1
         switch kind {
         case .EOS, .T, .TI, .C, .B, .EPS:
             seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate, build: build)
-            seq?.prv = self
         case .N:
             if isRHS {
                 seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate, build: build)
-                seq?.prv = self
             } else {
                 alt?.resolveGrammarNodeLinks(parent: self, alternate: alternate, build: build)
             }
         case .ALT:
             seq?.resolveGrammarNodeLinks(parent: parent, alternate: self, build: build)
-            seq?.prv = self
             alt?.resolveGrammarNodeLinks(parent: parent, alternate: alternate, build: build)
-            prv = parent
         case .DO, .POS, .OPT, .KLN:
             alt?.resolveGrammarNodeLinks(parent: self, alternate: alternate, build: build)
             seq?.resolveGrammarNodeLinks(parent: parent, alternate: alternate, build: build)
-            seq?.prv = self
         case .END:
             seq = parent
             alt = alternate

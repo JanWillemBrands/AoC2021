@@ -883,7 +883,16 @@ awaitOperator = "await" .
 // `A<B>`). No-op for ordinary operator chains: each infixExpression is one operator + one operand,
 // so it has a single extent and shares no start with a longer sibling.
 @longest
-infixExpression = >s< infixOperator >s< tryOperator? awaitOperator? prefixExpression .
+// TIGHT infix (`>s< … >s<`) may not use an operator BEGINNING with `!`/`?`. When left-bound, swift
+// lexes `!`/`?` as a single-character POSTFIX token and never munches a second one — probed token
+// streams: `foo!!foo` → `identifier exclamationMark exclamationMark identifier`, `foo??bar` →
+// `identifier postfixQuestionMark postfixQuestionMark identifier`, both then "consecutive statements
+// on a line must be separated by newline or ';'". Spaced, `foo ?? bar` IS `binaryOperator("??")`,
+// which is why only this rule changes and the `<s> … <s>` one below is untouched.
+// `postfixOperatorToken` already means exactly "operator body not starting with `!`/`?`", so it is
+// reused here rather than cloned; `dotOperator` (`a...b`) and `"&"` (`a&b`) stay reachable, and the
+// `>->( regularExpressionLiteral )` regex gate is kept from `operator`.
+infixExpression = >s< ( >->( regularExpressionLiteral ) postfixOperatorToken | dotOperator | "&" ) >s< tryOperator? awaitOperator? prefixExpression .
 infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
 infixExpression = assignmentOperator expression .     // RHS may be an if/switch expression. NO explicit try/await here: `expression` already begins with `tryOperator? awaitOperator?`, so repeating them made `= try foo()+bar()` attach `try` two ways (ambiguous pivot — testTry*/testAsync15).
 infixExpression = conditionalOperator expression .     // false-branch of ternary may be an if/switch expression (try/await via `expression`)

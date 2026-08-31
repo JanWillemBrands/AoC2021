@@ -74,7 +74,18 @@ extension MessageParser {
         }
     }
 
-    // Paper: call(L, i, j) — enter a nonterminal
+    // Paper: call(L, i, j) — enter a nonterminal (paper §5.3.1, where "L is Y ::= αX·β":
+    // the slot with the dot AFTER the called nonterminal). The paper labels both the CRF
+    // node and the BSR element with that slot.
+    //
+    // The return edge here stores the RHS nonterminal node itself — the dot BEFORE — so
+    // that one stored node serves both uses on the way back out (see rtn):
+    //   edge.slot        is the yield key   (paper: bsrAdd(L, ...))
+    //   edge.slot.seq!   is the paper's L   (paper: dscAdd(L, ...))
+    // Storing the paper's L instead would need a backward link to recover the nonterminal
+    // for the yield. node ↔ node.seq is a bijection, so this is a relabeling, not a
+    // difference — but note that yields are therefore keyed one `.seq` link earlier than
+    // the BSR elements in the paper's worked examples.
     func call() {
         // cL points to the RHS nonterminal node
         // cL.alt points to the LHS nonterminal node
