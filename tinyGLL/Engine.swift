@@ -29,12 +29,7 @@ var input = Array("aa")
 // Start symbol 'S'. Empty production 'ε'.
 // Terminals/nonterminals are single lowercase/uppercase letters.
 // Space and newline are skipped.
-var syntax = Array(" S = aS | ε .")
-
-// The recursive-descent grammar reader narrates itself when this is set. The CLI turns it
-// on; the explorer leaves it off, since it re-reads the grammar on every keystroke-driven
-// parse and the trace would be noise.
-var traceGrammar = false
+var syntax = Array(" S = a S | ε .")
 
 /// Grammar-reader failures. The reader used to `exit(1)` on a bad character, which is fine
 /// for a one-shot CLI but fatal for the explorer, where typing a half-finished grammar is
@@ -101,7 +96,7 @@ func parseGrammar() throws {
     var i = 0
     var c: Character = "$"
 
-    // invariant: 'c' is the current unconsumed character, 'i' is the index after 'c'.
+    // 'c' is the current unconsumed character, 'i' is the index after 'c'.
     func next(expect predicate: (Character) -> Bool = { _ in true } ) throws {
         if !predicate(c) {
             throw GrammarError.unexpectedCharacter(c, at: i - 1)
@@ -115,17 +110,16 @@ func parseGrammar() throws {
         } else {
             c = "$"
         }
-        if traceGrammar { print("next '\(c)' at position \(i - 1)") }
     }
 
     var nonTerminal: GrammarNode!                   // the current LHS production being parsed
     var nonTerminalReferences: [GrammarNode] = []   // RHS nonTerminal (forward/backward) references
 
     func production() throws {
-        if traceGrammar { print(#function) }
         let name = c
         try next() { $0.isUppercase }
         nonTerminal = GrammarNode(.N, name)
+        // store the LHS nonTerminal definition
         nonTerminalDefinitions[nonTerminal.name] = nonTerminal
         try next() { $0 == "=" }
         nonTerminal.alt = try alternates()
@@ -133,7 +127,6 @@ func parseGrammar() throws {
     }
 
     func alternates() throws -> GrammarNode {
-        if traceGrammar { print(#function) }
         let startOfAlternates = try sequence()
         var tmp = startOfAlternates
         while c == "|" {
@@ -146,23 +139,22 @@ func parseGrammar() throws {
     }
 
     func sequence() throws -> GrammarNode {
-        if traceGrammar { print(#function) }
         let startOfSequence = GrammarNode(.ALT, "[")
         var tmp = startOfSequence
         repeat {
-            let factor: GrammarNode
+            let terminal: GrammarNode
             if c == "ε" {
-                factor = GrammarNode(.EPS, c)
+                terminal = GrammarNode(.EPS, c)
             } else if c.isUppercase {
-                factor = GrammarNode(.N, c)
-                nonTerminalReferences.append(factor)
+                terminal = GrammarNode(.N, c)
+                nonTerminalReferences.append(terminal)
             } else if c.isLowercase {
-                factor = GrammarNode(.T, c)
+                terminal = GrammarNode(.T, c)
             } else {
                 throw GrammarError.unexpectedFactor(c, at: i - 1)
             }
-            tmp.seq = factor
-            tmp = factor
+            tmp.seq = terminal
+            tmp = terminal
             try next()
         } while c.isLetter
 
@@ -178,7 +170,7 @@ func parseGrammar() throws {
         try production()
     }
 
-    // resolve RHS references
+    // resolve RHS references to nonTerminals
     for ref in nonTerminalReferences {
         ref.alt = nonTerminalDefinitions[ref.name]
     }
@@ -199,6 +191,7 @@ var cL: GrammarNode!            // current grammar slot (seeded by the first get
 var cU = 0                      // current cluster index: input position where the nonterminal was entered
 var cI = 0                      // current input index
 
+// Paper: dscAdd(L, k, i)
 func addDescriptor(L: GrammarNode, k: Int, i: Int) {
     let d = Descriptor(L: L, k: k, i: i)
     if unique.insert(d).inserted {
@@ -227,12 +220,12 @@ func getDescriptor() -> Bool {
     }
 }
 
-// The (ambiguous) parse tree is stored in a BSR - Binary Subtree Representation, not in an SPPF.
+// The (ambiguous) parse tree is stored as a set of binary spans a.k.a. Binary Subtree Representation, not in an SPPF.
 struct BinarySpan: Hashable {
-    //   (i:k:k)   an epsilon yield          — nothing consumed at the pivot
+    //   (i:k:k)   an epsilon yield          — pivot at the right extent
     //   (i:k:k+1) a terminal yield          — one character consumed
     //   (i:k:j)   a prefix + postfix yield  — prefix [i,k), postfix [k,j)
-    //   (i:i:j)   a nonterminal yield       — pivot at the left extent, no split
+    //   (i:i:j)   a nonterminal yield       — pivot at the left extent
     let i:  Int
     let k: Int
     let j: Int
@@ -308,9 +301,9 @@ func rtn(X: GrammarNode) {
     guard let cluster = crf[clusterKey] else { return }
 
     if cluster.pops.insert(cI).inserted {
-        for edge in cluster.returns {
-            addDescriptor(L: edge.slot.seq!, k: edge.index, i: cI)
-            addYield(L: edge.slot, i: edge.index, k: cU, j: cI)
+        for returnEdge in cluster.returns {
+            addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: cI)
+            addYield(L: returnEdge.slot, i: returnEdge.index, k: cU, j: cI)
         }
     }
 }
@@ -323,7 +316,7 @@ func parseInput() throws {
     crf[ParsePosition(slot: grammarRoot, index: 0)] = ParseCluster()
     addDescriptorsForAlternates(X: grammarRoot, j: 0)
 
-    // make the yields storage large enough
+    // make the yield storage large enough
     yields = Array(repeating: [], count: GrammarNode.count)
 
     nextDescriptor: while getDescriptor() {
@@ -348,7 +341,6 @@ func parseInput() throws {
                 fatalError(#function + ": ALT should not happen here")
             case .END:
                 let nt = cL.seq! // the seq link of an END node points back to the nonTerminal node
-                // pivot == left extent: the nonterminal's own span, unsplit
                 addYield(L: nt, i: cU, k: cU, j: cI)
                 rtn(X: nt)
                 continue nextDescriptor

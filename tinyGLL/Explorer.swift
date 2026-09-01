@@ -14,7 +14,7 @@ import AppKit
 
 struct ExplorerView: View {
 
-    @State private var grammarText = "S = aS | ε ."
+    @State private var grammarText = "S = a S | ε ."
     @State private var inputText = "aa"
 
     @State private var derivations: [DerivationNode] = []

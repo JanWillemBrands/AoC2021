@@ -122,12 +122,12 @@ extension MessageParser {
         guard let cluster = crf[clusterKey] else { return }
 
         if cluster.pops.insert(cI).inserted {
-            for edge in cluster.returns {
-                if continuationViable(continuation: edge.slot.seq!, at: cI) && forwardGateAllows(slot: edge.slot, at: cI) {
-                    addDescriptor(L: edge.slot.seq!, k: edge.index, i: cI)
-                    addYield(L: edge.slot, i: edge.index, k: cU, j: cI)
+            for returnEdge in cluster.returns {
+                if continuationViable(continuation: returnEdge.slot.seq!, at: cI) && forwardGateAllows(slot: returnEdge.slot, at: cI) {
+                    addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: cI)
+                    addYield(L: returnEdge.slot, i: returnEdge.index, k: cU, j: cI)
                 } else {
-                    recordSuppressedContinuation(edge.slot.seq!, at: cI)
+                    recordSuppressedContinuation(returnEdge.slot.seq!, at: cI)
                     suppressedDescriptorCount += 1
                 }
             }
@@ -167,12 +167,12 @@ extension MessageParser {
         guard let cluster = crf[clusterKey] else { return }
 
         if cluster.pops.insert(cI).inserted {
-            for edge in cluster.returns {
-                if continuationViable(continuation: edge.slot.seq!, at: cI) && forwardGateAllows(slot: edge.slot, at: cI) {
-                    addYield(L: edge.slot, i: edge.index, k: cU, j: cI)
-                    addDescriptor(L: edge.slot.seq!, k: edge.index, i: cI)
+            for returnEdge in cluster.returns {
+                if continuationViable(continuation: returnEdge.slot.seq!, at: cI) && forwardGateAllows(slot: returnEdge.slot, at: cI) {
+                    addYield(L: returnEdge.slot, i: returnEdge.index, k: cU, j: cI)
+                    addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: cI)
                 } else {
-                    recordSuppressedContinuation(edge.slot.seq!, at: cI)
+                    recordSuppressedContinuation(returnEdge.slot.seq!, at: cI)
                     suppressedDescriptorCount += 1
                 }
             }

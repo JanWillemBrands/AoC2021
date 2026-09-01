@@ -73,9 +73,9 @@ class ASTDiagramGenerator {
         for (key, cluster) in (messageParser?.crf ?? [:]).sorted(by: { $0.key < $1.key }) {
             let poppedIndexes = cluster.pops.sorted().description.dropFirst().dropLast()
             content.append("\n    \(key) [label = <\(key.slot.ebnfDot().graphvizHTML),\(key.index)<br/><font color=\"gray\" point-size=\"8.0\"> \(poppedIndexes)</font>>]")
-            for edge in cluster.returns {
-                content.append("\n    \(key) -> \(edge)")
-                returnPositions.insert(edge)
+            for returnEdge in cluster.returns {
+                content.append("\n    \(key) -> \(returnEdge)")
+                returnPositions.insert(returnEdge)
             }
         }
         // render return nodes with dotted EBNF labels

@@ -64,7 +64,6 @@ if operands.count > 1 { input = Array(operands[1]) }
 /// bounds and retain checks, not the parser.
 func runBenchmark(maxLength: Int) throws {
     let benchSyntax = Array(" S = b | S S | S S S .")
-    traceGrammar = false
 
     func prepare(length: Int) throws {
         resetEngine()
@@ -110,17 +109,13 @@ case .bench:
 
 case .trace, .tree:
     let showTrees = mode == .tree
-    traceGrammar = !showTrees
-
     do {
         try parseGrammar()
-
         if !showTrees {
             for definition in nonTerminalDefinitions.values {
                 definition.dump()
             }
         }
-
         try parseInput()
     } catch {
         print(error)

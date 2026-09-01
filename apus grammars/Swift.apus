@@ -642,7 +642,17 @@ type = attribute type .
 // (no `->`) can't bind, leaving `nonisolated` a bare typeIdentifier + a separate `(hello)` statement
 // — resolving the residual `let x: nonisolated⏎(hello)` ambiguity. The `nonisolated(nonsending)`
 // arg form stays on parameterModifier (type = parameterModifier type, above).
-type = "nonisolated" functionType .
+// `type = "nonisolated" functionType` DELETED (2026-09-01). A bare `nonisolated` type specifier is
+// ALWAYS an error — `parameterModifier` below already says so, and this rule contradicted it:
+//     `func foo(test: nonisolated () async -> Void)`   → "expected '(nonsending)' in 'nonisolated' specifier"
+//     `let x: nonisolated (Int) async -> Void = {}`    → same error (one line)
+//     `let x: nonisolated ⏎ (Int) async -> Void = {}`  → ok
+// The rule was kept for `testNonisolatedSpecifier#17`, the last shape, on the belief that `nonisolated`
+// had to BIND the arrow type there. It does not: with the newline, `nonisolated` is a bare
+// typeIdentifier completing `let x: nonisolated`, and `(Int) async -> Void = {}` is a SEPARATE
+// statement — an infix `->` sequence expression with an assignment. That is the same two-statement
+// reading the `(hello)` note below already relies on, just applied consistently. In `#2` the two-
+// statement reading is impossible inside a parameter clause, so it now correctly rejects.
 
 /// Grammar of a type annotation
 /// type-annotation → : attributes? type
@@ -762,7 +772,12 @@ opaqueType = "some" type .
 /// Grammar of a boxed protocol type
 /// boxed-protocol-type → any type
 
-boxedProtocolType = "any" type .
+// `>->(…)`: an ownership/type specifier may not FOLLOW `any` — it belongs in front of it. Probed:
+//   `func f(_: borrowing any ~Copyable) {}`  → ok        `func f(_: any ~Copyable) {}` → ok
+//   `func f(_: any borrowing ~Copyable) {}`  → "unexpected code '~Copyable' in parameter clause"
+//   `func f(_: any borrowing P) {}`          → "expected ',' in parameter"
+// `type = parameterModifier type` otherwise lets any specifier appear here.
+boxedProtocolType = "any" >-> ( "inout" "borrowing" "consuming" "isolated" "_const" "sending" "__shared" "__owned" "nonisolated" "dependsOn" ) type .
 
 /// Grammar of a metatype type
 /// metatype-type → type . Type | type . Protocol
@@ -894,6 +909,28 @@ awaitOperator = "await" .
 // `>->( regularExpressionLiteral )` regex gate is kept from `operator`.
 infixExpression = >s< ( >->( regularExpressionLiteral ) postfixOperatorToken | dotOperator | "&" ) >s< tryOperator? awaitOperator? prefixExpression .
 infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
+// `arrowExpr` — swift-syntax `ExprNodes.swift:71`:
+//     Node(kind: .arrowExpr, base: .expr,
+//          documentation: "The arrow when a type is used at a position that syntactically expectes an
+//                          expression. … let array = [(Int) -> Int]()",
+//          children: [ Child(name: "effectSpecifiers", kind: .node(kind: .typeEffectSpecifiers),
+//                            isOptional: true),
+//                      Child(name: "arrow", kind: .token(choices: [.token(.arrow)])) ])
+// and `typeEffectSpecifiers` (`CommonNodes.swift:374`) = `asyncSpecifier?` + `throwsClause?`.
+// So `async`/`throws` may precede the arrow in EXPRESSION position, not only in a function type.
+// Needed for `let x: nonisolated ⏎ (Int) async -> Void = {}` (`testNonisolatedSpecifier#17`): with the
+// newline, `nonisolated` completes `let x: nonisolated` as a bare typeIdentifier, and the rest is a
+// separate statement — `(Int)`, this arrow, then `Void = {}`.
+//
+// DEVIATION from the node shape: swift makes `effectSpecifiers` OPTIONAL, because for swift `->` is
+// punctuation and ONLY reachable through `arrowExpr`. Here a bare `->` already reaches the infix
+// position as an ordinary `operatorToken` (its characters are operator characters), so requiring a
+// specifier keeps this rule from duplicating that path. Making it optional needs `->` removed from
+// `operatorToken` first — tried, and it costs 40 accepts on inputs like
+// `A as? B + C -> D is E as! F ? G = 42 : H` until `arrowExpr` supplies the bare arrow instead.
+infixExpression = <s> arrowExpr <s> tryOperator? awaitOperator? prefixExpression .
+arrowExpr = typeEffectSpecifiers "->" .
+typeEffectSpecifiers = "async" | "async" throwsClause | throwsClause .
 infixExpression = assignmentOperator expression .     // RHS may be an if/switch expression. NO explicit try/await here: `expression` already begins with `tryOperator? awaitOperator?`, so repeating them made `= try foo()+bar()` attach `try` two ways (ambiguous pivot — testTry*/testAsync15).
 infixExpression = conditionalOperator expression .     // false-branch of ternary may be an if/switch expression (try/await via `expression`)
 infixExpression = typeCastingOperator .
@@ -2090,6 +2127,21 @@ accessorClauseList = accessorClauseEntry accessorClauseList? .
 accessorClauseEntry = getterClause | setterClause | initAccessorClause | coroutineAccessorClause .
 initAccessorClause = attributes? "init" setterName? accessorEffects? codeBlock .
 coroutineAccessorClause = attributes? accessorModifier? coroutineSpecifier accessorEffects? codeBlock .
+// SE-0443 coroutine accessors. `read`/`modify`/`mutate` are the modern spellings and are KEPT here,
+// even though the reject oracle cannot see them: `Parser+TokenSpecSet.swift` gates them behind
+// experimental features —
+//     case TokenSpec(.read)   where experimentalFeatures.contains(.coroutineAccessors):
+//     case TokenSpec(.modify) where experimentalFeatures.contains(.coroutineAccessors):
+//     case TokenSpec(.mutate) where experimentalFeatures.contains(.borrowAndMutateAccessors):
+// — and `Parser.parse(source:)`, which the whole corpus was harvested against, enables none of them.
+// `_read`/`_modify`/`borrow` are ungated.
+//
+// Consequence for `testCoroutineAccessors#1/#2` (`_read`+`modify`, `_modify`+`read`): under the
+// oracle those are errors only because the modern spelling is not an accessor at all, so the ungated
+// `_read` makes the block a genuine accessor block in which `modify {…}` is unexpected code. It is
+// NOT a "don't mix the families" rule — `{ read {…} modify {…} }` parses clean as a getter body
+// holding two trailing-closure calls. Dropping the gated spellings here was tried and reverted: it
+// fixed nothing (advent still finds the getter-body reading) and lost real language coverage.
 coroutineSpecifier = "_read" | "read" | "_modify" | "modify" | "borrow" | "mutate" .
 
 // TODO: Accessor-level modifier — surgical, matches swift-syntax AccessorModifier enum (TokenSpecSet.swift:63-89).
