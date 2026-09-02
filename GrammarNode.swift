@@ -36,6 +36,13 @@ enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KL
 
 enum Disambiguation: String { case shortest, longest, left, right }
 
+/// One leading `>->(N)` / `>+>(N)` forward lookahead predicate on an alternate, `N` a NONTERMINAL.
+/// See `GrammarNode.forwardPredicates`.
+struct ForwardPredicate {
+    let targetName: String
+    let negated: Bool
+}
+
 /// Per-grammar-build scratch state, created fresh for each grammar load and
 /// threaded through `resolveGrammarNodeLinks`. Each load owns its own instance,
 /// so numbering is isolated by construction — no shared static to race on under
@@ -174,8 +181,10 @@ final class GrammarNode {
     /// (`>->`, negated) / does not (`>+>`, positive) derive at `i` — a Way-1 BSR query.
     /// See `Grammar Predicate Lookahead Design.md`. (Postfix `>->`/`>+>` with a TERMINAL
     /// operand remains the parse-time token gate in `factor()`.)
-    var predicateTargetName: String? = nil
-    var predicateNegated: Bool = false
+    /// REPEATABLE, and they compose as a CONJUNCTION — every predicate must hold, exactly like the
+    /// containment predicates below. One gate per alternate could not express "not a declaration AND
+    /// not an attribute" (see `statement` in `Swift.apus`).
+    var forwardPredicates: [ForwardPredicate] = []
 
     /// Containment predicate on an alternate — leading `@within(N)` (repeatable, conjunction).
     /// Captured on the `.ALT` node. The Oracle keeps the alternate's reading only where its

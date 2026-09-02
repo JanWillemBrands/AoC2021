@@ -229,6 +229,35 @@ enum ApusRegexLibrary {
     /// (Swift.apus operator dev 4: `x!!` is two force-unwraps, not a `!!` operator).
     static let postfixOperatorToken = Regex {
         NegativeLookahead { CharacterClass.anyOf("!?") }
+        notExactlyArrow
+        operatorBody
+    }.matchingSemantics(.unicodeScalar)
+
+    /// Rejects the EXACT token `->` while leaving longer operators that merely start with it
+    /// (`-->`, `->>`) alone — the inner lookahead requires a further operator character.
+    ///
+    /// `->` is punctuation in swift, never an operator: it is reachable only through
+    /// `ArrowExprSyntax` (`ExprNodes.swift:71`). Keeping it out of the operator terminals makes
+    /// `arrowExpr` the single source of the arrow here too, which is what lets `typeEffectSpecifiers`
+    /// be optional exactly as swift declares it.
+    static let notExactlyArrow = NegativeLookahead {
+        "->"
+        NegativeLookahead { operatorCharacter }
+    }
+
+    /// Operator body that is not exactly `->`. Used for `operator` (prefix and spaced infix).
+    static let nonArrowOperatorToken = Regex {
+        notExactlyArrow
+        operatorBody
+    }.matchingSemantics(.unicodeScalar)
+
+    /// `functionNameOperator` — same body as `nonArrowOperatorToken` (`func ->(a: Int, b: Int) {}`
+    /// errors: "expected identifier in function"), but a DISTINCT terminal because it needs a
+    /// different `@preempt`: the function-name position must yield the generic `<` back
+    /// (`func %%%%<T, U>`), while the expression position must yield to a regex opener.
+    /// `@preempt` takes ONE (start, construct) pair per terminal, so the two cannot share one.
+    static let functionNameOperator = Regex {
+        notExactlyArrow
         operatorBody
     }.matchingSemantics(.unicodeScalar)
 
@@ -627,9 +656,10 @@ enum ApusRegexLibrary {
     // ── Registry (key == `.apus` terminal name) ─────────────────────────────────
     static let patterns: [String: Regex<AnyRegexOutput>] = [
         "identifier":                  Regex<AnyRegexOutput>(identifier.regex),
-        "operatorToken":               Regex<AnyRegexOutput>(operatorToken.regex),
         "operatorName":                Regex<AnyRegexOutput>(operatorToken.regex),
         "postfixOperatorToken":        Regex<AnyRegexOutput>(postfixOperatorToken.regex),
+        "nonArrowOperatorToken":       Regex<AnyRegexOutput>(nonArrowOperatorToken.regex),
+        "functionNameOperator":        Regex<AnyRegexOutput>(functionNameOperator.regex),
         "dotOperator":                 Regex<AnyRegexOutput>(dotOperator.regex),
         "poundName":                   Regex<AnyRegexOutput>(poundName.regex),
         "propertyWrapperProjection":   Regex<AnyRegexOutput>(propertyWrapperProjection.regex),

@@ -418,6 +418,7 @@ regexClassBody  = regexClassItem | regexClassItem regexClassBody .   // Swift fo
 regexClassItem  = regexEscape | regexClassAtom .
 
 // Operator-overlap-safe atom reachable through existing terminals.
+
 regexAtom       = regexNonOperatorAtom
                 | regexOperatorChar
                 | "#" | ":" | ";" | "," .
@@ -433,15 +434,19 @@ regexAtom       = regexNonOperatorAtom
 // affects an actual parse. What it does keep from swift's scan: same line, closing `/` before EOL,
 // no unescaped `/` inside, escapes allowed, and the delimiter-adjacency space rule (which is what
 // stops `qux(/, 1)` — body `, 1)` then a SPACE before the `/` — from looking like a lexeme).
+
 regexShapeAtom   - /[^\/\\\r\n\u{20}\u{09}\(\)]/ .
+
 // ONE alternate only: `@preempt` queries viability at a split point INSIDE an operator token
 // (`MessageParser.swift` — `commitEnd` is another match end of the same token), so at least one
 // operator character always precedes on the same line. A newline can never immediately precede,
 // which makes the `<n> regexOpenSlashNL` counterpart of `plainRegularExpressionLiteral` DEAD here.
+
 regexLexemeShape = >n< regexOpenSlash >s< regexShapeBody >s< regexCloseSlash .
 regexShapeBody   = regexShapeItem | regexShapeItem regexShapeTail .
 regexShapeTail   = regexShapeItem | ( regexSpaceAtom | regexShapeItem ) regexShapeTail .
 regexShapeItem   = regexEscape | regexShapeGroup | "(" | regexShapeAtom .
+
 // Group tracking, transcribed from RegexLiteralLexer.swift `lexPatternCharacter`:
 //     case ")" where !escaped && customCharacterClassDepth == 0:
 //       guard groupDepth > 0 else { if !mustBeRegex { return .notARegex }; break }
@@ -459,19 +464,16 @@ regexShapeItem   = regexEscape | regexShapeGroup | "(" | regexShapeAtom .
 // because the operator's own prefix chars intervene.
 // The ASYMMETRY `151` needs is genuine: `customCharacterClassDepth` exists ONLY to stop parens
 // inside a class counting as groups — nothing bails on an unbalanced `[` — so no class rule here.
+
 regexShapeGroup  = "(" { regexSpaceAtom | regexShapeItem } ")" .
 
-// backref: closing #s must equal opening; no escapes in extended regex, `/` is body content, only `/#…` closes
 extendedRegularExpressionLiteral    - @builder .
-     <-< ( "true" "false" "nil" "self" "Self" "super" "Any"
-         "func" "operator"
+     <-< ( "true" "false" "nil" "self" "Self" "super" "Any" "func" "operator"
          identifier escapedIdentifier implicitParameterName propertyWrapperProjection
          binaryLiteral octalLiteral decimalLiteral hexadecimalLiteral
          decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
          plainRegularExpressionLiteral extendedRegularExpressionLiteral
-         ")" "]" "}" ">"
-         "!"
-         "->" "..." "." "@" )
+         ")" "]" "}" ">" "!" "->" "..." "." "@" )
 
 regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpressionLiteral .
 
@@ -527,8 +529,11 @@ regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpres
 //     e.g. `\Foo?.?.?.blah` = keypath `\Foo?.?` + `.?.` + `blah`.  Cursor.swift (trailing `!?` split).
 //  4. postfixOperatorToken drops the `!?`-led alternatives: a prefix/postfix operator may not
 //     begin with `!`/`?`.  e.g. `x!!` = two force-unwraps, never a `!!` operator.
-//  5. operatorName @preempt(openAngle): an operator function name ends before a generic `<`.
+//  5. functionNameOperator @preempt(openAngle): an operator function name ends before a generic `<`.
 //     e.g. `func %%%%<T,U>`.  swift-syntax SwiftParser (decl context only).
+//     This is why the function-name position cannot reuse `nonArrowOperatorToken` despite wanting
+//     the identical BODY: `@preempt` is one (start, construct) pair per terminal, and the
+//     expression position spends its pair on the regex opener.  e.g. `prefix func %<T>(x: T)`.
 //  6. Munch-exempt single-char regex terminals — openAngle `<`, closeAngle `>`, optionalMark `?`,
 //     forceMark `!`, keyPathDot `.` — match one char even inside a longer operator run, mirroring
 //     swift-syntax parser-side token splitting.  e.g. `Array<Array<Int>>` (closeAngle inside `>>`),
@@ -544,8 +549,12 @@ regularExpressionLiteral = plainRegularExpressionLiteral | extendedRegularExpres
 // FOLLOW/EOF exemption in `followCheck` applies only to the sub-parse ROOT, so an inner nonterminal
 // would still be FOLLOW-gated and could never complete here. (The `#/…/#` extended form needs no
 // cover — `#` is not an operator character, so no operator can swallow its start.)
+// Renamed from `operatorToken`: the terminal now rejects the EXACT token `->`, which is punctuation
+// in swift and reaches an expression only through `arrowExpr` (see `infixExpression`). Longer
+// operators that merely begin with it (`-->`, `->>`) are unaffected.
+
 @lexicalClass @preempt(regexOpenSlash, regexLexemeShape)
-operatorToken - @builder .
+nonArrowOperatorToken - @builder .
 
 @lexicalClass
 dotOperator - @builder .
@@ -563,13 +572,24 @@ dotOperator - @builder .
 // Start-anchored, so it does NOT cover an operator that SWALLOWS a regex opener (`_ = ^/"/"`: the
 // operator `^/` is [4,6] while the regex `/"/` it eats is [5,8]) — see REJECTS.md C3 for why that
 // case additionally needs a speculative sub-parse.
-operator = >->( regularExpressionLiteral ) operatorToken .
+// `nonArrowOperatorToken`, not `operatorToken`: `->` is punctuation in swift and reaches an
+// expression only as `ArrowExprSyntax` — see `arrowExpr`. Excluding the exact token here (and from
+// `postfixOperatorToken`) leaves `arrowExpr` as the arrow's single source.
+
+operator = >->( regularExpressionLiteral ) nonArrowOperatorToken .
 operator = dotOperator .
 
 postfixOperatorToken - @builder .
 
-@preempt(openAngle)
+// The unrestricted operator body — no arrow exclusion. Used ONLY where swift accepts a bare `->`
+// as a NAME rather than as punctuation: `infix operator ->` parses, as does `import operator ->`.
+// No `@preempt(openAngle)`: neither use site can be followed by a generic clause, so there is no
+// `<` to yield back (that need belongs to `functionNameOperator`).
 operatorName    - @builder .
+
+// Operator body minus the exact `->`, preempting a generic `<` — the function-NAME position.
+@preempt(openAngle)
+functionNameOperator - @builder .
 
 // munch-exempt single-char regex terminals
 openAngle       - /</ .
@@ -922,14 +942,13 @@ infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpres
 // newline, `nonisolated` completes `let x: nonisolated` as a bare typeIdentifier, and the rest is a
 // separate statement — `(Int)`, this arrow, then `Void = {}`.
 //
-// DEVIATION from the node shape: swift makes `effectSpecifiers` OPTIONAL, because for swift `->` is
-// punctuation and ONLY reachable through `arrowExpr`. Here a bare `->` already reaches the infix
-// position as an ordinary `operatorToken` (its characters are operator characters), so requiring a
-// specifier keeps this rule from duplicating that path. Making it optional needs `->` removed from
-// `operatorToken` first — tried, and it costs 40 accepts on inputs like
-// `A as? B + C -> D is E as! F ? G = 42 : H` until `arrowExpr` supplies the bare arrow instead.
-infixExpression = <s> arrowExpr <s> tryOperator? awaitOperator? prefixExpression .
-arrowExpr = typeEffectSpecifiers "->" .
+// `effectSpecifiers` is OPTIONAL, matching the node exactly: `arrowExpr` is now the arrow's ONLY
+// source, because the exact token `->` is excluded from `nonArrowOperatorToken` (used by `operator`)
+// and from `postfixOperatorToken` (used by the postfix and tight-infix positions). No spacing gates:
+// `->` is punctuation, so swift's left/right-boundness rules — which drive the `>s<`/`<s>` split for
+// real operators — do not apply to it.
+infixExpression = arrowExpr tryOperator? awaitOperator? prefixExpression .
+arrowExpr = typeEffectSpecifiers? "->" .
 typeEffectSpecifiers = "async" | "async" throwsClause | throwsClause .
 infixExpression = assignmentOperator expression .     // RHS may be an if/switch expression. NO explicit try/await here: `expression` already begins with `tryOperator? awaitOperator?`, so repeating them made `= try foo()+bar()` attach `try` two ways (ambiguous pivot — testTry*/testAsync15).
 infixExpression = conditionalOperator expression .     // false-branch of ternary may be an if/switch expression (try/await via `expression`)
@@ -1626,7 +1645,34 @@ optionalChainingExpression = postfixExpression >s< optionalMark .
 /// statement → compiler-control-statement
 /// statements → statement statements?
 
-statement = >->(declaration) expression .   // an expression-statement only where a declaration does NOT start here (swift-syntax atStartOfDeclaration-first). Resolves the `open⏎var` modifier-vs-reference ambiguity: `open` before a decl is the declaration's modifier, not a bare reference. See `Grammar Predicate Lookahead Design.md`.
+// Two stacked negative predicates (a conjunction): an expression-statement is allowed only where
+// NEITHER a declaration NOR an attribute starts here.
+//   `>->(declaration)` — swift-syntax's atStartOfDeclaration-first. Resolves the `open⏎var`
+//     modifier-vs-reference ambiguity: `open` before a decl is the declaration's modifier, not a
+//     bare reference.
+//   `>->(attributes)`  — at STATEMENT position an attribute MUST introduce a declaration. Probed:
+//     `@MainActor Foo` as a statement → "expected declaration and ';' after attribute", while
+//     `_ = @MainActor Foo` and `_ = [@MainActor Foo]()` are fine, so the restriction is POSITIONAL,
+//     not about the attributed type's shape — `primaryExpression = attribute type` stays (it is
+//     needed for `[@convention(c) () -> Void]()`). The declaration predicate alone cannot express
+//     this: for `@MainActor foo` no declaration follows, so the negative gate passes and the
+//     expression-statement reading survives via `primaryExpression = attribute type`.
+// `attributes` is used in real productions, so it HAS yields — a target reachable only from an
+// annotation is snapshot-empty and the predicate silently no-ops.
+// See `Grammar Predicate Lookahead Design.md`.
+// NOT YET APPLIED: adding `>->(attributes)` here DOES fix `testUsing#1` (8 → 7 rejects) but costs 2
+// accepts on `testAccessorBlockAfterPatternBindingDeclWithAttribute#1`:
+//     var x: Int = foo()
+//     {
+//       @available(*, deprecated)
+//       didSet {}
+//     }
+// Advent's only reading of that valid input goes THROUGH an attributed expression statement: it takes
+// the `{…}` as a TRAILING CLOSURE on `foo()` and parses `@available(…) didSet {}` inside it as
+// statements. The correct reading — `variableDeclaration = … typeAnnotation initializer?
+// willSetDidSetBlock` (line ~2066), which already permits `attributes?` on `didSetClause` — is
+// evidently not reachable for a `{` on the NEXT line. Fix that first, then this predicate can go in.
+statement = >->(declaration) expression .
 // `@prefer`: where a declaration and an expression parse the SAME span (`init() {}` = decl vs
 // `init`-ref + call + trailing closure), swift-syntax commits to the declaration (probe:
 // InitializerDecl in a func body; its parseCodeBlockItem tries atStartOfDeclaration first).
@@ -2205,7 +2251,16 @@ functionHead = attributes? declarationModifiers? "func" .
 // swift-syntax parseFuncDeclaration (Declarations.swift:1384) uses expectIdentifier(keywordRecovery: true)
 // so a hard keyword can be consumed as the function name without `hasError` — e.g. `func await()`,
 // `func async()`. softIdentifier (raw identifier minus let/var/inout) matches that behavior.
-functionName = hardIdentifier | operatorName .   // hardIdentifier (reserved-excluded), NOT softIdentifier: a reserved keyword is not a valid function name (`func repeat()` errors — testInvalid17/21), while contextual keywords (`func async()`, `func await()`, `func open()`) and backticked keywords still parse. `init`/`deinit` stay excluded (both reject as function names — probe-verified).
+// `functionNameOperator`, NOT `operatorName`: `func ->(a: Int, b: Int) {}` errors ("expected
+// identifier in function") while `func !!`, `func ??` and `func +` all parse — so the function-name
+// position excludes the exact `->` but keeps `!`/`?`-led names. (`operatorName` stays unrestricted
+// for `operatorDeclaration`, where `infix operator ->` does parse.)
+// NOT `nonArrowOperatorToken`, whose body is identical: that terminal spends its single `@preempt`
+// pair on the regex opener, so it cannot also yield back a generic `<`. Using it here dropped
+// `@preempt(openAngle)` and let maximal munch swallow the bracket in `func %%%%<T, U>`, breaking
+// testTry1/testTry2/testInvalid28 — whose own comment states the rule: "the `<` is considered an
+// identifier but is peeled off by the parser".
+functionName = hardIdentifier | functionNameOperator .   // hardIdentifier (reserved-excluded), NOT softIdentifier: a reserved keyword is not a valid function name (`func repeat()` errors — testInvalid17/21), while contextual keywords (`func async()`, `func await()`, `func open()`) and backticked keywords still parse. `init`/`deinit` stay excluded (both reject as function names — probe-verified).
 
 functionSignature = parameterClause "async"? throwsClause? functionResult? .
 functionSignature = parameterClause "async"? "rethrows" functionResult? .
@@ -2464,8 +2519,12 @@ subscriptResult = "->" type .   // result-type attributes carried by `type`
 /// macro-function-signature-result → -> type
 /// macro-definition → = expression
 
-macroDeclaration = macroHead hardIdentifier genericParameterClause? macroSignature macroDefinition? genericWhereClause? . // TODO: verify that genericWhereClause? is a correct grammar fix.
-macroHead = attributes? declarationModifiers? "macro" .
+// `macroDeclarationHead`, NOT `macroHead`: these were BOTH called `macroHead`, and apus accumulates
+// alternatives per LHS, so the two unrelated concepts merged into one symbol — `macroDeclaration`
+// accepted `#foo` as its head and `macroExpansionDeclaration` accepted `macro` as its. (That is why
+// `@MainActor macro` parses today.) The expansion head keeps the shorter name; it has four use sites.
+macroDeclaration = macroDeclarationHead hardIdentifier genericParameterClause? macroSignature macroDefinition? genericWhereClause? . // TODO: verify that genericWhereClause? is a correct grammar fix.
+macroDeclarationHead = attributes? declarationModifiers? "macro" .
 macroSignature = parameterClause macroFunctionSignatureResult? .
 macroFunctionSignatureResult = "->" type .
 macroDefinition = assignmentOperator expression .
@@ -2482,7 +2541,17 @@ macroDefinition = assignmentOperator expression .
 //postfixOperatorDeclaration = "postfix" "operator" operator infixOperatorGroup? .
 //infixOperatorDeclaration = "infix" "operator" operator infixOperatorGroup? .
 
-operatorDeclaration = ( "prefix" | "postfix" | "infix" ) "operator" operator infixOperatorGroup? .
+// `declaredOperator`, NOT `operator`: the DECLARATION position takes the unrestricted operator body.
+// Probed: `infix operator ->` PARSES (the arrow is rejected as an operator only in *expression*
+// position, where it is punctuation), while `func ->(a: Int, b: Int) {}` errors with "expected
+// identifier in function". Using `operator` here — which now excludes the exact `->` — would have
+// wrongly rejected `infix operator ->`; no test covers it, so this was a latent regression.
+// The `dotOperator` alternative is required and separately uncovered: `prefix operator ..<` is a
+// legal declaration, and a `.`-led operator has no `operatorHead`, so the plain body cannot match
+// it. Bare `operatorName` here silently lost every dot-led operator declaration.
+declaredOperator = operatorName .
+declaredOperator = dotOperator .
+operatorDeclaration = ( "prefix" | "postfix" | "infix" ) "operator" declaredOperator infixOperatorGroup? .
 
 infixOperatorGroup = ":" precedenceGroupName designatedTypes? . // TODO: grammar fix
 designatedTypes = "," | "," designatedType designatedTypes? .   // trailing comma allowed (swift-syntax tolerates `operator : Prec,`)

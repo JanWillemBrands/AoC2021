@@ -485,13 +485,22 @@ class ApusParser {
         // anchors the prune on the alternate's first body symbol (yield start = alternate start).
         // See `Grammar Predicate Lookahead Design.md`. Postfix `>->`/`>+>` on a TERMINAL stays
         // the parse-time token gate in `factor()`.
-        if token.kind == ">->" || token.kind == ">+>" {
-            startOfSequence.predicateNegated = token.kind == ">->"
+        // The operand is a LIST — `>->(A B)` means "neither A nor B derives here" — matching the
+        // TERMINAL-operand form (`>->( "(" "[" "." )`) and `---( … )`, which both take a set inside
+        // one pair of parens. The pragma is also repeatable, and everything composes as a
+        // CONJUNCTION: every predicate must hold. One single-target gate could not state "not a
+        // declaration AND not an attribute".
+        while token.kind == ">->" || token.kind == ">+>" {
+            let negated = token.kind == ">->"
             cI += 1
             try expect(["("]); cI += 1
-            try expect(["identifier"])
-            startOfSequence.predicateTargetName = String(token.image)
-            cI += 1
+            repeat {
+                try expect(["identifier"])
+                startOfSequence.forwardPredicates.append(
+                    ForwardPredicate(targetName: String(token.image), negated: negated)
+                )
+                cI += 1
+            } while token.kind == "identifier"
             try expect([")"]); cI += 1
         }
 

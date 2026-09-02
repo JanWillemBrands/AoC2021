@@ -344,14 +344,16 @@ class Oracle {
             }
             // Leading forward lookahead predicate on an ALT node (`>->(N)`/`>+>(N)`, N a
             // nonterminal). Anchor the prune on the alternate's first body symbol.
-            if let tname = node.predicateTargetName {
-                if let target = grammar.nonTerminals[tname], let anchor = node.bodySymbols.first {
+            // Repeatable: each predicate becomes its own rule on the same anchor, so they compose as
+            // a CONJUNCTION (every rule prunes independently).
+            for predicate in node.forwardPredicates {
+                if let target = grammar.nonTerminals[predicate.targetName], let anchor = node.bodySymbols.first {
                     // Snapshot RAW target starts NOW (Oracle init runs before dead-wood) — canParseAsXxx.
                     let targetStarts = Set(parser.yield(of: target).map(\.i))
-                    rules.append((anchor, LookaheadPredicateRule(negated: node.predicateNegated,
+                    rules.append((anchor, LookaheadPredicateRule(negated: predicate.negated,
                                                                  targetStarts: targetStarts)))
                 } else {
-                    assertionFailure("lookahead predicate: unresolved target '\(tname)' or empty alternate")
+                    assertionFailure("lookahead predicate: unresolved target '\(predicate.targetName)' or empty alternate")
                 }
             }
             // Leading containment predicate(s) on an ALT node — `@confinedTo(N…)` (keep only where
