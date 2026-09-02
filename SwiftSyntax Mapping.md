@@ -64,8 +64,23 @@ VariableDeclSyntax(
 
 ## Incremental Phases
 
-### Phase 1 — Literals & Simple Declarations
+### Phase 1 — Literals & Simple Declarations ✅ (2026-09-02)
 `let x = 42`, `let s = "hello"`, `var b = true`, `let n: Int? = nil`
+
+Pinned by `Phase1TreeTests` in `AdventTests/SwiftSyntaxTests.swift` — 17 sources
+covering every row of the table below, all matching swift-syntax exactly. Unlike
+the extracted suites, where `trees match` is aspirational, a red row here is a
+regression. Two generator bugs were fixed to get there:
+
+- **Overlapping commits concatenated.** `collectTerminalText` walked every commit
+  in the span, but the commit log holds terminals from DEAD derivations too: on
+  `1.5` the scanner commits the float `1.5` at the `1` *and* `.5` at the `.`, so
+  the literal read `1.5.5`. It now advances a cursor past each commit's content
+  end and skips commits that run past the span end.
+- **`optionalType` looked for the wrong child.** The rule is
+  `optionalType = simpleType >s< optionalMark`, not `type "?"`, so `Int?` yielded
+  `MissingType`. `convertType` now also dispatches on `simpleType` (its alternates
+  are named identically to `type`'s).
 
 | APUS nonterminal | SwiftSyntax type |
 |---|---|

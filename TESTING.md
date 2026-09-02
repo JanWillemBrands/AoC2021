@@ -378,12 +378,16 @@ seed is a cheap fuzzer for order-dependence. Consequence: the `trees differ` cou
 `testIdentifiers10#1`, `testNonisolatedSpecifier#12` appeared as "fixed" in one run and "broken" in
 the next.
 
-Verified: with the seed pinned, the count is exactly reproducible.
+Pinning the seed narrows this but does NOT close it — **corrected Sep 2 2026**, see
+"AST converter work" below for the measurements. Two consecutive pinned PARALLEL runs of
+identical code still differed by 2 labels; only adding `-parallel-testing-enabled NO` gave
+byte-identical label sets. The earlier "exactly reproducible" reading came from a single
+matching pair, which the wider sample did not hold up.
 ```
 TEST_RUNNER_SWIFT_DETERMINISTIC_HASHING=1 xcodebuild test -scheme Advent \
-  -destination 'platform=macOS,arch=arm64' -only-testing:AdventTests/<suite> …
+  -destination 'platform=macOS,arch=arm64' -parallel-testing-enabled NO …
 ```
-Two such runs gave `trees=1619 rejects=21 accepts=0` both times. So:
+So:
 - Never read a single-run tree diff as signal — only large moves, or a pinned-seed A/B.
 - `accept` and `ambiguity` have been 0 across every seed, so those ARE stable invariants.
 - The flapping labels are real order-dependence in the Oracle / AST tiling, i.e. the fuzzer working.
@@ -410,3 +414,67 @@ A temporary `@Test` inside the suite is the reliable way to observe what the tes
 sees; filter it with `-only-testing:'AdventTests/<Suite>/<testName>()'` (swift-testing needs the
 trailing parentheses, or zero tests run).
 
+
+## AST converter work (`GenerateSwiftSyntaxAST.swift`)
+
+**Rule comments are copy-paste, never paraphrase.** Every generator bug found so far has
+the same root cause: a comment above a `convert*` asserting a grammar rule that isn't what
+`Swift.apus` says. `// optionalType = type "?" .` versus the real
+`optionalType = simpleType >s< optionalMark .` produced a silent `MissingType` for `Int?`;
+`// postfixExpression = primaryExpression postfixOperation* .` describes a rule that does not
+exist. `find(name:)` deliberately digs through brackets (OPT/DO/KLN/POS) but NOT through
+non-matching nonterminals, so an inaccurate rule comment translates directly into a silent
+`MissingX`. Grep the grammar before writing or trusting one.
+
+**A fallback must say which kind it is.** `SwiftSyntaxGenerator.diagnostics` records every
+site where the converter gave up, tagged `.unhandled` (construct not implemented yet — the
+phase work queue) or `.lookupFailed` (a rule we CLAIM to handle didn't yield its expected
+child — a bug). Without the split, a `MissingType` means either "not yet" or "wrong", and the
+~1617 `trees differ` labels can only be triaged by eyeball. `adventGeneratorDiagnostics(snippet)`
+exposes the list to tests; `treesMatch` failures print it under `--- converter fallbacks ---`.
+
+**Phase suites must be green, unlike the extracted corpus.** `Phase1TreeTests` asserts three
+things per source: Advent accepts, trees match EXACTLY, and the converter reports NO fallbacks.
+A red row there is a regression, not frontier movement.
+
+**A reproducible tree-diff A/B needs pinned seed AND serial execution.** Measured Sep 2 2026,
+two consecutive runs each, identical code:
+
+| configuration | run-to-run delta |
+|---|---|
+| `SWIFT_DETERMINISTIC_HASHING=1` (no `TEST_RUNNER_` prefix) | not pinned at all — the variable never reaches the test process |
+| `TEST_RUNNER_SWIFT_DETERMINISTIC_HASHING=1`, parallel | **±2 labels** — pinning the seed is NOT sufficient |
+| `TEST_RUNNER_SWIFT_DETERMINISTIC_HASHING=1 -parallel-testing-enabled NO` | **identical label sets** |
+
+The residual parallel noise is the order-dependence in the Oracle / AST tiling noted above: with
+the suites no longer `.serialized`, thread interleaving varies even with the hash seed fixed. The
+flapping labels are not a fixed set (`testOptional1#1` and `testTypeExpr10#4` flapped in one pair,
+neither of which is in the previously-recorded flap list).
+
+So the only trustworthy A/B is:
+```
+TEST_RUNNER_SWIFT_DETERMINISTIC_HASHING=1 xcodebuild test -project Advent.xcodeproj \
+  -scheme Advent -destination 'platform=macOS,arch=arm64' -parallel-testing-enabled NO
+grep -o "Trees differ for '[^']*'" /tmp/run.log | sort -u > /tmp/after.txt
+comm -13 /tmp/before.txt /tmp/after.txt   # newly broken
+comm -23 /tmp/before.txt /tmp/after.txt   # newly fixed
+```
+Roughly 90s per serial run — cheaper than the parallel run it replaces, so there is no reason
+to accept the noisy version.
+
+**Get the "before" side from a worktree, not a stash.** Other agents may be working in the
+repo; `git worktree add /tmp/advent-head HEAD --detach`, run there, then
+`git worktree remove --force`. On Sep 2 2026 a post-change count was initially compared against a
+number recalled from a previous session rather than a run against HEAD. It happened to land
+inside the recorded band — luck, not evidence. Redone properly, the same change measured
+1610 → 1607 with zero newly-broken labels.
+
+### Tooling facts for this work
+
+- **`RunCodeSnippet` does not work in this project at all.** The Advent target builds `-O` and
+  previews require `-Onone` ("Not built with -Onone"). Do not reach for it to probe converter
+  behaviour — add a focused `@Test` instead.
+- Inner loop is `xcodebuild test -only-testing:AdventTests/<Suite>` — roughly 10s for a focused
+  suite, ~4 minutes for the whole of AdventTests.
+- Parallel test output interleaves. Redirect to a log and grep it; line numbers shift between
+  runs, so never `sed -n '<range>p'` against a freshly re-run invocation.

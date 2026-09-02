@@ -13,10 +13,38 @@ import SwiftParser
 
 // MARK: - SwiftSyntax Tree Generator
 
+/// A place where the converter could not build the faithful node and fell back
+/// to a `Missing…` placeholder or a raw-text approximation.
+///
+/// The two kinds must stay apart. `.unhandled` is a construct the converter
+/// knowingly does not implement yet — expected, and the work queue for the next
+/// phase. `.lookupFailed` is a rule the converter CLAIMS to handle failing to
+/// yield the child it expected — a bug, in practice almost always a rule comment
+/// that has drifted from `Swift.apus` (`optionalType = type "?"` vs the real
+/// `optionalType = simpleType >s< optionalMark`).
+///
+/// Without the distinction a `MissingType` means either "not yet" or "wrong",
+/// and the ~1617 `trees differ` labels can only be triaged by eyeball.
+struct GeneratorDiagnostic: CustomStringConvertible {
+    enum Kind: String { case unhandled, lookupFailed }
+    let kind: Kind
+    let function: String
+    let reason: String
+    let text: String
+
+    var description: String { "\(kind.rawValue) in \(function): \(reason) — «\(text)»" }
+}
+
 struct SwiftSyntaxGenerator {
     let parser: MessageParser
     let grammar: Grammar
     let input: String
+
+    /// Fallback sites hit during the last `generate()`. Empty means every node
+    /// on the path was built from a rule the converter actually understands —
+    /// which is NOT the same as the tree matching swift-syntax, but a non-empty
+    /// list explains exactly why a tree cannot match.
+    private(set) var diagnostics: [GeneratorDiagnostic] = []
 
     private var endCache = [NodePos: Set<CharPosition>]()
     private var endGuard = Set<NodePos>()
@@ -30,6 +58,7 @@ struct SwiftSyntaxGenerator {
     }
 
     mutating func generate() -> SourceFileSyntax? {
+        diagnostics.removeAll()
         let n = input.endIndex
         let origin = input.startIndex
         guard parser.yield(of: grammar.root).contains(where: { $0.i == origin && $0.j == n }) else {
@@ -40,6 +69,57 @@ struct SwiftSyntaxGenerator {
             statements: CodeBlockItemListSyntax(items.map { CodeBlockItemSyntax(item: $0) }),
             endOfFileToken: .endOfFileToken()
         )
+    }
+
+    // MARK: - Fallback recording
+
+    private mutating func record(
+        _ kind: GeneratorDiagnostic.Kind,
+        _ reason: String,
+        from: CharPosition,
+        to: CharPosition,
+        function: String = #function
+    ) {
+        diagnostics.append(GeneratorDiagnostic(
+            kind: kind,
+            function: function,
+            reason: reason,
+            text: String(input[from..<to])
+        ))
+    }
+
+    private mutating func missingExpr(
+        _ kind: GeneratorDiagnostic.Kind,
+        _ reason: String,
+        from: CharPosition,
+        to: CharPosition,
+        function: String = #function
+    ) -> ExprSyntax {
+        record(kind, reason, from: from, to: to, function: function)
+        return ExprSyntax(MissingExprSyntax())
+    }
+
+    private mutating func missingType(
+        _ kind: GeneratorDiagnostic.Kind,
+        _ reason: String,
+        from: CharPosition,
+        to: CharPosition,
+        function: String = #function
+    ) -> TypeSyntax {
+        record(kind, reason, from: from, to: to, function: function)
+        return TypeSyntax(MissingTypeSyntax())
+    }
+
+    /// Placeholder pattern for a binding whose pattern could not be built.
+    private mutating func missingPattern(
+        _ kind: GeneratorDiagnostic.Kind,
+        _ reason: String,
+        from: CharPosition,
+        to: CharPosition,
+        function: String = #function
+    ) -> PatternSyntax {
+        record(kind, reason, from: from, to: to, function: function)
+        return PatternSyntax(IdentifierPatternSyntax(identifier: .identifier("?")))
     }
 
     // MARK: - BSR Navigation (decoupled from DerivationBuilder)
@@ -168,6 +248,7 @@ struct SwiftSyntaxGenerator {
         case "topLevelDeclaration":
             return convertTopLevelDeclaration(lhsNode, from: from, to: to)
         default:
+            record(.unhandled, "root nonterminal '\(lhsNode.name)' has no converter", from: from, to: to)
             return []
         }
     }
@@ -175,9 +256,18 @@ struct SwiftSyntaxGenerator {
     // MARK: - Statements
 
     private mutating func convertTopLevelDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax.Item] {
-        // topLevelDeclaration = statements? .
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to),
-              let stmtsNT = find("statements", in: spans) else { return [] }
+        // topLevelDeclaration = shebang? statements? .
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return []
+        }
+        guard let stmtsNT = find("statements", in: spans) else {
+            // An empty source (or comment-only source) legitimately has no `statements`.
+            if !input[from..<to].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                record(.lookupFailed, "no statements child", from: from, to: to)
+            }
+            return []
+        }
         return convertStatements(stmtsNT.nt, from: stmtsNT.from, to: stmtsNT.to)
     }
 
@@ -214,10 +304,23 @@ struct SwiftSyntaxGenerator {
         return nil
     }
 
+    /// First of `names` present in `spans`. `find(a) ?? find(b)` does not compile —
+    /// the `??` autoclosure cannot capture a mutating `self` — and fallback chains
+    /// recur across the converter, so they go through here.
+    private mutating func find(firstOf names: [String], in spans: [(GrammarNode, CharPosition, CharPosition)]) -> NTSpan? {
+        for name in names {
+            if let found = find(name, in: spans) { return found }
+        }
+        return nil
+    }
+
     private mutating func convertStatements(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax.Item] {
-        // statements = statement statementSeparator statements? .
-        // statements = statement .
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return [] }
+        // statements = statement ";"? .
+        // statements = statement statementSeparator statements .
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return []
+        }
         var items: [CodeBlockItemSyntax.Item] = []
         if let stmtNT = find("statement", in: spans),
            let item = convertStatement(stmtNT.nt, from: stmtNT.from, to: stmtNT.to) {
@@ -229,8 +332,14 @@ struct SwiftSyntaxGenerator {
         return items
     }
 
+    /// statement = >->(declaration attributes) expression .  |  @prefer declaration .
+    /// plus loop/branch/labeled/controlTransfer/defer/do/compilerControl/yield/discard —
+    /// none of which have a converter yet (Phase 3).
     private mutating func convertStatement(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> CodeBlockItemSyntax.Item? {
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return nil }
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return nil
+        }
         if let declNT = find("declaration", in: spans),
            let decl = convertDeclaration(declNT.nt, from: declNT.from, to: declNT.to) {
             return .decl(decl)
@@ -238,30 +347,45 @@ struct SwiftSyntaxGenerator {
         if let exprNT = find("expression", in: spans) {
             return .expr(convertExpression(exprNT.nt, from: exprNT.from, to: exprNT.to))
         }
+        record(.unhandled, "statement is neither declaration nor expression", from: from, to: to)
         return nil
     }
 
     // MARK: - Declarations
 
+    /// declaration = importDeclaration | constantDeclaration | variableDeclaration
+    ///             | typealiasDeclaration | functionDeclaration | … (21 alternates).
+    /// Only the two binding forms are converted; the rest are Phase 3/4.
     private mutating func convertDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> DeclSyntax? {
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return nil }
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return nil
+        }
         if let constNT = find("constantDeclaration", in: spans) {
             return DeclSyntax(convertVarLetDecl(constNT.nt, from: constNT.from, to: constNT.to, isLet: true))
         }
         if let varNT = find("variableDeclaration", in: spans) {
             return DeclSyntax(convertVarLetDecl(varNT.nt, from: varNT.from, to: varNT.to, isLet: false))
         }
+        record(.unhandled, "declaration kind has no converter", from: from, to: to)
         return nil
     }
 
     private mutating func convertVarLetDecl(_ nt: GrammarNode, from: CharPosition, to: CharPosition, isLet: Bool) -> VariableDeclSyntax {
         // constantDeclaration = attributes? declarationModifiers? "let" patternInitializerList .
+        // variableDeclaration = variableDeclarationHead patternInitializerList .
+        //   (the getter/setter and willSet/didSet variableDeclaration alternates carry
+        //    `variableName typeAnnotation …` instead, and are not converted here)
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
             return VariableDeclSyntax(bindingSpecifier: .keyword(isLet ? .let : .var), bindings: [])
         }
-        let bindings = find("patternInitializerList", in: spans).map {
-            convertPatternInitializerList($0.nt, from: $0.from, to: $0.to)
-        } ?? []
+        var bindings: [PatternBindingSyntax] = []
+        if let listNT = find("patternInitializerList", in: spans) {
+            bindings = convertPatternInitializerList(listNT.nt, from: listNT.from, to: listNT.to)
+        } else {
+            record(.unhandled, "binding decl without patternInitializerList (accessor form?)", from: from, to: to)
+        }
         return VariableDeclSyntax(
             bindingSpecifier: .keyword(isLet ? .let : .var),
             bindings: PatternBindingListSyntax(bindings)
@@ -270,7 +394,10 @@ struct SwiftSyntaxGenerator {
 
     private mutating func convertPatternInitializerList(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [PatternBindingSyntax] {
         // patternInitializerList = patternInitializer | patternInitializer "," patternInitializerList .
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return [] }
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return []
+        }
         var bindings: [PatternBindingSyntax] = []
         for (sym, f, t) in spans {
             let name = directName(sym)
@@ -298,9 +425,11 @@ struct SwiftSyntaxGenerator {
     private mutating func convertPatternInitializer(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> PatternBindingSyntax {
         // patternInitializer = bindingPattern initializer? .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
-            return PatternBindingSyntax(pattern: IdentifierPatternSyntax(identifier: .identifier("?")))
+            return PatternBindingSyntax(
+                pattern: missingPattern(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            )
         }
-        var pattern: PatternSyntax = PatternSyntax(IdentifierPatternSyntax(identifier: .identifier("?")))
+        var pattern: PatternSyntax
         var typeAnnotation: TypeAnnotationSyntax? = nil
         var initializer: InitializerClauseSyntax? = nil
 
@@ -308,6 +437,8 @@ struct SwiftSyntaxGenerator {
             let (pat, ta) = convertBindingPattern(bpNT.nt, from: bpNT.from, to: bpNT.to)
             pattern = pat
             typeAnnotation = ta
+        } else {
+            pattern = missingPattern(.lookupFailed, "no bindingPattern child", from: from, to: to)
         }
         if let initNT = find("initializer", in: spans) {
             initializer = convertInitializer(initNT.nt, from: initNT.from, to: initNT.to)
@@ -320,17 +451,21 @@ struct SwiftSyntaxGenerator {
     }
 
     private mutating func convertBindingPattern(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> (PatternSyntax, TypeAnnotationSyntax?) {
-        // bindingPattern = identifierPattern typeAnnotation? .
-        // (also: wildcardPattern typeAnnotation?, tuplePattern typeAnnotation?)
+        // bindingPattern = wildcardPattern typeAnnotation?
+        //                | identifierPattern typeAnnotation?
+        //                | tupleBindingPattern typeAnnotation? .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
-            return (PatternSyntax(IdentifierPatternSyntax(identifier: .identifier("?"))), nil)
+            return (missingPattern(.lookupFailed, "no alternate tiles the span", from: from, to: to), nil)
         }
-        var pattern: PatternSyntax = PatternSyntax(IdentifierPatternSyntax(identifier: .identifier("?")))
+        var pattern: PatternSyntax
         var typeAnnotation: TypeAnnotationSyntax? = nil
 
         if let idNT = find("identifierPattern", in: spans) {
             let name = collectTerminalText(from: idNT.from, to: idNT.to)
             pattern = PatternSyntax(IdentifierPatternSyntax(identifier: .identifier(name)))
+        } else {
+            // wildcardPattern / tupleBindingPattern have no converter yet.
+            pattern = missingPattern(.unhandled, "binding pattern is not an identifierPattern", from: from, to: to)
         }
         if let taNT = find("typeAnnotation", in: spans) {
             typeAnnotation = convertTypeAnnotation(taNT.nt, from: taNT.from, to: taNT.to)
@@ -339,9 +474,15 @@ struct SwiftSyntaxGenerator {
     }
 
     private mutating func convertTypeAnnotation(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> TypeAnnotationSyntax? {
-        // typeAnnotation = ":" attributes? "inout"? type .
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to),
-              let typeNT = find("type", in: spans) else { return nil }
+        // typeAnnotation = ":" type .   (specifiers/attributes are carried by `type`)
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return nil
+        }
+        guard let typeNT = find("type", in: spans) else {
+            record(.lookupFailed, "no type child", from: from, to: to)
+            return nil
+        }
         return TypeAnnotationSyntax(
             colon: .colonToken(),
             type: convertType(typeNT.nt, from: typeNT.from, to: typeNT.to)
@@ -349,9 +490,15 @@ struct SwiftSyntaxGenerator {
     }
 
     private mutating func convertInitializer(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> InitializerClauseSyntax? {
-        // initializer = "=" expression .
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to),
-              let exprNT = find("expression", in: spans) else { return nil }
+        // initializer = assignmentOperator expression .
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return nil
+        }
+        guard let exprNT = find("expression", in: spans) else {
+            record(.lookupFailed, "no expression child", from: from, to: to)
+            return nil
+        }
         return InitializerClauseSyntax(
             equal: .equalToken(),
             value: convertExpression(exprNT.nt, from: exprNT.from, to: exprNT.to)
@@ -361,13 +508,15 @@ struct SwiftSyntaxGenerator {
     // MARK: - Expressions
 
     private mutating func convertExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
+        // expression = tryOperator? awaitOperator? conditionalExpression coercingOperator? .
         // expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
-            return ExprSyntax(MissingExprSyntax())
+            return missingExpr(.lookupFailed, "no alternate tiles the span", from: from, to: to)
         }
 
         guard let prefNT = find("prefixExpression", in: spans) else {
-            return ExprSyntax(MissingExprSyntax())
+            // The conditionalExpression alternate (if/switch expression) is Phase 3.
+            return missingExpr(.unhandled, "expression without prefixExpression child", from: from, to: to)
         }
         let operand = convertPrefixExpression(prefNT.nt, from: prefNT.from, to: prefNT.to)
 
@@ -382,7 +531,10 @@ struct SwiftSyntaxGenerator {
 
     private mutating func flattenInfixExpressions(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into elements: inout [ExprSyntax]) {
         // infixExpressions = infixExpression infixExpressions? .
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return }
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return
+        }
         for (sym, f, t) in spans {
             if let ieNT = findNonterminal(named: "infixExpression", sym: sym, from: f, to: t) {
                 flattenInfixExpression(ieNT.nt, from: ieNT.from, to: ieNT.to, into: &elements)
@@ -394,11 +546,23 @@ struct SwiftSyntaxGenerator {
     }
 
     private mutating func flattenInfixExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into elements: inout [ExprSyntax]) {
-        // infixExpression = infixOperator prefixExpression .
-        // infixExpression = conditionalOperator .
+        // infixExpression = >s< ( >->( regularExpressionLiteral ) postfixOperatorToken | dotOperator | "&" ) >s< tryOperator? awaitOperator? prefixExpression .
+        // infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
+        // infixExpression = arrowExpr tryOperator? awaitOperator? prefixExpression .
+        // infixExpression = assignmentOperator expression .
+        // infixExpression = conditionalOperator expression .
         // infixExpression = typeCastingOperator .
-        // infixExpression = assignmentOperator tryOperator? awaitOperator? prefixExpression .
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return }
+        //
+        // NOTE (found by the rule-comment sweep, 2026-09-02): the assignment and
+        // conditional alternates take a full `expression`, NOT `prefixExpression`, and
+        // neither `assignmentOperator` nor the trailing `expression` is handled below —
+        // so `x = 1` and the ternary false-branch lose their right-hand side. Phase 2 work;
+        // the `.unhandled` record below is what will surface it in the triage list.
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return
+        }
+        let before = elements.count
 
         for (sym, f, t) in spans {
             if let opNT = findNonterminal(named: "infixOperator", sym: sym, from: f, to: t) {
@@ -415,16 +579,22 @@ struct SwiftSyntaxGenerator {
                 elements.append(convertPrefixExpression(prefNT.nt, from: prefNT.from, to: prefNT.to))
             }
         }
+        if elements.count == before {
+            record(.unhandled, "infixExpression alternate contributed no element", from: from, to: to)
+        }
     }
 
     private mutating func convertConditionalOperator(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
-        // conditionalOperator = "?" expression ":" .
+        // conditionalOperator = <s> "?" expression ":" .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
-            return ExprSyntax(MissingExprSyntax())
+            return missingExpr(.lookupFailed, "no alternate tiles the span", from: from, to: to)
         }
-        let thenExpr = find("expression", in: spans).map {
-            convertExpression($0.nt, from: $0.from, to: $0.to)
-        } ?? ExprSyntax(MissingExprSyntax())
+        let thenExpr: ExprSyntax
+        if let exprNT = find("expression", in: spans) {
+            thenExpr = convertExpression(exprNT.nt, from: exprNT.from, to: exprNT.to)
+        } else {
+            thenExpr = missingExpr(.lookupFailed, "no expression child (then-branch)", from: from, to: to)
+        }
         return ExprSyntax(UnresolvedTernaryExprSyntax(
             questionMark: .infixQuestionMarkToken(),
             thenExpression: thenExpr,
@@ -435,9 +605,12 @@ struct SwiftSyntaxGenerator {
     private mutating func convertTypeCastingOperator(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into elements: inout [ExprSyntax]) {
         // typeCastingOperator = "is" type .
         // typeCastingOperator = "as" type .
-        // typeCastingOperator = "as" "?" type .
-        // typeCastingOperator = "as" "!" type .
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return }
+        // typeCastingOperator = "as" >s< "?" type .
+        // typeCastingOperator = "as" >s< "!" type .
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return
+        }
 
         let firstToken = tokenText(at: from)
         if firstToken == "as" {
@@ -449,13 +622,18 @@ struct SwiftSyntaxGenerator {
         if let typeNT = find("type", in: spans) {
             let type = convertType(typeNT.nt, from: typeNT.from, to: typeNT.to)
             elements.append(ExprSyntax(TypeExprSyntax(type: type)))
+        } else {
+            record(.lookupFailed, "no type child", from: from, to: to)
         }
     }
 
     private mutating func convertPrefixExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
-        // prefixExpression = prefixOperator? postfixExpression .
+        // prefixExpression = @shortest [ prefixOperator >s< ] postfixExpression .
+        // prefixExpression = "!" >s< postfixExpression .
+        // prefixExpression = inOutExpression .
+        // prefixExpression = @prefer ("consume"|"borrow"|"copy"|"unsafe") <s> >n< prefixExpression .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
-            return ExprSyntax(MissingExprSyntax())
+            return missingExpr(.lookupFailed, "no alternate tiles the span", from: from, to: to)
         }
 
         var prefixOp: String? = nil
@@ -472,7 +650,8 @@ struct SwiftSyntaxGenerator {
         }
 
         guard let postNT = find("postfixExpression", in: spans) else {
-            return ExprSyntax(MissingExprSyntax())
+            // inOutExpression and the consume/borrow/copy/unsafe forms land here.
+            return missingExpr(.unhandled, "prefixExpression without postfixExpression child", from: from, to: to)
         }
         let operand = convertPostfixExpression(postNT.nt, from: postNT.from, to: postNT.to)
 
@@ -486,18 +665,27 @@ struct SwiftSyntaxGenerator {
     }
 
     private mutating func convertPostfixExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
-        // postfixExpression = primaryExpression postfixOperation* .
-        // For Phase 1+2, just dig through to primaryExpression
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to),
-              let primNT = find("primaryExpression", in: spans) else {
-            return ExprSyntax(MissingExprSyntax())
+        // postfixExpression = primaryExpression .
+        // postfixExpression = functionCallExpression | initializerExpression
+        //                   | explicitMemberExpression | subscriptExpression
+        //                   | forcedValueExpression | optionalChainingExpression
+        //                   | @prefer >->( keyPathExpression ) postfixExpression >s< postfixOperator <s> …
+        // Only the bare primaryExpression alternate is converted; the rest are Phase 2/3.
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            return missingExpr(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+        }
+        guard let primNT = find("primaryExpression", in: spans) else {
+            return missingExpr(.unhandled, "postfix form has no converter", from: from, to: to)
         }
         return convertPrimaryExpression(primNT.nt, from: primNT.from, to: primNT.to)
     }
 
+    /// primaryExpression = genericIdentifier | literalExpression | selfExpression
+    ///                   | superclassExpression | closureExpression | tupleExpression
+    ///                   | … (24 alternates in Swift.apus).
     private mutating func convertPrimaryExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
-            return ExprSyntax(MissingExprSyntax())
+            return missingExpr(.lookupFailed, "no alternate tiles the span", from: from, to: to)
         }
         if let litNT = find("literalExpression", in: spans) {
             return convertLiteralExpression(litNT.nt, from: litNT.from, to: litNT.to)
@@ -523,22 +711,26 @@ struct SwiftSyntaxGenerator {
                 return ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier(name)))
             }
         }
-        return ExprSyntax(MissingExprSyntax())
+        return missingExpr(.unhandled, "primaryExpression form has no converter", from: from, to: to)
     }
 
     // MARK: - Literals
 
+    /// literalExpression = literal | arrayLiteral | dictionaryLiteral .
     private mutating func convertLiteralExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to),
-              let litNT = find("literal", in: spans) else {
-            return ExprSyntax(MissingExprSyntax())
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            return missingExpr(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+        }
+        guard let litNT = find("literal", in: spans) else {
+            return missingExpr(.unhandled, "array/dictionary literal has no converter", from: from, to: to)
         }
         return convertLiteral(litNT.nt, from: litNT.from, to: litNT.to)
     }
 
+    /// literal = numericLiteral | stringLiteral | regularExpressionLiteral | booleanLiteral | nilLiteral .
     private mutating func convertLiteral(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
-            return ExprSyntax(MissingExprSyntax())
+            return missingExpr(.lookupFailed, "no alternate tiles the span", from: from, to: to)
         }
         if let numNT = find("numericLiteral", in: spans) {
             return convertNumericLiteral(numNT.nt, from: numNT.from, to: numNT.to)
@@ -555,7 +747,8 @@ struct SwiftSyntaxGenerator {
         if let strNT = find("stringLiteral", in: spans) {
             return convertStringLiteral(strNT.nt, from: strNT.from, to: strNT.to)
         }
-        return ExprSyntax(MissingExprSyntax())
+        // regularExpressionLiteral → RegexLiteralExpr is not converted yet.
+        return missingExpr(.unhandled, "literal kind has no converter", from: from, to: to)
     }
 
     private mutating func convertNumericLiteral(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
@@ -570,7 +763,8 @@ struct SwiftSyntaxGenerator {
 
     private mutating func convertStringLiteral(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
         // stringLiteral = staticStringLiteral | interpolatedStringLiteral .
-        // interpolatedStringLiteral = singleLineInterpolatedStringLiteral | multilineInterpolatedStringLiteral .
+        // interpolatedStringLiteral = @excludedFrom(availableAttribute) singleLineInterpolatedStringLiteral .
+        // interpolatedStringLiteral = @excludedFrom(availableAttribute) multilineInterpolatedStringLiteral .
         // `find` digs through brackets but not through nonterminals, so descend both levels.
         if let (_, spans) = tileAlternate(nt, from: from, to: to),
            let interp = find("interpolatedStringLiteral", in: spans),
@@ -595,7 +789,10 @@ struct SwiftSyntaxGenerator {
                 closingQuote: .stringQuoteToken()
             ))
         }
-        // Fallback: just use the raw text
+        // Fallback: just use the raw text. Multiline (`"""`), raw (`#"…"#`) and any
+        // interpolated form the reassembler above declined all land here with the wrong
+        // quote tokens and a single unsplit segment.
+        record(.unhandled, "string literal is not a simple single-line form", from: from, to: to)
         return ExprSyntax(StringLiteralExprSyntax(
             openingQuote: .stringQuoteToken(),
             segments: StringLiteralSegmentListSyntax([
@@ -667,7 +864,10 @@ struct SwiftSyntaxGenerator {
     }
 
     private mutating func collectArguments(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into items: inout [LabeledExprSyntax]) {
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else { return }
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return
+        }
         if let argNT = find("functionCallArgument", in: spans),
            let (_, argSpans) = tileAlternate(argNT.nt, from: argNT.from, to: argNT.to),
            let exprNT = find("expression", in: argSpans) {
@@ -699,7 +899,15 @@ struct SwiftSyntaxGenerator {
         if let typeIdNT = find("typeIdentifier", in: spans) {
             return convertTypeIdentifier(typeIdNT.nt, from: typeIdNT.from, to: typeIdNT.to)
         }
+        // `simpleType` is the postfix-bindable subset (`optionalType = simpleType >s< '?'`).
+        // Its alternates are named exactly like `type`'s, so the same dispatch handles it.
+        if let simpleNT = find("simpleType", in: spans) {
+            return convertType(simpleNT.nt, from: simpleNT.from, to: simpleNT.to)
+        }
+        // Everything else (function, tuple, array, dictionary, composition, opaque,
+        // metatype, …) degrades to a flat IdentifierType over the raw source text.
         let text = collectTerminalText(from: from, to: to)
+        record(.unhandled, "type form has no converter; flattened to IdentifierType", from: from, to: to)
         return TypeSyntax(IdentifierTypeSyntax(name: .identifier(text)))
     }
 
@@ -709,10 +917,12 @@ struct SwiftSyntaxGenerator {
     }
 
     private mutating func convertOptionalType(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> TypeSyntax {
-        // optionalType = type "?" .
-        guard let (_, spans) = tileAlternate(nt, from: from, to: to),
-              let typeNT = find("type", in: spans) else {
-            return TypeSyntax(MissingTypeSyntax())
+        // optionalType = simpleType >s< optionalMark .
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            return missingType(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+        }
+        guard let typeNT = find(firstOf: ["simpleType", "type"], in: spans) else {
+            return missingType(.lookupFailed, "no simpleType/type child", from: from, to: to)
         }
         return TypeSyntax(OptionalTypeSyntax(
             wrappedType: convertType(typeNT.nt, from: typeNT.from, to: typeNT.to),
@@ -726,13 +936,23 @@ struct SwiftSyntaxGenerator {
     /// the span `[from, to)`. Walks the parser's commit log — boundaries are
     /// grammar-defined, trivia (whatever lies between consecutive commits)
     /// is dropped. Order is by start position.
+    ///
+    /// The commit log records EVERY terminal the parser tried, including ones
+    /// belonging to derivations that later died, so commits can overlap: on
+    /// `1.5` the scanner commits the float `1.5` at the `1` and also `.5` at the
+    /// `.`, which naively concatenated reads `1.5.5`. Only commits that start at
+    /// or after the previous commit's content end are taken, and one that runs
+    /// past `to` is skipped as belonging to a wider (dead) reading.
     private func collectTerminalText(from: CharPosition, to: CharPosition) -> String {
         let starts = parser.commitsByStart.keys
             .filter { $0 >= from && $0 < to }
             .sorted()
         var result = ""
-        for s in starts {
-            if let img = parser.terminalImage(startingAt: s) { result += img }
+        var cursor = from
+        for s in starts where s >= cursor {
+            guard let img = parser.terminalImage(startingAt: s), img.endIndex <= to else { continue }
+            result += img
+            cursor = img.endIndex
         }
         return result
     }

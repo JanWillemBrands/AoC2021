@@ -112,6 +112,10 @@ struct AdventRunSnapshot {
     let result: AdventParseResult?
     let swiftSyntaxTree: SourceFileSyntax?
     let metrics: BaselineMetrics
+    /// Fallback sites the AST converter hit. `.unhandled` = construct not implemented
+    /// yet (the phase work queue); `.lookupFailed` = a rule we claim to handle didn't
+    /// yield its expected child (a bug). Lets `trees differ` be triaged by cause.
+    let generatorDiagnostics: [GeneratorDiagnostic]
 }
 
 // MARK: - Grammar load
@@ -244,6 +248,7 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
             var oraclePruned = 0
             var parseResult: AdventParseResult? = nil
             var swiftSyntax: SourceFileSyntax? = nil
+            var generatorDiagnostics: [GeneratorDiagnostic] = []
 
             if matched {
                 oraclePruned = Oracle(parser: parser, input: input).disambiguate()
@@ -253,6 +258,7 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
                 }
                 var generator = SwiftSyntaxGenerator(parser: parser, input: input)
                 swiftSyntax = generator.generate()
+                generatorDiagnostics = generator.diagnostics
             }
 
             let metrics = BaselineMetrics(
@@ -272,7 +278,12 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
             if ProcessInfo.processInfo.environment["APUS_BASELINE_CSV"] == "1" {
                 metricSink.record(label: label, source: source, metrics: metrics)
             }
-            return AdventRunSnapshot(result: parseResult, swiftSyntaxTree: swiftSyntax, metrics: metrics)
+            return AdventRunSnapshot(
+                result: parseResult,
+                swiftSyntaxTree: swiftSyntax,
+                metrics: metrics,
+                generatorDiagnostics: generatorDiagnostics
+            )
         }
     }
 }
@@ -296,6 +307,12 @@ func adventSwiftSyntaxTree(_ source: String) throws -> SourceFileSyntax? {
 
 func adventSwiftSyntaxTree(_ snippet: SwiftSnippet) throws -> SourceFileSyntax? {
     runAdventOnce(snippet.source, label: snippet.label).swiftSyntaxTree
+}
+
+/// Why the converter could not build a faithful tree for this snippet. Empty does NOT
+/// imply the tree matches, but a non-empty list names every place it gave up.
+func adventGeneratorDiagnostics(_ snippet: SwiftSnippet) -> [GeneratorDiagnostic] {
+    runAdventOnce(snippet.source, label: snippet.label).generatorDiagnostics
 }
 
 private func shortLabel(_ source: String) -> String {
@@ -345,6 +362,89 @@ struct RegexLookbehindIntegration {
         guard snippet.disabledReason == nil else { return }
         let result = try adventParse(snippet)
         #expect(result != nil, "Advent failed to parse: \(snippet.source)")
+    }
+}
+
+// MARK: - Phase 1 tree fidelity
+//
+// Phase 1 of `SwiftSyntax Mapping.md`: literals and simple `let`/`var`
+// declarations. Unlike the extracted SwiftSyntax suites — where `trees match`
+// is an aspirational frontier — every row here is expected to match exactly.
+// A failure is a regression in `GenerateSwiftSyntaxAST.swift`.
+let phase1Snippets: [SwiftSnippet] = [
+    // constantDeclaration / variableDeclaration
+    SwiftSnippet(label: "let-int",        source: "let x = 42",        origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "var-bool-true",  source: "var b = true",      origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "var-bool-false", source: "var b = false",     origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "let-nil",        source: "let n = nil",       origin: "Phase1", syntaxVersion: "603.0.1"),
+
+    // integerLiteral in all four radices, plus digit grouping
+    SwiftSnippet(label: "let-hex",        source: "let h = 0x1F",      origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "let-octal",      source: "let o = 0o17",      origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "let-binary",     source: "let b = 0b1010",    origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "let-grouped",    source: "let g = 1_000_000", origin: "Phase1", syntaxVersion: "603.0.1"),
+
+    // floatLiteral
+    SwiftSnippet(label: "let-float",      source: "let f = 1.5",       origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "let-exponent",   source: "let e = 1e10",      origin: "Phase1", syntaxVersion: "603.0.1"),
+
+    // stringLiteral
+    SwiftSnippet(label: "let-string",     source: #"let s = "hello""#, origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "let-empty-str",  source: #"let s = """#,      origin: "Phase1", syntaxVersion: "603.0.1"),
+
+    // typeAnnotation / typeIdentifier / optionalType
+    SwiftSnippet(label: "let-annotated",  source: "let t: Int = 0",    origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "let-optional",   source: "let n: Int? = nil", origin: "Phase1", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "var-no-init",    source: "var y: Int",        origin: "Phase1", syntaxVersion: "603.0.1"),
+
+    // patternInitializerList with more than one binding
+    SwiftSnippet(label: "let-two-bindings", source: "let a = 1, c = 2", origin: "Phase1", syntaxVersion: "603.0.1"),
+
+    // identifier reference on the right-hand side
+    SwiftSnippet(label: "let-ident-rhs",  source: "let y = x",         origin: "Phase1", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 1 literals & simple declarations")
+struct Phase1TreeTests {
+
+    @Test("Advent accepts", arguments: phase1Snippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase1Snippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none — the converter believed it handled every node)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+
+    /// Phase 1 sources must be built entirely from rules the converter understands.
+    /// A `.lookupFailed` anywhere means a rule comment has drifted from `Swift.apus`;
+    /// an `.unhandled` means a Phase 1 construct is silently degrading.
+    @Test("converter reports no fallbacks", arguments: phase1Snippets)
+    func noConverterFallbacks(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let diagnostics = adventGeneratorDiagnostics(snippet)
+        #expect(diagnostics.isEmpty, """
+            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            \(diagnostics.map(\.description).joined(separator: "\n"))
+            """)
     }
 }
 
