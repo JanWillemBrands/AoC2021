@@ -1154,6 +1154,29 @@ is flagged by swift-syntax as an invalid accessor combination.
 For `testInitAccessorsWithDefaultValues#1`: init accessors with default values on the same
 binding are invalid in Swift but may be accepted by Advent.
 
+### Measured 2026-09-02 — the three split into two DIFFERENT causes
+
+`buildAllTrees` on each (all three: `trees=1`, so one surviving reading):
+
+| test | winning reading | cause |
+|---|---|---|
+| `testCoroutineAccessors#1/#2` | `{accessorClauseList, coroutineAccessorClause}` | accessor block, as designed |
+| `testInitAccessorsWithDefaultValues#1` | `{trailingClosures}` | the forest gap below |
+
+**#1/#2 are a deliberate design tradeoff, not a bug.** They parse *as accessor blocks* because
+`coroutineSpecifier` intentionally keeps the modern `read`/`modify`/`mutate` spellings, which
+`Parser.parse(source:)` gates behind experimental features and the corpus was therefore harvested
+without. See the note at `coroutineSpecifier` (`Swift.apus:~2205`): dropping the modern spellings
+was already tried and reverted — it fixed nothing (advent still finds the getter-body reading) and
+lost real language coverage. So these two are a corpus artifact of the harvest configuration.
+Rejecting them faithfully requires either gating the spellings behind a grammar-level feature flag
+matching the harvest, or accepting them as known-divergent.
+
+**`testInitAccessorsWithDefaultValues#1` is blocked by the same forest gap as `testUsing#1`** (see
+C7): `(42, 0) { … }` after an initializer has only the trailing-closure reading, so the accessor
+block — which is where an `init` accessor could be forbidden alongside a default value — is never
+built. Fix the gap first.
+
 ---
 
 ## Open: C7 — Recently-Added / Evolving Language Keywords
@@ -1165,7 +1188,7 @@ binding are invalid in Swift but may be accepted by Advent.
 | `testUsing#1` | `@MainActor\nusing` | `using` keyword (Swift 6.2+) |
 | `testInverseTypesInParameter#1` | `func f(_: any borrowing ~Copyable) {}` | `~T` inverse type in parameter |
 | `testNonisolatedSpecifier#2` | `func foo(test: nonisolated () async -> Void)` | `nonisolated` as type modifier |
-| `testAsync11d#1` | (async-related snippet) | Async modifier ordering |
+| ~~`testAsync11d#1`~~ | `let _ = [() -> async ()]()` | ✓ RESOLVED 2026-09-02 |
 
 **Root cause:** Syntax added after the grammar was last updated:
 - `using` is not a keyword in the grammar.
@@ -1173,6 +1196,149 @@ binding are invalid in Swift but may be accepted by Advent.
 - `nonisolated` as a standalone type modifier (not a declaration modifier) — `nonisolated` in
   type position means the function type is not isolated, but the grammar may only handle it in
   declaration-modifier position.
+
+### ✓ RESOLVED 2026-09-02 — `testUsing#1`, and the accessor-block gap behind it
+
+`var x: T = foo() { <accessors> }` now binds the block as an ACCESSOR BLOCK, not as a trailing
+closure on the initializer, so `>->(declaration attributes)` on `statement` could finally go in and
+reject `@MainActor⏎using`.
+
+**What swift-syntax does.** SwiftParser is deterministic recursive descent and decides once, at
+parse time: `parsePatternBinding` parses `= parseExpression(flavor: .basic, pattern: .none)`, then
+takes a following `{` via `parseAccessorBlock`. Inside the initializer,
+`parsePostfixExpressionSuffix` only accepts `{` as a trailing closure if
+`withLookahead { $0.atValidTrailingClosure(flavor:) }` approves, and that refuses the brace when it
+opens an accessor block (`atStartOfGetSetAccessor`, Lookahead.swift:252). So swift never constructs
+the competing reading.
+
+**The grammar half** (`trailingClosures`, both alternates):
+`>->(willSetDidSetBlock accessorBlockBrace)` is that lookahead. `accessorBlockBrace` is factored out
+as a named nonterminal precisely so the lookahead can anchor on the opening `{` — anchoring on
+`accessorClauseList` fails because that is the block CONTENT and derives one token later, and
+`getterSetterBlock` is unusable because its `codeBlock` alternate matches ANY block. The target appears in real productions, and GLL only creates its yields where a rule
+calls it, so the gate fires only where an accessor block is grammatically possible — inside an
+ordinary closure (`foo { get { 1 } }`) there is no such slot and trailing closures are unaffected.
+
+**The engine half — this was the actual blocker, and it was a rule-ORDERING bug.** Adding the gate
+alone turned valid input into a reject. `APUS_TRACE_ORACLE=1` on
+`var x: Int = foo()⏎{ didSet {} }` showed why:
+
+    after phase 1 dead-wood: root ALIVE
+    PreferRule             pruned trailingClosures#3179  [13..34]'foo()⏎{⏎  didSet {}⏎}'
+    LongestMatchRule       pruned prefixExpression#1273  [13..16]'foo'
+    LongestMatchRule       pruned prefixExpression#1273  [13..19]'foo()⏎'
+    LookaheadPredicateRule pruned closureExpression#490  [19..34]'{⏎  didSet {}⏎}'
+    after rule pass: root ALIVE
+    after phase 2 dead-wood: root *** GONE ***
+
+`LongestMatchRule` deleted the short `prefixExpression` `foo()` — the reading the accessor block
+needs — in favour of the maximal `foo() { … }`. The lookahead then deleted the closure. Prunes are
+irreversible, so between them nothing survived.
+
+Fix: `DisambiguationRule.isHardConstraint` splits the rule pass in two. HARD CONSTRAINTS
+(`LookaheadPredicateRule`, `ContainmentRule`, `SameLineSpanRule` — what the LANGUAGE permits) run to
+a fixpoint first, then a dead-wood sweep propagates their kills, then PREFERENCES
+(`@longest`/`@shortest`/`@prefer`/`@avoid`, associativity — choices among readings that are all
+legal) run over the survivors. Now the constraint removes the closure, dead-wood removes the long
+`prefixExpression`, and `LongestMatchRule` correctly keeps `foo()`.
+
+This also retires several wrong claims previously recorded here: the accessor tiling was never
+"absent from the forest", and the `>->` anchor granularity was never too coarse (anchors are
+per-reference-site and `span.i` is already the alternate start). Both were inferences that
+measurement contradicted. **Reach for `APUS_TRACE_ORACLE=1` before theorising about a prune.**
+
+### ✓ RESOLVED 2026-09-02 — `testInitAccessorsWithDefaultValues#1`
+
+**With an initializer present, an `init` accessor may appear only FIRST.** Probed truth table
+(swift-syntax 603.0.1) — every subset is legal, only the combination fails:
+
+| default value | accessor order | swift `hasError` |
+|---|---|---|
+| yes | `init` FIRST, then get/set | false |
+| yes | get, set, then `init` | **true** |
+| yes | get, then `init` | **true** |
+| yes | set, then `init` | **true** |
+| yes | get, set (no `init`) | false |
+| no | get, set, then `init` | false |
+
+The corpus tests BOTH directions — `testInitAccessorsWithDefaultValues` is an ACCEPTING fixture with
+`init` first (`SwiftSyntaxDeclarations.swift`) and a REJECTING one with `init` last — so this is the
+deliberate point of the test, not error-recovery noise. The last row is why the restriction cannot
+live on `accessorClauseList`: without an initializer `init` goes anywhere.
+
+Encoding: `variableDeclaration = … typeAnnotation initializer initializedAccessorBlock`, where
+
+    initializedAccessorBlock = >->(accessorBlockBrace) codeBlock .
+    initializedAccessorBlock = "{" accessorClauseListNoInit "}" .
+    initializedAccessorBlock = "{" initAccessorClause accessorClauseList? "}" .
+    initializedAccessorBlock = @excludedFrom(variableDeclaration) accessorBlockBrace .
+
+**The fourth alternate is a RECOGNIZER, and it is the whole trick.** The first attempt at this split
+failed because swapping the alternate to a restricted block removed the only production calling the
+UNRESTRICTED block at that `{`; the accessor-commitment lookahead on `trailingClosures` then had no
+target yield, silently no-opped, and the block reverted to a trailing closure on `(42, 0)` — traced
+as `INITTRACE accept trailingClosures,patternInitializerList`. The recognizer restores reachability
+**without** admitting the bad shape, because `LookaheadPredicateRule` snapshots the RAW forest at
+Oracle registration (`canParseAsXxx`, before any pruning): a doomed alternate still supplies the
+yield the lookahead needs. `@excludedFrom(variableDeclaration)` then prunes it unconditionally — it
+is always inside one — and reads as the truth it encodes: an unrestricted accessor list is never
+valid in a variable declaration that has a default value.
+
+`codeBlock` carries the same commitment negatively (`>->(accessorBlockBrace)`): a plain block body
+is available only where the brace does not open an accessor list. `@prefer` cannot do this job — it
+prunes codeBlock only where an accessor alternate covers the SAME span, and for the invalid ordering
+none does, so `{ get {…} set {} init(…) {} }` would be re-accepted as statements.
+
+**Reusable pattern:** when a lookahead target is only reachable from the alternates a restriction
+removes, add a recognizer alternate for reachability and prune it with a containment rule. This is
+the general escape from the "target reachable only from an annotation is snapshot-empty" trap.
+
+---|---|---|
+| yes | `init` FIRST, then get/set | false |
+| yes | get, set, then `init` | **true** |
+| yes | get, then `init` | **true** |
+| yes | set, then `init` | **true** |
+| yes | get, set (no `init`) | false |
+| no | get, set, then `init` | false |
+
+So: **with an initializer present, an `init` accessor may appear only FIRST**; without one it goes
+anywhere.
+
+**Attempted and reverted — the structural split is circular.** Swapping
+`variableDeclaration = … typeAnnotation initializer getterSetterBlock` to a restricted
+`initializedAccessorBlock` (no `init`, or `init` first) removes the only production that calls the
+UNRESTRICTED accessor block at that `{`. The accessor-commitment lookahead
+(`>->(willSetDidSetBlock accessorBlockBrace)` on `trailingClosures`) then has no target yield there
+and silently no-ops, so the block goes back to being a trailing closure on `(42, 0)` and the input
+is accepted anyway. Traced: `INITTRACE accept trailingClosures,patternInitializerList`. This is the
+documented "target reachable only from an annotation is snapshot-empty" trap.
+
+Encoding it needs one of:
+- an **ordering predicate over a list** (`init` may not follow another entry) — a new apus primitive;
+- or the unrestricted block kept **reachable** for the lookahead while a hard constraint prunes the
+  bad ordering — i.e. both blocks offered, one killed by a constraint.
+
+Confirm the restriction against a newer swift-syntax first: order-sensitive *and* conditional on the
+default value smells like SE-0400 error recovery rather than settled language, in which case
+disabling the fixture (as with the coroutine accessors) is the better call.
+
+---|---|---|
+| yes | `init` FIRST, then get/set | false |
+| yes | get, set, then `init` | **true** |
+| yes | get, then `init` | **true** |
+| yes | set, then `init` | **true** |
+| yes | get, set (no `init`) | false |
+| no | get, set, then `init` | false |
+
+So the rule is: **when a default value is present, an `init` accessor may appear only as the FIRST
+entry of the accessor list.** Without a default, `init` may appear anywhere.
+
+Encoding it needs a with-initializer accessor-list variant (`init` first, or no `init` at all) used
+by `variableDeclaration = … typeAnnotation initializer getterSetterBlock`, AND suppression of the
+`getterSetterBlock = codeBlock` reading, which otherwise re-accepts the invalid form as statements
+(`get {…}` = call + trailing closure). The oddness of the restriction — order-sensitive, and only
+with a default — suggests it may be SE-0400 error-recovery behaviour rather than a settled language
+rule, so confirm against a newer swift-syntax before encoding it.
 
 ---
 
@@ -1321,8 +1487,29 @@ Tests where swift-syntax performs error recovery (`hasError = true`) but Advent 
 Require individual source inspection to determine root cause:
 
 **Still failing:** `testSwitch64#1`, `testSwitch67#1`, `testSelfRebinding2#1`,
-`testRegexParseError17#1`, `testConflictMarkers12#1`, `testIfconfigExpr8#1`,
-`testIfconfigExpr9#1`, `testIdentifiers6#1`, `testInitDeinit11#1`
+`testRegexParseError17#1`, `testIdentifiers6#1`, `testInitDeinit11#1`
+
+**Resolved 2026-09-02 — `testIfconfigExpr8#1`, `testIfconfigExpr9#1`.** The postfix machinery
+(`postfixConditionalCompilationBlock`) already excluded infix operators and statements by
+construction, but both inputs still parsed by falling through to the **statement-level** block,
+where `.methodOne() + 12` / `return` were accepted as ordinary statements. Two changes:
+
+1. `>->( "." )` on `compilationCondition` in `ifDirectiveClause` / `elseifDirectiveClause`
+   (and after `elseDirective`) — a statement-level clause body may not begin with a leading dot,
+   since a bare `.member` is never a valid statement. Where one does, the block is a postfix
+   continuation and must route through the postfix form.
+2. `postfixIfBody` gained a nested-block RUN (`postfixNestedBlocks`) — required by
+   `testIfconfigExpr11` (`nestedIfConfig`), whose `#if` clause holds two nested blocks
+   back-to-back. Without it those clauses had no postfix reading and change 1 rejected them.
+
+Note the mid-body `>->` form attaches to the **preceding symbol** (`node.followAhead`,
+`ApusParser.swift:831`) and takes **literal** operands; the sequence-start form takes identifiers
+and attaches to the alternate (`:493`). A `>->` after a `<n>` boundary node fails to parse — the
+boundary is consumed by `layout()` before the lookahead site is reached.
+
+Do NOT add a `postfixExpression postfixNestedBlocks?` alternate: `explicitMemberExpression =
+postfixExpression postfixConditionalCompilationBlock` already absorbs trailing blocks, and
+spelling it out again makes `.unknownMethod1() #if … #endif` derivable two ways (ambiguous pivot).
 
 **Resolved (2026-08-23 sweep):**
 - `testEnum11#1` — a top-level `case` is not a declaration; fixed by

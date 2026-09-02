@@ -23,6 +23,25 @@ import Foundation
 
 protocol DisambiguationRule {
     func prune(_ yields: inout Set<BinarySpan>) -> Int
+    /// HARD CONSTRAINT (`true`) vs PREFERENCE (`false`) — decides the pass this rule runs in.
+    ///
+    /// Hard constraints say what the LANGUAGE permits: a lookahead/containment predicate or a
+    /// trivia-mode span rule removes a reading swift-syntax would never construct. Preferences
+    /// (`@longest`/`@shortest`/`@prefer`/`@avoid`, associativity) merely choose among readings that
+    /// are all legal.
+    ///
+    /// Order matters because prunes are irreversible. Running them interleaved let a PREFERENCE
+    /// delete a reading that a hard constraint was about to make the only legal one:
+    /// `var x: Int = foo()⏎{ didSet {} }` — `LongestMatchRule` dropped the short `prefixExpression`
+    /// `foo()` in favour of the maximal `foo() { … }`, and the accessor-block reading needs exactly
+    /// that short one. The lookahead predicate then removed the trailing closure, leaving nothing
+    /// and turning valid input into a reject. Constraints first, then preferences over the
+    /// survivors, with a dead-wood sweep between so the cascade is visible to the second pass.
+    var isHardConstraint: Bool { get }
+}
+
+extension DisambiguationRule {
+    var isHardConstraint: Bool { false }
 }
 
 struct LongestMatchRule: DisambiguationRule {
@@ -158,6 +177,7 @@ private struct SpanKey: Hashable {
 /// predicate fails: negative (`>->`) fails where `N` DOES derive here; positive (`>+>`) fails
 /// where it does NOT. Removal cascades to the whole alternate via the dead-wood sweep.
 struct LookaheadPredicateRule: DisambiguationRule {
+    var isHardConstraint: Bool { true }
     let negated: Bool
     /// Start positions where the target derives, SNAPSHOT from the RAW forest at Oracle registration
     /// (before dead-wood). This is swift-syntax's `canParseAsXxx`: a SPECULATIVE "could N parse here?",
@@ -186,6 +206,7 @@ struct LookaheadPredicateRule: DisambiguationRule {
 /// containers → prune where not); `negated == true` = `@excludedFrom` (prune where contained in
 /// ALL). Both stack as a conjunction over `containers`. See `Grammar Predicate Lookahead Design.md`.
 struct ContainmentRule: DisambiguationRule {
+    var isHardConstraint: Bool { true }
     let containers: [() -> Set<BinarySpan>]
     let negated: Bool
     func prune(_ yields: inout Set<BinarySpan>) -> Int {
@@ -213,6 +234,7 @@ struct ContainmentRule: DisambiguationRule {
 /// that later died. That over-approximates the cover, so the rule can only ever MISS a prune, never
 /// remove a legitimate parse — the safe direction.
 struct SameLineSpanRule: DisambiguationRule {
+    var isHardConstraint: Bool { true }
     /// Newline positions in the input.
     let newlines: [CharPosition]
     /// Content spans of the only tokens that may legitimately contain a newline (nested multiline
@@ -270,6 +292,39 @@ class Oracle {
     let grammar: Grammar
     let input: String
     private var rules: [(node: GrammarNode, rule: DisambiguationRule)] = []
+
+    // MARK: - Prune tracing (diagnostics)
+    //
+    // Opt-in via `APUS_TRACE_ORACLE=1`. Reports which rule removed which yields, and whether the
+    // root yield survives each of the three phases (dead-wood → rules → dead-wood). Exists because
+    // a prune that removes the LAST reading is otherwise invisible: the parse reports `matched: 1`
+    // and `adventParse` merely returns nil, with nothing to say who did it. Reach for this before
+    // theorising about a disambiguation surprise.
+    private var traceRulePrunes: Bool {
+        ProcessInfo.processInfo.environment["APUS_TRACE_ORACLE"] == "1"
+    }
+
+    private func describe(_ span: BinarySpan) -> String {
+        let i = input.distance(from: input.startIndex, to: span.i)
+        let j = input.distance(from: input.startIndex, to: span.j)
+        let text = input[span.i..<span.j].replacingOccurrences(of: "\n", with: "⏎")
+        return "[\(i)..\(j)]'\(text.prefix(40))'"
+    }
+
+    private func logRulePrune(rule: DisambiguationRule, node: GrammarNode, removed: Set<BinarySpan>) {
+        let label = node.name.isEmpty ? "<\(node.kind)#\(node.number)>" : "\(node.name)#\(node.number)"
+        for span in removed.sorted() {
+            print("oracle-trace: \(type(of: rule)) pruned \(label) \(describe(span))")
+        }
+    }
+
+    private func logRootStatus(_ phase: String) {
+        guard traceRulePrunes else { return }
+        let alive = parser.yield(of: grammar.root).contains {
+            $0.i == input.startIndex && $0.j == input.endIndex
+        }
+        print("oracle-trace: after \(phase): root full-span yield \(alive ? "ALIVE" : "*** GONE ***")")
+    }
 
     /// `@sameLine` — anchored on the LHS, whose completion yields have `i == k` and `j` = the true
     /// end, i.e. the EXACT span of the construct. A body-symbol anchor cannot work: its yield is
@@ -484,24 +539,46 @@ class Oracle {
             deadYields += pruned
             if pruned == 0 { break }
         }
+        logRootStatus("phase 1 dead-wood")
+        // Two passes: HARD CONSTRAINTS first, then PREFERENCES over the survivors (see
+        // `DisambiguationRule.isHardConstraint`). Prunes are irreversible, so a preference must
+        // never get to delete a reading that a constraint is about to make the only legal one.
+        // The dead-wood sweep between the passes propagates each constraint's kill, so the
+        // preference pass sees the reduced forest rather than the raw one.
         var disambiguated = 0
-        var changed = true
-        while changed {
-            changed = false
-            for (node, rule) in rules {
-                // Copy out / write back instead of `&parser.yields[node.number]`
-                // — a rule's `yieldsOf` closure reads other nodes' yields out of the
-                // same `parser.yields` array, and Swift's law of exclusivity forbids a
-                // read and a modify on the same parent at the same time.
-                var spans = parser.yields[node.number]
-                let pruned = rule.prune(&spans)
-                parser.yields[node.number] = spans
-                if pruned > 0 {
-                    disambiguated += pruned
-                    changed = true
+        func runPass(_ selected: [(node: GrammarNode, rule: DisambiguationRule)]) {
+            var changed = true
+            while changed {
+                changed = false
+                for (node, rule) in selected {
+                    // Copy out / write back instead of `&parser.yields[node.number]`
+                    // — a rule's `yieldsOf` closure reads other nodes' yields out of the
+                    // same `parser.yields` array, and Swift's law of exclusivity forbids a
+                    // read and a modify on the same parent at the same time.
+                    var spans = parser.yields[node.number]
+                    let before = traceRulePrunes ? spans : []
+                    let pruned = rule.prune(&spans)
+                    parser.yields[node.number] = spans
+                    if pruned > 0 {
+                        if traceRulePrunes { logRulePrune(rule: rule, node: node, removed: before.subtracting(spans)) }
+                        disambiguated += pruned
+                        changed = true
+                    }
                 }
             }
         }
+
+        runPass(rules.filter { $0.rule.isHardConstraint })
+        logRootStatus("hard-constraint pass")
+        var interDead = 0
+        while true {
+            let pruned = pruneUnsupported() + pruneUnproductive(endPosition: n)
+            interDead += pruned
+            if pruned == 0 { break }
+        }
+        logRootStatus("inter-pass dead-wood")
+        runPass(rules.filter { !$0.rule.isHardConstraint })
+        logRootStatus("rule pass")
         // Second dead-wood sweep: rules may have pruned body-symbol yields whose
         // parent .N yields are now unreachable. Cascade to a fixed point.
         var secondDead = 0
@@ -511,7 +588,8 @@ class Oracle {
             if pruned == 0 { break }
         }
 
-        let total = deadYields + secondDead + disambiguated
+        logRootStatus("phase 2 dead-wood")
+        let total = deadYields + interDead + secondDead + disambiguated
         if total > 0 {
             print("oracle: removed \(deadYields)+\(secondDead) dead + \(disambiguated) disambiguated yields")
         }

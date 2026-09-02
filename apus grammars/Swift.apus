@@ -948,7 +948,13 @@ infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpres
 // `->` is punctuation, so swift's left/right-boundness rules — which drive the `>s<`/`<s>` split for
 // real operators — do not apply to it.
 infixExpression = arrowExpr tryOperator? awaitOperator? prefixExpression .
-arrowExpr = typeEffectSpecifiers? "->" .
+// `>->( "async" "throws" "rethrows" )`: the effect specifiers must PRECEDE the arrow, so no
+// specifier keyword may follow it — swift diagnoses `() -> async ()` as "'async' must precede '->'"
+// (testAsync11d). Without the gate advent reads `-> async ()` as an arrow followed by a CALL to a
+// function named `async`, since `async` is only a contextual keyword. The `functionType` arrow
+// (line ~720) already has the specifiers on the correct side, so this only covers the expression
+// arrow.
+arrowExpr = typeEffectSpecifiers? "->" >->( "async" "throws" "rethrows" ) .
 typeEffectSpecifiers = "async" | "async" throwsClause | throwsClause .
 infixExpression = assignmentOperator expression .     // RHS may be an if/switch expression. NO explicit try/await here: `expression` already begins with `tryOperator? awaitOperator?`, so repeating them made `= try foo()+bar()` attach `try` two ways (ambiguous pivot — testTry*/testAsync15).
 infixExpression = conditionalOperator expression .     // false-branch of ternary may be an if/switch expression (try/await via `expression`)
@@ -1411,6 +1417,7 @@ keyPathArgumentLabel = "_" ":" .
 /// postfix-expression → optional-chaining-expression
 
 postfixExpression = primaryExpression .
+
 // A postfix operator is left-bound: tight to its operand, no preceding whitespace
 // (swift-syntax `classifyOperatorToken`: postfix ⟺ leftBound && !rightBound). `>s<`
 // forbids a space before the operator, so a spaced operator (`repr == .none`, `P & Q`)
@@ -1518,10 +1525,25 @@ argumentLabel = softIdentifier | "_" .
 // B2 — trailing closures partitioned by whether the closure is followed by `else`, so the Oracle can
 // prune (via @excludedFrom) the followed-by-`else` reading inside a condition. Faithful to swift-syntax's
 // atValidTrailingClosure (.stmtCondition): a trailing closure's `}` may not be followed by `else` (guard).
+// The OTHER half of `atValidTrailingClosure`: a `{` that starts an ACCESSOR BLOCK is never a
+// trailing closure. swift-syntax consults `atStartOfGetSetAccessor` (Lookahead.swift:252) — it
+// peeks inside the brace and, if the contents open with an accessor introducer (optionally behind
+// attributes/modifiers), `parsePatternBinding` takes the block via `parseAccessorBlock` and never
+// reconsiders it as a trailing closure on the initializer.
+//   `>->(willSetDidSetBlock)` is that peek. Both targets appear in real
+// productions, so they have yields — and GLL only creates those yields where a rule actually calls
+// them (variableDeclaration / subscriptDeclaration / abiVariableDeclaration slots). So the gate
+// fires ONLY where an accessor block is grammatically possible, exactly like swift's lookahead:
+// inside an ordinary closure (`foo { get { 1 } }` in expression position) there is no such slot,
+// no yield, and the trailing closure is unaffected.
+//   `@prefer` on the variableDeclaration alternates was tried instead and does NOT work: it prunes
+// the trailing-closure reading but the accessor reading does not then survive for a plain
+// `{ didSet {} }` after a call initializer, turning valid input into a reject. Suppressing the
+// competitor at its source — which is what swift does — is both faithful and effective.
 //   disc-3: not-followed-by-`else` — always a valid trailing closure.
-trailingClosures = closureExpression >-> ( "else" ) labeledTrailingClosures? .
+trailingClosures = >->(willSetDidSetBlock accessorBlockBrace) closureExpression >-> ( "else" ) labeledTrailingClosures? .
 //   disc-3: followed-by-`else` — excluded inside a condition (dangling `{…}` → reject, matching swift).
-trailingClosures = @excludedFrom(conditionExpression) closureExpression >+> ( "else" ) labeledTrailingClosures? .
+trailingClosures = @excludedFrom(conditionExpression) >->(willSetDidSetBlock accessorBlockBrace) closureExpression >+> ( "else" ) labeledTrailingClosures? .
 //   disc-1: handled declaratively by the partitioned `closureExpression` + `@excludedFrom`
 //   (see the `newlineOpenedClosure` alternate above) — no procedural filter.
 labeledTrailingClosures = labeledTrailingClosure labeledTrailingClosures? .
@@ -1660,19 +1682,21 @@ optionalChainingExpression = postfixExpression >s< optionalMark .
 // `attributes` is used in real productions, so it HAS yields — a target reachable only from an
 // annotation is snapshot-empty and the predicate silently no-ops.
 // See `Grammar Predicate Lookahead Design.md`.
-// NOT YET APPLIED: adding `>->(attributes)` here DOES fix `testUsing#1` (8 → 7 rejects) but costs 2
-// accepts on `testAccessorBlockAfterPatternBindingDeclWithAttribute#1`:
+// `>->(attributes)` is the companion gate: at STATEMENT position an attribute MUST introduce a
+// declaration, so an expression-statement is allowed only where neither a declaration NOR an
+// attribute starts here. It relies on the accessor-block commitment at `variableDeclaration`
+// (`@prefer` on the willSet/didSet alternates, line ~2192): before that,
+// `testAccessorBlockAfterPatternBindingDeclWithAttribute#1`
 //     var x: Int = foo()
 //     {
 //       @available(*, deprecated)
 //       didSet {}
 //     }
-// Advent's only reading of that valid input goes THROUGH an attributed expression statement: it takes
-// the `{…}` as a TRAILING CLOSURE on `foo()` and parses `@available(…) didSet {}` inside it as
-// statements. The correct reading — `variableDeclaration = … typeAnnotation initializer?
-// willSetDidSetBlock` (line ~2066), which already permits `attributes?` on `didSetClause` — is
-// evidently not reachable for a `{` on the NEXT line. Fix that first, then this predicate can go in.
-statement = >->(declaration) expression .
+// had only ONE reading, which took the `{…}` as a trailing closure on `foo()` and parsed
+// `@available(…) didSet {}` inside it as an attributed expression statement — so this gate removed
+// its last derivation. With the accessor reading committed, that input parses as the accessor block
+// it is and the gate is free to reject `@MainActor⏎using` (testUsing#1).
+statement = >->(declaration attributes) expression .
 // `@prefer`: where a declaration and an expression parse the SAME span (`init() {}` = decl vs
 // `init`-ref + call + trailing closure), swift-syntax commits to the declaration (probe:
 // InitializerDecl in a func body; its parseCodeBlockItem tries atStartOfDeclaration first).
@@ -1928,13 +1952,37 @@ postfixIfDirectiveClause = ifDirective compilationCondition <n> postfixIfBody? .
 postfixElseifDirectiveClauses = postfixElseifDirectiveClause postfixElseifDirectiveClauses? .
 postfixElseifDirectiveClause = elseifDirective compilationCondition <n> postfixIfBody? .
 postfixElseDirectiveClause = elseDirective postfixIfBody? .
-postfixIfBody = postfixExpression | postfixConditionalCompilationBlock .
+// A clause body is a SEQUENCE of continuations, not a single one: swift's
+// `parseIfConfigExpressionSuffix` runs the `parsePostfixExpressionSuffix` loop, so a clause may hold
+// a postfix chain followed by nested `#if` blocks, or several nested blocks in a row (testIfconfigExpr
+// `nestedIfConfig`: an `#if` clause containing two nested blocks, and an `#else` clause containing
+// `.unknownMethod1()` followed by one). Before this was a sequence, those inputs only parsed by
+// falling through to the STATEMENT-level block — which the leading-dot gate now forbids.
+// One postfix chain, or a RUN of nested blocks. The run is the only thing the single-element form
+// could not express (testIfconfigExpr11 `nestedIfConfig` has an `#if` clause holding two nested
+// blocks back-to-back); before the leading-dot gate below, such clauses only parsed by falling
+// through to the STATEMENT-level block.
+// A chain FOLLOWED by blocks needs no alternate here — `explicitMemberExpression = postfixExpression
+// postfixConditionalCompilationBlock` (line ~1602) already absorbs them, and spelling it out again
+// made `.unknownMethod1() #if … #endif` derivable two ways (ambiguous pivot).
+postfixIfBody = postfixExpression .
+postfixIfBody = postfixNestedBlocks .
+postfixNestedBlocks = postfixConditionalCompilationBlock postfixNestedBlocks? .
 
 // no code on the same line after #if, #elseif, #else, #endif
-ifDirectiveClause = ifDirective compilationCondition <n> statements? .
+//
+// `>->( "." )`: a STATEMENT-level clause body may not begin with a leading dot. A bare
+// `.member` is never a valid statement in swift — where a clause body starts with one, the block
+// is a POSTFIX continuation of the expression on the preceding line and must go through
+// `postfixConditionalCompilationBlock` instead (swift-syntax `parseIfConfigExpressionSuffix`).
+// Without the gate, `baseExpr ⏎ #if C ⏎ .methodOne() + 12 ⏎ #endif` still parsed: the postfix
+// reading correctly failed on `+ 12`, but this statement-level reading accepted `.methodOne() + 12`
+// as an expression statement, so advent found a parse where swift reports "unexpected code '+ 12'
+// in conditional compilation block". Same for a `return` in a postfix clause (testIfconfigExpr8/9).
+ifDirectiveClause = ifDirective compilationCondition >->( "." ) <n> statements? .
 elseifDirectiveClauses = elseifDirectiveClause elseifDirectiveClauses? .
-elseifDirectiveClause = elseifDirective compilationCondition <n> statements? .
-elseDirectiveClause = elseDirective statements? .
+elseifDirectiveClause = elseifDirective compilationCondition >->( "." ) <n> statements? .
+elseDirectiveClause = elseDirective >->( "." ) statements? .
 ifDirective = "#if" .
 elseifDirective = "#elseif" .
 elseDirective = "#else" <n> .
@@ -2144,11 +2192,46 @@ initializer = assignmentOperator expression .
 variableDeclaration = variableDeclarationHead patternInitializerList .
 // `… typeAnnotation codeBlock` removed: subsumed by `… getterSetterBlock` (getterSetterBlock
 // has a `codeBlock` alternate for the implicit-getter body), which eliminated a redundant parse.
+//
+// `@prefer` on the willSet/didSet alternates models swift-syntax's `isStartOfGetSetAccessor`
+// lookahead (Lookahead.swift:252): when a `{` follows a pattern binding, the parser peeks INSIDE
+// and commits to an ACCESSOR BLOCK if the contents open with an accessor introducer — optionally
+// preceded by attributes/modifiers — rather than treating the `{` as a trailing closure on the
+// initializer. `parsePatternBinding` consumes it via `parseAccessorBlock` and never reconsiders.
+//
+// `willSetDidSetBlock` is accessor-shaped BY CONSTRUCTION (it can only be `{ willSetClause /
+// didSetClause }`), so preferring it is exactly that commitment: it fires only where the block
+// really does open with an accessor introducer, and `@prefer` is strictly same-span, so where the
+// block is a genuine trailing closure (`var x = foo() { $0 + 1 }`) these alternates cannot match
+// and nothing is pruned.
+//
+// Measured: `var x: Int = foo()⏎{ didSet {} }` had ONE derivation, routing the block through
+// `trailingClosures → newlineOpenedClosure` and parsing the body as statements. The accessor
+// tiling was NOT missing — `{ didSet async {} }` (accessor-only shape, invalid as statements)
+// yields `{willSetDidSetBlock}` — it was merely out-competed. Same-line vs next-line `{` is
+// irrelevant; so is literal-vs-non-literal (a literal callee just cannot take a trailing closure,
+// B1, which is why the accessor reading surfaced there without help).
+//
+// Do NOT extend `@prefer` to the `getterSetterBlock` alternates: `getterSetterBlock = codeBlock`
+// matches ANY block, so preferring those prunes legitimate trailing closures everywhere and turns
+// valid inputs into rejects (tried, reverted). The accessor-vs-codeBlock commitment already lives
+// on `getterSetterBlock`'s own accessor alternate below.
 variableDeclaration = variableDeclarationHead variableName typeAnnotation getterSetterBlock .
 variableDeclaration = variableDeclarationHead variableName initializer willSetDidSetBlock .
 variableDeclaration = variableDeclarationHead variableName typeAnnotation initializer? willSetDidSetBlock .
-variableDeclaration = variableDeclarationHead variableName typeAnnotation initializer getterSetterBlock .
-// TODO: SE-0400 init accessors with default value (swift-syntax: PatternBindingSyntax accepts initializer + accessorBlock, Declarations.swift:1622-1644)
+// SE-0400 init accessors WITH a default value: with an initializer present an `init` accessor may
+// appear ONLY FIRST. Probed truth table (swift-syntax 603.0.1) — every subset is legal, only the
+// combination fails, and the corpus tests BOTH directions (testInitAccessorsWithDefaultValues
+// appears as an accepting fixture with `init` first and a rejecting one with `init` last):
+//     = (42,0) { init(initialValue) {} get {…} set {} }   hasError false   (init FIRST)
+//     = (42,0) { get {…} set {} init(initialValue) {} }   hasError TRUE
+//     = (42,0) { get {…} init(initialValue) {} }          hasError TRUE
+//     = (42,0) { set {} init(initialValue) {} }           hasError TRUE
+//     = (42,0) { get {…} set {} }                         hasError false   (no init)
+//              { get {…} set {} init(initialValue) {} }   hasError false   (NO default value)
+// The last row is why this is a separate alternate rather than a restriction on `accessorClauseList`:
+// without an initializer `init` goes anywhere, which stays `getterSetterBlock` on the line above.
+variableDeclaration = variableDeclarationHead variableName typeAnnotation initializer initializedAccessorBlock .
 
 variableDeclarationHead = attributes? declarationModifiers? "var" .
 variableName = hardIdentifier | "_" .   // `_` = wildcard-named computed property, e.g. `static var _: Int { 0 }` (swift-syntax accepts; stored `var _ = 0` goes via bindingPattern)
@@ -2157,7 +2240,38 @@ getterSetterBlock = codeBlock .
 // `@prefer` the accessor reading: `{ get {} set {} }` parses both as accessors AND as a codeBlock
 // (get/set as identifiers with trailing closures); swift-syntax commits to accessors when accessor
 // keywords are present. A plain getter body (`{ return 1 }`) has no accessor parse, so codeBlock stands.
-getterSetterBlock = @prefer "{" accessorClauseList "}" .   // swift-syntax AccessorBlock = "{" AccessorDeclList "}"; the accessor-vs-codeBlock commitment is atStartOfGetSetAccessor (Lookahead.swift:252)
+// `accessorBlockBrace` is factored out as a NAMED nonterminal so a lookahead can anchor on the
+// opening `{`. Anchoring on `accessorClauseList` does not work: that is the block CONTENT, so it
+// derives one token later and never matches a brace-anchored alternate start. `getterSetterBlock`
+// itself is unusable as a lookahead target because its `codeBlock` alternate matches ANY block.
+accessorBlockBrace = "{" accessorClauseList "}" .
+getterSetterBlock = @prefer accessorBlockBrace .   // swift-syntax AccessorBlock = "{" AccessorDeclList "}"; the accessor-vs-codeBlock commitment is atStartOfGetSetAccessor (Lookahead.swift:252)
+
+// The with-initializer accessor block: `init` first, or no `init` at all (see `variableDeclaration`).
+//
+// The fourth alternate is a RECOGNIZER, not a legal reading. It exists solely so
+// `accessorBlockBrace` is REACHABLE at this `{` — the accessor-commitment lookahead on
+// `trailingClosures` snapshots the RAW forest at Oracle registration ("canParseAsXxx", before any
+// pruning), so a doomed alternate still supplies the yield the lookahead needs. Without it the
+// restricted alternates are the only callers here, `accessorBlockBrace` never derives, the gate
+// silently no-ops, and the whole block reverts to a trailing closure on the initializer — which is
+// exactly how the obvious structural split failed. `@excludedFrom(variableDeclaration)` then prunes
+// it unconditionally (it is always inside one), and the statement reads as the truth it encodes:
+// an unrestricted accessor list is never valid in a variable declaration that has a default value.
+//
+// `codeBlock` carries the same commitment negatively: a plain block body is available only where
+// the brace does NOT open an accessor list. Leaning on `@prefer` here would not work — it prunes
+// codeBlock only where an accessor alternate covers the SAME span, and for the invalid ordering
+// none does, so `{ get {…} set {} init(…) {} }` would be re-accepted as statements
+// (`get {…}` = call + trailing closure).
+initializedAccessorBlock = >->(accessorBlockBrace) codeBlock .
+initializedAccessorBlock = "{" accessorClauseListNoInit "}" .
+initializedAccessorBlock = "{" initAccessorClause accessorClauseList? "}" .
+initializedAccessorBlock = @excludedFrom(variableDeclaration) accessorBlockBrace .
+
+accessorClauseListNoInit = accessorClauseEntryNoInit accessorClauseListNoInit? .
+accessorClauseEntryNoInit = getterClause | setterClause | coroutineAccessorClause .
+
 // swift-syntax parseAccessorDecl (Declarations.swift:1736) calls parseAccessorEffectSpecifiers
 // for EVERY accessor keyword (get/set/init/willSet/didSet/_read/_modify/...). Effects aren't
 // getter-specific; the `accessorEffects` non-terminal below is shared across all clauses.

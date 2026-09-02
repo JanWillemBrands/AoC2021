@@ -1472,7 +1472,8 @@ let declarationRejectSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testCoroutineAccessors",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "read/modify are shipping accessors in Swift 6.4; corpus was harvested with coroutineAccessors experimental feature OFF"
     ),
     SwiftSnippet(
         label: "testCoroutineAccessors#2",
@@ -1487,7 +1488,8 @@ let declarationRejectSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testCoroutineAccessors",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "read/modify are shipping accessors in Swift 6.4; corpus was harvested with coroutineAccessors experimental feature OFF"
     ),
     SwiftSnippet(label: "testMissingCommaInParameters#1", source: "func a(foo: Bar foo2: Bar2) {}", origin: "DeclarationTests.testMissingCommaInParameters", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testMissingMultipleCommasInParameters#1", source: "func a(foo: Bar foo2: Bar2, foo3: Bar3 foo4: Bar4) {}", origin: "DeclarationTests.testMissingMultipleCommasInParameters", syntaxVersion: "603.0.1"),
@@ -2415,7 +2417,8 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(a + b)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers7",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "git conflict markers — not Swift syntax"
     ),
     SwiftSnippet(
         label: "testConflictMarkers8#1",
@@ -2427,7 +2430,8 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(d)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers8",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "git conflict markers — not Swift syntax"
     ),
     SwiftSnippet(
         label: "testConflictMarkers10#1",
@@ -2444,7 +2448,8 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(fake_b + fake_c)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers10",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "git conflict markers — not Swift syntax"
     ),
     SwiftSnippet(
         label: "testConflictMarkers12#1",
@@ -2464,7 +2469,8 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       }()
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers12",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "git conflict markers — not Swift syntax"
     ),
     SwiftSnippet(
         label: "testConflictMarkers14#1",
@@ -2482,7 +2488,8 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(a + b)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers14",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "git conflict markers — not Swift syntax"
     ),
     SwiftSnippet(
         label: "testConflictMarkers15#1",
@@ -2495,7 +2502,8 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(d)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers15",
-        syntaxVersion: "603.0.1"
+        syntaxVersion: "603.0.1",
+        disabledReason: "git conflict markers — not Swift syntax"
     ),
     SwiftSnippet(label: "testSimple1#1", source: "let x = 2 let y = 3", origin: "ConsecutiveStatementsTests.testSimple1", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testSimple2#1", source: "let x = 2 let y = 3", origin: "ConsecutiveStatementsTests.testSimple2", syntaxVersion: "603.0.1"),

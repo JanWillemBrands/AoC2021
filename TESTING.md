@@ -297,6 +297,27 @@ The items below are the residual knowledge a script can't remove.*
 
 ---
 
+## 8b. Diagnosing an Oracle prune — `APUS_TRACE_ORACLE=1`
+
+When a parse reports `matched: 1` (a full-span parse EXISTS) but `adventParse` returns nil, the
+disambiguator removed the last reading and nothing says which rule did it. Do not theorise — trace:
+
+```sh
+TEST_RUNNER_APUS_TRACE_ORACLE=1 xcodebuild test -scheme Advent \
+  -destination "platform=macOS,arch=arm64" -project Advent.xcodeproj \
+  -only-testing:"AdventTests/SwiftSyntaxTests/ParserProbe/<yourProbe>()" 2>&1 \
+  | grep oracle-trace
+```
+
+Emits one line per pruned yield — rule type, anchor node, span with source text — plus a
+root-full-span ALIVE/GONE checkpoint after each of the four phases (phase-1 dead-wood,
+hard-constraint pass, inter-pass dead-wood, preference pass, phase-2 dead-wood). The phase where
+the root goes GONE localises the fault immediately.
+
+Costs nothing when the variable is unset. Implemented in `Oracle.swift` (`traceRulePrunes`,
+`logRulePrune`, `logRootStatus`). This is what finally explained the accessor-block gap after three
+wrong inferences — see REJECTS.md C7.
+
 ## 9. Efficient testing workflow — recommendations
 
 ### Tier 1: single-snippet iteration (fastest, seconds)

@@ -378,44 +378,6 @@ struct SwiftSyntaxTests {
             #expect(switchCaseTree.contains("PatternExpr"))
         }
 
-        @Test("TEMP accessor-block reachability matrix")
-        func tempAccessorMatrix() throws {
-            let variants: [(String, String)] = [
-                ("A fixture (nextline { , attr)",  "var x: Int = foo()\n{\n  @available(*, deprecated)\n  didSet {}\n}"),
-                ("B sameline { , attr",            "var x: Int = foo() {\n  @available(*, deprecated)\n  didSet {}\n}"),
-                ("C nextline { , no attr",         "var x: Int = foo()\n{\n  didSet {}\n}"),
-                ("D sameline { , no attr",         "var x: Int = foo() {\n  didSet {}\n}"),
-                ("E no init, nextline {, attr",    "var x: Int\n{\n  @available(*, deprecated)\n  didSet {}\n}"),
-                ("F no init, sameline {, attr",    "var x: Int {\n  @available(*, deprecated)\n  didSet {}\n}"),
-                ("G willSet nextline, attr",       "var x: Int = foo()\n{\n  @available(*, deprecated)\n  willSet {}\n}"),
-                ("H init=1, nextline {, attr",     "var x: Int = 1\n{\n  @available(*, deprecated)\n  didSet {}\n}"),
-                ("I init=1, sameline {, attr",     "var x: Int = 1 {\n  @available(*, deprecated)\n  didSet {}\n}"),
-                ("J init=1, nextline {, no attr",  "var x: Int = 1\n{\n  didSet {}\n}"),
-                ("K no typeAnn, init=1, attr",     "var x = 1\n{\n  @available(*, deprecated)\n  didSet {}\n}"),
-                ("L no typeAnn, init=foo(), attr", "var x = foo()\n{\n  @available(*, deprecated)\n  didSet {}\n}"),
-                ("M init=1, get/set block",        "var x: Int = 1\n{\n  get { 1 }\n  set {}\n}"),
-            ]
-            var lines: [String] = []
-            for (name, src) in variants {
-                let swiftOK = !Parser.parse(source: src).hasError
-                let r = try adventParse(src)
-                let amb = r.map { $0.isUnambiguous ? "unambig" : "AMBIG" } ?? "-"
-                var shape = "-"
-                if let tree = try adventSwiftSyntaxTree(src) {
-                    let d = dumpSwiftSyntaxNode(Syntax(tree), indent: 0)
-                    let acc = d.contains("AccessorBlock") || d.contains("AccessorDecl")
-                    let clo = d.contains("ClosureExpr")
-                    shape = "accessor=\(acc) closure=\(clo)"
-                }
-                lines.append("\(name): swift=\(swiftOK ? "ok" : "ERR") advent=\(r != nil ? "accept" : "REJECT") \(amb) \(shape)")
-            }
-            var dumpA = "nil"
-            if let tree = try adventSwiftSyntaxTree(variants[0].1) {
-                dumpA = String(dumpSwiftSyntaxNode(Syntax(tree), indent: 0).prefix(2500))
-            }
-            Issue.record(Comment(rawValue: "MATRIX\n" + lines.joined(separator: "\n") + "\n\nDUMP A:\n" + dumpA))
-        }
-
         /// The operator-terminal family, pinned against swift-syntax. Each row below was a
         /// LATENT regression at some point — the grammar had no coverage for any of them, so
         /// two separate refactors broke them silently. Asserting swift's verdict alongside
