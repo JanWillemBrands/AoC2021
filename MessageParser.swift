@@ -266,6 +266,27 @@ class MessageParser {
         return input[triviaStart..<longestEnd]
     }
 
+    /// Exact CONTENT of the one commit identified by a BSR tile: the terminal's
+    /// own id plus both of its boundaries. Leading/trailing trivia excluded —
+    /// the slice is `[start, end)`, not `terminalImage`'s `[triviaStart, end)`.
+    ///
+    /// Unlike `terminalImage(startingAt:)` this needs no longest-match guess.
+    /// The commit log is a SUPERSET of the accepted derivation (it holds
+    /// terminals from derivations that later died), so a position alone is
+    /// ambiguous — on `1.5` both the float `1.5` and a shorter `1` may have
+    /// committed at the same start. A tile names which terminal ended where, so
+    /// the commit is uniquely determined and dead readings cannot leak in.
+    func terminalContent(terminalID: Int, triviaStart: CharPosition, triviaEnd: CharPosition) -> Substring? {
+        guard let idxs = commitsByStart[triviaStart] else { return nil }
+        for i in idxs {
+            let c = commits[i]
+            if c.terminalID == terminalID && c.triviaEnd == triviaEnd {
+                return input[c.start..<c.end]
+            }
+        }
+        return nil
+    }
+
     @inline(always)
     final func recordCommit(terminalID: Int, triviaStart: CharPosition, start: CharPosition, end: CharPosition, triviaEnd: CharPosition) {
         let idx = commits.count

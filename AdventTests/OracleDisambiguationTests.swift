@@ -299,6 +299,11 @@ struct OracleDisambiguationTests {
         // E) Scott's punt: `A A` with A nullable. On "a" there are two distinct trees
         // (the 'a' under the first vs. second A). The engine must REPRESENT that as a
         // genuine ambiguity (not conflate the two (i,i) ε-elements into one tree).
+        //
+        // GREEN since Sep 3 2026 (TODO.md 23). It regressed to
+        // `(postMatch: false, isUnambiguous: true)` — the Oracle pruned away the ONLY
+        // derivation — because the dead-wood passes were blind to ε in two separate ways.
+        // Keep this test: it is the canonical guard that the punt stays closed.
         @Test("nullable A A represents the ambiguity, no ε-conflation")
         func nullableRepetitionAmbiguity() throws {
             let g = #"S = A A . A = "a" | "" ."#
@@ -328,8 +333,12 @@ struct OracleDisambiguationTests {
         }
 
         // S1/S2 — extent on an OPT whose start is fixed (S1) or moved by a variable-length
-        // prefix (S2). Both resolve now: extent compares interval length (not just the end),
-        // and the OPT reads its own prunable yields so the kill propagates along the sequence.
+        // prefix (S2). S1 resolves: extent compares interval length (not just the end), and the
+        // OPT reads its own prunable yields so the kill propagates along the sequence.
+        // S2 does NOT — RED at HEAD, see TODO.md 24. Observed
+        // `(rawMatch: true, postMatch: true, pruned: 1, isUnambiguous: false)`: once a
+        // variable-length prefix can move the bracket's start, one of those two halves stops
+        // firing and the ambiguity survives. (The claim that BOTH resolve was true only of S1.)
         @Test("@shortest [X] [X] — first is kept empty (fixed-start extent)")
         func shortestTwoOptionalsFirst() throws {
             let r = try parseOracleAmbiguity(grammar: #"x - /x/ . S = @shortest [ x ] [ x ] ."#, message: "x")

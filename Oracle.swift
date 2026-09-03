@@ -318,12 +318,28 @@ class Oracle {
         }
     }
 
+    /// The invariant EVERY pruning pass must preserve: a parse that existed when the Oracle
+    /// started must still exist when it finishes. Disambiguation may reduce the NUMBER of
+    /// derivations — never to zero. `disambiguate()` returns early unless the root's full-span
+    /// yield is present, so past that guard "rawMatch" holds by construction and this is simply
+    /// "postMatch must still hold", checked at every step.
+    ///
+    /// Asserted PER PHASE rather than once at the end, so a violation names the pass responsible
+    /// instead of just the fact. Both ε defects fixed on 2026-09-03 (TODO 23) would have tripped
+    /// this the moment they landed; instead they surfaced as a silently missing tree, and the
+    /// design doc recorded the case as settled while it was broken.
     private func logRootStatus(_ phase: String) {
-        guard traceRulePrunes else { return }
         let alive = parser.yield(of: grammar.root).contains {
             $0.i == input.startIndex && $0.j == input.endIndex
         }
-        print("oracle-trace: after \(phase): root full-span yield \(alive ? "ALIVE" : "*** GONE ***")")
+        if traceRulePrunes {
+            print("oracle-trace: after \(phase): root full-span yield \(alive ? "ALIVE" : "*** GONE ***")")
+        }
+        assert(alive, """
+            Oracle over-pruned: the root's full-span yield existed before disambiguation and was \
+            removed by '\(phase)'. Pruning may reduce the number of derivations, never to zero. \
+            Re-run with APUS_TRACE_ORACLE=1 to see which pass or rule removed it.
+            """)
     }
 
     /// `@sameLine` — anchored on the LHS, whose completion yields have `i == k` and `j` = the true
@@ -535,7 +551,13 @@ class Oracle {
 
         var deadYields = 0
         while true {
-            let pruned = pruneUnsupported() + pruneUnproductive(endPosition: n)
+            // Split, not summed, so the tracer can say WHICH of the two dead-wood passes
+            // removed the last reading — the two have very different failure modes.
+            let unsupported = pruneUnsupported()
+            logRootStatus("phase 1 pruneUnsupported (-\(unsupported))")
+            let unproductive = pruneUnproductive(endPosition: n)
+            logRootStatus("phase 1 pruneUnproductive (-\(unproductive))")
+            let pruned = unsupported + unproductive
             deadYields += pruned
             if pruned == 0 { break }
         }
@@ -630,7 +652,11 @@ class Oracle {
             while let a = alt {
                 defer { alt = a.alt }
                 let body = a.bodySymbols
-                if body.isEmpty { hasEmptyAlt.insert(def.number); continue }
+                // An alternate spelled `""` is NOT syntactically empty — its body holds an
+                // EPS node. Treating only `body.isEmpty` as nullable made `A = "a" | ""`
+                // unrecognised as nullable, so the completion `(A,i,i)` fell through to
+                // `lastSymSpans` and was pruned as unsupported. Both spellings are ε.
+                if body.allSatisfy({ $0.kind == .EPS }) { hasEmptyAlt.insert(def.number); continue }
                 lastSymsOf[def.number, default: []].append(body[body.count - 1])
                 for m in body.indices {
                     if m == 0 { isFirstBody.insert(body[m].number) }
@@ -819,7 +845,17 @@ class Oracle {
                 defer { alt = a.alt }
                 let body = a.bodySymbols.filter { $0.kind != .EPS }
                 if body.isEmpty {
-                    if from == to { found = true }
+                    if from == to {
+                        found = true
+                        // The walk VALIDATED this ε alternate, so it must also MARK it.
+                        // EPS symbols are filtered out of the tiling (they consume nothing),
+                        // which previously meant nothing ever marked their `(i,k,k)` yields
+                        // reachable — so the sweep below deleted them, and `pruneUnsupported`
+                        // then cascaded that loss into the enclosing nonterminal.
+                        for eps in a.bodySymbols where eps.kind == .EPS {
+                            reachable.insert(NodeSpan(id: ObjectIdentifier(eps), from: from, to: from))
+                        }
+                    }
                 } else if tileBody(body, from: from, to: to) {
                     found = true
                 }

@@ -100,6 +100,35 @@ regression. Two generator bugs were fixed to get there:
 ### Phase 2 — Binary Expressions (flat sequences, no folding)
 `1 + 2 * 3`, `x == 0 ? "zero" : "nonzero"`, `value as? Int`
 
+**Hidden structural divergence — Advent NESTS where swift FLATTENS.** The "flatten the right
+recursion" note above is only true of `infixExpressions = infixExpression infixExpressions?`.
+Two `infixExpression` alternates take a full `expression` on the right, not a `prefixExpression`
+(`Swift.apus:959-960`):
+
+```
+infixExpression = assignmentOperator expression .
+infixExpression = conditionalOperator expression .
+```
+
+So for `a = b + c` Advent's tree puts `b + c` inside a NESTED `expression` under the `=`, whereas
+swift-syntax's `SequenceExpr` is one flat list — `[a, AssignmentExpr(=), b, BinaryOperator(+), c]`.
+A faithful converter must SPLICE the nested expression's elements into the parent sequence rather
+than convert it as a sub-expression. `flattenInfixExpression` does neither today: it handles only
+`infixOperator` / `conditionalOperator` / `typeCastingOperator` / `prefixExpression`, so the
+assignment RHS and the ternary false-branch are dropped entirely.
+
+**RESOLVED 2026-09-03.** `flattenExpression` splices: `convertExpression` now builds a flat element
+list and only wraps in `SequenceExpr` when there is more than one element, and the
+`assignmentOperator expression` / `conditionalOperator expression` alternates splice the nested
+expression's elements into the parent list. `a = b + c` → `[a, AssignmentExpr, b, BinaryOperator, c]`.
+
+My pre-implementation worry about the ternary was WRONG and is recorded here so it isn't repeated:
+swift-syntax's `UnresolvedTernaryExpr` carries `? thenExpression :` as ONE element sitting between
+the condition and the false-branch, which lines up exactly with
+`conditionalOperator = <s> "?" expression ":"` holding the then-branch inside the operator node.
+No restructuring was needed. (`as?`/`as!` did need a fix — the mark belongs on `UnresolvedAsExpr`
+as `questionOrExclamationMark`, not as a separate element.)
+
 | APUS nonterminal | SwiftSyntax type | Notes |
 |---|---|---|
 | `expression` + `infixExpressions` | `SequenceExprSyntax` | flatten right recursion to flat ExprList |

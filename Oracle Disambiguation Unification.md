@@ -175,6 +175,18 @@ on nullable `X ::= BBβ`, which makes `(BB,i,i)` a multigraph with two `(B,i,i)`
    cross-prune.
 2. **The engine does NOT conflate nullable `A A`.** `A = "a" | ""` on `"a"` is represented as a
    genuine two-tree ambiguity — we close the gap Scott left open (no ε-multigraph collapse).
+
+   **Regressed, then re-closed 2026-09-03 (TODO.md 23).** This claim was FALSE for a period: the
+   case degraded to `(postMatch: false, isUnambiguous: true)` — the Oracle pruned away the only
+   derivation *and* conflated the two ε-readings, i.e. strictly worse than Scott's punt, since the
+   punt merely conflates whereas this lost the parse. Two ε blind-spots in the dead-wood passes:
+   `pruneUnproductive` validated an ε alternate without marking its EPS nodes reachable (so the
+   sweep deleted their yields), and `hasEmptyAlt` recognised only a syntactically empty body, not
+   an alternate spelled `""` (whose body holds an EPS node). Both are fixed and
+   `nullableRepetitionAmbiguity` is the standing guard.
+
+   Note the shape of the failure for next time: an ε-related claim about the ENGINE was recorded
+   here as settled, while the only thing keeping it true was a test nobody was reading as red.
 3. **`@avoid A` ≡ `@prefer` on all siblings** for **same-span** groups (the "3 = 1" equivalence
    holds via `PreferRule`, winners unranked). ✅ **Now implemented**: alt-prefix `@avoid` is parsed
    in `sequence()` (→ `isAvoided` on the `.ALT` node) and compiled in `registerPrefer` as

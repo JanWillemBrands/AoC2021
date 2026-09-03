@@ -9512,9 +9512,26 @@ struct RejectSyntaxTests {
 
     // Baseline: these ARE swift-syntax error cases. A failure here means the harvest
     // captured a non-error case (e.g. warnings-only) — a prune candidate, not a bug.
+
+    /// Fixtures where swift-syntax's PARSER is more permissive than the compiler, so the
+    /// "SwiftSyntax rejects" baseline cannot hold — but the fixture itself is correct and the
+    /// `adventRejects` assertion on it is valuable, so the snippet is NOT disabled. Only the
+    /// reference assertion is skipped.
+    ///
+    /// `testRecovery28#1` (`repeat {} while { true }()`): swift-syntax gives hasError=FALSE,
+    /// while `swiftc -parse` errors with "missing condition in 'while' statement" (measured
+    /// 2026-08-30, see the file header). The compiler is the arbiter.
+    ///
+    /// REVISIT AT THE SWIFT 6.4 CONVERSION: re-probe each label against both swift-syntax and
+    /// the compiler; a label that starts erroring in swift-syntax should come off this list.
+    static let swiftSyntaxLenientLabels: Set<String> = [
+        "testRecovery28#1",
+    ]
+
     @Test("SwiftSyntax rejects", .tags(.swiftSyntaxReference), arguments: allRejectSnippets)
     func swiftSyntaxRejects(_ snippet: SwiftSnippet) throws {
         guard snippet.disabledReason == nil else { return }
+        guard !Self.swiftSyntaxLenientLabels.contains(snippet.label) else { return }
         let parsed = Parser.parse(source: snippet.source)
         #expect(parsed.hasError, "Expected swift-syntax to flag an error: \(snippet.source)")
     }

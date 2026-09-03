@@ -162,7 +162,13 @@ octalLiteral - /0o[0-7][0-7_]*/ .
 
 decimalLiteral - /[0-9][0-9_]*/ .   // terminal (`-`, not `=`): must commit under its own name so `regexOpenSlash`'s `<-<` operand-ender list (which names `decimalLiteral`) actually matches after a number — otherwise the `@preempt` operator split isn't suppressed in infix position (e.g. `1/^/3` → spurious `/^`+`/3`). All other numeric literals are already `-` terminals.
 
-decimalDigits = /[0-9]+/ .
+// `-` not `=`: a single-regex production MUST be a terminal. An `=` production with one
+// anonymous-regex RHS commits under a GENERATED name, so it is invisible to the lookbehind /
+// exclusion / `>->` operand lists, which match on committed terminal names. That is exactly
+// the bug behind `1/^/3` (`decimalLiteral = /…/` vs `- /…/`, TODO 19). `decimalDigits` is
+// reachable at `x.0`, keypath member names and `@available` versions — all adjacent to `.` / `/`
+// lexing decisions — so the generated name is a live hazard, not a style point.
+decimalDigits - /[0-9]+/ .
 
 hexadecimalLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*/ .
 
@@ -645,6 +651,10 @@ type = anyType .
 // would duplicate that path and make bare `Self` ambiguous in type position, so it's omitted.
 // (`Any` differs: swift-syntax parses it via the special parseAnyType, not as an identifier type,
 // so `type = anyType` above is the single correct path and `Any` is intentionally not a typeName.)
+// KNOWN OVER-GENERALITY (unresolved). Reusing `tupleTypeElement` pulls in `parameterModifiers?`
+// and the label form, so `(sending T)`, `(label: T)`, `(label: sending T)` all parse as a
+// parenthesized type. swift-syntax only produces a one-element TupleType for `(T)`. Narrow this to
+// a dedicated single-element production once someone probes which of those forms swift accepts.
 type = "(" tupleTypeElement ")" .   // TODO: swift-syntax: (T) parses as TupleTypeSyntax with one element; using tupleTypeElement here brings in parameterModifiers? support, so (sending T), (label: T), (label: sending T) all parse.
 type = "~" type . // TODO: SE-0390 suppressed/inverse type — swift-syntax parseSimpleType (Types.swift:194-212) RawSuppressedTypeSyntax
 // Type-position specifier / attribute prefix — the SINGLE source of truth (swift-syntax
@@ -686,7 +696,7 @@ typeAnnotation = ":" type .   // specifiers/attributes carried by `type` (single
 // swift-syntax canParseTypeIdentifier (Types.swift:1041): base name + optional generic args, dotted.
 typeIdentifier = typeName typeGenericArgumentClause? | typeName typeGenericArgumentClause? "." typeIdentifier .
 typeName = hardIdentifier .
-typeName = selfType .           // TODO: verify fix for https://github.com/swiftlang/swift-book/issues/293
+typeName = selfType .           // TODO: verify fix for https://github.com/swiftlang/swift-book/issues/293 — same unprobed `Self` question as `primaryExpression = selfType`; settle both together.
 // SE-0491: a module-qualified type name. After `::` swift-syntax consumes ANY keyword as the name
 // (Names.swift:218), so the name is `identifier` (the raw identifier-shaped token, keyword
 // exclusion NOT applied). Covers `Swift::Type`, `Swift::Self`, `Swift::Any`, member `Type.Module::M`,
@@ -729,6 +739,16 @@ externalArgumentLabel = softIdentifier | "_" .  // accept all keywords except le
 localArgumentLabel = softIdentifier | "_" .     // but references to the parameter in the function body must use backticks
 
 throwsClause = "throws" | "throws" "(" type ")" .
+
+// `rethrows` is NOT an alternate of `throwsClause`, deliberately. swift-syntax puts `throws` and
+// `rethrows` in one `ThrowsClauseSyntax.throwsSpecifier`, which tempts a merge here — but
+// `throwsClause` is also reached from `functionType`, `typeEffectSpecifiers`, `closureSignature`
+// and `doStatement`, and `rethrows` is legal in NONE of those (`() rethrows -> Void`,
+// `{ () rethrows in }`, `do rethrows {}` are all invalid Swift). Merging would over-generalise all
+// four. Instead this wrapper is used ONLY where `rethrows` is actually legal — function and
+// initializer declarations — which collapses the duplicated `"rethrows"` alternates those rules
+// used to carry, and gives the AST converter ONE nonterminal to find for the effect specifier.
+declarationThrowsClause = throwsClause | "rethrows" .
 
 /// Grammar of an array type
 /// array-type → [ type ]
@@ -966,7 +986,14 @@ infixExpressions = infixExpression infixExpressions? .
 @longest
 conditionInfixExpression = >s< infixOperator >s< tryOperator? awaitOperator? prefixExpression .
 conditionInfixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
-conditionInfixExpression = conditionalOperator tryOperator? awaitOperator? expression .     // false-branch of ternary may be an if/switch expression
+// NO explicit try/await here — same fix as `infixExpression = conditionalOperator expression`
+// (which documents why): `expression` already begins with `tryOperator? awaitOperator?`, so
+// repeating them lets `try` attach TWO ways to the ternary's false branch. `conditionalOperator`
+// holds the THEN branch internally, so the repeat sat in front of the ELSE branch — which is why
+// `if c ? f() : try g() { }` was an ambiguous pivot while `if c ? try f() : g() { }` was fine.
+// The fix was applied to `infixExpression` and never mirrored here (backported 2026-09-03,
+// `ConditionInfixParityTests`).
+conditionInfixExpression = conditionalOperator expression .     // false-branch of ternary may be an if/switch expression
 conditionInfixExpression = typeCastingOperator .
 conditionInfixExpressions = conditionInfixExpression conditionInfixExpressions? .
 
@@ -1057,6 +1084,12 @@ primaryExpression = implicitMemberExpression .
 primaryExpression = wildcardExpression .
 primaryExpression = macroExpansionExpression .   // also covers #selector(…), #keyPath(…), #colorLiteral(…): swift-syntax parses these as MacroExpansionExpr, not dedicated nodes (probe-verified)
 primaryExpression = keyPathExpression .
+// UNJUSTIFIED — the only type-as-expression alternate here with no swift-syntax citation.
+// Its siblings (`anyType`, `attribute type`, `boxedProtocolType`, `macroExpansionExpression`) each
+// name the swift-syntax parse path they mirror; this one does not, and neither does `typeName =
+// selfType`. Probe what swift-syntax actually yields for `Self` in expression position before
+// trusting it: if it is a DeclReferenceExpr rather than a type-expr, this alternate is
+// over-general and should go. Suspected over-generality, NOT proven wrong.
 primaryExpression = selfType .                          // TODO: quick fix similar to https://github.com/swiftlang/swift-book/issues/293
 // swift-syntax parsePrimaryExpression `.Any` case (Expressions.swift:1346): bare `Any` in
 // expression position is a type-expr, enabling `Any.self`, `Any.Type`, etc.
@@ -2014,9 +2047,13 @@ compilationCondition = hardIdentifier functionCallArgumentClause .
 //lineControlStatement = "#sourceLocation" "(" "file" ":" filePath "," "line" ":" lineNumber ")" .
 //lineControlStatement = "#sourceLocation" "(" ")" .
 
-lineControlStatement = "#sourceLocation" "(" [ "file" ":" filePath "," "line" ":" lineNumber ] ")" .
+// A named TERMINAL must be defined BEFORE it is referenced (Grammar.handleNonTerminal:
+// a reference resolves against `nonTerminals` only, and a later terminal definition is
+// reported as `undefinedNonTerminal(definedAsTerminal: true)`). Nonterminals may be
+// forward-referenced, so this ordering constraint only bites the `-` productions.
+lineNumber - /0*[1-9][0-9]*/ .   // `-` not `=` — single-regex production, see `decimalDigits`.
 
-lineNumber = /0*[1-9][0-9]*/ .
+lineControlStatement = "#sourceLocation" "(" [ "file" ":" filePath "," "line" ":" lineNumber ] ")" .
 
 filePath = staticStringLiteral .
 
@@ -2376,8 +2413,7 @@ functionHead = attributes? declarationModifiers? "func" .
 // identifier but is peeled off by the parser".
 functionName = hardIdentifier | functionNameOperator .   // hardIdentifier (reserved-excluded), NOT softIdentifier: a reserved keyword is not a valid function name (`func repeat()` errors — testInvalid17/21), while contextual keywords (`func async()`, `func await()`, `func open()`) and backticked keywords still parse. `init`/`deinit` stay excluded (both reject as function names — probe-verified).
 
-functionSignature = parameterClause "async"? throwsClause? functionResult? .
-functionSignature = parameterClause "async"? "rethrows" functionResult? .
+functionSignature = parameterClause "async"? declarationThrowsClause? functionResult? .
 functionResult = "->" type .   // result-type attributes carried by `type`
 functionBody = codeBlock .
 
@@ -2581,10 +2617,8 @@ associatedTypeDeclaration = attributes? declarationModifiers? "associatedtype" t
 // (probe: swift-syntax parses `init()` in a `#if` inside an init body as FunctionCallExpr, but
 // `init() {}` in a func body as InitializerDecl). The bodyless decl form (protocol requirement
 // `init()`) is member-only — see bodylessInitializerDeclaration in memberDeclaration.
-initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? throwsClause? functionResult? genericWhereClause? initializerBody .
-initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? "rethrows" functionResult? genericWhereClause? initializerBody .
-bodylessInitializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? throwsClause? functionResult? genericWhereClause? .
-bodylessInitializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? "rethrows" functionResult? genericWhereClause? .
+initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? declarationThrowsClause? functionResult? genericWhereClause? initializerBody .
+bodylessInitializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? declarationThrowsClause? functionResult? genericWhereClause? .
 initializerHead = attributes? declarationModifiers? "init" .
 initializerHead = attributes? declarationModifiers? "init" "?" .   // space allowed: swift-syntax accepts `init ?(…)` (no >s< — the `?`/`!` may be separated from `init`)
 initializerHead = attributes? declarationModifiers? "init" "!" .

@@ -142,7 +142,7 @@
 		4EC3D237301E03F200E27741 /* REJECTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REJECTS.md; sourceTree = "<group>"; };
 		4ECF5BE62F3748DB008E692B /* claude.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = claude.md; sourceTree = "<group>"; };
 		4ED118712FAACD340055DAC7 /* SwiftSyntax Mapping.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "SwiftSyntax Mapping.md"; sourceTree = "<group>"; };
-		4ED277C3303DA56B00C05B68 /* Untitled.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Untitled.md; sourceTree = "<group>"; };
+		4ED277C3303DA56B00C05B68 /* Fuzzer.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Fuzzer.md; sourceTree = "<group>"; };
 		4ED277C53041858900C05B68 /* Lexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lexer.swift; sourceTree = "<group>"; };
 		4ED277CE3042218F00C05B68 /* tinyGLL */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = tinyGLL; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EEBC9782F9DECF000E838A7 /* ApusParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusParser.swift; sourceTree = "<group>"; };
@@ -436,7 +436,6 @@
 				4E12037B2FA857210061BD96 /* apus.md */,
 				4ECF5BE62F3748DB008E692B /* claude.md */,
 				4E4E48C22FA219ED0094DFC6 /* codex.md */,
-				4ED277C53041858900C05B68 /* Lexer.swift */,
 				4E4E48C32FA219ED0094DFC6 /* Frankenstein Tokens.md */,
 				4E6A470E3039B4E400A4FCCC /* Grammar Predicate Lookahead Design.md */,
 				4E4E48C42FA219ED0094DFC6 /* Layout Sensitive Parsing.md */,
@@ -448,7 +447,6 @@
 				4E2CC1402FD4AC2200719D65 /* Regex CFG Discussion.md */,
 				4E2CC13E2FC8C9F100719D65 /* Regex Lookbehind Design.md */,
 				4EC3D237301E03F200E27741 /* REJECTS.md */,
-				4ED277C3303DA56B00C05B68 /* Untitled.md */,
 				4E4E48C52FA219ED0094DFC6 /* Scanner Mode Design.md */,
 				4E4E48C62FA219ED0094DFC6 /* Schrodinger Tokens.md */,
 				4E2CC13F2FD46F3400719D65 /* Structured Lookahead Design.md */,
@@ -457,6 +455,7 @@
 				4EC3D234301CC4FA00E27741 /* The rise and fall of Schrödinger, Frankenstein and other dead-ends.md */,
 				4E16D4762FA7A126008E2C1A /* TODO.md */,
 				4E4E48C72FA219ED0094DFC6 /* Trivia Oracle.md */,
+				4ED277C3303DA56B00C05B68 /* Fuzzer.md */,
 				4E34DF802C08A71000B2881E /* ART.svg */,
 				4E8D05A92F701D560081C6D2 /* Derivations.svg */,
 				4E5754B42F5894BB0067165C /* SPPF.svg */,
@@ -474,6 +473,7 @@
 				4EEBC9812F9DECF000E838A7 /* GrammarDiagnostics.swift */,
 				4EEBC9822F9DECF000E838A7 /* GrammarNode.swift */,
 				4EEBC9832F9DECF000E838A7 /* LayoutTokenInjection.swift */,
+				4ED277C53041858900C05B68 /* Lexer.swift */,
 				4EEBC9842F9DECF000E838A7 /* Loggers.swift */,
 				4EEBC9852F9DECF000E838A7 /* main.swift */,
 				4EEBC9862F9DECF000E838A7 /* ManualOutput.swift */,
@@ -489,11 +489,11 @@
 				4E7709B42F37870300972246 /* AdventTests */,
 				4EBFE065302537A2001F3FF2 /* apus grammars */,
 				4EBFE0563024BE06001F3FF2 /* articles */,
-				4ED277CF3042218F00C05B68 /* tinyGLL */,
 				4E8D058E2F67204C0081C6D2 /* Frameworks */,
 				4E8D05962F6A183C0081C6D2 /* GeneratedParser */,
 				4EEBC9FE2F9EF35000E838A7 /* grammars */,
 				CB6B7316257EA9F400B929C6 /* Products */,
+				4ED277CF3042218F00C05B68 /* tinyGLL */,
 			);
 			sourceTree = "<group>";
 		};
