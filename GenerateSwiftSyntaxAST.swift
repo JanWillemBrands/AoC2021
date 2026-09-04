@@ -369,6 +369,13 @@ struct SwiftSyntaxGenerator {
            let stmt = convertControlTransferStatement(ctNT.nt, from: ctNT.from, to: ctNT.to) {
             return .stmt(stmt)
         }
+        if let lNT = find("loopStatement", in: spans),
+           let stmt = convertLoopStatement(lNT.nt, from: lNT.from, to: lNT.to) {
+            return .stmt(stmt)
+        }
+        if let dNT = find("doStatement", in: spans) {
+            return .stmt(convertDoStatement(dNT.nt, from: dNT.from, to: dNT.to))
+        }
         // branchStatement = guardStatement .   (`if` is an EXPRESSION in swift-syntax and
         // reaches the converter through `expression` below, not through here.)
         if let bNT = find("branchStatement", in: spans),
@@ -496,6 +503,15 @@ struct SwiftSyntaxGenerator {
         if let d = find("operatorDeclaration", in: spans) {
             return DeclSyntax(convertOperatorDeclaration(d.nt, from: d.from, to: d.to))
         }
+        if let d = find("typealiasDeclaration", in: spans) {
+            return DeclSyntax(convertTypealiasDeclaration(d.nt, from: d.from, to: d.to))
+        }
+        if let d = find("deinitializerDeclaration", in: spans) {
+            return DeclSyntax(convertDeinitializerDeclaration(d.nt, from: d.from, to: d.to))
+        }
+        if let d = find("subscriptDeclaration", in: spans) {
+            return DeclSyntax(convertSubscriptDeclaration(d.nt, from: d.from, to: d.to))
+        }
         record(.unhandled, "declaration kind has no converter: \(alternateKind(spans))", from: from, to: to)
         return nil
     }
@@ -527,8 +543,38 @@ struct SwiftSyntaxGenerator {
         var bindings: [PatternBindingSyntax] = []
         if let listNT = find("patternInitializerList", in: spans) {
             bindings = convertPatternInitializerList(listNT.nt, from: listNT.from, to: listNT.to)
+        } else if let nameNT = find("variableName", in: spans) {
+            // The COMPUTED-property alternates spell the binding inline instead of going through
+            // `patternInitializerList`:
+            //   variableDeclaration = variableDeclarationHead variableName typeAnnotation getterSetterBlock .
+            //   variableDeclaration = variableDeclarationHead variableName typeAnnotation? initializer? willSetDidSetBlock .
+            // swift-syntax still models them as ONE PatternBinding, with the accessors in
+            // `accessorBlock` — so the pieces are reassembled into that shape here.
+            let name = collectTerminalText(nameNT.nt, from: nameNT.from, to: nameNT.to)
+            var typeAnnotation: TypeAnnotationSyntax? = nil
+            if let taNT = find("typeAnnotation", in: spans) {
+                typeAnnotation = convertTypeAnnotation(taNT.nt, from: taNT.from, to: taNT.to)
+            }
+            var initializer: InitializerClauseSyntax? = nil
+            if let initNT = find("initializer", in: spans) {
+                initializer = convertInitializer(initNT.nt, from: initNT.from, to: initNT.to)
+            }
+            var accessorBlock: AccessorBlockSyntax? = nil
+            if let gsNT = find("getterSetterBlock", in: spans) {
+                accessorBlock = convertGetterSetterBlock(gsNT.nt, from: gsNT.from, to: gsNT.to)
+            } else if find(firstOf: ["willSetDidSetBlock", "initializedAccessorBlock"], in: spans) != nil {
+                record(.unhandled, "willSet/didSet or init-accessor block not converted", from: from, to: to)
+            }
+            bindings = [PatternBindingSyntax(
+                pattern: IdentifierPatternSyntax(
+                    identifier: name == "_" ? .wildcardToken() : .identifier(name)
+                ),
+                typeAnnotation: typeAnnotation,
+                initializer: initializer,
+                accessorBlock: accessorBlock
+            )]
         } else {
-            record(.unhandled, "binding decl without patternInitializerList (accessor form?)", from: from, to: to)
+            record(.unhandled, "binding decl with neither patternInitializerList nor variableName", from: from, to: to)
         }
         return VariableDeclSyntax(
             attributes: attributes,
@@ -1031,6 +1077,10 @@ struct SwiftSyntaxGenerator {
                     ? elements[0]
                     : ExprSyntax(SequenceExprSyntax(elements: ExprListSyntax(elements)))
                 items.append(ConditionElementSyntax(condition: .expression(expr)))
+            } else if let acNT = find("availabilityCondition", in: cSpans) {
+                items.append(ConditionElementSyntax(condition: .availability(
+                    convertAvailabilityCondition(acNT.nt, from: acNT.from, to: acNT.to)
+                )))
             } else {
                 record(.unhandled, "condition kind has no converter: \(alternateKind(cSpans))", from: cNT.from, to: cNT.to)
             }
@@ -1038,6 +1088,38 @@ struct SwiftSyntaxGenerator {
         if let restNT = find("conditionList", in: spans) {
             collectConditions(restNT.nt, from: restNT.from, to: restNT.to, into: &items)
         }
+    }
+
+    /// availabilityCondition = "#available" "(" availabilityArguments ")" .
+    /// availabilityCondition = "#unavailable" "(" availabilityArguments ")" .
+    ///
+    /// The CONDITION form takes only platform-version pairs and `*` — the labelled arguments
+    /// (`message:`, `introduced:`) are attribute-only, which is why `@available` needed its own
+    /// `availabilityAttributeArguments`. The element shapes are shared, so the same collector runs
+    /// over both: `availabilityArgument` has the same alternate names minus the labelled one.
+    private mutating func convertAvailabilityCondition(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> AvailabilityConditionSyntax {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return AvailabilityConditionSyntax(availabilityKeyword: .poundAvailableToken(), availabilityArguments: [])
+        }
+        let isUnavailable = spansContainKeyword(spans, "#unavailable")
+        var args: [AvailabilityArgumentSyntax] = []
+        if let listNT = find("availabilityArguments", in: spans) {
+            collectAvailabilityArguments(listNT.nt, from: listNT.from, to: listNT.to, into: &args)
+        } else {
+            record(.lookupFailed, "no availabilityArguments child", from: from, to: to)
+        }
+        if args.count > 1 {
+            for i in 0..<args.count - 1 {
+                args[i] = args[i].with(\.trailingComma, .commaToken())
+            }
+        }
+        return AvailabilityConditionSyntax(
+            availabilityKeyword: isUnavailable ? .poundUnavailableToken() : .poundAvailableToken(),
+            leftParen: .leftParenToken(),
+            availabilityArguments: AvailabilityArgumentListSyntax(args),
+            rightParen: .rightParenToken()
+        )
     }
 
     /// optionalBindingCondition = "let" bindingPattern initializer? | "var" bindingPattern initializer? .
@@ -1092,6 +1174,400 @@ struct SwiftSyntaxGenerator {
         ))
     }
 
+    // MARK: - Loop and do statements
+
+    /// loopStatement        = forInStatement | whileStatement | repeatWhileStatement .
+    /// forInStatement       = "for" "try"? "await"? "unsafe"? "case"? pattern "in" expression whereClause? codeBlock .
+    /// whileStatement       = "while" >->( "{" ) conditionList codeBlock .
+    /// repeatWhileStatement = "repeat" codeBlock "while" >->( "{" ) conditionExpression .
+    private mutating func convertLoopStatement(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> StmtSyntax? {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return nil
+        }
+        if let d = find("forInStatement", in: spans) {
+            return convertForInStatement(d.nt, from: d.from, to: d.to)
+        }
+        if let d = find("whileStatement", in: spans),
+           let (_, wSpans) = tileAlternate(d.nt, from: d.from, to: d.to) {
+            var conditions = ConditionElementListSyntax([])
+            if let clNT = find("conditionList", in: wSpans) {
+                conditions = convertConditionList(clNT.nt, from: clNT.from, to: clNT.to)
+            }
+            var body = CodeBlockSyntax(statements: [])
+            if let cbNT = find("codeBlock", in: wSpans) {
+                body = convertCodeBlock(cbNT.nt, from: cbNT.from, to: cbNT.to)
+            }
+            return StmtSyntax(WhileStmtSyntax(
+                whileKeyword: .keyword(.while), conditions: conditions, body: body
+            ))
+        }
+        if let d = find("repeatWhileStatement", in: spans),
+           let (_, rSpans) = tileAlternate(d.nt, from: d.from, to: d.to) {
+            var body = CodeBlockSyntax(statements: [])
+            if let cbNT = find("codeBlock", in: rSpans) {
+                body = convertCodeBlock(cbNT.nt, from: cbNT.from, to: cbNT.to)
+            }
+            var condition: ExprSyntax = ExprSyntax(MissingExprSyntax())
+            if let ceNT = find("conditionExpression", in: rSpans) {
+                var elements: [ExprSyntax] = []
+                flattenExpression(ceNT.nt, from: ceNT.from, to: ceNT.to, into: &elements)
+                condition = elements.count == 1
+                    ? elements[0]
+                    : ExprSyntax(SequenceExprSyntax(elements: ExprListSyntax(elements)))
+            }
+            return StmtSyntax(RepeatStmtSyntax(
+                repeatKeyword: .keyword(.repeat), body: body,
+                whileKeyword: .keyword(.while), condition: condition
+            ))
+        }
+        record(.unhandled, "loop kind has no converter: \(alternateKind(spans))", from: from, to: to)
+        return nil
+    }
+
+    private mutating func convertForInStatement(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> StmtSyntax? {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return nil
+        }
+        if spansContainKeyword(spans, "try") || spansContainKeyword(spans, "await") || spansContainKeyword(spans, "unsafe") {
+            record(.unhandled, "for-in with try/await/unsafe not converted", from: from, to: to)
+        }
+        let caseKeyword: TokenSyntax? = spansContainKeyword(spans, "case") ? .keyword(.case) : nil
+
+        var pattern: PatternSyntax = PatternSyntax(MissingPatternSyntax())
+        if let mpNT = find("matchPattern", in: spans) {
+            pattern = convertMatchPattern(mpNT.nt, from: mpNT.from, to: mpNT.to)
+        } else if let bpNT = find("bindingPattern", in: spans) {
+            // for-in binds, so a bare identifier is an IdentifierPattern here.
+            (pattern, _) = convertBindingPattern(bpNT.nt, from: bpNT.from, to: bpNT.to)
+        } else {
+            record(.lookupFailed, "no pattern child", from: from, to: to)
+        }
+
+        var sequence: ExprSyntax = ExprSyntax(MissingExprSyntax())
+        if let exprNT = find("expression", in: spans) {
+            sequence = convertExpression(exprNT.nt, from: exprNT.from, to: exprNT.to)
+        } else {
+            record(.lookupFailed, "no sequence expression child", from: from, to: to)
+        }
+
+        var whereClause: WhereClauseSyntax? = nil
+        if let wcNT = find("whereClause", in: spans) {
+            whereClause = convertWhereClause(wcNT.nt, from: wcNT.from, to: wcNT.to)
+        }
+        var body = CodeBlockSyntax(statements: [])
+        if let cbNT = find("codeBlock", in: spans) {
+            body = convertCodeBlock(cbNT.nt, from: cbNT.from, to: cbNT.to)
+        }
+        return StmtSyntax(ForStmtSyntax(
+            forKeyword: .keyword(.for),
+            caseKeyword: caseKeyword,
+            pattern: pattern,
+            inKeyword: .keyword(.in),
+            sequence: sequence,
+            whereClause: whereClause,
+            body: body
+        ))
+    }
+
+    /// whereClause     = "where" whereExpression .
+    /// whereExpression = conditionExpression .
+    private mutating func convertWhereClause(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> WhereClauseSyntax? {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to),
+              let weNT = find("whereExpression", in: spans),
+              let (_, weSpans) = tileAlternate(weNT.nt, from: weNT.from, to: weNT.to),
+              let ceNT = find(firstOf: ["conditionExpression", "expression"], in: weSpans) else {
+            record(.lookupFailed, "whereClause condition could not be resolved", from: from, to: to)
+            return nil
+        }
+        var elements: [ExprSyntax] = []
+        flattenExpression(ceNT.nt, from: ceNT.from, to: ceNT.to, into: &elements)
+        let condition: ExprSyntax = elements.count == 1
+            ? elements[0]
+            : ExprSyntax(SequenceExprSyntax(elements: ExprListSyntax(elements)))
+        return WhereClauseSyntax(whereKeyword: .keyword(.where), condition: condition)
+    }
+
+    /// doStatement  = "do" throwsClause? codeBlock catchClauses? .
+    /// catchClause  = "catch" catchPatternList? codeBlock .
+    /// catchPattern = matchPattern whereClause? | whereClause .
+    private mutating func convertDoStatement(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> StmtSyntax {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return StmtSyntax(DoStmtSyntax(body: CodeBlockSyntax(statements: [])))
+        }
+        var throwsClause: ThrowsClauseSyntax? = nil
+        if find("throwsClause", in: spans) != nil {
+            throwsClause = ThrowsClauseSyntax(throwsSpecifier: .keyword(.throws))
+        }
+        var body = CodeBlockSyntax(statements: [])
+        if let cbNT = find("codeBlock", in: spans) {
+            body = convertCodeBlock(cbNT.nt, from: cbNT.from, to: cbNT.to)
+        }
+        var catches: [CatchClauseSyntax] = []
+        if let ccNT = find("catchClauses", in: spans) {
+            collectCatchClauses(ccNT.nt, from: ccNT.from, to: ccNT.to, into: &catches)
+        }
+        return StmtSyntax(DoStmtSyntax(
+            doKeyword: .keyword(.do),
+            throwsClause: throwsClause,
+            body: body,
+            catchClauses: CatchClauseListSyntax(catches)
+        ))
+    }
+
+    private mutating func collectCatchClauses(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into catches: inout [CatchClauseSyntax]) {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return
+        }
+        if let ccNT = find("catchClause", in: spans),
+           let (_, cSpans) = tileAlternate(ccNT.nt, from: ccNT.from, to: ccNT.to) {
+            var items: [CatchItemSyntax] = []
+            if let listNT = find("catchPatternList", in: cSpans) {
+                collectCatchItems(listNT.nt, from: listNT.from, to: listNT.to, into: &items)
+            }
+            if items.count > 1 {
+                for i in 0..<items.count - 1 {
+                    items[i] = items[i].with(\.trailingComma, .commaToken())
+                }
+            }
+            var body = CodeBlockSyntax(statements: [])
+            if let cbNT = find("codeBlock", in: cSpans) {
+                body = convertCodeBlock(cbNT.nt, from: cbNT.from, to: cbNT.to)
+            }
+            catches.append(CatchClauseSyntax(
+                catchKeyword: .keyword(.catch),
+                catchItems: CatchItemListSyntax(items),
+                body: body
+            ))
+        }
+        if let restNT = find("catchClauses", in: spans) {
+            collectCatchClauses(restNT.nt, from: restNT.from, to: restNT.to, into: &catches)
+        }
+    }
+
+    private mutating func collectCatchItems(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into items: inout [CatchItemSyntax]) {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return
+        }
+        if let cpNT = find("catchPattern", in: spans),
+           let (_, cpSpans) = tileAlternate(cpNT.nt, from: cpNT.from, to: cpNT.to) {
+            var pattern: PatternSyntax? = nil
+            if let mpNT = find("matchPattern", in: cpSpans) {
+                pattern = convertMatchPattern(mpNT.nt, from: mpNT.from, to: mpNT.to)
+            }
+            var whereClause: WhereClauseSyntax? = nil
+            if let wcNT = find("whereClause", in: cpSpans) {
+                whereClause = convertWhereClause(wcNT.nt, from: wcNT.from, to: wcNT.to)
+            }
+            items.append(CatchItemSyntax(pattern: pattern, whereClause: whereClause))
+        }
+        if let restNT = find("catchPatternList", in: spans) {
+            collectCatchItems(restNT.nt, from: restNT.from, to: restNT.to, into: &items)
+        }
+    }
+
+    // MARK: - Deinitializer and subscript declarations
+
+    /// deinitializerDeclaration = attributes? declarationModifiers? "deinit" "async"? codeBlock? .
+    private mutating func convertDeinitializerDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> DeinitializerDeclSyntax {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return DeinitializerDeclSyntax()
+        }
+        var attributes = AttributeListSyntax([])
+        if let attrNT = find("attributes", in: spans) {
+            attributes = convertAttributes(attrNT.nt, from: attrNT.from, to: attrNT.to)
+        }
+        var modifiers = DeclModifierListSyntax([])
+        if let modsNT = find("declarationModifiers", in: spans) {
+            modifiers = convertDeclarationModifiers(modsNT.nt, from: modsNT.from, to: modsNT.to)
+        }
+        // swift-syntax has FOUR distinct effect-specifier nodes, one per position:
+        // FunctionEffectSpecifiers (decls), TypeEffectSpecifiers (function types / closures),
+        // AccessorEffectSpecifiers, and this one. They carry the same words, not the same type.
+        var effects: DeinitializerEffectSpecifiersSyntax? = nil
+        if spansContainKeyword(spans, "async") {
+            effects = DeinitializerEffectSpecifiersSyntax(asyncSpecifier: .keyword(.async))
+        }
+        var body: CodeBlockSyntax? = nil
+        if let cbNT = find("codeBlock", in: spans) {
+            body = convertCodeBlock(cbNT.nt, from: cbNT.from, to: cbNT.to)
+        }
+        return DeinitializerDeclSyntax(
+            attributes: attributes,
+            modifiers: modifiers,
+            deinitKeyword: .keyword(.deinit),
+            effectSpecifiers: effects,
+            body: body
+        )
+    }
+
+    /// subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterBlock .
+    /// subscriptHead        = attributes? declarationModifiers? "subscript" genericParameterClause? parameterClause .
+    /// subscriptResult      = "->" type .
+    private mutating func convertSubscriptDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> SubscriptDeclSyntax {
+        let emptyClause = FunctionParameterClauseSyntax(parameters: [])
+        let emptyReturn = ReturnClauseSyntax(arrow: .arrowToken(), type: MissingTypeSyntax())
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return SubscriptDeclSyntax(parameterClause: emptyClause, returnClause: emptyReturn)
+        }
+        var attributes = AttributeListSyntax([])
+        var modifiers = DeclModifierListSyntax([])
+        var generics: GenericParameterClauseSyntax? = nil
+        var parameterClause = emptyClause
+        if let headNT = find("subscriptHead", in: spans),
+           let (_, hSpans) = tileAlternate(headNT.nt, from: headNT.from, to: headNT.to) {
+            if let attrNT = find("attributes", in: hSpans) {
+                attributes = convertAttributes(attrNT.nt, from: attrNT.from, to: attrNT.to)
+            }
+            if let modsNT = find("declarationModifiers", in: hSpans) {
+                modifiers = convertDeclarationModifiers(modsNT.nt, from: modsNT.from, to: modsNT.to)
+            }
+            if let gpNT = find("genericParameterClause", in: hSpans) {
+                generics = convertGenericParameterClause(gpNT.nt, from: gpNT.from, to: gpNT.to)
+            }
+            if let pcNT = find("parameterClause", in: hSpans) {
+                parameterClause = convertParameterClause(pcNT.nt, from: pcNT.from, to: pcNT.to)
+            }
+        } else {
+            record(.lookupFailed, "no subscriptHead child", from: from, to: to)
+        }
+        var returnClause = emptyReturn
+        if let resNT = find("subscriptResult", in: spans),
+           let (_, rSpans) = tileAlternate(resNT.nt, from: resNT.from, to: resNT.to),
+           let typeNT = find("type", in: rSpans) {
+            returnClause = ReturnClauseSyntax(
+                arrow: .arrowToken(), type: convertType(typeNT.nt, from: typeNT.from, to: typeNT.to)
+            )
+        } else {
+            record(.lookupFailed, "no subscriptResult/type child", from: from, to: to)
+        }
+        if find("genericWhereClause", in: spans) != nil {
+            record(.unhandled, "genericWhereClause not converted", from: from, to: to)
+        }
+        var accessorBlock: AccessorBlockSyntax? = nil
+        if let gsNT = find("getterSetterBlock", in: spans) {
+            accessorBlock = convertGetterSetterBlock(gsNT.nt, from: gsNT.from, to: gsNT.to)
+        }
+        return SubscriptDeclSyntax(
+            attributes: attributes,
+            modifiers: modifiers,
+            subscriptKeyword: .keyword(.subscript),
+            genericParameterClause: generics,
+            parameterClause: parameterClause,
+            returnClause: returnClause,
+            accessorBlock: accessorBlock
+        )
+    }
+
+    // MARK: - Accessor blocks
+
+    /// getterSetterBlock  = codeBlock | @prefer accessorBlockBrace .
+    /// accessorBlockBrace = "{" accessorClauseList "}" .
+    ///
+    /// swift-syntax's `AccessorBlock.accessors` is an either/or: a list of accessor declarations,
+    /// OR — for the shorthand computed property `var x: Int { 0 }` — a plain code block.
+    private mutating func convertGetterSetterBlock(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> AccessorBlockSyntax {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return AccessorBlockSyntax(accessors: .getter([]))
+        }
+        if let braceNT = find("accessorBlockBrace", in: spans),
+           let (_, braceSpans) = tileAlternate(braceNT.nt, from: braceNT.from, to: braceNT.to) {
+            var accessors: [AccessorDeclSyntax] = []
+            if let listNT = find("accessorClauseList", in: braceSpans) {
+                collectAccessorClauses(listNT.nt, from: listNT.from, to: listNT.to, into: &accessors)
+            }
+            return AccessorBlockSyntax(
+                leftBrace: .leftBraceToken(),
+                accessors: .accessors(AccessorDeclListSyntax(accessors)),
+                rightBrace: .rightBraceToken()
+            )
+        }
+        // The shorthand `{ 0 }` getter: swift-syntax keeps the statements directly.
+        if let cbNT = find("codeBlock", in: spans),
+           let (_, cbSpans) = tileAlternate(cbNT.nt, from: cbNT.from, to: cbNT.to) {
+            var items: [CodeBlockItemSyntax.Item] = []
+            if let stmtsNT = find("statements", in: cbSpans) {
+                items = convertStatements(stmtsNT.nt, from: stmtsNT.from, to: stmtsNT.to)
+            }
+            return AccessorBlockSyntax(
+                leftBrace: .leftBraceToken(),
+                accessors: .getter(CodeBlockItemListSyntax(items.map { CodeBlockItemSyntax(item: $0) })),
+                rightBrace: .rightBraceToken()
+            )
+        }
+        record(.lookupFailed, "getterSetterBlock with neither brace nor codeBlock", from: from, to: to)
+        return AccessorBlockSyntax(accessors: .getter([]))
+    }
+
+    /// accessorClauseList  = accessorClauseEntry accessorClauseList? .
+    /// accessorClauseEntry = getterClause | setterClause | initAccessorClause | coroutineAccessorClause .
+    /// getterClause        = attributes? accessorModifier? "get" accessorEffects? codeBlock? .
+    /// setterClause        = attributes? accessorModifier? "set" setterName? accessorEffects? codeBlock? .
+    private mutating func collectAccessorClauses(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into accessors: inout [AccessorDeclSyntax]) {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return
+        }
+        if let entryNT = find("accessorClauseEntry", in: spans),
+           let (_, eSpans) = tileAlternate(entryNT.nt, from: entryNT.from, to: entryNT.to) {
+            if let clauseNT = find(firstOf: ["getterClause", "setterClause"], in: eSpans),
+               let (_, cSpans) = tileAlternate(clauseNT.nt, from: clauseNT.from, to: clauseNT.to) {
+                let isGetter = clauseNT.nt.name == "getterClause"
+                var attributes = AttributeListSyntax([])
+                if let attrNT = find("attributes", in: cSpans) {
+                    attributes = convertAttributes(attrNT.nt, from: attrNT.from, to: attrNT.to)
+                }
+                var modifier: DeclModifierSyntax? = nil
+                if let modNT = find("accessorModifier", in: cSpans) {
+                    modifier = DeclModifierSyntax(
+                        name: modifierToken(collectTerminalText(modNT.nt, from: modNT.from, to: modNT.to))
+                    )
+                }
+                var parameters: AccessorParametersSyntax? = nil
+                if let snNT = find("setterName", in: cSpans),
+                   let (_, snSpans) = tileAlternate(snNT.nt, from: snNT.from, to: snNT.to),
+                   let idNT = find("hardIdentifier", in: snSpans) {
+                    parameters = AccessorParametersSyntax(
+                        name: .identifier(collectTerminalText(idNT.nt, from: idNT.from, to: idNT.to))
+                    )
+                }
+                var effects: AccessorEffectSpecifiersSyntax? = nil
+                if let effNT = find("accessorEffects", in: cSpans) {
+                    let text = collectTerminalText(effNT.nt, from: effNT.from, to: effNT.to)
+                    effects = AccessorEffectSpecifiersSyntax(
+                        asyncSpecifier: text.contains("async") ? .keyword(.async) : nil,
+                        throwsClause: text.contains("throws")
+                            ? ThrowsClauseSyntax(throwsSpecifier: .keyword(.throws)) : nil
+                    )
+                }
+                var body: CodeBlockSyntax? = nil
+                if let cbNT = find("codeBlock", in: cSpans) {
+                    body = convertCodeBlock(cbNT.nt, from: cbNT.from, to: cbNT.to)
+                }
+                accessors.append(AccessorDeclSyntax(
+                    attributes: attributes,
+                    modifier: modifier,
+                    accessorSpecifier: isGetter ? .keyword(.get) : .keyword(.set),
+                    parameters: parameters,
+                    effectSpecifiers: effects,
+                    body: body
+                ))
+            } else {
+                record(.unhandled, "accessor kind has no converter: \(alternateKind(eSpans))", from: entryNT.from, to: entryNT.to)
+            }
+        }
+        if let restNT = find("accessorClauseList", in: spans) {
+            collectAccessorClauses(restNT.nt, from: restNT.from, to: restNT.to, into: &accessors)
+        }
+    }
+
     // MARK: - Attributes and generic parameter clauses
 
     /// attributes    = attribute attributes? | conditionalCompilationAttributes attributes? .
@@ -1131,15 +1607,29 @@ struct SwiftSyntaxGenerator {
             record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
             return nil
         }
-        // Arguments in any form are token soup at this level — see the note above.
+        // `@available` now has a real argument grammar, so it converts.
+        if let availNT = find("availableAttribute", in: spans) {
+            return convertAvailableAttribute(availNT.nt, from: availNT.from, to: availNT.to)
+        }
+        // Every OTHER argument form is still balanced-token soup at this level — see the note above.
         if find(firstOf: ["attributeArgumentClause", "attributeArgumentExprClause",
-                          "macroRoleArguments", "abiDeclaration", "availableAttribute"], in: spans) != nil {
-            record(.unhandled, "attribute with an argument clause not converted", from: from, to: to)
+                          "macroRoleArguments", "abiDeclaration"], in: spans) != nil {
+            // Name the attribute so the triage says WHICH argument shapes actually occur.
+            let head = String(input[from..<to]).prefix(while: { $0 != "(" })
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            record(.unhandled, "attribute with an argument clause not converted: \(head)", from: from, to: to)
             return nil
         }
+        // The special attributes with bespoke grammars — `@isolated(any)`, `@attached(…)`,
+        // `@freestanding(…)` — spell their name as a bare LITERAL in the alternate, so there is
+        // no `attributeName` child at all and no recognised argument-clause node either. That is
+        // an unconverted FORM, not a failed lookup; classifying it as `.lookupFailed` wrongly
+        // reported a converter bug.
         guard let nameNT = find("attributeName", in: spans),
               let (_, nameSpans) = tileAlternate(nameNT.nt, from: nameNT.from, to: nameNT.to) else {
-            record(.lookupFailed, "no attributeName child", from: from, to: to)
+            let head = String(input[from..<to]).prefix(while: { $0 != "(" })
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            record(.unhandled, "attribute with a bespoke argument grammar not converted: \(head)", from: from, to: to)
             return nil
         }
         if find("typeIdentifier", in: nameSpans) != nil {
@@ -1166,6 +1656,129 @@ struct SwiftSyntaxGenerator {
         return AttributeSyntax(
             atSign: .atSignToken(),
             attributeName: IdentifierTypeSyntax(name: .identifier(name), genericArgumentClause: generics)
+        )
+    }
+
+    /// availableAttribute            = "@" >s< "available" >s< "(" availabilityAttributeArguments ")" .
+    /// availabilityAttributeArgument = "*" | platformName platformVersion?
+    ///                               | availabilityLabel ":" availabilityValue .
+    private mutating func convertAvailableAttribute(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> AttributeSyntax? {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return nil
+        }
+        var args: [AvailabilityArgumentSyntax] = []
+        if let listNT = find("availabilityAttributeArguments", in: spans) {
+            collectAvailabilityArguments(listNT.nt, from: listNT.from, to: listNT.to, into: &args)
+        } else {
+            record(.lookupFailed, "no availabilityAttributeArguments child", from: from, to: to)
+        }
+        if args.count > 1 {
+            for i in 0..<args.count - 1 {
+                args[i] = args[i].with(\.trailingComma, .commaToken())
+            }
+        }
+        return AttributeSyntax(
+            atSign: .atSignToken(),
+            attributeName: IdentifierTypeSyntax(name: .identifier("available")),
+            leftParen: .leftParenToken(),
+            arguments: .availability(AvailabilityArgumentListSyntax(args)),
+            rightParen: .rightParenToken()
+        )
+    }
+
+    private mutating func collectAvailabilityArguments(_ nt: GrammarNode, from: CharPosition, to: CharPosition, into args: inout [AvailabilityArgumentSyntax]) {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return
+        }
+        if let argNT = find(firstOf: ["availabilityAttributeArgument", "availabilityArgument"], in: spans),
+           let (_, aSpans) = tileAlternate(argNT.nt, from: argNT.from, to: argNT.to) {
+            if let labelNT = find("availabilityLabel", in: aSpans),
+               let valueNT = find("availabilityValue", in: aSpans) {
+                let label = collectTerminalText(labelNT.nt, from: labelNT.from, to: labelNT.to)
+                if let value = availabilityValue(valueNT) {
+                    args.append(AvailabilityArgumentSyntax(argument: .availabilityLabeledArgument(
+                        AvailabilityLabeledArgumentSyntax(
+                            label: availabilityToken(label), colon: .colonToken(), value: value
+                        )
+                    )))
+                }
+            } else if let platNT = find("platformName", in: aSpans) {
+                let platform = collectTerminalText(platNT.nt, from: platNT.from, to: platNT.to)
+                // WITH a version it is a version restriction; WITHOUT one it is a bare token —
+                // `@available(*, deprecated)` gives `.token(keyword(deprecated))` and
+                // `@available(macOS, introduced: …)` gives `.token(identifier("macOS"))`,
+                // NOT a PlatformVersion with a nil version.
+                if let verNT = find("platformVersion", in: aSpans) {
+                    args.append(AvailabilityArgumentSyntax(argument: .availabilityVersionRestriction(
+                        PlatformVersionSyntax(platform: .identifier(platform), version: versionTuple(verNT))
+                    )))
+                } else {
+                    args.append(AvailabilityArgumentSyntax(argument: .token(availabilityToken(platform))))
+                }
+            } else {
+                // The bare `*` wildcard.
+                args.append(AvailabilityArgumentSyntax(argument: .token(.binaryOperator("*"))))
+            }
+        }
+        if let restNT = find(firstOf: ["availabilityAttributeArguments", "availabilityArguments"], in: spans) {
+            collectAvailabilityArguments(restNT.nt, from: restNT.from, to: restNT.to, into: &args)
+        }
+    }
+
+    /// The availability spec words are KEYWORD tokens in swift-syntax, not identifiers — both as
+    /// bare arguments (`deprecated`) and as labels (`message:`). Anything else (a platform name
+    /// such as `macOS`) stays an identifier.
+    private func availabilityToken(_ text: String) -> TokenSyntax {
+        switch text {
+        case "deprecated":  return .keyword(.deprecated)
+        case "unavailable": return .keyword(.unavailable)
+        case "introduced":  return .keyword(.introduced)
+        case "obsoleted":   return .keyword(.obsoleted)
+        case "message":     return .keyword(.message)
+        case "renamed":     return .keyword(.renamed)
+        case "noasync":     return .keyword(.noasync)
+        default:            return .identifier(text)
+        }
+    }
+
+    /// availabilityValue = platformVersion | staticStringLiteral | hardIdentifier .
+    private mutating func availabilityValue(_ span: NTSpan) -> AvailabilityLabeledArgumentSyntax.Value? {
+        guard let (_, spans) = tileAlternate(span.nt, from: span.from, to: span.to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: span.from, to: span.to)
+            return nil
+        }
+        if let verNT = find("platformVersion", in: spans) {
+            return .version(versionTuple(verNT))
+        }
+        let text = collectTerminalText(span.nt, from: span.from, to: span.to)
+        if text.hasPrefix("\"") {
+            // SimpleStringLiteralExpr, not StringLiteralExpr: an availability message cannot
+            // contain interpolation, and swift-syntax gives it the restricted node type.
+            return .string(SimpleStringLiteralExprSyntax(
+                openingQuote: .stringQuoteToken(),
+                segments: SimpleStringLiteralSegmentListSyntax([
+                    StringSegmentSyntax(content: .stringSegment(String(text.dropFirst().dropLast())))
+                ]),
+                closingQuote: .stringQuoteToken()
+            ))
+        }
+        record(.unhandled, "availability value is neither a version nor a string", from: span.from, to: span.to)
+        return nil
+    }
+
+    /// platformVersion = decimalDigits [ "." decimalDigits [ "." decimalDigits ] ] .
+    /// swift-syntax splits this into a major token plus a list of `.n` components.
+    private mutating func versionTuple(_ span: NTSpan) -> VersionTupleSyntax {
+        let text = collectTerminalText(span.nt, from: span.from, to: span.to)
+        let parts = text.split(separator: ".", omittingEmptySubsequences: false).map(String.init)
+        let components = parts.dropFirst().map {
+            VersionComponentSyntax(period: .periodToken(), number: .integerLiteral($0))
+        }
+        return VersionTupleSyntax(
+            major: .integerLiteral(parts.first ?? "0"),
+            components: VersionComponentListSyntax(Array(components))
         )
     }
 
@@ -1278,6 +1891,21 @@ struct SwiftSyntaxGenerator {
         }
     }
 
+    /// A TYPE specifier's token kind. Overlaps `modifierToken` but is NOT the same set — `inout`
+    /// is a type specifier and not a declaration modifier, so it is absent there and came out as a
+    /// plain identifier. Falls through to the modifier map for the shared words
+    /// (`borrowing`, `consuming`, `isolated`, `nonisolated`).
+    private func typeSpecifierToken(_ name: String) -> TokenSyntax {
+        switch name {
+        case "inout":     return .keyword(.inout)
+        case "sending":   return .keyword(.sending)
+        case "__shared":  return .keyword(.__shared)
+        case "__owned":   return .keyword(.__owned)
+        case "_const":    return .keyword(._const)
+        default:          return modifierToken(name)
+        }
+    }
+
     /// A declaration modifier's token kind. swift-syntax spells the lexer-classified ones as
     /// `keyword(...)` and the rest (the underscored SPI modifiers) as plain identifiers, and the
     /// dump distinguishes them — so this cannot just be `.identifier(text)`. Set taken from the
@@ -1316,6 +1944,48 @@ struct SwiftSyntaxGenerator {
         case "nonisolated":  return .keyword(.nonisolated)
         default:             return .identifier(name)
         }
+    }
+
+    /// typealiasDeclaration = attributes? accessLevelModifier? "typealias" typealiasName
+    ///                        genericParameterClause? typealiasAssignment .
+    /// typealiasAssignment  = assignmentOperator type .
+    private mutating func convertTypealiasDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> TypeAliasDeclSyntax {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return TypeAliasDeclSyntax(name: .identifier("?"),
+                                       initializer: TypeInitializerClauseSyntax(value: MissingTypeSyntax()))
+        }
+        let modifiers = declHeadModifiers(spans, from: from, to: to)
+        var attributes = AttributeListSyntax([])
+        if let attrNT = find("attributes", in: spans) {
+            attributes = convertAttributes(attrNT.nt, from: attrNT.from, to: attrNT.to)
+        }
+        var generics: GenericParameterClauseSyntax? = nil
+        if let gpNT = find("genericParameterClause", in: spans) {
+            generics = convertGenericParameterClause(gpNT.nt, from: gpNT.from, to: gpNT.to)
+        }
+        var name = TokenSyntax.identifier("?")
+        if let nameNT = find("typealiasName", in: spans) {
+            name = .identifier(collectTerminalText(nameNT.nt, from: nameNT.from, to: nameNT.to))
+        } else {
+            record(.lookupFailed, "no typealiasName child", from: from, to: to)
+        }
+        var value: TypeSyntax = TypeSyntax(MissingTypeSyntax())
+        if let asgNT = find("typealiasAssignment", in: spans),
+           let (_, asgSpans) = tileAlternate(asgNT.nt, from: asgNT.from, to: asgNT.to),
+           let typeNT = find("type", in: asgSpans) {
+            value = convertType(typeNT.nt, from: typeNT.from, to: typeNT.to)
+        } else {
+            record(.lookupFailed, "no typealiasAssignment/type child", from: from, to: to)
+        }
+        return TypeAliasDeclSyntax(
+            attributes: attributes,
+            modifiers: modifiers,
+            typealiasKeyword: .keyword(.typealias),
+            name: name,
+            genericParameterClause: generics,
+            initializer: TypeInitializerClauseSyntax(equal: .equalToken(), value: value)
+        )
     }
 
     // MARK: - Initializer and operator declarations
@@ -3313,8 +3983,37 @@ struct SwiftSyntaxGenerator {
         if let d = find("functionType", in: spans) {
             return convertFunctionType(d.nt, from: d.from, to: d.to)
         }
-        // Everything else (composition, opaque, attributed, modifier-prefixed, …) degrades
-        // to a flat IdentifierType over the raw source text.
+        // type = parameterModifier type .   type = attribute type .
+        // swift-syntax wraps both in AttributedType: specifiers (`inout`, `borrowing`, `sending`)
+        // go in `specifiers`, `@attr` goes in `attributes`, and the operand is `baseType`.
+        if let innerNT = find("type", in: spans),
+           find(firstOf: ["parameterModifier", "attribute"], in: spans) != nil {
+            let base = convertType(innerNT.nt, from: innerNT.from, to: innerNT.to)
+            var specifiers = TypeSpecifierListSyntax([])
+            var attributes = AttributeListSyntax([])
+            if let modNT = find("parameterModifier", in: spans) {
+                let text = collectTerminalText(modNT.nt, from: modNT.from, to: modNT.to)
+                if text.contains("(") {
+                    record(.unhandled, "parameterised type specifier not converted", from: modNT.from, to: modNT.to)
+                } else {
+                    specifiers = TypeSpecifierListSyntax([
+                        .simpleTypeSpecifier(SimpleTypeSpecifierSyntax(specifier: typeSpecifierToken(text)))
+                    ])
+                }
+            }
+            if let attrNT = find("attribute", in: spans) {
+                if let attribute = convertAttribute(attrNT.nt, from: attrNT.from, to: attrNT.to) {
+                    attributes = AttributeListSyntax([.attribute(attribute)])
+                }
+            }
+            return TypeSyntax(AttributedTypeSyntax(
+                specifiers: specifiers,
+                attributes: attributes,
+                baseType: base
+            ))
+        }
+        // Everything else (composition, opaque, …) degrades to a flat IdentifierType
+        // over the raw source text.
         let text = collectTerminalText(nt, from: from, to: to)
         record(.unhandled, "type form has no converter; flattened to IdentifierType: \(alternateKind(spans))", from: from, to: to)
         return TypeSyntax(IdentifierTypeSyntax(name: .identifier(text)))

@@ -191,6 +191,34 @@ Source: Sep 2 2026 Phase 1 tree-fidelity work; `GenerateSwiftSyntaxAST.swift`.
    Needs its own ambiguity A/B.
    Source: Sep 3 2026 AST work; `Phase3BranchTests` `switch-bind` / `switch-where`.
 
+27. **Attribute argument grammars: `@available` done, seven bespoke ones remain as token soup.**
+   `attributeArgumentClause = >s< "(" balancedTokens? ")"` accepts ANY balanced token sequence, so
+   it is an OVER-GENERALITY problem, not merely a missing AST mapping: `@available(!!! ??? ***)`
+   and `@available(1 + 2)` both parsed while swift-syntax errors. Pinned by `AttributeSoupTests`.
+
+   **Done Sep 4 2026 — `@available` (21 of 62 records).** It needed a new
+   `availabilityAttributeArguments`, NOT a reuse of the existing `availabilityArguments`: that rule
+   serves `#available(…)` CONDITIONS, which take only platform-version pairs and `*`, whereas the
+   attribute also takes labelled arguments (`deprecated`, `message: "…"`, `introduced: 10.15`,
+   `renamed: "y"`). Reusing it verbatim would have rejected very common code. Measured clean:
+   accepts 0, ambiguity 0, no wrongly-accepted rejects, and both `@available` soup rows now reject.
+
+   **Remaining (34 records, seven attributes), each with its own bespoke grammar in swift-syntax:**
+   `@abi` (8), `@differentiable` (6), `@lifetime` (6), `@objc` (5, `ObjCSelectorPieceList` —
+   `@objc(+++)` still wrongly accepted), `@derivative` (4), `@transpose` (4), `@backDeployed` (3),
+   `@specialized` (3). Poor ratio: seven mini-grammars plus seven converter shapes for 34 records,
+   several of them experimental Swift features. Do them one at a time if reject-parity on attribute
+   arguments becomes a goal; otherwise leave.
+
+   **The generic `.argumentList(LabeledExprList)` fallback is NOT worth doing.** Measured: only ONE
+   record (`@Argument`) takes the general expression-list shape. And it cannot simply replace the
+   catch-all rule — `attributeArgumentExprClause` exists and is wired to the `moduleSelector`
+   alternate, but switching the general rule to it would reject `@objc(foo:bar:)` and
+   `@available(macOS 10.15, *)`, which are not expression lists. swift-syntax gets away with a
+   generic fallback because it dispatches on a TABLE of special attribute names first; matching that
+   means extending the `>->( "abi" "attached" "available" … )` exclusion list per special attribute.
+   Source: Sep 4 2026 attribute work.
+
 ## Maintenance Rule
 
 - Add new markdown TODOs here and link back to source context when needed.

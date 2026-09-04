@@ -924,6 +924,7 @@ inOutExpression = "&" >s< postfixExpression .
 
 tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .
 // ebnf tryOperator = "try" [ >s< ("?" | "!") ].
+// ebnf tryOperator = "try" [ >s< "?" | >s< "!" ].
 
 /// Grammar of an await expression
 /// await-operator → await
@@ -948,7 +949,7 @@ awaitOperator = "await" .
 // spurious `-> ()` tail to re-parse as infix. Same shape as `@longest genericIdentifier` (`A` vs
 // `A<B>`). No-op for ordinary operator chains: each infixExpression is one operator + one operand,
 // so it has a single extent and shares no start with a longer sibling.
-@longest
+
 // TIGHT infix (`>s< … >s<`) may not use an operator BEGINNING with `!`/`?`. When left-bound, swift
 // lexes `!`/`?` as a single-character POSTFIX token and never munches a second one — probed token
 // streams: `foo!!foo` → `identifier exclamationMark exclamationMark identifier`, `foo??bar` →
@@ -958,6 +959,7 @@ awaitOperator = "await" .
 // `postfixOperatorToken` already means exactly "operator body not starting with `!`/`?`", so it is
 // reused here rather than cloned; `dotOperator` (`a...b`) and `"&"` (`a&b`) stay reachable, and the
 // `>->( regularExpressionLiteral )` regex gate is kept from `operator`.
+@longest
 infixExpression = >s< ( >->( regularExpressionLiteral ) postfixOperatorToken | dotOperator | "&" ) >s< tryOperator? awaitOperator? prefixExpression .
 infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
 // `arrowExpr` — swift-syntax `ExprNodes.swift:71`:
@@ -1031,15 +1033,15 @@ conditionalOperator = <s> "?" expression ":" .
 /// type-casting-operator → as ? type
 /// type-casting-operator → as ! type
 
-typeCastingOperator = "is" type .
-typeCastingOperator = "as" type .
-typeCastingOperator = "as" >s< "?" type .
-typeCastingOperator = "as" >s< "!" type .
+typeCastingOperator = "is" type
+                    | "as" type
+                    | "as" >s< "?" type
+                    | "as" >s< "!" type .
 
 // "as"/"as?"/"as!" only — used after if/switch expressions where "is" is disallowed
-coercingOperator = "as" type .
-coercingOperator = "as" >s< "?" type .
-coercingOperator = "as" >s< "!" type .
+coercingOperator = "as" type
+                 | "as" >s< "?" type
+                 | "as" >s< "!" type .
 
 /// Grammar of a primary expression
 /// primary-expression → identifier generic-argument-clause?
@@ -1234,7 +1236,9 @@ switchCase = conditionalSwitchCase .
 // is accepted by the parser).
 caseLabel = switchCaseAttribute? "case" caseItemList ":" .
 caseItemList = matchPattern whereClause? | matchPattern whereClause? "," caseItemList .
+
 defaultLabel = switchCaseAttribute? "default" ":" .
+
 switchCaseAttribute = "@" >s< attributeName .
 
 whereClause = "where" whereExpression .
@@ -2454,6 +2458,13 @@ localParameterName = softIdentifier | "_" .     // but references to the paramet
 
 
 parameterModifiers = parameterModifier parameterModifiers? .   // TODO: swift-syntax Types.swift:1256-1280 repeat loop — multiple type-specifiers can stack
+// OVERLAPS BUT IS NOT EQUAL TO `declarationModifier` (~1700 lines below). Shared: `_const`,
+// `borrowing`, `consuming`, `isolated`, `sending`. TYPE-SPECIFIER ONLY: `inout`, `__owned`,
+// `__shared`, `nonisolated`, `dependsOn`, `scoped`. Everything else there (`class`, `static`,
+// `final`, `lazy`, `weak`, access levels, …) is DECL-ONLY. The distinction is real — swift-syntax
+// spells the shared words as keyword tokens in BOTH positions but `inout` only exists here — and
+// it is easy to miss because the two lists are far apart and neither referenced the other.
+// (`GenerateSwiftSyntaxAST` keeps a matching pair, `typeSpecifierToken` / `modifierToken`.)
 parameterModifier = "inout" | "borrowing" | "consuming" | "isolated" | "_const" | "sending" | "__shared" | "__owned" .   // TODO: swift-syntax SimpleTypeSpecifierSyntax.SpecifierOptions (Parser+TokenSpecSet.swift:3570)
 parameterModifier = "nonisolated" >s< "(" "nonsending" ")" .  // TYPE specifier form ONLY — swift-syntax rejects a bare `nonisolated` type specifier (`nonisolated Int`, `nonisolated () -> Void` all hasError). Bare `nonisolated` is a DECL modifier (actorIsolationModifier), not a type specifier. Dropping the bare alternate also removes the `let x: nonisolated⏎(hello)` residual ambiguity (reading B was bare-nonisolated + `(hello)` as a parenthesized type). swift-syntax parseNonisolatedTypeSpecifier (Types.swift:1179)
 parameterModifier = "dependsOn" >s< "(" "scoped"? identifierList ")" .        // TODO: swift-syntax parseLifetimeTypeSpecifier (Types.swift:1121): SE-0432 lifetime dependencies
@@ -2777,6 +2788,8 @@ precedenceGroupName = hardIdentifier .
 // Mirrors swift-syntax DeclarationModifier set (TokenSpecSet.swift:350-386).
 // Position constraints (e.g. async only after parameter clause) are semantic, not syntactic;
 // swift-syntax accepts all of these in the modifier list and the compiler diagnoses misuse later.
+// OVERLAPS BUT IS NOT EQUAL TO `parameterModifier` (the TYPE-position specifier list, ~1700 lines
+// above) — see the note there for the exact three-way split. Notably `inout` is NOT here.
 declarationModifier = "class" | "convenience" | "dynamic" | "final" | "infix" | "lazy" | "optional" | "override" | "postfix" | "prefix" | "required" | "static" | "unowned" | "unowned" "(" "safe" ")" | "unowned" "(" "unsafe" ")" | "weak" .
 declarationModifier = "async" | "borrowing" | "consuming" | "sending" | "distributed" | "reasync" | "indirect" | "isolated" .
 declarationModifier = "_const" | "_local" | "__consuming" | "__setter_access" .
@@ -2864,7 +2877,22 @@ attribute = "@" >s< "freestanding" >s< "(" macroRoleArguments? ")" .
 // unknown ones an expression list.
 @longest
 attribute = availableAttribute .
-availableAttribute = "@" >s< "available" attributeArgumentClause .
+// `@available` arguments are a SUPERSET of `#available` condition arguments: the condition form
+// (`availabilityArguments`, above) takes only platform-version pairs and `*`, while the attribute
+// also takes labelled arguments (`deprecated`, `message: "…"`, `introduced: 10.15`, `renamed: "y"`).
+// So this extends that grammar rather than reusing it verbatim. Replaces `attributeArgumentClause`
+// (balanced-token soup), which accepted anything at all inside the parens — `@available(!!! ???)`
+// and `@available(1 + 2)` both parsed. See `AttributeSoupTests`.
+// swift-syntax: AvailabilityArgumentSyntax.Argument = .token | .availabilityVersionRestriction
+// | .availabilityLabeledArgument.
+availableAttribute = "@" >s< "available" >s< "(" availabilityAttributeArguments ")" .
+availabilityAttributeArguments = availabilityAttributeArgument
+                               | availabilityAttributeArgument "," availabilityAttributeArguments .
+availabilityAttributeArgument = "*" .
+availabilityAttributeArgument = platformName platformVersion? .
+availabilityAttributeArgument = availabilityLabel ":" availabilityValue .
+availabilityLabel = hardIdentifier .
+availabilityValue = platformVersion | staticStringLiteral | hardIdentifier .
 @longest
 attribute = "@" >-> ( "abi" "attached" "available" "freestanding" "isolated" ) >s< attributeName attributeArgumentClause? .
 // Module-qualified attribute name = a custom attribute → its args are an EXPRESSION argument list, not

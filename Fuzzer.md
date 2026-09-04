@@ -8,7 +8,6 @@ The trend is real, but it is not “LLMs out, symbols in.” It is neurosymbolic
 
 cacm.acm.org
 
-What is actually happeningPure LLMs are strong at mapping messy language onto plausible programs and weak at guaranteed multi-step execution. Compilers are the opposite: they already live in symbolic representations (tokens → AST → typed IR → rewrite rules → machine code). The current research wave treats that mismatch as an architecture problem, not a scaling problem.Typical pattern:Neural frontend — parse intent, sketch a program, propose an optimization, or invent a rewrite.
 Symbolic IR — a checkable intermediate object: AST, LLVM/MLIR dialect, Datalog facts, grammar tree, SMT formula.
 Deterministic backend — typecheck, optimize, prove, or emit code. Fail loudly if the IR is invalid.
 
@@ -154,15 +153,7 @@ llvm-harness agent  →  candidate patch in a middle-end pass
         ↓
 regression tests + Alive2 + human review
 
-The LLM is good at proposing unusual feature combinations and at reading IR and C++ once you put GDB, Alive2, and opt -print-after-all in its hands. It is not yet a substitute for the pass’s correctness contract. That is why the fuzzers are already shipping real bugs into GCC/LLVM trackers, while the repair agents still need a specialist harness and still lose most of their “wins” under expert review.If you want one sentence to take away: LLMs are now good enough to stress mature compilers at the IR/optimizer layer; they are not yet good enough to own a middle-end pass without a compiler-shaped tool belt and a human in the merge queue.
-
-12 web pages
-
-Explain Alive2 translation validation
-
-Explore Csmith grammar fuzzing
-
-##### I am building a Swift front-end to match Swift-Syntax, using a GLL style parser.  I have passed the ~3000 accept/reject test suite from swift-syntax.  My font-end now generates exactly the same AST as swift-syntax.  However, I am using GLL and the Swift grammar I have is ambiguous.  This is brought vunder control with Oracle annotations.  I want to be sure that the grammar I have is equivalnt to swift-syntax, which uses recursive descent with unconstrained lookahead.  I want to use a fuzzer to check the implementations.  Is Lego the way to go ?
+I am building a Swift front-end to match Swift-Syntax, using a GLL style parser.  I have passed the ~3000 accept/reject test suite from swift-syntax.  My font-end now generates exactly the same AST as swift-syntax.  However, I am using GLL and the Swift grammar I have is ambiguous.  This is brought under control with Oracle annotations.  I want to be sure that the grammar I have is equivalnt to swift-syntax, which uses recursive descent with unconstrained lookahead.  I want to use a fuzzer to check the implementations.  Is Lego the way to go ?
 
 
 
