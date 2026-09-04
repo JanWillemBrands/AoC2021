@@ -694,7 +694,18 @@ typeAnnotation = ":" type .   // specifiers/attributes carried by `type` (single
 /// type-name → identifier
 
 // swift-syntax canParseTypeIdentifier (Types.swift:1041): base name + optional generic args, dotted.
-typeIdentifier = typeName typeGenericArgumentClause? | typeName typeGenericArgumentClause? "." typeIdentifier .
+// LEFT-recursive (Sep 3 2026), mirroring `explicitMemberExpression` on the
+// expression side and swift-syntax's left-nesting `MemberType`. TSPL spells this right-
+// recursively and that spelling was copied verbatim, which made type-position member access
+// the only place in this grammar where dotted access nests the opposite way from expression
+// position. GLL handles left recursion natively, so the book's shape is not a constraint.
+// Measured language-preserving: identical `trees differ` label set, accepts 0, ambiguity 0,
+// no wrongly-accepted rejects, no wall-clock change. See `SwiftSyntax Mapping.md`
+// § "When to reshape the grammar vs. reshape in the converter".
+
+typeIdentifier = typeName typeGenericArgumentClause? .
+typeIdentifier = typeIdentifier "." typeName typeGenericArgumentClause? .
+
 typeName = hardIdentifier .
 typeName = selfType .           // TODO: verify fix for https://github.com/swiftlang/swift-book/issues/293 — same unprobed `Self` question as `primaryExpression = selfType`; settle both together.
 // SE-0491: a module-qualified type name. After `::` swift-syntax consumes ANY keyword as the name
@@ -1269,9 +1280,15 @@ closureSignature = attributes? captureList? closureParameterClause "async"? thro
 closureSignature = attributes? captureList "in" .
 closureSignature = attributes "in" .
 
+// The shorthand form needs its OWN list: `identifierList` is shared with
+// `parameterModifier = "dependsOn" ( … identifierList )`, where `_` is not a legal entry, so `_`
+// cannot simply be added there. Without this, `{ _ in 1 }` was REJECTED — even though the comment
+// on `closureParameterName` below already claimed to support it. (Fixed Sep 3 2026,
+// `Phase4ClosureTests.closure-wildcard`.)
 closureParameterClause = "(" ")"
                        | "(" closureParameterList ","? ")"
-                       | identifierList .
+                       | closureShorthandNameList .
+closureShorthandNameList = closureParameterName | closureParameterName "," closureShorthandNameList .
 closureParameterList = closureParameter | closureParameter "," closureParameterList .
 
 // swift-syntax parseClosureParameter (Parameters.swift:194-200) uses parseParameterNames

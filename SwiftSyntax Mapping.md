@@ -179,6 +179,33 @@ as `questionOrExclamationMark`, not as a separate element.)
 | `genericWhereClause` | `GenericWhereClauseSyntax` |
 | `typeInheritanceClause` | `InheritanceClauseSyntax` |
 
+## When to reshape the grammar vs. reshape in the converter
+
+Two cases from Sep 3 2026 that look alike and are not. The question is never "does the grammar
+mirror the AST" — a CFG has no obligation to. It is "does the grammar spell the same construct two
+different ways for no reason".
+
+**Infix nesting — leave the grammar alone, splice in the converter.** `infixExpression =
+assignmentOperator expression` nests the RHS, while swift-syntax emits one flat `SequenceExpr`.
+These are genuinely DIFFERENT representations, not the same tree with a different associativity: a
+CFG cannot produce swift's flat list without losing the structure it needs. The converter splices
+(`flattenExpression`). Rewriting the grammar here would be contorting it to serve a consumer.
+
+**Dotted type names — reshape the GRAMMAR.** `typeIdentifier` was right-recursive
+(`typeName genericArgs? "." typeIdentifier`), copied verbatim from TSPL's book grammar, while
+`explicitMemberExpression` on the expression side was already LEFT-recursive
+(`postfixExpression "." softIdentifier`). Same construct — dotted access — spelled two opposite ways
+inside one grammar, and only the type side then needed a collect-the-chain-then-fold-left dance in
+the converter. Both spellings describe the same language and the same tree modulo associativity, so
+the choice was free; TSPL's shape is not binding because GLL handles left recursion natively.
+
+Changed to left-recursive. Measured: label set IDENTICAL (1081), accepts 0, ambiguity 0, no
+wrongly-accepted rejects, wall time unchanged (63.9s vs 63.8s). The converter became direct
+recursion — the recursive child simply IS the base, matching `MemberType`.
+
+Rule of thumb: reshape the grammar when it removes an internal inconsistency at zero cost; reshape
+in the converter when the two representations genuinely differ.
+
 ## Full Nonterminal → SwiftSyntax Mapping
 
 ### Declarations

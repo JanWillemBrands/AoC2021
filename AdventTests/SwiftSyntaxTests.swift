@@ -475,6 +475,191 @@ let phase3FunctionSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "func-param-and-body", source: "func f(x: Int) { let y = x }", origin: "Phase3", syntaxVersion: "603.0.1"),
 ]
 
+/// Phase 4, fourth slice: attributes and generic parameter clauses. Both hang off every
+/// declaration, so they pay off across the corpus rather than at one node type.
+let phase4AttrSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "attr-func",       source: "@discardableResult func f() -> Int {}", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "attr-struct",     source: "@frozen struct S {}",                origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "attr-two",        source: "@objc @MainActor class C {}",         origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "attr-with-modifier", source: "@objc public func f() {}",         origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "attr-var",        source: "@objc var x = 1",                     origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "attr-extension",  source: "@objc extension S {}",                origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "generic-func",    source: "func f<T>(x: T) {}",                  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "generic-func-2",  source: "func f<T, U>(x: T, y: U) {}",         origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "generic-bound",   source: "func f<T: Equatable>(x: T) {}",       origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "generic-struct",  source: "struct S<T> {}",                      origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "generic-class-bound", source: "class C<T: Equatable> {}",        origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "generic-enum",    source: "enum E<T> { case a(T) }",             origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "generic-and-attr", source: "@objc func f<T>(x: T) {}",           origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 attributes & generic parameters")
+struct Phase4AttrTests {
+
+    @Test("Advent accepts", arguments: phase4AttrSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4AttrSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+
+    @Test("converter reports no fallbacks", arguments: phase4AttrSnippets)
+    func noConverterFallbacks(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let diagnostics = adventGeneratorDiagnostics(snippet)
+        #expect(diagnostics.isEmpty, """
+            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            \(diagnostics.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
+/// Phase 4, third slice: closures — signatures, capture lists, shorthand vs parenthesised
+/// parameters, and trailing-closure calls.
+let phase4ClosureSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "closure-empty",     source: "let a = { }",                        origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-body",      source: "let a = { f() }",                    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-shorthand", source: "let a = { x in x }",                 origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-shorthand2", source: "let a = { x, y in x }",             origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-wildcard",  source: "let a = { _ in 1 }",                 origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-typed",     source: "let a = { (x: Int) in x }",          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-typed2",    source: "let a = { (x: Int, y: Int) in x }",  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-result",    source: "let a = { (x: Int) -> Int in x }",   origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-noparams-result", source: "let a = { () -> Int in 1 }",   origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-throws",    source: "let a = { () throws -> Int in 1 }",  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-async",     source: "let a = { () async -> Int in 1 }",   origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "capture-weak-self", source: "let a = { [weak self] in f() }",     origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "capture-unowned",   source: "let a = { [unowned self] in f() }",  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "capture-named",     source: "let a = { [x] in x }",               origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "capture-init",      source: "let a = { [x = y] in x }",           origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "capture-empty",     source: "let a = { [] in f() }",              origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "trailing-only",     source: "let a = f { 1 }",                    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "trailing-with-args", source: "let a = f(1) { 2 }",                origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "trailing-labeled",  source: "let a = f { 1 } g: { 2 }",           origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "closure-in-call",   source: "let a = xs.map { $0 }",              origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 closures")
+struct Phase4ClosureTests {
+
+    @Test("Advent accepts", arguments: phase4ClosureSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4ClosureSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+
+    @Test("converter reports no fallbacks", arguments: phase4ClosureSnippets)
+    func noConverterFallbacks(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let diagnostics = adventGeneratorDiagnostics(snippet)
+        #expect(diagnostics.isEmpty, """
+            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            \(diagnostics.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
+/// Phase 4, second slice: initializer and operator declarations, and the `->` arrow as an
+/// element of a flat operator sequence.
+let phase4DeclSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "init-empty",      source: "struct S { init() {} }",                origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "init-params",     source: "struct S { init(x: Int) {} }",          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "init-failable",   source: "struct S { init?(x: Int) {} }",         origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "init-iuo",        source: "struct S { init!(x: Int) {} }",         origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "init-throws",     source: "struct S { init() throws {} }",         origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "init-async",      source: "struct S { init() async {} }",          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "init-modifier",   source: "class C { public init() {} }",          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "init-body",       source: "struct S { init() { x = 1 } }",         origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "op-infix",        source: "infix operator +++",                    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "op-prefix",       source: "prefix operator +++",                   origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "op-postfix",      source: "postfix operator +++",                  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "op-precedence",   source: "infix operator +++ : AdditionPrecedence", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "arrow-in-seq",    source: "let a = (Int) -> Bool",                 origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "arrow-throws",    source: "let a = (Int) throws -> Bool",          origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 init/operator declarations")
+struct Phase4DeclTests {
+
+    @Test("Advent accepts", arguments: phase4DeclSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4DeclSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+
+    @Test("converter reports no fallbacks", arguments: phase4DeclSnippets)
+    func noConverterFallbacks(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let diagnostics = adventGeneratorDiagnostics(snippet)
+        #expect(diagnostics.isEmpty, """
+            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            \(diagnostics.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
 /// Phase 4: the type grammar — tuple types, function types, generic argument clauses,
 /// dot-qualified member types, and `Any`.
 let phase4TypeSnippets: [SwiftSnippet] = [
