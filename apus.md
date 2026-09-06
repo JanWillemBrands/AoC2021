@@ -59,7 +59,9 @@ A visible terminal can also be a literal:
 fBrace - "{" .
 ```
 
-This give the literal `{` a name. Now you can write `fBrace` in production rules instead of `"{"`. The terminal is still keyed by its literal content — the name is just an alias.
+This give the literal `{` a name. Now you can write `fBrace` in production rules instead of `"{"`.
+
+The name is the token *kind*, not an alias. So `fBrace` and a bare `"{"` written elsewhere are two different kinds that both match `{`. Same rule as for a named regex terminal — see "Token kinds" below.
 
 ### Production Rule (`=`)
 
@@ -97,7 +99,18 @@ Double-quoted strings. Match exact text. Literals use Swift string escape conven
 number - /[0-9]+/ .
 ```
 
-Forward-slash delimited. Swift regex syntax inside. Use in terminal definitions (`:` or `-` productions). Can also appear inline in rules, but then they get an auto-generated name.
+Forward-slash delimited. Swift regex syntax inside. Use in terminal definitions (`:` or `-` productions). Can also appear inline in rules, and then the kind is the pattern itself — see "Token kinds" below.
+
+### Token kinds
+
+One rule, both shapes:
+
+- **Named** — define a token with `-` or `:`, and the LHS *is* the kind. `number - /[0-9]+/ .` gives kind `number`; `fBrace - "{" .` gives kind `fBrace`.
+- **Anonymous** — write a literal or regex inline in a rule, and the kind is its own pattern *including the delimiters*: `"while"` gives kind `"while"`, `/[0-9]+/` gives kind `/[0-9]+/`.
+
+Two consequence follow. Anonymous tokens with the same pattern share one kind, so `"{"` written in ten rules is one terminal. And a named token never merge with an anonymous one, so you can give the same text two kinds on purpose — `regexOpenSlash - /\// .` and `regexCloseSlash - /\// .` are distinct kinds, which is how a grammar tell apart two roles of one character.
+
+The delimiters are load-bearing: they keep anonymous kinds in a namespace disjoint from bare names, so a rule referring to `operator` can never collide with the literal `"operator"`.
 
 Named regex terminal can be referenced by name in rules:
 

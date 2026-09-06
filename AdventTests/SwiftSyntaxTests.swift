@@ -679,6 +679,8 @@ let phase4TypeSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "func-type-nested", source: "let a: (Int) -> (Int) -> Int = f", origin: "Phase4", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "generic-expr",    source: "let a = f<Int>",                origin: "Phase4", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "generic-call",    source: "let a = f<Int>()",              origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "generic-member",  source: "let a = x.f<Int>",              origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "generic-member-call", source: "let a = x.f<Int>()",        origin: "Phase4", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "optional-generic", source: "let a: Array<Int>? = nil",     origin: "Phase4", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "func-returns-generic", source: "func f() -> Array<Int> {}", origin: "Phase4", syntaxVersion: "603.0.1"),
 ]
@@ -1322,6 +1324,403 @@ struct ConditionInfixParityTests {
     }
 }
 
+/// Phase 4, fifteenth slice: coroutine accessors and operator designated types.
+let phase4CoroutineSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "coroutine-read",   source: "struct S { var x: Int { _read { yield v } } }",          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "coroutine-modify", source: "struct S { var x: Int { _modify { yield &v } } }",       origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "coroutine-both",   source: "struct S { var x: Int { _read { yield v } _modify { yield &v } } }", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "op-designated",    source: "infix operator +++ : AdditionPrecedence, Int",           origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "op-trailing-comma", source: "infix operator +++ : AdditionPrecedence,",              origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 coroutine accessors & designated types")
+struct Phase4CoroutineTests {
+
+    @Test("Advent accepts", arguments: phase4CoroutineSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4CoroutineSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
+/// Phase 4, fourteenth slice: enum-case patterns, tuple match patterns, suppressed conformances.
+let phase4PatternSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "case-enum",        source: "func f() { switch x { case .a: g()\ndefault: h() } }",            origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "case-enum-assoc",  source: "func f() { switch x { case .a(let y): g(y)\ndefault: h() } }",    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "case-enum-qualified", source: "func f() { switch x { case E.a: g()\ndefault: h() } }",        origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "case-enum-two",    source: "func f() { switch x { case .a(let y, let z): g()\ndefault: h() } }", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "case-enum-label",  source: "func f() { switch x { case .a(v: let y): g(y)\ndefault: h() } }", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "case-tuple",       source: "func f() { switch x { case (1, 2): g()\ndefault: h() } }",        origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "case-tuple-bind",  source: "func f() { switch x { case (let a, let b): g()\ndefault: h() } }", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "suppressed",       source: "struct S: ~Copyable {}",                                           origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "suppressed-plus",  source: "struct S: ~Copyable, P {}",                                        origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 enum-case & tuple patterns")
+struct Phase4PatternTests {
+
+    @Test("Advent accepts", arguments: phase4PatternSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4PatternSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
+/// Phase 4, thirteenth slice: precedence groups, macro declarations, postfix operators.
+let phase4PrecedenceSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "pg-empty",      source: "precedencegroup P {}",                                   origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "pg-higher",     source: "precedencegroup P { higherThan: AdditionPrecedence }",   origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "pg-lower",      source: "precedencegroup P { lowerThan: AdditionPrecedence }",    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "pg-two-names",  source: "precedencegroup P { higherThan: A, B }",                 origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "pg-assignment", source: "precedencegroup P { assignment: true }",                 origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "pg-assoc-left", source: "precedencegroup P { associativity: left }",              origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "pg-assoc-none", source: "precedencegroup P { associativity: none }",              origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "pg-multi",      source: "precedencegroup P { associativity: left\nhigherThan: A }", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "macro-decl",    source: "macro m() = #externalMacro(module: \"M\", type: \"T\")",  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "macro-decl-result", source: "macro m() -> Int = #externalMacro(module: \"M\", type: \"T\")", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "macro-decl-params", source: "macro m(x: Int) = #externalMacro(module: \"M\", type: \"T\")", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "postfix-op",    source: "postfix operator ^^\nlet a = x^^",                       origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 precedence groups, macro decls, postfix operators")
+struct Phase4PrecedenceTests {
+
+    @Test("Advent accepts", arguments: phase4PrecedenceSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4PrecedenceSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
+/// Phase 4, twelfth slice: `#if` conditional compilation and extended `#/…/#` regex literals.
+let phase4IfConfigSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "if-simple",     source: "#if DEBUG\nlet a = 1\n#endif",                     origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-else",       source: "#if DEBUG\nlet a = 1\n#else\nlet a = 2\n#endif",  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-elseif",     source: "#if A\nlet a = 1\n#elseif B\nlet a = 2\n#endif",  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-not",        source: "#if !DEBUG\nlet a = 1\n#endif",                    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-and",        source: "#if A && B\nlet a = 1\n#endif",                    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-or",         source: "#if A || B\nlet a = 1\n#endif",                    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-paren",      source: "#if (A)\nlet a = 1\n#endif",                       origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-bool",       source: "#if true\nlet a = 1\n#endif",                      origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-call",       source: "#if os(macOS)\nlet a = 1\n#endif",                 origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-empty",      source: "#if DEBUG\n#endif",                                 origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "regex-extended", source: "let a = #/abc/#",                                   origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "regex-plain",    source: "let a = /abc/",                                     origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 #if and extended regex")
+struct Phase4IfConfigTests {
+
+    @Test("Advent accepts", arguments: phase4IfConfigSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4IfConfigSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
+/// Phase 4, eleventh slice: raw and multiline string literals — pound delimiters are their
+/// own tokens in swift-syntax, and the multiline form uses a distinct quote token.
+let phase4StringSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "raw-simple",    source: "let a = #\"abc\"#",               origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "raw-double",    source: "let a = ##\"abc\"##",             origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "raw-quote",     source: "let a = #\"say \\\"hi\\\"\"#", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "raw-empty",     source: "let a = #\"\"#",                  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "multiline",     source: "let a = \"\"\"\nabc\n\"\"\"",   origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "multiline-indent", source: "let a = \"\"\"\n    abc\n    \"\"\"", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "raw-multiline", source: "let a = #\"\"\"\nabc\n\"\"\"#",  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "multiline-2line", source: "let a = \"\"\"\nabc\ndef\n\"\"\"", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "multiline-3line", source: "let a = \"\"\"\nabc\ndef\nghi\n\"\"\"", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "multiline-2line-indent", source: "let a = \"\"\"\n    abc\n    def\n    \"\"\"", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "multiline-blank",  source: "let a = \"\"\"\nabc\n\ndef\n\"\"\"", origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 raw & multiline strings")
+struct Phase4StringTests {
+
+    @Test("Advent accepts", arguments: phase4StringSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4StringSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
+/// Phase 4, tenth slice: key-path expressions. The grammar's component rules are a flag
+/// machine (property-run vs pivot) that swift-syntax flattens into one component list.
+let phase4KeyPathSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "kp-rootless",     source: "let a = \\.foo",              origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-rooted",       source: "let a = \\Foo.bar",           origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-chain",        source: "let a = \\Foo.bar.baz",       origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-rootless-chain", source: "let a = \\.foo.bar",        origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-optional",     source: "let a = \\Foo.bar?",          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-force",        source: "let a = \\Foo.bar!",          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-subscript",    source: "let a = \\Foo.bar[0]",        origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-bare-subscript", source: "let a = \\Foo[0]",          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-generic-root", source: "let a = \\Array<Int>.count",  origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-mixed",        source: "let a = \\Foo.bar?.baz",      origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "kp-tuple-index",  source: "let a = \\Foo.0",             origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 key paths")
+struct Phase4KeyPathTests {
+
+    @Test("Advent accepts", arguments: phase4KeyPathSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4KeyPathSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+
+    @Test("converter reports no fallbacks", arguments: phase4KeyPathSnippets)
+    func noConverterFallbacks(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let diagnostics = adventGeneratorDiagnostics(snippet)
+        #expect(diagnostics.isEmpty, """
+            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            \(diagnostics.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
+/// Phase 4, ninth slice: imports, actors, associated types and `if case` conditions.
+let phase4ImportSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "import-simple",   source: "import Foundation",                     origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "import-dotted",   source: "import A.B.C",                          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "import-kind",     source: "import struct Foundation.Data",         origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "import-func",     source: "import func A.b",                       origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "actor-empty",     source: "actor A {}",                            origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "actor-member",    source: "actor A { var x = 1 }",                 origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "actor-inherit",   source: "actor A: P {}",                         origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "assoc-type",      source: "protocol P { associatedtype T }",       origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "assoc-bound",     source: "protocol P { associatedtype T: Equatable }", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "assoc-default",   source: "protocol P { associatedtype T = Int }", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-case",         source: "func f() { if case .a = x { g() } }",   origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "if-case-let",     source: "func f() { if case let .a(y) = x { g(y) } }", origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "guard-case",      source: "func f() { guard case .a = x else { return } }", origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 imports, actors, associatedtype, if-case")
+struct Phase4ImportTests {
+
+    @Test("Advent accepts", arguments: phase4ImportSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4ImportSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+
+    @Test("converter reports no fallbacks", arguments: phase4ImportSnippets)
+    func noConverterFallbacks(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let diagnostics = adventGeneratorDiagnostics(snippet)
+        #expect(diagnostics.isEmpty, """
+            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            \(diagnostics.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
+/// Phase 4, eighth slice: macro expansions, `&` inout expressions, and the ownership
+/// prefix operators — each of which has its OWN swift-syntax node, not PrefixOperatorExpr.
+let phase4MacroSnippets: [SwiftSnippet] = [
+    SwiftSnippet(label: "macro-bare",     source: "let a = #line",                     origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "macro-args",     source: #"let a = #warning("x")"#,           origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "macro-noargs",   source: "let a = #foo()",                    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "macro-labelled", source: "let a = #foo(x: 1, y: 2)",          origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "macro-generic",  source: "let a = #foo<Int>()",               origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "macro-trailing", source: "let a = #foo { 1 }",                origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "inout-arg",      source: "func f() { g(&x) }",                origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "inout-member",   source: "func f() { g(&x.y) }",              origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "consume",        source: "func f() { let a = consume x }",    origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "borrow",         source: "func f() { let a = borrow x }",     origin: "Phase4", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "copy",           source: "func f() { let a = copy x }",       origin: "Phase4", syntaxVersion: "603.0.1"),
+]
+
+@Suite("SwiftSyntax - Phase 4 macros, inout, ownership operators")
+struct Phase4MacroTests {
+
+    @Test("Advent accepts", arguments: phase4MacroSnippets)
+    func adventAccepts(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        #expect(try adventParse(snippet) != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    @Test("trees match", arguments: phase4MacroSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let refDump = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        let why = adventGeneratorDiagnostics(snippet)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.label)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            --- converter fallbacks ---
+            \(why.isEmpty ? "(none)" : why.map(\.description).joined(separator: "\n"))
+            """)
+    }
+
+    @Test("converter reports no fallbacks", arguments: phase4MacroSnippets)
+    func noConverterFallbacks(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let diagnostics = adventGeneratorDiagnostics(snippet)
+        #expect(diagnostics.isEmpty, """
+            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            \(diagnostics.map(\.description).joined(separator: "\n"))
+            """)
+    }
+}
+
 /// Phase 4, seventh slice: loops, do/catch, deinitializers and subscripts.
 let phase4LoopSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "for-in",        source: "func f() { for x in xs { g(x) } }",                origin: "Phase4", syntaxVersion: "603.0.1"),
@@ -1611,6 +2010,45 @@ struct ConverterFallbackTriage {
                 }
             }
         }
+
+        // How many DIFFERING labels have no diagnostic at all? The fallback tally only accounts
+        // for gaps the converter KNOWS about; a snippet can differ while the converter believes
+        // it handled every node. Those silent mismatches are invisible in the tally above and are
+        // the honest denominator for "what is left".
+        var differing = 0, differingSilent = 0, matching = 0
+        var silentCauses: [String: Int] = [:]
+        var silentSamples: [String: [String]] = [:]
+        for snippet in Self.corpus where snippet.disabledReason == nil {
+            let ref = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: snippet.source)), indent: 0)
+            guard let tree = try? adventSwiftSyntaxTree(snippet) else { continue }
+            let mine = dumpSwiftSyntaxNode(Syntax(tree), indent: 0)
+            if mine == ref { matching += 1; continue }
+            differing += 1
+            guard adventGeneratorDiagnostics(snippet).isEmpty else { continue }
+            differingSilent += 1
+            // Rank the SILENT mismatches by their FIRST divergent line. That converts
+            // "260 unknown" into a work queue, the same way `alternateKind` did for the
+            // declaration/statement buckets.
+            let refLines = ref.split(separator: "\n", omittingEmptySubsequences: false)
+            let mineLines = mine.split(separator: "\n", omittingEmptySubsequences: false)
+            var i = 0
+            while i < refLines.count, i < mineLines.count, refLines[i] == mineLines[i] { i += 1 }
+            let expected = i < refLines.count ? refLines[i].trimmingCharacters(in: .whitespaces) : "<end>"
+            let got = i < mineLines.count ? mineLines[i].trimmingCharacters(in: .whitespaces) : "<end>"
+            silentCauses["expected \(expected)   got \(got)", default: 0] += 1
+            if silentSamples[expected, default: []].count < 2 {
+                silentSamples[expected, default: []].append(snippet.label)
+            }
+        }
+        _ = silentSamples
+        print("=== silent-mismatch causes (first divergent line), top 20 ===")
+        for (cause, n) in silentCauses.sorted(by: { $0.value > $1.value }).prefix(20) {
+            print(String(format: "%6d  %@", n, cause))
+        }
+        print("=== label accounting ===")
+        print("  matching:                 \(matching)")
+        print("  differing WITH diagnostic: \(differing - differingSilent)")
+        print("  differing SILENTLY:        \(differingSilent)   <- invisible in the tally below")
 
         // Printed every run — this is the Phase 2/3/4 work queue, ordered by size.
         print("=== converter .unhandled tally (\(unhandled.values.reduce(0, +)) total) ===")

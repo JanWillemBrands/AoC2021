@@ -1,10 +1,6 @@
-See new posts
 
-It seems that AI is moving from LLM's to symbolic representations.  Is that a trend that can be used to implement "AI-diven" compilers for programming languages ?
 
-Thought for 33s
 
-The trend is real, but it is not “LLMs out, symbols in.” It is neurosymbolic hybridization: keep neural models for perception, intent, and search, and put explicit structure (ASTs, IRs, grammars, logic, solvers) where correctness, composition, and verification matter. That is an unusually good fit for compilers. 
 
 cacm.acm.org
 

@@ -29,6 +29,21 @@ var input = Array("aa")
 // Start symbol 'S'. Empty production 'ε'.
 // Terminals/nonterminals are single lowercase/uppercase letters.
 // Space and newline are skipped.
+
+//T = a | b | c | d | e | f | g | h | i | j | k | l | m | n | o | p | q | r | s | t | u | v | w | x | y | z | ε .
+//N = A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z .
+//
+//S = P | P S .
+//P = N E A D .
+//A = Q | Q B A .
+//Q = F | F Q .
+//F = T | N .
+//
+//E = = .
+//D = . .
+//B = | .
+
+
 var syntax = Array(" S = a S | ε .")
 
 /// Grammar-reader failures. The reader used to `exit(1)` on a bad character, which is fine

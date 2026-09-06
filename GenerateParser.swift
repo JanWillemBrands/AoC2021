@@ -94,10 +94,14 @@ class ParserGenerator {
         // TODO: check escapes etc.
         emit(dent: .NR, "let tokenPatterns: [String:TokenPattern] = [")
         for (kind, pattern) in grammar.terminals.sorted(by: { !$0.value.isLiteral && $1.value.isLiteral } ) {
+            // The kind is a Swift string-literal KEY here, so it needs escaping like the source
+            // does: an anonymous literal's kind carries its own quotes (`"{"`) and an anonymous
+            // regex's kind its own delimiters and backslashes (`/\w+/`).
+            let key = kind.escapesAdded
             if pattern.isLiteral {
-                emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, "\",\tRegex { \"", pattern.source.escapesAdded, "\" },\t", pattern.isLiteral, ",\t", pattern.isSkip, "),")
+                emit("\"", key, "\":\t(\"", pattern.source.escapesAdded, "\",\tRegex { \"", pattern.source.escapesAdded, "\" },\t", pattern.isLiteral, ",\t", pattern.isSkip, "),")
             } else {
-                emit("\"", kind, "\":\t(\"", pattern.source.escapesAdded, "\",\t", pattern.source, ",\t", pattern.isLiteral, ",\t", pattern.isSkip, "),")
+                emit("\"", key, "\":\t(\"", pattern.source.escapesAdded, "\",\t", pattern.source, ",\t", pattern.isLiteral, ",\t", pattern.isSkip, "),")
             }
         }
         emit(dent: .LN, "]")

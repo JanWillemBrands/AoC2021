@@ -52,18 +52,28 @@ if explorerAlways {
 if operands.count > 0 { syntax = Array(operands[0]) }
 if operands.count > 1 { input = Array(operands[1]) }
 
-/// Times a parse of "b" * n for n in 1...maxLength against the tortureART grammar, printing
-/// one wall-clock figure per input in seconds with six decimals — plain numbers, so the
-/// output pastes straight into a spreadsheet. Rejects go to stderr as a correctness canary.
+/// Times a parse of "b" * n for n in 1...maxLength against the tortureART grammar, both
+/// interpreted and compiled, printing a tab-separated pair of wall-clock figures in seconds
+/// with six decimals per input — plain numbers, so the output pastes straight into a
+/// spreadsheet. Totals and the speedup go to stderr, along with rejects as a correctness
+/// canary; that keeps stdout numeric.
+///
+/// The compiled column comes from generating a standalone parser for the same grammar,
+/// building it with swiftc -O and running the whole sweep in one process (see
+/// compiledTimings). Both sides therefore do identical work on identical inputs, which makes
+/// the ratio a measurement of codegen alone. If the toolchain is unavailable the compiled
+/// column is simply omitted.
 ///
 /// The grammar and inputs are built in rather than taken from the operands: the sweep needs
 /// a family of inputs, not the single one the operands provide.
 ///
-/// Only the descriptor loop is timed. Grammar reading and derivation extraction are excluded,
-/// and the numbers are only meaningful from a release build — a debug build measures Swift's
-/// bounds and retain checks, not the parser.
+/// Only the descriptor loop is timed on either side. Grammar reading, code generation,
+/// compilation and derivation extraction are all excluded, and the numbers are only
+/// meaningful from a release build — a debug build measures Swift's bounds and retain
+/// checks, not the parser.
 func runBenchmark(maxLength: Int) throws {
     let benchSyntax = Array(" S = b | S S | S S S .")
+    let inputs = (1...maxLength).map { String(repeating: "b", count: $0) }
 
     func prepare(length: Int) throws {
         resetEngine()
@@ -79,6 +89,7 @@ func runBenchmark(maxLength: Int) throws {
         try parseInput()
     }
 
+    var interpreted: [Double] = []
     for n in 1...maxLength {
         try prepare(length: n)
 
@@ -86,11 +97,38 @@ func runBenchmark(maxLength: Int) throws {
         try parseInput()
         let elapsed = DispatchTime.now().uptimeNanoseconds - start
 
-        print(String(format: "%.6f", Double(elapsed) / 1_000_000_000))
+        interpreted.append(Double(elapsed) / 1_000_000_000)
 
         if !parseAccepted {
-            FileHandle.standardError.write(Data("rejected at length \(n)\n".utf8))
+            FileHandle.standardError.write(Data("interpreted rejected at length \(n)\n".utf8))
         }
+    }
+
+    // Leave the grammar loaded at the same length the interpreter warmed up on, so the
+    // generated parser's own warm-up — which runs on its baked-in input — matches.
+    try prepare(length: 5)
+    let compiled = try compiledTimings(for: inputs)
+
+    for (index, seconds) in interpreted.enumerated() {
+        if let compiled, index < compiled.count {
+            print(String(format: "%.6f\t%.6f", seconds, compiled[index]))
+        } else {
+            print(String(format: "%.6f", seconds))
+        }
+    }
+
+    func note(_ text: String) {
+        FileHandle.standardError.write(Data((text + "\n").utf8))
+    }
+
+    let interpretedTotal = interpreted.reduce(0, +)
+    if let compiled {
+        let compiledTotal = compiled.reduce(0, +)
+        note(String(format: "interpreted %.4fs   compiled %.4fs   speedup %.2fx",
+                    interpretedTotal, compiledTotal, interpretedTotal / compiledTotal))
+    } else {
+        note(String(format: "interpreted %.4fs   compiled column skipped (swiftc unavailable or generated source did not build)",
+                    interpretedTotal))
     }
 }
 
@@ -129,6 +167,17 @@ case .trace, .tree:
     }
 
     print("Parse pass")
+
+    // A successful parse means the grammar is worth compiling, so emit the standalone
+    // parser for it. Generated only on success: the templates assume a grammar the
+    // interpreter has already agreed with.
+    do {
+        let parserFile = try generate()
+        print("generated \(parserFile.path(percentEncoded: false))")
+    } catch {
+        print(error)
+        exit(1)
+    }
 
     if showTrees {
         let trees = DerivationBuilder().allDerivations()

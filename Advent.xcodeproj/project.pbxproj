@@ -137,6 +137,7 @@
 		4E8D05A82F701CDD0081C6D2 /* Derivations.gv */ = {isa = PBXFileReference; lastKnownFileType = text; path = Derivations.gv; sourceTree = "<group>"; };
 		4E8D05A92F701D560081C6D2 /* Derivations.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Derivations.svg; sourceTree = "<group>"; };
 		4E95A4EB30151FC6000C251E /* SwiftGrammarRegexLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftGrammarRegexLibrary.swift; sourceTree = "<group>"; };
+		4E9B2F78304D6F55006BD801 /* GeneratedParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratedParser.swift; sourceTree = "<group>"; };
 		4EBFE06830268684001F3FF2 /* Lexical Disambiguation Tools.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Lexical Disambiguation Tools.md"; sourceTree = "<group>"; };
 		4EC3D234301CC4FA00E27741 /* The rise and fall of Schrödinger, Frankenstein and other dead-ends.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "The rise and fall of Schrödinger, Frankenstein and other dead-ends.md"; sourceTree = "<group>"; };
 		4EC3D237301E03F200E27741 /* REJECTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REJECTS.md; sourceTree = "<group>"; };
@@ -285,6 +286,14 @@
 			children = (
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		4E9B2F79304D6F55006BD801 /* tinyGLL-generated */ = {
+			isa = PBXGroup;
+			children = (
+				4E9B2F78304D6F55006BD801 /* GeneratedParser.swift */,
+			);
+			path = "tinyGLL-generated";
 			sourceTree = "<group>";
 		};
 		4EEBC9C02F9EF35000E838A7 /* cpp2017Draft */ = {
@@ -494,6 +503,7 @@
 				4EEBC9FE2F9EF35000E838A7 /* grammars */,
 				CB6B7316257EA9F400B929C6 /* Products */,
 				4ED277CF3042218F00C05B68 /* tinyGLL */,
+				4E9B2F79304D6F55006BD801 /* tinyGLL-generated */,
 			);
 			sourceTree = "<group>";
 		};

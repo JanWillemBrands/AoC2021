@@ -150,7 +150,6 @@ class ApusParser {
     
     private var skip = false
     private var terminalAlias: String?
-    private var literalAliases: [String: String] = [:]
     /// `@scalar` — compile this regex terminal with `.matchingSemantics(.unicodeScalar)`
     /// so explicit code-point ranges (`\u{…}-\u{…}`) mean scalar-value intervals and
     /// combining marks / variation selectors are matched per-scalar (not grapheme-clustered).
@@ -249,8 +248,11 @@ class ApusParser {
                 if let ps = preemptStartName { grammar.terminals[nonTerminalName]?.preemptStart = ps }
                 if let pc = preemptConstructName { grammar.terminals[nonTerminalName]?.preemptConstruct = pc }
             case "literal":
-                terminal = literal()
-                literalAliases[nonTerminalName] = terminal.name
+                // A named literal terminal gets its OWN kind, named by the LHS — the same rule the
+                // regex branch applies via `terminalAlias`. It used to register kind `"…"` (the
+                // quoted form) and file the LHS in a `literalAliases` side table, so the name never
+                // became a kind at all; that asymmetry between the two terminal shapes is gone.
+                terminal = literal(named: nonTerminalName)
             case "pragma" where token.stripped == "builder":
                 // `@builder` — the terminal's scanner regex comes from the Swift
                 // RegexBuilder library (GrammarRegexLibrary.swift), keyed by name.
@@ -261,7 +263,7 @@ class ApusParser {
                 if let ps = preemptStartName { grammar.terminals[nonTerminalName]?.preemptStart = ps }
                 if let pc = preemptConstructName { grammar.terminals[nonTerminalName]?.preemptConstruct = pc }
             default:
-                try expect(["regex", "literal"])
+                try expect(["regex", "literal", "pragma"])
             }
             
             // reset
@@ -370,17 +372,10 @@ class ApusParser {
                 cI += 1
                 var kinds: [String] = []
                 while token.kind == "literal" || token.kind == "identifier" {
-                    // Operand must resolve to a Token.kind value (matched against tokens at scan time).
-                    //   quoted "X"     → kind is the full quoted form `"X"` (matches literal terminals)
-                    //   alias name     → look up in literalAliases (already quoted form)
-                    //   bare identifier (regex terminal name) → use as-is
-                    let kind: String
-                    if token.kind == "literal" {
-                        kind = String(token.image)
-                    } else {
-                        let id = token.stripped
-                        kind = literalAliases[id] ?? id
-                    }
+                    // Operand must resolve to a Token.kind value (matched against tokens at lex time).
+                    //   quoted "X"  → the ANONYMOUS-literal kind, i.e. the full quoted form `"X"`
+                    //   bare name   → a NAMED terminal's kind (its LHS), used as-is
+                    let kind = token.kind == "literal" ? String(token.image) : token.stripped
                     kinds.append(kind)
                     cI += 1
                 }
@@ -648,8 +643,12 @@ class ApusParser {
 
     func regex() throws -> GrammarNode {
         trace("regex", token)
-        // the name of the regex is either the LHS identifier of the production rule, or the lineposition
-        let name = terminalAlias ?? scanner.input.linePosition(of: token.image.startIndex)
+        // A named terminal (`-`/`:`) takes its kind from the LHS; an ANONYMOUS inline regex takes its
+        // own pattern INCLUDING the delimiters (`/…/`) as its kind, mirroring the quoted form used
+        // for anonymous literals. Content-naming also means two identical inline regexes share one
+        // kind — the position-derived name they used to get (`L12P34`) made them distinct terminals
+        // with identical patterns.
+        let name = terminalAlias ?? String(token.image)
         
         if let definition = grammar.terminals[name] {
             if definition.isSkip != skip {
@@ -703,15 +702,18 @@ class ApusParser {
         return GrammarNode(kind: .T, name: name)
     }
 
-    func literal() -> GrammarNode {
+    /// `named` — the LHS of a `-`/`:` terminal definition, which becomes this token's kind.
+    /// Nil for an ANONYMOUS inline literal, whose kind is its own pattern INCLUDING the delimiters
+    /// (the full quoted form, e.g. `"operator"`). Quoting keeps the anonymous-literal kind namespace
+    /// disjoint from the identifier namespace (nonterminals and named terminals), so an unquoted
+    /// reference like `operator` in a production body can never collide with the literal
+    /// `"operator"`. Anonymous literals sharing a pattern therefore share one kind; a named literal
+    /// never merges with an anonymous one, even where both match the same text.
+    func literal(named: String? = nil) -> GrammarNode {
         trace("literal", token, token.stripped)
 
-        // Token.kind for a user-grammar literal terminal is the FULL QUOTED FORM (e.g. `"operator"`),
-        // not the stripped content. This keeps the literal-kind namespace disjoint from the
-        // identifier-kind namespace (nonterminals and named regex terminals), so an unquoted
-        // reference like `operator` in a production body can never collide with the literal `"operator"`.
-        let name = String(token.image)
-        // The unescaped literal CONTENT — what the scanner matches against input characters.
+        let name = named ?? String(token.image)
+        // The unescaped literal CONTENT — what the lexer matches against input characters.
         let source = token.stripped.escapesRemoved
 
         if let definition = grammar.terminals[name] {
@@ -751,9 +753,7 @@ class ApusParser {
         switch token.kind {
         case "identifier":
             let name = token.stripped
-            if let literalName = literalAliases[name] {
-                node = GrammarNode(kind: .T, name: literalName)
-            } else if grammar.terminals[name] != nil {
+            if grammar.terminals[name] != nil {
                 if grammar.nonTerminals[name] != nil {
                     trace("grammar parse error: \(token.image) is both a terminal and a nonTerminal")
                 }
@@ -835,17 +835,10 @@ class ApusParser {
             cI += 1
             while token.kind == "literal" || token.kind == "identifier" {
                 // Operand resolves to a Token.kind matched against the next token:
-                //   quoted "X"  → the full quoted form `"X"` (matches literal terminals)
-                //   alias name  → literalAliases lookup (already quoted form)
-                //   bare name   → a named (regex) terminal kind, used as-is
+                //   quoted "X"  → the ANONYMOUS-literal kind, i.e. the full quoted form `"X"`
+                //   bare name   → a NAMED terminal's kind (its LHS), used as-is
                 // Same resolution as the `<-<`/`<+<` lookbehind and `---` exclusion loops.
-                let approved: String
-                if token.kind == "literal" {
-                    approved = String(token.image)
-                } else {
-                    let id = token.stripped
-                    approved = literalAliases[id] ?? id
-                }
+                let approved = token.kind == "literal" ? String(token.image) : token.stripped
                 if !token.stripped.isEmpty {
                     if negated { node.followAheadExclude.insert(approved) }
                     else       { node.followAhead.insert(approved) }

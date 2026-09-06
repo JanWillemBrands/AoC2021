@@ -219,6 +219,29 @@ Source: Sep 2 2026 Phase 1 tree-fidelity work; `GenerateSwiftSyntaxAST.swift`.
    means extending the `>->( "abi" "attached" "available" … )` exclusion list per special attribute.
    Source: Sep 4 2026 attribute work.
 
+28. **The converter fallback tally covers only HALF the remaining tree mismatches — characterise the silent half.**
+   Measured Sep 5 2026 by `ConverterFallbackTriage` (accounting now printed every run):
+   ```
+   matching:                  1114
+   differing WITH diagnostic:  273      <- the .unhandled tally, 322 records
+   differing SILENTLY:         260      <- NO diagnostic at all
+   ```
+   A silent mismatch is a snippet where the converter believed it handled every node and the tree
+   still differs — a wrong SHAPE or wrong TOKEN KIND rather than a missing converter. That class has
+   produced every subtle bug this session: `x.0` needing `integerLiteral`, `T.self` needing
+   `keyword(self)`, `inout` needing the type-specifier map, `TuplePattern` vs
+   `ExpressionPattern(TupleExpr)` in match position, `ClosureCapture.name` vs `.expression`.
+   None were visible in the tally; all were found by reading one failing dump.
+
+   **Do not read the `.unhandled` tally as a completion estimate** — it is a work list for KNOWN
+   gaps only. The honest denominator is the label accounting above.
+
+   Next step: give the silent 260 a queue of their own. The cheapest characterisation is to walk
+   the reference and generated dumps in parallel and record the FIRST divergent line per label,
+   then tally those — that turns "260 unknown" into a ranked list the same way `alternateKind` did
+   for the declaration/statement buckets.
+   Source: Sep 5 2026, after the tally was mistaken for a completion estimate in conversation.
+
 ## Maintenance Rule
 
 - Add new markdown TODOs here and link back to source context when needed.

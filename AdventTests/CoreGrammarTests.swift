@@ -431,6 +431,78 @@ struct CoreGrammarTests {
         }
     }
 
+    // MARK: - Token kinds
+    //
+    // One naming rule for both terminal shapes: a NAMED terminal (`-`/`:`) takes its kind
+    // from the LHS; an ANONYMOUS inline terminal takes its own pattern INCLUDING delimiters
+    // (`"…"` / `/…/`). Named literals used to be the exception — they registered the quoted
+    // form as the kind and filed the LHS in a `literalAliases` side table, so the name never
+    // became a kind. No grammar in the repo exercised that path, hence these tests.
+
+    @Suite("Token kinds", .serialized)
+    struct TokenKinds {
+        static let cases: [TestCase] = [
+            TestCase(
+                grammar: #"fBrace - "{" . S = fBrace "x"."#,
+                pass: ["{x", "{ x"],
+                fail: ["x", "{"],
+                label: "named literal terminal is referenceable"
+            ),
+            TestCase(
+                // Named and anonymous never merge, so the same text can carry two kinds on
+                // purpose — the `regexOpenSlash`/`regexCloseSlash` pattern in Swift.apus.
+                grammar: #"fBrace - "{" . S = fBrace "{"."#,
+                pass: ["{{", "{ {"],
+                fail: ["{"],
+                label: "named literal and anonymous literal coexist"
+            ),
+            TestCase(
+                grammar: #"openTick - "`" . closeTick - "`" . S = openTick /[a-z]+/ closeTick."#,
+                pass: ["`ab`"],
+                fail: ["`ab", "ab`"],
+                label: "two named literals over one character"
+            ),
+            TestCase(
+                // Anonymous regexes sharing a pattern share one kind (content-naming); they
+                // used to get distinct position-derived names for identical patterns.
+                grammar: #"S = /u+/ "-" /u+/."#,
+                pass: ["u-u", "uu-uuu"],
+                fail: ["u-", "-u"],
+                label: "repeated anonymous regex"
+            ),
+            TestCase(
+                grammar: #"dash : "-" . S = "a" "b"."#,
+                pass: ["ab", "a-b", "-ab", "a--b"],
+                fail: ["ba"],
+                label: "named literal as skipped trivia"
+            ),
+        ]
+
+        @Test(arguments: cases)
+        func test(_ tc: TestCase) throws {
+            try runTestCase(tc)
+        }
+
+        @Test("named terminal's kind is its LHS, anonymous terminal's kind is its pattern")
+        func kindNaming() throws {
+            let grammar = try parseGrammar(#"fBrace - "{" . number - /[0-9]+/ . S = fBrace number "}" /x+/."#)
+
+            #expect(grammar.terminals["fBrace"] != nil, "named literal should register its LHS as a kind")
+            #expect(grammar.terminals["number"] != nil, "named regex should register its LHS as a kind")
+            #expect(grammar.terminals[#""}""#] != nil, "anonymous literal's kind is its quoted pattern")
+            #expect(grammar.terminals["/x+/"] != nil, "anonymous regex's kind is its delimited pattern")
+
+            // The named literal does NOT also register the quoted form — that was the alias behaviour.
+            #expect(grammar.terminals[#""{""#] == nil, "named literal should not register the quoted form")
+
+            // `source` is the text the lexer matches: unescaped content for a literal,
+            // the undelimited pattern for a regex.
+            #expect(grammar.terminals["fBrace"]?.source == "{")
+            #expect(grammar.terminals["fBrace"]?.isLiteral == true)
+            #expect(grammar.terminals["number"]?.isLiteral == false)
+        }
+    }
+
     // MARK: - =: trivia non-terminal (Phase E Step 2)
 
     @Suite("TriviaNonTerminal", .serialized)
