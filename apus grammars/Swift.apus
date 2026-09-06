@@ -2902,13 +2902,29 @@ availabilityAttributeArgument = platformName platformVersion? .
 availabilityAttributeArgument = availabilityLabel ":" availabilityValue .
 availabilityLabel = hardIdentifier .
 availabilityValue = platformVersion | staticStringLiteral | hardIdentifier .
+// `@convention(c)` / `@convention(block)` / `@convention(thin)` / `@convention(thick)` /
+// `@convention(c, cType: "int (*)(int)")`. swift-syntax has NO dedicated convention node — the
+// arguments surface as a plain LabeledExprList (`AttributeSyntax.Arguments` has no
+// `conventionArguments` case, and the reference dump shows LabeledExpr/DeclReferenceExpr).
+//
+// The argument grammar is deliberately NARROW instead of reusing `functionCallArgumentList`.
+// Routing attribute arguments through the general expression grammar closes an
+// attribute -> expression -> type -> attribute cycle and is a PERFORMANCE CLIFF: measured, the
+// full test run went from 85s to not finishing within 10 minutes. See TODO 27.
 @longest
-attribute = "@" >-> ( "abi" "attached" "available" "freestanding" "isolated" ) >s< attributeName attributeArgumentClause? .
+attribute = "@" >s< "convention" >s< "(" conventionArguments ")" .
+conventionArguments = conventionArgument | conventionArgument "," conventionArguments .
+conventionArgument = hardIdentifier | hardIdentifier ":" conventionValue .
+// `cType:` takes a string, `witness_method:` takes a type name — both occur (TypeTests.testConvention).
+conventionValue = hardIdentifier | staticStringLiteral .
+
+@longest
+attribute = "@" >-> ( "abi" "attached" "available" "convention" "freestanding" "isolated" ) >s< attributeName attributeArgumentClause? .
 // Module-qualified attribute name = a custom attribute → its args are an EXPRESSION argument list, not
 // the balanced-token soup builtins allow. `@main::available(macOS 10.15, *)` rejects (availability spec
 // is not an expression arg list); `@main::available(foo: bar)` accepts.
 @longest
-attribute = "@" >-> ( "abi" "attached" "available" "freestanding" "isolated" ) >s< moduleSelector attributeName attributeArgumentExprClause? .
+attribute = "@" >-> ( "abi" "attached" "available" "convention" "freestanding" "isolated" ) >s< moduleSelector attributeName attributeArgumentExprClause? .
 attributeArgumentExprClause = >s< "(" functionCallArgumentList? ")" .
 
 macroRoleArguments = macroRoleToken macroRoleArguments? .

@@ -2150,3 +2150,60 @@ struct SwiftSyntaxTests {
 
     }
 }
+
+// MARK: - Multiline string segment probe (TODO 30)
+
+/// Ground truth for `StringLiteralSegmentList` shape. Guessing the segmentation rule from tree
+/// dumps produced two contradictory hypotheses, so print what swift-syntax ACTUALLY builds:
+/// every segment's exact text, escaped, for the fixtures whose segment COUNT we get wrong.
+@Suite("multiline segment probe")
+struct MultilineSegmentProbe {
+    @Test("dump reference segments")
+    func dumpReferenceSegments() throws {
+        let labels: Set<String> = [
+            "testMultilineString7#1", "testMultilineString9#1", "testMultilineString11#1",
+            "testMultilineString25#1", "testMultilineString26#1", "testMultilineString29#1",
+            "testMultilineString31#1", "testMultilineString41#1", "testMultilineString44#1",
+            "testEscapeNewlineInRawString#1", "testEscapeLastNewlineInRawString#1",
+        ]
+        for snippet in translatedSnippets where labels.contains(snippet.label) {
+            let tree = Parser.parse(source: snippet.source)
+            print("### \(snippet.label)  source=\(snippet.source.debugDescription)")
+            dumpLiterals(in: Syntax(tree))
+        }
+    }
+
+    /// Does EVERY escape end a segment, or only the ones that affect layout (`\n`, `\<newline>`)?
+    /// The fixtures only exercise the layout ones, so probe the rest directly.
+    @Test("which escapes break a segment")
+    func escapeBreaks() throws {
+        let probes = [
+            "tab":        "_ = \"\"\"\n    a\\tb\n    \"\"\"",
+            "quote":      "_ = \"\"\"\n    a\\\"b\n    \"\"\"",
+            "newlineEsc": "_ = \"\"\"\n    a\\nb\n    \"\"\"",
+            "backslash":  "_ = \"\"\"\n    a\\\\b\n    \"\"\"",
+            "unicode":    "_ = \"\"\"\n    a\\u{41}b\n    \"\"\"",
+            "oneLine":    "_ = \"\"\"\n    a\n    \"\"\"",
+            "empty":      "_ = \"\"\"\n    \"\"\"",
+        ]
+        for (name, source) in probes.sorted(by: { $0.key < $1.key }) {
+            print("### probe \(name)  source=\(source.debugDescription)")
+            dumpLiterals(in: Syntax(Parser.parse(source: source)))
+        }
+    }
+
+    private func dumpLiterals(in node: Syntax) {
+        if let lit = node.as(StringLiteralExprSyntax.self) {
+            print("   openQuote=\(lit.openingQuote.text.debugDescription) segments=\(lit.segments.count)")
+            for (i, seg) in lit.segments.enumerated() {
+                switch seg {
+                case .stringSegment(let s):
+                    print("     [\(i)] stringSegment \(s.content.text.debugDescription)")
+                case .expressionSegment(let e):
+                    print("     [\(i)] expressionSegment \(e.description.debugDescription)")
+                }
+            }
+        }
+        for child in node.children(viewMode: .sourceAccurate) { dumpLiterals(in: child) }
+    }
+}

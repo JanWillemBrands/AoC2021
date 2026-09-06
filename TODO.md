@@ -191,33 +191,31 @@ Source: Sep 2 2026 Phase 1 tree-fidelity work; `GenerateSwiftSyntaxAST.swift`.
    Needs its own ambiguity A/B.
    Source: Sep 3 2026 AST work; `Phase3BranchTests` `switch-bind` / `switch-where`.
 
-27. **Attribute argument grammars: `@available` done, seven bespoke ones remain as token soup.**
-   `attributeArgumentClause = >s< "(" balancedTokens? ")"` accepts ANY balanced token sequence, so
-   it is an OVER-GENERALITY problem, not merely a missing AST mapping: `@available(!!! ??? ***)`
-   and `@available(1 + 2)` both parsed while swift-syntax errors. Pinned by `AttributeSoupTests`.
+27. **Bespoke attribute-argument grammars — NARROW ones only.**
+   Most attributes still take `attributeArgumentClause = >s< "(" balancedTokens? ")"` — token soup
+   with no structure to convert, so `convertAttribute` records `.unhandled` rather than guessing.
+   `@abi`, `@available`, `@isolated`, `@attached`/`@freestanding` and now `@convention` have real
+   argument grammars; the rest do not.
 
-   **Done Sep 4 2026 — `@available` (21 of 62 records).** It needed a new
-   `availabilityAttributeArguments`, NOT a reuse of the existing `availabilityArguments`: that rule
-   serves `#available(…)` CONDITIONS, which take only platform-version pairs and `*`, whereas the
-   attribute also takes labelled arguments (`deprecated`, `message: "…"`, `introduced: 10.15`,
-   `renamed: "y"`). Reusing it verbatim would have rejected very common code. Measured clean:
-   accepts 0, ambiguity 0, no wrongly-accepted rejects, and both `@available` soup rows now reject.
+   **Measured constraint: do NOT reuse `functionCallArgumentList`.** Routing attribute arguments
+   through the general expression grammar closes an
+   `attribute -> expression -> type -> attribute` cycle and is a performance cliff: the full test
+   run went from 85s to NOT FINISHING within 10 minutes. Reverting restored 85s and the exact same
+   label set, confirming the cause. Write a narrow rule per attribute instead — `@convention` took
+   four lines (`conventionArguments`/`conventionArgument`/`conventionValue`) and cost nothing.
 
-   **Remaining (34 records, seven attributes), each with its own bespoke grammar in swift-syntax:**
-   `@abi` (8), `@differentiable` (6), `@lifetime` (6), `@objc` (5, `ObjCSelectorPieceList` —
-   `@objc(+++)` still wrongly accepted), `@derivative` (4), `@transpose` (4), `@backDeployed` (3),
-   `@specialized` (3). Poor ratio: seven mini-grammars plus seven converter shapes for 34 records,
-   several of them experimental Swift features. Do them one at a time if reject-parity on attribute
-   arguments becomes a goal; otherwise leave.
+   Useful discovery while doing `@convention`: swift-syntax has NO dedicated node for it. The
+   arguments surface as a plain `.argumentList(LabeledExprListSyntax)`, and the same is true of
+   `@attached`/`@freestanding` (checked against the reference dumps). So several of these need only
+   a narrow grammar plus the EXISTING `convertArgumentList` — not a new syntax node. The ones that
+   really do have bespoke nodes are `@objc` (`objCName`), `@differentiable`
+   (`differentiableArguments`), `@derivative`/`@transpose` (`derivativeRegistrationArguments`),
+   `@backDeployed`, `@specialized` (`specializedArguments`) and `@lifetime`.
 
-   **The generic `.argumentList(LabeledExprList)` fallback is NOT worth doing.** Measured: only ONE
-   record (`@Argument`) takes the general expression-list shape. And it cannot simply replace the
-   catch-all rule — `attributeArgumentExprClause` exists and is wired to the `moduleSelector`
-   alternate, but switching the general rule to it would reject `@objc(foo:bar:)` and
-   `@available(macOS 10.15, *)`, which are not expression lists. swift-syntax gets away with a
-   generic fallback because it dispatches on a TABLE of special attribute names first; matching that
-   means extending the `>->( "abi" "attached" "available" … )` exclusion list per special attribute.
-   Source: Sep 4 2026 attribute work.
+   Remaining, by `.unhandled` count: @differentiable 11, @attached 10, @isolated 6, @lifetime 6,
+   @objc 5, @freestanding 5, @derivative 4, @transpose 4, @backDeployed 3, @specialized 3.
+   Also still open: `@objc(+++)` is wrongly accepted (`AttributeSoupTests`).
+   Source: Sep 5 2026; performance cliff measured Sep 6 2026.
 
 28. **The converter fallback tally covers only HALF the remaining tree mismatches — characterise the silent half.**
    Measured Sep 5 2026 by `ConverterFallbackTriage` (accounting now printed every run):
@@ -241,6 +239,78 @@ Source: Sep 2 2026 Phase 1 tree-fidelity work; `GenerateSwiftSyntaxAST.swift`.
    then tally those — that turns "260 unknown" into a ranked list the same way `alternateKind` did
    for the declaration/statement buckets.
    Source: Sep 5 2026, after the tally was mistaken for a completion estimate in conversation.
+
+29. **The converter re-derives classifications the grammar already made — read the alternate instead.**
+   `convertStringLiteral` fell through to a text-based branch that rebuilt the literal from
+   `collectTerminalText`: pound count, quote count, body, segments. In doing so it re-decided
+   "is this multiline?" with `hasPrefix("\"\"\"")` and reached the OPPOSITE conclusion from the
+   scanner, which had already classified `#""""#` as `extendedSinglelineStringLiteral` (its regex
+   requires `tripleQuote` then `lineBreak`, and `GrammarRegexLibrary` even names this case).
+   Result: we synthesised `"""` delimiters the source never had, on 11 labels.
+
+   Measured extent: 77 `collectTerminalText` call sites, ~16 of which re-decide STRUCTURE by
+   sniffing the collected text (`var`/`let`, leading `.`, trailing `?`/`!`, regex and string
+   delimiters). Most are safe only because a single grammar terminal can reach them; the string
+   one was not, because four terminals share the `"` prefix.
+
+   Fix shape: where several grammar alternates can reach a converter, branch on WHICH alternate
+   the parse took (`find`/`findTerminal` for `multilineStringLiteral` vs
+   `extendedSinglelineStringLiteral`), not on the characters. Until then the duplicated rule in
+   `convertStringLiteral` must be kept in step with the library regex by hand.
+   Source: Sep 6 2026, RawStringTests.testFalseMultilineDelimiters.
+
+30. **RESOLVED — multiline `StringSegment` boundaries are escape-sensitive, not line-based.**
+   Ground truth from `AdventTests/SwiftSyntaxTests.swift` `MultilineSegmentProbe`, which parses
+   each fixture with swift-syntax and prints every segment's exact text. A segment ends after:
+
+   - a real line break — the break STAYS in the segment
+   - a `\n` ESCAPE — the two escape characters STAY in the segment
+   - a `\` + line-break continuation — BOTH are elided, belonging to no segment
+
+   `\t`, `\"`, `\\` and `\u{…}` do NOT break, so "split at every escape" is wrong; only the
+   escapes that end a line of the VALUE or of the SOURCE do. In a raw literal the introducer is
+   `\` plus the delimiter's `#` count, so a bare `\n` there breaks nothing. A body ending in a
+   bare introducer is a continuation whose break was the closing delimiter's own newline: it
+   elides and leaves no trailing empty segment.
+
+   Two near-identical empty cases must be distinguished by the CALLER, since both arrive with an
+   empty body: `\"\"\"⏎    \"\"\"` has no content line and yields ZERO segments, while
+   `\"\"\"⏎⏎    \"\"\"` (a blank line) supplies a second break and yields ONE empty segment.
+
+   Lesson: two hypotheses had already been derived from tree DUMPS and contradicted each other.
+   The probe settled it in one run. Prefer probing swift-syntax directly over inferring a lexer
+   rule from diffs — same lesson as `reference_probe_hasError_not_swiftc`.
+   Fixed Sep 6 2026: 442 → 431 labels, zero newly broken.
+
+31. **Model static string-literal BODIES in the grammar, so the parser chops them up.**
+   Today `multilineStringLiteral` and `extendedMultilineStringLiteral` are single `@builder`
+   terminals: one regex matching pounds, `"""`, the whole body and the closing delimiters as ONE
+   token. The parse therefore contains no internal structure, and the converter must recompute
+   every segment boundary, escape rule and indentation strip from the token's raw text (see
+   TODO 30). Both string bugs of Sep 6 2026 came from that: with nothing to read, the converter
+   re-derived.
+
+   The INTERPOLATED forms already show the shape to copy — `singleLineInterpolatedStringLiteral`
+   and `multilineInterpolatedStringLiteral` decompose into Head/Part/Tail terminals, and that
+   converter path has never had this class of bug because it just walks the children.
+
+   Proposed: give the static forms the same treatment — a body as a sequence of segment and
+   escape nodes, so `convertStringLiteral` reads segments instead of computing them, and
+   `multilineSegmentTexts` can be deleted.
+
+   Trade-offs, both real:
+   - The escape, line-continuation and indentation rules move INTO `Swift.apus`, where they are
+     declarative and testable per-node — but the indentation rule is contextual (it depends on
+     the closing delimiter's column), which is exactly the kind of thing a CFG expresses badly.
+     `REJECTS.md` § C2 Group D already lists the indentation rule as unenforced for this reason.
+   - Touching the string terminals touches the SCANNER, the highest-risk area in the grammar
+     (catastrophic-backtracking history, Schrödinger/Frankenstein interactions), for a payoff
+     that is code quality rather than tree fidelity: the current converter now matches
+     swift-syntax on every corpus fixture.
+
+   So: worth doing, but schedule it as its own piece of work with a full A/B, not folded into
+   tree-fidelity work.
+   Source: Sep 6 2026, user request after TODO 29/30.
 
 ## Maintenance Rule
 
