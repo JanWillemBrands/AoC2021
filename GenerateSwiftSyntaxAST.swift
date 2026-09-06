@@ -69,7 +69,7 @@ struct SwiftSyntaxGenerator {
         }
         let items = convertNonterminal(grammar.root, from: origin, to: n)
         return SourceFileSyntax(
-            statements: CodeBlockItemListSyntax(items.map { CodeBlockItemSyntax(item: $0) }),
+            statements: CodeBlockItemListSyntax(items),
             endOfFileToken: .endOfFileToken()
         )
     }
@@ -245,7 +245,7 @@ struct SwiftSyntaxGenerator {
     // MARK: - Top-level dispatch
 
     /// Convert a nonterminal spanning [from..to] into CodeBlockItem elements.
-    private mutating func convertNonterminal(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax.Item] {
+    private mutating func convertNonterminal(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax] {
         let lhsNode = nt.kind == .N && nt.seq == nil ? nt : lhs(nt) ?? nt
         switch lhsNode.name {
         case "topLevelDeclaration":
@@ -258,7 +258,7 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - Statements
 
-    private mutating func convertTopLevelDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax.Item] {
+    private mutating func convertTopLevelDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax] {
         // topLevelDeclaration = shebang? statements? .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
@@ -307,6 +307,35 @@ struct SwiftSyntaxGenerator {
         return nil
     }
 
+    /// SE-0470 lets a list carry a trailing comma before its closer (`f(a, b,)`, `[1, 2,]`,
+    /// `Foo<A,>`). The grammar spells it as an optional `","` AFTER the list nonterminal, and
+    /// swift-syntax hangs it on the LAST element — so it cannot be seen from inside the list walk.
+    private mutating func hasTrailingComma(_ spans: [(GrammarNode, CharPosition, CharPosition)], afterList list: String) -> Bool {
+        guard let listSpan = spans.first(where: { findNonterminal(named: list, sym: $0.0, from: $0.1, to: $0.2) != nil })
+        else { return false }
+        for (sym, f, t) in spans where f >= listSpan.2 && f < t {
+            var text = ""
+            if (sym.kind.isTerminal || sym.kind == .OPT), tiledText(sym, from: f, to: t, into: &text), text == "," {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Is this list element terminated by an EXPLICIT `;`?
+    ///
+    /// Two places carry it: the trailing `";"?` of `statements = statement ";"?` (a direct
+    /// terminal) and the separator of `statements = statement statementSeparator statements`,
+    /// where `statementSeparator = <n> | ";"` hides it one level down. Checking only the direct
+    /// terminal missed every separator case.
+    private mutating func hasExplicitSemicolon(in spans: [(GrammarNode, CharPosition, CharPosition)]) -> Bool {
+        if spansContainKeyword(spans, ";") { return true }
+        guard let sepNT = find("statementSeparator", in: spans),
+              let (_, sepSpans) = tileAlternate(sepNT.nt, from: sepNT.from, to: sepNT.to)
+        else { return false }
+        return spansContainKeyword(sepSpans, ";")
+    }
+
     /// Locate a named TERMINAL in `spans`. `find`/`findNonterminal` match `.N` nodes
     /// only, so a rule referencing a named terminal (`decimalDigits - /[0-9]+/`) is
     /// invisible to them — which is exactly how `x.0` broke when `decimalDigits`
@@ -335,17 +364,22 @@ struct SwiftSyntaxGenerator {
         return nil
     }
 
-    private mutating func convertStatements(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax.Item] {
+    /// Returns whole `CodeBlockItem`s, not bare items, because an explicit `;` belongs to the
+    /// item it terminates (`CodeBlockItem.semicolon`) and is otherwise dropped.
+    private mutating func convertStatements(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> [CodeBlockItemSyntax] {
         // statements = statement ";"? .
         // statements = statement statementSeparator statements .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
             return []
         }
-        var items: [CodeBlockItemSyntax.Item] = []
+        var items: [CodeBlockItemSyntax] = []
         if let stmtNT = find("statement", in: spans),
            let item = convertStatement(stmtNT.nt, from: stmtNT.from, to: stmtNT.to) {
-            items.append(item)
+            items.append(CodeBlockItemSyntax(
+                item: item,
+                semicolon: hasExplicitSemicolon(in: spans) ? .semicolonToken() : nil
+            ))
         }
         if let stmtsNT = find("statements", in: spans) {
             items.append(contentsOf: convertStatements(stmtsNT.nt, from: stmtsNT.from, to: stmtsNT.to))
@@ -838,7 +872,12 @@ struct SwiftSyntaxGenerator {
                let (_, mdSpans) = tileAlternate(mdNT.nt, from: mdNT.from, to: mdNT.to) {
                 if let declNT = find("declaration", in: mdSpans),
                    let decl = convertDeclaration(declNT.nt, from: declNT.from, to: declNT.to) {
-                    items.append(MemberBlockItemSyntax(decl: decl))
+                    // `<kind>Members = <kind>Member ";"? .` — an explicit `;` belongs to the
+                    // member it terminates, exactly as for statements.
+                    items.append(MemberBlockItemSyntax(
+                        decl: decl,
+                        semicolon: hasExplicitSemicolon(in: spans) ? .semicolonToken() : nil
+                    ))
                 } else {
                     record(.unhandled, "member declaration has no converter", from: memberNT.from, to: memberNT.to)
                 }
@@ -953,12 +992,15 @@ struct SwiftSyntaxGenerator {
         }
         if let scNT = find("switchCase", in: spans),
            let (_, scSpans) = tileAlternate(scNT.nt, from: scNT.from, to: scNT.to) {
-            if find("switchCaseAttribute", in: scSpans) != nil {
-                record(.unhandled, "switch case attribute not converted", from: scNT.from, to: scNT.to)
-            }
+            // switchCaseAttribute = "@" >s< attributeName .  It lives inside caseLabel /
+            // defaultLabel, NOT directly under switchCase — which is why looking for it here
+            // found nothing and the mismatch was SILENT. swift-syntax hangs it on the
+            // SwitchCase itself, before the label.
+            var caseAttributes: AttributeSyntax? = nil
             var label: SwitchCaseSyntax.Label? = nil
             if let clNT = find("caseLabel", in: scSpans),
                let (_, clSpans) = tileAlternate(clNT.nt, from: clNT.from, to: clNT.to) {
+                caseAttributes = switchCaseAttributes(in: clSpans)
                 var items: [SwitchCaseItemSyntax] = []
                 if let cilNT = find("caseItemList", in: clSpans) {
                     collectCaseItems(cilNT.nt, from: cilNT.from, to: cilNT.to, into: &items)
@@ -973,7 +1015,10 @@ struct SwiftSyntaxGenerator {
                     caseItems: SwitchCaseItemListSyntax(items),
                     colon: .colonToken()
                 ))
-            } else if find("defaultLabel", in: scSpans) != nil {
+            } else if let dlNT = find("defaultLabel", in: scSpans) {
+                if let (_, dlSpans) = tileAlternate(dlNT.nt, from: dlNT.from, to: dlNT.to) {
+                    caseAttributes = switchCaseAttributes(in: dlSpans)
+                }
                 label = .default(SwitchDefaultLabelSyntax(
                     defaultKeyword: .keyword(.default),
                     colon: .colonToken()
@@ -981,13 +1026,14 @@ struct SwiftSyntaxGenerator {
             }
 
             if let label {
-                var items: [CodeBlockItemSyntax.Item] = []
+                var items: [CodeBlockItemSyntax] = []
                 if let stmtsNT = find("statements", in: scSpans) {
                     items = convertStatements(stmtsNT.nt, from: stmtsNT.from, to: stmtsNT.to)
                 }
                 cases.append(SwitchCaseSyntax(
+                    unknownAttr: caseAttributes,
                     label: label,
-                    statements: CodeBlockItemListSyntax(items.map { CodeBlockItemSyntax(item: $0) })
+                    statements: CodeBlockItemListSyntax(items)
                 ))
             } else {
                 record(.unhandled, "switch case form has no converter: \(alternateKind(scSpans))", from: scNT.from, to: scNT.to)
@@ -996,6 +1042,20 @@ struct SwiftSyntaxGenerator {
         if let restNT = find("switchCases", in: spans) {
             collectSwitchCases(restNT.nt, from: restNT.from, to: restNT.to, into: &cases)
         }
+    }
+
+    /// `switchCaseAttribute = "@" >s< attributeName .` — `@unknown default:` and friends.
+    /// swift-syntax models this as a SINGLE optional `unknownAttr`, not an AttributeList —
+    /// the position exists for `@unknown default:` specifically.
+    private mutating func switchCaseAttributes(in spans: [(GrammarNode, CharPosition, CharPosition)]) -> AttributeSyntax? {
+        guard let attrNT = find("switchCaseAttribute", in: spans),
+              let (_, aSpans) = tileAlternate(attrNT.nt, from: attrNT.from, to: attrNT.to),
+              let nameNT = find("attributeName", in: aSpans) else { return nil }
+        let name = collectTerminalText(nameNT.nt, from: nameNT.from, to: nameNT.to)
+        return AttributeSyntax(
+            atSign: .atSignToken(),
+            attributeName: IdentifierTypeSyntax(name: .identifier(name))
+        )
     }
 
     /// caseItemList = matchPattern whereClause? | matchPattern whereClause? "," caseItemList .
@@ -1693,13 +1753,13 @@ struct SwiftSyntaxGenerator {
         // The shorthand `{ 0 }` getter: swift-syntax keeps the statements directly.
         if let cbNT = find("codeBlock", in: spans),
            let (_, cbSpans) = tileAlternate(cbNT.nt, from: cbNT.from, to: cbNT.to) {
-            var items: [CodeBlockItemSyntax.Item] = []
+            var items: [CodeBlockItemSyntax] = []
             if let stmtsNT = find("statements", in: cbSpans) {
                 items = convertStatements(stmtsNT.nt, from: stmtsNT.from, to: stmtsNT.to)
             }
             return AccessorBlockSyntax(
                 leftBrace: .leftBraceToken(),
-                accessors: .getter(CodeBlockItemListSyntax(items.map { CodeBlockItemSyntax(item: $0) })),
+                accessors: .getter(CodeBlockItemListSyntax(items)),
                 rightBrace: .rightBraceToken()
             )
         }
@@ -2997,6 +3057,9 @@ struct SwiftSyntaxGenerator {
                 params[i] = params[i].with(\.trailingComma, .commaToken())
             }
         }
+        if hasTrailingComma(spans, afterList: "parameterList"), !params.isEmpty {
+            params[params.count - 1] = params[params.count - 1].with(\.trailingComma, .commaToken())
+        }
         return FunctionParameterClauseSyntax(parameters: FunctionParameterListSyntax(params))
     }
 
@@ -3087,13 +3150,13 @@ struct SwiftSyntaxGenerator {
             record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
             return CodeBlockSyntax(statements: [])
         }
-        var items: [CodeBlockItemSyntax.Item] = []
+        var items: [CodeBlockItemSyntax] = []
         if let stmtsNT = find("statements", in: spans) {
             items = convertStatements(stmtsNT.nt, from: stmtsNT.from, to: stmtsNT.to)
         }
         return CodeBlockSyntax(
             leftBrace: .leftBraceToken(),
-            statements: CodeBlockItemListSyntax(items.map { CodeBlockItemSyntax(item: $0) }),
+            statements: CodeBlockItemListSyntax(items),
             rightBrace: .rightBraceToken()
         )
     }
@@ -3777,14 +3840,14 @@ struct SwiftSyntaxGenerator {
                 record(.lookupFailed, "directive clause without a condition", from: span.from, to: span.to)
             }
         }
-        var items: [CodeBlockItemSyntax.Item] = []
+        var items: [CodeBlockItemSyntax] = []
         if let stmtsNT = find("statements", in: spans) {
             items = convertStatements(stmtsNT.nt, from: stmtsNT.from, to: stmtsNT.to)
         }
         clauses.append(IfConfigClauseSyntax(
             poundKeyword: keyword,
             condition: condition,
-            elements: .statements(CodeBlockItemListSyntax(items.map { CodeBlockItemSyntax(item: $0) }))
+            elements: .statements(CodeBlockItemListSyntax(items))
         ))
     }
 
@@ -4036,14 +4099,14 @@ struct SwiftSyntaxGenerator {
         if let sigNT = find("closureSignature", in: spans) {
             signature = convertClosureSignature(sigNT.nt, from: sigNT.from, to: sigNT.to)
         }
-        var items: [CodeBlockItemSyntax.Item] = []
+        var items: [CodeBlockItemSyntax] = []
         if let stmtsNT = find("statements", in: spans) {
             items = convertStatements(stmtsNT.nt, from: stmtsNT.from, to: stmtsNT.to)
         }
         return ClosureExprSyntax(
             leftBrace: .leftBraceToken(),
             signature: signature,
-            statements: CodeBlockItemListSyntax(items.map { CodeBlockItemSyntax(item: $0) }),
+            statements: CodeBlockItemListSyntax(items),
             rightBrace: .rightBraceToken()
         )
     }
@@ -4292,6 +4355,9 @@ struct SwiftSyntaxGenerator {
                 elements[i] = elements[i].with(\.trailingComma, .commaToken())
             }
         }
+        if hasTrailingComma(spans, afterList: "arrayLiteralItems"), !elements.isEmpty {
+            elements[elements.count - 1] = elements[elements.count - 1].with(\.trailingComma, .commaToken())
+        }
         return ExprSyntax(ArrayExprSyntax(
             leftSquare: .leftSquareToken(),
             elements: ArrayElementListSyntax(elements),
@@ -4521,9 +4587,20 @@ struct SwiftSyntaxGenerator {
     private func declNameToken(_ name: String) -> TokenSyntax {
         if !name.isEmpty && name.allSatisfy(\.isNumber) { return .integerLiteral(name) }
         switch name {
-        case "self": return .keyword(.self)
-        case "Self": return .keyword(.Self)
-        default:     return .identifier(name)
+        case "self":      return .keyword(.self)
+        case "Self":      return .keyword(.Self)
+        // Only `init` becomes a keyword in member position — probe-verified that swift-syntax
+        // keeps `deinit` and `subscript` as IDENTIFIERS there (testSubscriptDeinitMembers).
+        case "init":      return .keyword(.`init`)
+        case "_":         return .wildcardToken()
+        default:
+            // An operator used as a member/decl name (`x.^`, `func ^`) is a binaryOperator
+            // token, not an identifier — no operator character is legal in an identifier.
+            if let first = name.unicodeScalars.first,
+               !CharacterSet.alphanumerics.contains(first), first != "_", first != "$" {
+                return .binaryOperator(name)
+            }
+            return .identifier(name)
         }
     }
 
@@ -4567,6 +4644,10 @@ struct SwiftSyntaxGenerator {
             hasParens = true
             if let listNT = find("functionCallArgumentList", in: clauseSpans) {
                 args = convertArgumentList(listNT.nt, from: listNT.from, to: listNT.to)
+                if hasTrailingComma(clauseSpans, afterList: "functionCallArgumentList"), var last = args.last {
+                    last.trailingComma = .commaToken()
+                    args = LabeledExprListSyntax(args.dropLast() + [last])
+                }
             }
         } else if trailing == nil {
             return missingExpr(.lookupFailed, "call with neither argument clause nor trailing closure", from: from, to: to)
@@ -5247,6 +5328,9 @@ struct SwiftSyntaxGenerator {
             for i in 0..<args.count - 1 {
                 args[i] = args[i].with(\.trailingComma, .commaToken())
             }
+        }
+        if hasTrailingComma(spans, afterList: "genericArgumentList"), !args.isEmpty {
+            args[args.count - 1] = args[args.count - 1].with(\.trailingComma, .commaToken())
         }
         return GenericArgumentClauseSyntax(
             leftAngle: .leftAngleToken(),

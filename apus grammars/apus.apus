@@ -3,31 +3,33 @@
 // Grammar of trivia
 whitespace  : /\s+/ .
 comment     : /\/\/.*/ .
+action      : /'(?:[^'\\]|\\.)*'/ .
 
 // Grammar of terminals
 identifier  - /[_\p{XID_Start}][-\p{XID_Continue}]*/ .
 literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
 
-// Grammar of attributes
-action      : /'(?:[^'\\]|\\.)*'/ .
+// Grammar of pragma attributes
 pragma      - /@\p{XID_Start}\p{XID_Continue}*/ .
+
+// Grammar of test messages
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 // PRODUCTIONS
 
 grammar     = < production > { message } .
               
-production  = [ pragma ] identifier
-                ( ":" ( regex | literal ) "." [ follow ]
-                | "-" ( regex | literal ) "." [ follow ]
-                | "-:" selection "."
-                | "=" selection "."
-                ) .
+production  = { pragma }
+              identifier ( ":" | "-" | "=" ) alternates "."
+              [ lookahead ] . // TODO: only <-< negative lookbehind sits here, mistakenly ?
 
-selection   = sequence { "|" sequence } .
+alternates  = sequence { "|" sequence } .
 
-sequence    = < factor [ "?" | "*" | "+" ] | layout > .
+sequence    = < factor [ "?" | "*" | "+" ]
+              | layout
+              | pragma
+              > .
 
 factor      = terminal
             | "[" selection "]"
@@ -39,11 +41,8 @@ factor      = terminal
 terminal    = identifier [ exclusion ]
             | literal
             | regex
-            | epsilon | empty
+            | "ε" | "\"\""
             .
-
-epsilon     = "ε" .
-empty       = "\"\"" .
 
 // Grammar of annotations
 
@@ -51,7 +50,7 @@ exclusion   = "---" "(" < literal > ")" .
 
 layout      = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
 
-follow      = ( "<+<" | "<-<" | ">+>" | ">->" ) "(" < literal > ")" .
+lookahead   = ( "<+<" | "<-<" | ">+>" | ">->" ) "(" < literal | Identifier > ")" .
 
 
 ^^^
