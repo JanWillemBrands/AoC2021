@@ -231,13 +231,25 @@ Triple caret `^^^` start a message block. Everything between `^^^` markers (or b
 
 Do NOT put comments between `^^^` blocks. Comments become part of message content. Message capture everything.
 
-## Pragmas
+## Pragmas And Annotations
 
-```swift
-S = @python-indent < statement > .
+APUS annotations are position-typed. An `@...` token is not a grammar item by itself;
+its meaning comes from where it appears.
+
+```text
+Lookaround and layout are zero-width sequence predicates.
+They sit between grammar items and consume no input.
 ```
 
-@-prefixed strings are pragmas — hints to the parser or code generator. They pass through the grammar without affecting parsing semantics.
+```text
+Oracle annotations choose or prune parse-forest alternatives.
+They attach to nonterminals, bracket nodes, or alternates.
+```
+
+```text
+Terminal pragmas configure lexical recognition.
+They belong on terminal definitions, not arbitrary rules.
+```
 
 ## Actions
 
@@ -251,9 +263,91 @@ Actions can appear before the first production (preamble), between the nontermin
 
 ---
 
-## Annotations
+## Oracle Preferences
 
-Annotations extend terminals and nonterminals with special behavior. They not change what the grammar matches — they guide the scanner and parser.
+`@prefer` and `@avoid` are alternate-level only. They may occur only at the start
+of an alternate, immediately after `=`, `|`, `(`, `[`, `{`, or `<`.
+
+```swift
+S = @prefer A | B .
+S = ( @prefer A | B ) .
+S = [ @avoid modifier ] name .
+```
+
+Meaning:
+
+```text
+@prefer = this alternate wins over same-span siblings.
+@avoid  = this alternate loses to same-span siblings.
+```
+
+Inside `[ ... ]` and `{ ... }`, `@avoid` also competes with the implicit empty
+branch. That is why `[ @avoid X ]` means "prefer the skip when the skip still
+parses".
+
+`@longest`, `@shortest`, `@left`, and `@right` are node-level only. They may occur
+before a nonterminal definition or before a bracketed group.
+
+```swift
+@longest expression = prefixExpression { infixOperator prefixExpression } .
+S = @shortest [ modifier ] name .
+S = @longest { word } .
+S = @left ( E "+" E | atom ) .
+```
+
+Meaning:
+
+```text
+@longest/@shortest = choose maximal/minimal extent for this node.
+@left/@right       = for one node span (i,j), choose among competing pivots k.
+```
+
+`@avoid` and `@shortest` are different primitives. They can overlap in simple
+optional-skip cases, but they are not synonyms:
+
+```swift
+[ @avoid X ]      // alternate X loses to siblings and to the implicit skip
+@shortest [ X ]   // the optional node minimizes its consumed extent
+```
+
+## Oracle Constraints
+
+`@confinedTo(...)` and `@excludedFrom(...)` are alternate-level hard constraints.
+They occur at the start of an alternate, in the same position class as `@prefer`.
+
+```swift
+declaration = @confinedTo(memberDeclaration) enumCaseDeclaration .
+expression  = @excludedFrom(conditionExpression) assignmentExpression .
+```
+
+Meaning:
+
+```text
+@confinedTo(N)   = keep this alternate only when its span is contained in an N span.
+@excludedFrom(N) = prune this alternate when its span is contained in an N span.
+```
+
+These are span-containment predicates, not direct-parent predicates. If a grammar
+needs "directly inside N" or "co-started with N", that should be a separate
+primitive rather than a reinterpretation of `@confinedTo`.
+
+`@canParse(N)` and `@cannotParse(N)` with nonterminal operands are also Oracle constraints:
+
+```swift
+statement = @cannotParse(declaration attributes) expression .
+```
+
+Meaning:
+
+```text
+@canParse(N)    = this alternate is valid only where N can parse here.
+@cannotParse(N) = this alternate is invalid where N can parse here.
+```
+
+This is a parse-forest predicate, not a token lookaround. A coherent grammar should
+keep this separate from token lookaround.
+
+## Sequence Predicates
 
 ### Exclusion Sets `---()`
 
@@ -265,25 +359,8 @@ Problem: scanner see `if` and produce two tokens of same length — keyword `if`
 
 Sometimes you know: in this grammar position, `if` is NOT an identifier. The `---()` annotation say: suppress these specific Schrödinger duals here. Kill the bad branch locally.
 
-The annotation go after an identifier (nonterminal or terminal reference) in a rule. List the literal values to exclude in parentheses.
-
-### Frankenstein Split `~~~`
-
-```swift
-S = "x" | "<" Y .
-Y = S ">" ~~~ .
-```
-
-Problem: scanner see `>>` and make one token. But sometimes `>>` is two `>` closing nested brackets:
-
-```swift
-Array<Dictionary<String, Int>>
-                             ^^— two ">" not one ">>"
-```
-
-The `~~~` annotation after a literal say: this literal is allowed to match a PREFIX of a longer token. Parser can split the Frankenstein monster.
-
-Scanner still produce `>>` as one token. But when parser reach `">" ~~~`, it is allowed to match just the first `>` and leave the second `>` as remainder for a later descriptor.
+The annotation goes after an identifier, literal, regex, or grouped factor in a
+rule. List the literal values to exclude in parentheses.
 
 ### Layout Tokens `>>|` and `|<<`
 
@@ -298,122 +375,139 @@ For indent-sensitive languages (Python, Haskell). These are synthetic tokens inj
 
 They appear unquoted in grammar rules. When the grammar uses them, the layout injection pass activates automatically. It tracks indentation levels and inserts `>>|` or `|<<` tokens into the token stream. Bracket pairs (configurable) suppress indent tracking inside them.
 
-### Boundary Constraints `>s<` `<s>` `>n<` `<n>`
+### Layout Boundaries `<s>` `>s<` `<n>` `>n<`
 
 ```swift
-prefix_op = >s< operator .
-binary_op = <s> operator .
-same_line = >n< expression .
-new_line  = <n> statement .
+prefixOperatorUse = operator >s< operand .
+binaryOperatorUse = lhs <s> operator <s> rhs .
+sameLine          = lhs >n< rhs .
+nextLine          = lhs <n> rhs .
 ```
 
-Spatial constraints between tokens (future — design complete, not yet enforced):
+These are zero-width predicates over the trivia gap at the current parse position:
 
 | Annotation | Meaning |
-|------------|---------|
-| `>s<` | Tokens must be adjacent (touching, no gap) |
-| `<s>` | Tokens must NOT be adjacent |
-| `>n<` | Tokens must be on the same line |
-| `<n>` | Tokens must be on different lines |
+|---|---|
+| `<s>` | some trivia exists |
+| `>s<` | no trivia exists |
+| `<n>` | newline trivia exists |
+| `>n<` | no newline trivia exists |
 
-These are predicates, not tokens. They consume no input. They check the spatial relationship between the previous and next token and abandon the parse path if violated.
+These predicates consume no input. They check the relationship between the previous
+commit and the next token position and abandon the parse path if violated.
 
-### Scanner Modes `===` `<<<` `>>>`
+### Token Lookaround
 
-```swift
-multilineCommentHead : "/*" .
-                     === "" >>> "multiline-comment"
-                     === "multiline-comment" >>> "multiline-comment"
-
-multilineCommentText : /(?s).*?(?=\/\*|\*\/)/ .
-                     === "multiline-comment"
-
-multilineCommentTail : "*/" .
-                     === "multiline-comment" <<<
-```
-
-Scanner modes control which terminals are active at each point in the input. Stack-based, like ANTLR lexer modes.
-
-A mode annotation is a **gated transition** — a structured triple:
-
-- `=== "mode"` — gate: this terminal only participates when the scanner is in this mode
-- `<<<` — pop: after matching, leave this mode
-- `>>> "mode"` — push: after matching, enter this mode
-
-The four shapes:
-
-| Syntax | Meaning |
-|--------|---------|
-| `=== "X"` | Active only in mode X |
-| `=== "X" >>> "Y"` | Active in X, enter Y after match |
-| `=== "X" <<<` | Active in X, leave X after match |
-| `=== "X" <<< >>> "Y"` | Active in X, replace X with Y after match |
-
-Terminals without any `===` annotation are active in ALL modes. A terminal gated with `=== ""` is active only in the default mode.
-
-One terminal can have multiple gated transitions — active in multiple modes with different actions:
+Token lookaround is also a zero-width sequence predicate, allowed wherever layout
+boundaries are allowed:
 
 ```swift
-fBraceOpen - "{" .
-           === "fStr" >>> "fExpr"
-           === "fSpec" >>> "fExpr"
-           === "fExpr" >>> "fExpr"
+A = X >+>(")") Y .
+A = X >->("(") Y .
+A = X <+<(identifier) Y .
+A = X <-<(operator) Y .
 ```
 
-Mode membership is pre-filter. Ineligible terminals not even try to match. Post-actions (pop/push) are unconditional — the gate already verified the stack. No rollback needed.
+Meaning at that exact cursor position:
+
+```text
+>+>(...) = some listed terminal can occur after this position.
+>->(...) = no listed terminal can occur after this position.
+<+<(...) = some listed terminal occurred before this position.
+<-<(...) = no listed terminal occurred before this position.
+```
+
+`EOF` is the explicit end-of-input operand for token lookahead:
+
+```apus
+A = X >+>(")" EOF) .
+```
+
+This is the implemented model: token lookaround is a zero-width sequence
+boundary. Post-dot terminal-definition `<+<` / `<-<` is not a separate
+annotation class; put lookaround where the production cursor should be tested.
+
+## Terminal Pragmas
+
+```swift
+@lexicalClass operator - /.../ .
+@preempt(regexOpenSlash, regularExpressionLiteral) operator - /.../ .
+regexLiteral - @builder(plainRegularExpressionLiteral) .
+```
+
+Terminal pragmas configure lexical recognition. They should be valid only on
+terminal-like productions. Misplaced terminal pragmas should be grammar errors, not
+inert annotations.
 
 ---
 
 ## Full Grammar
 
-APUS defined in APUS:
+APUS is self-described by `apus.apus`. The shape below is the coherent
+lookaround-boundary grammar.
 
 ```swift
 whitespace  : /\s+/ .
 comment     : /\/\/.*/  .
-
-action      : /@(?:[^@\\]|\\.)+@/ .
+action      : /'(?:[^'\\]|\\.)*'/ .
 
 identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
 literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
-pragma      - /'(?:[^'\n])*'/ .
+pragma      - /@\p{XID_Start}\p{XID_Continue}*/ .
 
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
 grammar     = < production > { message } .
 
-production  = identifier
-                ( ":" ( regex | literal ) "." mode
-                | "-" ( regex | literal ) "." mode
-                | "=" selection "."
-                ) .
+production  = productionPragma* identifier ( ":" | "-" | "=" ) productionBody "." .
+
+// `:` makes the LHS skipped trivia/token, `-` makes it an emitted token, and
+// `=` makes it a grammar node. A direct terminal body uses the scanner fast path;
+// a structured `:` body uses a trivia recognizer sub-parse. Structured `-` is
+// still represented by the legacy `=|` implementation while migration continues.
+productionBody = terminalBody | selection .
+
+terminalBody = regex | literal | "@builder" builderKey? .
+builderKey   = "(" ( identifier | literal ) ")" .
 
 selection   = sequence { "|" sequence } .
 
-sequence    = < layout | factor [ "?" | "*" | "+" ] > .
+sequence    = alternateAnnotation* < sequenceItem > .
+
+sequenceItem = layout
+             | lookaround
+             | factor [ "?" | "*" | "+" ] [ exclusion ]
+             .
 
 factor      = terminal
-            | "[" selection "]"
-            | "{" selection "}"
-            | "<" selection ">"
-            | "(" selection ")"
+            | groupPragma* "[" selection "]"
+            | groupPragma* "{" selection "}"
+            | groupPragma* "<" selection ">"
+            | groupPragma* "(" selection ")"
             .
 
-terminal    = identifier    [ "---" "(" < literal > ")" ]
-            | literal       [ "~~~" ]
+terminal    = identifier
+            | literal
             | regex
             | epsilon | empty
-            | pragma
             .
 
 epsilon     = "ε" .
 empty       = "\"\"" .
 
-layout      = [ ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" ] .
+layout      = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
+lookaround  = ( ">+>" | ">->" | "<+<" | "<-<" ) "(" < literal | identifier | "EOF" > ")" .
+exclusion   = "---" "(" < literal > ")" .
 
-mode        = { "===" name [ "<<<" ] [ ">>>" name ] } .
-name        = literal | identifier .
+productionPragma     = terminalPragma | nonterminalPragma .
+terminalPragma       = "@lexicalClass" | "@preempt" preemptArgs .
+nonterminalPragma    = "@longest" | "@shortest" | "@left" | "@right" | "@sameLine" .
+groupPragma          = "@longest" | "@shortest" | "@left" | "@right" .
+alternateAnnotation  = "@prefer" | "@avoid" | containment | parsePredicate .
+containment          = ( "@confinedTo" | "@excludedFrom" ) "(" < identifier > ")" .
+parsePredicate       = ( "@canParse" | "@cannotParse" ) "(" < identifier > ")" .
+preemptArgs          = "(" identifier [ "," identifier ] ")" .
 ```
 
 ## Sample Grammar

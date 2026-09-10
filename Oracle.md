@@ -50,12 +50,11 @@ last body symbol. (LHS-position `@prefer` is a grammar-parse error; only
 ## Extent on a bracket = a constrained optimisation
 
 Extent on a bracket is "minimise/maximise this node's span **subject to a complete
-parse still existing**" — the constraint-solver reading (objective + feasibility). A
-local, per-**enclosing-context** rule, folded into the phase-1 walk (`tileBody`):
-among the bracket's end positions that keep the rest of the sequence tiling to the
-context end, keep only the shortest (`@shortest`) or longest (`@longest`). Feasibility
-is the walk's own "does the rest tile" test; the segmentation is the walk's own
-per-iteration stepping — no proxy node, no separate carrier.
+parse still existing**" — the constraint-solver reading (objective + feasibility).
+For bodies that contain an extent-annotated bracket, the phase-1 walk enumerates
+complete body tilings, filters those tilings by the bracket's objective, then marks
+only the surviving steps reachable. Bodies without an extent-annotated bracket keep
+the cheaper frontier fold.
 
 This unifies two apparent flavors that both have wider effect from a local
 annotation (like a layout constraint):
@@ -74,23 +73,21 @@ Nonterminal extent stays on the global per-start rule; only brackets use the
 walk-local rule (a nonterminal has many followers, so "one enclosing context" is not
 defined for it).
 
-## Not yet handled: moved-start extent (part c)
+## Moved-start extent
 
-The walk-local rule compares a node's spans **within one enclosing context**. It fails
-when the annotated node's **start position itself moves**, e.g.
+The tiling-wide rule handles cases where the annotated node's **start position itself
+moves**, e.g.
 
 ```apus
 S = [ x ] @shortest [ x ] .        // input "x"
 ```
 
 The second `[ x ]`'s two readings — take `x` at `(0,1)` vs empty at `(1,1)` — live in
-*different* recursion branches (first-optional-empty vs first-optional-took), so no
-per-context comparison ever sees them together. Minimising a node's span when its
-start can move is inherently a **cross-parse** comparison: enumerate the complete
-parses of the enclosing nonterminal and keep those in which the annotated node's span
-is extremal. That is derivation-enumeration territory (cf. `DerivationBuilder`), not a
-per-context yield filter, and is not implemented. No `Swift.apus` site needs it; the
-sole failing probe is the synthetic `shortestTwoOptionalsSecond`.
+different midpoint choices for the preceding optional. The old head-local tiler never
+compared them, so both enclosing body tilings survived. `Oracle.pruneUnproductive`
+now compares the annotated bracket's consumed length across complete tilings of the
+same body span, so `@shortest` keeps the empty second optional and prunes the stale
+first-optional-empty/second-optional-take path.
 
 ## Operator precedence (a separate concern)
 

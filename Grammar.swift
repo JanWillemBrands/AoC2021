@@ -6,7 +6,6 @@
 //
 
 import OSLog
-//import AdventMacros
 import BitCollections
 
 // Internal sentinel strings for FIRST/FOLLOW sets and the symbol table:
@@ -45,7 +44,7 @@ class Grammar {
     //   1..T     = terminals (assigned during grammar construction)
     //   T+1      = epsilon (ε) — a sentinel in first sets signalling nullability
     //
-    // Token.kindID and GrammarNode.nameID mirror the string-based kind/name fields.
+    // GrammarNode.nameID mirrors terminal-like node names.
     // Set<String> first/follow/ambiguous are mirrored by BitSet firstBS/followBS/ambiguousBS.
     // The hot path then uses integer comparison and BitSet.contains() (O(1) bit test).
     // Strings are retained for diagnostics, error messages, and diagram generation.
@@ -158,9 +157,9 @@ class Grammar {
     // separate pass after FIRST/FOLLOW have converged, and stored in `exclude`
     // (Set<String>) / `excludeBS` (BitSet) on each GrammarNode.
     //
-    // At parse time, `testSelect` and `tokenMatch` check: when walking the
-    // Schrödinger dual chain, if the head token's kindID is in `slot.excludeBS`,
-    // skip the dual.
+    // At parse time, `testSelect` and `tokenMatch` apply these via per-end
+    // LCNP checks: if an excluded terminal matches the same end as a candidate,
+    // suppress that candidate.
 
     /// Entry point: propagate `exclude` sets from seed terminals upward through the grammar.
     /// Call after FIRST/FOLLOW have converged and before `populateBitSets`.
@@ -319,13 +318,13 @@ class Grammar {
     /// into the corresponding `firstBS`/`followBS`/`ambiguousBS` `BitSet`,
     /// using `symbolToID` for the mapping.
     /// Call after the first/follow fixpoint has converged and after `verifyLL1`.
-    func populateBitSets() {
+    func populateBitSets() throws {
         for (_, node) in nonTerminals {
-            populateBitSetsRecursive(node)
+            try populateBitSetsRecursive(node)
         }
     }
     
-    private func populateBitSetsRecursive(_ node: GrammarNode) {
+    private func populateBitSetsRecursive(_ node: GrammarNode) throws {
         node.firstBS = BitSet()
         for s in node.first {
             if let id = symbolToID[s] { node.firstBS.insert(id) }
@@ -342,25 +341,33 @@ class Grammar {
         for s in node.exclude {
             if let id = symbolToID[s] { node.excludeBS.insert(id) }
         }
-        node.followAheadBS = BitSet()
-        for s in node.followAhead {
-            if let id = symbolToID[s] { node.followAheadBS.insert(id) }
-        }
-        node.followAheadExcludeBS = BitSet()
-        for s in node.followAheadExclude {
-            if let id = symbolToID[s] { node.followAheadExcludeBS.insert(id) }
+        node.boundaryPredicateBS = BitSet()
+        if let boundaryPredicate = node.boundaryPredicate {
+            let kinds: Set<String>
+            switch boundaryPredicate {
+            case .tokenLookahead(_, let k):
+                kinds = k
+            case .tokenLookbehind(_, let k, _):
+                kinds = k
+            }
+            for s in kinds {
+                guard let id = symbolToID[s] else {
+                    throw GrammarNodeError.undefinedNonTerminal(name: s, definedAsTerminal: false)
+                }
+                node.boundaryPredicateBS.insert(id)
+            }
         }
         if node.kind != .END {
-            if let seq = node.seq { populateBitSetsRecursive(seq) }
+            if let seq = node.seq { try populateBitSetsRecursive(seq) }
         }
         // Follow alt links, but avoid cycles:
         // - END.alt points back to its enclosing ALT (handled by .END check above)
         // - RHS nonterminal .alt points to the LHS definition (would cause infinite loop)
         // LHS nonterminals (seq == nil) must follow .alt to reach their production alternates.
         if node.kind == .N {
-            if node.seq == nil, let alt = node.alt { populateBitSetsRecursive(alt) }
+            if node.seq == nil, let alt = node.alt { try populateBitSetsRecursive(alt) }
         } else if node.kind != .END {
-            if let alt = node.alt { populateBitSetsRecursive(alt) }
+            if let alt = node.alt { try populateBitSetsRecursive(alt) }
         }
     }
 }

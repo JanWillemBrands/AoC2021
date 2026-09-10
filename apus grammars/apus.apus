@@ -1,4 +1,4 @@
-// TOKENS
+// GRAMMAR OF APUS, A GRAMMAR DEFINITION LANGUAGE
 
 // Grammar of trivia
 whitespace  : /\s+/ .
@@ -10,32 +10,30 @@ identifier  - /[_\p{XID_Start}][-\p{XID_Continue}]*/ .
 literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
 
-// Grammar of pragma attributes
+// Grammar of pragmas
 pragma      - /@\p{XID_Start}\p{XID_Continue}*/ .
 
 // Grammar of test messages
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
-// PRODUCTIONS
-
+// Grammar of production rules
 grammar     = < production > { message } .
               
-production  = { pragma }
-              identifier ( ":" | "-" | "=" ) alternates "."
-              [ lookahead ] . // TODO: only <-< negative lookbehind sits here, mistakenly ?
+production  = { pragma } identifier ( ":" | "-" | "=" ) alternates "." .
 
 alternates  = sequence { "|" sequence } .
 
 sequence    = < factor [ "?" | "*" | "+" ]
-              | layout
+              | spacing
               | pragma
+              | lookaround
               > .
 
 factor      = terminal
-            | "[" selection "]"
-            | "{" selection "}"
-            | "<" selection ">"
-            | "(" selection ")"
+            | "[" alternates "]"
+            | "{" alternates "}"
+            | "<" alternates ">"
+            | "(" alternates ")"
             .
 
 terminal    = identifier [ exclusion ]
@@ -48,52 +46,60 @@ terminal    = identifier [ exclusion ]
 
 exclusion   = "---" "(" < literal > ")" .
 
-layout      = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
+spacing     = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
 
-lookahead   = ( "<+<" | "<-<" | ">+>" | ">->" ) "(" < literal | Identifier > ")" .
+lookaround  = ( "<+<" | "<-<" | ">+>" | ">->" ) "(" < literal | identifier | "EOF" > ")" .
 
 
 ^^^
+// GRAMMAR OF APUS, A GRAMMAR DEFINITION LANGUAGE
+
+// Grammar of trivia
 whitespace  : /\s+/ .
 comment     : /\/\/.*/ .
+action      : /'(?:[^'\\]|\\.)*'/ .
 
-identifier  - /\p{XID_Start}\p{XID_Continue}*/ .
+// Grammar of terminals
+identifier  - /[_\p{XID_Start}][-\p{XID_Continue}]*/ .
 literal     - /\"(?:[^\"\\]|\\.)+\"/ .
 regex       - /\/(?!\*)(?:[^\/\\]|\\.)+\// .
 
-action      : /'(?:[^'\\]|\\.)*'/ .
+// Grammar of pragmas
 pragma      - /@\p{XID_Start}\p{XID_Continue}*/ .
+
+// Grammar of test messages
 message     - /\^\^\^(?:(?s).*?)(?=\^\^\^|$)/ .
 
-_gr-amm_ar     = < production > { message } .
+// Grammar of production rules
+grammar     = < production > { message } .
               
-production  = [ pragma ] identifier
-                ( ":" ( regex | literal ) "." [ follow ]
-                | "-" ( regex | literal ) "." [ follow ]
-                | "-:" selection "."
-                | "=" selection "."
-                ) .
+production  = { pragma } identifier ( ":" | "-" | "=" ) alternates "." .
 
-selection   = sequence { "|" sequence } .
+alternates  = sequence { "|" sequence } .
 
-sequence    = < factor [ "?" | "*" | "+" ] | layout > .
+sequence    = < factor [ "?" | "*" | "+" ]
+              | spacing
+              | pragma
+              | lookaround
+              > .
 
 factor      = terminal
-            | "[" selection "]"
-            | "{" selection "}"
-            | "<" selection ">"
-            | "(" selection ")"
+            | "[" alternates "]"
+            | "{" alternates "}"
+            | "<" alternates ">"
+            | "(" alternates ")"
             .
 
-terminal    = identifier    [ "---" "(" < literal > ")" ]
+terminal    = identifier [ exclusion ]
             | literal
             | regex
-            | epsilon | empty
+            | "ε" | "\"\""
             .
 
-epsilon     = "ε" .
-empty       = "\"\"" .
+// Grammar of annotations
 
-layout      = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
+exclusion   = "---" "(" < literal > ")" .
 
-follow      = ( "<+<" | "<-<" ) "(" < literal > ")" .
+spacing     = ">>|" | "|<<" | "<n>" | "<s>" | ">n<" | ">s<" .
+
+lookaround  = ( "<+<" | "<-<" | ">+>" | ">->" ) "(" < literal | identifier | "EOF" > ")" .

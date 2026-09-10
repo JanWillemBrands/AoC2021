@@ -39,3 +39,15 @@ This note is now a legacy overview. Use these newer notes for current context:
 - `wiki/notes/swift_trivia_inventory.md`
 - `wiki/notes/annotation_spec_trivia.md`
 - `wiki/notes/schrodinger_frankenstein_boundary.md`
+
+---
+
+Update: 2026-09-09
+
+Moved-start bracket extent is now handled in `Oracle.pruneUnproductive`. For bodies
+containing an extent-annotated bracket (`@shortest` / `@longest` before `[ ]`, `{ }`,
+`< >`, or `( )`), phase 1 enumerates complete body tilings, filters them by the
+annotated bracket's consumed length, and marks only the surviving body steps reachable.
+This fixes the synthetic `S = [ x ] @shortest [ x ] .` over input `x`, where the
+annotated optional's start moves depending on whether the preceding optional consumed
+the token.

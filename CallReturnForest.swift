@@ -47,24 +47,12 @@ extension MessageParser {
     // Paper: ntAdd(X, j) — add descriptors for all alternates of a bracket/nonterminal
     func addDescriptorsForAlternates(X: GrammarNode, k: CharPosition, i: CharPosition) {
         assert([.N, .DO, .OPT, .ALT, .KLN, .POS].contains(X.kind), "Called \(#function) on a GrammarNode \(X) which is not a bracket")
-        // LL(1) early-termination: once a matching alternate is found, the
-        // remaining alternates cannot also match. This is a property of the
-        // grammar, derived statically by `verifyLL1` + the multi-lex
-        // prefix-overlap check in `handleAlternatesAmbiguity`. The parser
-        // doesn't consult the lexer's disambiguation strategy at all here —
-        // multi-lex independence.
-        // TODO: re-enable for multi-lex. Temporarily forced off while the
-        // LCNP migration proceeds — `X.isLocallyLL1` (and its supporting
-        // prefix-overlap diagnostic) is preserved so we can switch this back
-        // on once the parser-driven lex path is in place.
-        let canEarlyTerminate = false && X.isLocallyLL1
         var selectedAlternate = false
         var current = X.alt
         while let alt = current {
             if testSelect(slot: alt, bracket: X) {
                 selectedAlternate = true
                 addDescriptor(L: alt.seq!, k: k, i: i)
-                if canEarlyTerminate { return }
             }
             current = alt.alt
         }
@@ -99,7 +87,7 @@ extension MessageParser {
         if let existingCluster = crf[clusterKey] {
             if existingCluster.returns.insert(returnEdge).inserted {
                 for pop in existingCluster.pops {
-                    if continuationViable(continuation: cL.seq!, at: pop) && forwardGateAllows(slot: cL, at: pop) {
+                    if continuationViable(continuation: cL.seq!, at: pop) {
                         addDescriptor(L: cL.seq!, k: cU, i: pop)
                         addYield(L: cL, i: cU, k: cI, j: pop)
                     } else {
@@ -123,7 +111,7 @@ extension MessageParser {
 
         if cluster.pops.insert(cI).inserted {
             for returnEdge in cluster.returns {
-                if continuationViable(continuation: returnEdge.slot.seq!, at: cI) && forwardGateAllows(slot: returnEdge.slot, at: cI) {
+                if continuationViable(continuation: returnEdge.slot.seq!, at: cI) {
                     addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: cI)
                     addYield(L: returnEdge.slot, i: returnEdge.index, k: cU, j: cI)
                 } else {
@@ -143,7 +131,7 @@ extension MessageParser {
         if let existingCluster = crf[clusterKey] {
             if existingCluster.returns.insert(returnEdge).inserted {
                 for pop in existingCluster.pops {
-                    if continuationViable(continuation: bracket.seq!, at: pop) && forwardGateAllows(slot: bracket, at: pop) {
+                    if continuationViable(continuation: bracket.seq!, at: pop) {
                         addDescriptor(L: bracket.seq!, k: cU, i: pop)
                         addYield(L: bracket, i: cU, k: cI, j: pop)
                     } else {
@@ -168,7 +156,7 @@ extension MessageParser {
 
         if cluster.pops.insert(cI).inserted {
             for returnEdge in cluster.returns {
-                if continuationViable(continuation: returnEdge.slot.seq!, at: cI) && forwardGateAllows(slot: returnEdge.slot, at: cI) {
+                if continuationViable(continuation: returnEdge.slot.seq!, at: cI) {
                     addYield(L: returnEdge.slot, i: returnEdge.index, k: cU, j: cI)
                     addDescriptor(L: returnEdge.slot.seq!, k: returnEdge.index, i: cI)
                 } else {

@@ -183,10 +183,8 @@ extension Grammar {
                 }
                 production.follow.formUnion(node.follow)
             } else {
-                trace("grammar parse error: '\(node.name)' was not defined as a grammar rule")
                 let definedAsTerminal = terminals[node.name] != nil
                 if definedAsTerminal {
-                    trace("but it was defined as terminal \(terminals[node.name]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
                 throw GrammarNodeError.undefinedNonTerminal(name: node.name, definedAsTerminal: definedAsTerminal)
             }

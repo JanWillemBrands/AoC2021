@@ -322,8 +322,8 @@ private func shortLabel(_ source: String) -> String {
 
 // MARK: - Probes
 
-// Focused snippets that exercise the scanner-level regex lookbehind annotations
-// (++N / --N) on plainRegularExpressionLiteral in Swift.apus.
+// Focused snippets that exercise the production-body regex lookbehind
+// boundaries on plainRegularExpressionLiteral in Swift.apus.
 let regexLookbehindSnippets: [SwiftSnippet] = [
     // Division — `--1` blocks regex because the previous token is a value.
     SwiftSnippet(label: "div-int-int",      source: "let x = 1 / 2",            origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
@@ -352,7 +352,7 @@ let regexLookbehindSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "ternary-tight",
                  source: "let r = b?/1/:/2/",
                  origin: "RegexLookbehind", syntaxVersion: "603.0.1",
-                 disabledReason: "scanner allows regex after '?' (lookbehind works); blocked by Swift.apus conditionalOperator's <s> spacing requirement, a separate grammar policy"),
+                 disabledReason: "lookbehind allows regex after '?'; blocked by Swift.apus conditionalOperator's <s> spacing requirement, a separate grammar policy"),
 ]
 
 @Suite("Regex Lookbehind (Swift.apus integration)", .serialized)

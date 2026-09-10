@@ -170,12 +170,13 @@ private struct SpanKey: Hashable {
     let j: CharPosition
 }
 
-/// Forward lookahead predicate `>->(N)` / `>+>(N)` with a nonterminal operand (see
+/// Parse predicate `@cannotParse(N)` / `@canParse(N)` with a nonterminal operand (see
 /// `Grammar Predicate Lookahead Design.md`). Anchored on the alternate's FIRST body symbol,
 /// whose yield start `i` is the alternate start. For each such yield, ask the Way-1 BSR
 /// question "does `N` derive at `i`?" (`∃` a target yield with `.i == i`) and prune when the
-/// predicate fails: negative (`>->`) fails where `N` DOES derive here; positive (`>+>`) fails
-/// where it does NOT. Removal cascades to the whole alternate via the dead-wood sweep.
+/// predicate fails: negative (`@cannotParse`) fails where `N` DOES derive here; positive
+/// (`@canParse`) fails where it does NOT. Removal cascades to the whole alternate via the
+/// dead-wood sweep.
 struct LookaheadPredicateRule: DisambiguationRule {
     var isHardConstraint: Bool { true }
     let negated: Bool
@@ -413,7 +414,7 @@ class Oracle {
                 registerPrefer(altChainHead: node.alt)
                 registerOptionalSkip(bracket: node)
             }
-            // Leading forward lookahead predicate on an ALT node (`>->(N)`/`>+>(N)`, N a
+            // Leading parse predicate on an ALT node (`@cannotParse(N)`/`@canParse(N)`, N a
             // nonterminal). Anchor the prune on the alternate's first body symbol.
             // Repeatable: each predicate becomes its own rule on the same anchor, so they compose as
             // a CONJUNCTION (every rule prunes independently).
@@ -890,9 +891,66 @@ class Oracle {
             return d
         }
 
+        struct BodyStep {
+            let symbol: GrammarNode
+            let from: CharPosition
+            let to: CharPosition
+        }
+
+        struct BodyKey: Hashable {
+            let index: Int
+            let position: CharPosition
+        }
+
+        func constrainedTilings(_ symbols: [GrammarNode], from: CharPosition, to: CharPosition) -> [[BodyStep]] {
+            var cache = [BodyKey: [[BodyStep]]]()
+
+            func enumerate(index: Int, position: CharPosition) -> [[BodyStep]] {
+                if index == symbols.count { return position == to ? [[]] : [] }
+                let cacheKey = BodyKey(index: index, position: position)
+                if let cached = cache[cacheKey] { return cached }
+
+                let sym = symbols[index]
+                var result: [[BodyStep]] = []
+                for end in endPositions(sym, from: position) where end <= to {
+                    for tail in enumerate(index: index + 1, position: end) {
+                        result.append([BodyStep(symbol: sym, from: position, to: end)] + tail)
+                    }
+                }
+                cache[cacheKey] = result
+                return result
+            }
+
+            var tilings = enumerate(index: 0, position: from)
+            for sym in symbols {
+                guard let d = bracketExtent(sym) else { continue }
+                let lengths = tilings.compactMap { tiling -> Int? in
+                    guard let step = tiling.first(where: { $0.symbol === sym }) else { return nil }
+                    return input.distance(from: step.from, to: step.to)
+                }
+                guard let target = d == .longest ? lengths.max() : lengths.min() else { continue }
+                tilings = tilings.filter { tiling in
+                    guard let step = tiling.first(where: { $0.symbol === sym }) else { return false }
+                    return input.distance(from: step.from, to: step.to) == target
+                }
+            }
+            return tilings
+        }
+
         // Tile body symbols over [from, to]. Returns true if any complete
         // tiling exists, and recursively visits nonterminals along the way.
         func tileBody(_ symbols: [GrammarNode], from: CharPosition, to: CharPosition) -> Bool {
+            if symbols.contains(where: { bracketExtent($0) != nil }) {
+                let tilings = constrainedTilings(symbols, from: from, to: to)
+                guard !tilings.isEmpty else { return false }
+                for tiling in tilings {
+                    for step in tiling {
+                        visitSymbol(step.symbol, from: step.from, to: step.to)
+                    }
+                }
+                return true
+            }
+
             guard let first = symbols.first else { return from == to }
             let rest = Array(symbols.dropFirst())
             // Feasible end positions of `first` in this context.

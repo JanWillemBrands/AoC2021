@@ -64,7 +64,10 @@ echo "▶ Suites: ${suites[*]}"
 echo "▶ Log:    $LOG"
 echo "▶ Building + running (non-deterministic hashing — order-dependence is a fuzzer)…"
 
-xcodebuild test \
+# `caffeinate -i`: a laptop that SLEEPS mid-run makes the suite look hung. The tests take ~70s;
+# a sleep inserts minutes of wall clock between two adjacent test cases, so an outer timeout
+# fires and the run looks like a regression it is not. See TESTING.md "Sleep, not flakiness".
+caffeinate -i xcodebuild test \
   -scheme "$SCHEME" -destination "$DEST" \
   "${only_testing[@]}" \
   -project "$ROOT/Advent.xcodeproj" \

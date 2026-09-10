@@ -9499,7 +9499,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       """#,
         origin: "UnclosedStringInterpolationTests.testNestedUnterminatedStringInterpolation",
         syntaxVersion: "603.0.1"
-    ),
+    )
 ]
 
 let allRejectSnippets: [SwiftSnippet] =

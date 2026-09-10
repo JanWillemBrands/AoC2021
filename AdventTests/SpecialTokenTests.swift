@@ -2,8 +2,8 @@
 //  SpecialTokenTests.swift
 //  AdventTests
 //
-//  Tests for Schrödinger tokens (ambiguous scanner matches), regex lookbehind
-//  annotations, and exclusion sets (keyword suppression).
+//  Tests for Schrödinger tokens (ambiguous scanner matches), token lookaround
+//  boundaries, and exclusion sets (keyword suppression).
 //
 
 import Testing
@@ -76,74 +76,69 @@ struct SpecialTokenTests {
         }
     }
 
-    // MARK: - Regex Lookbehind (<+</<-< annotations)
+    // MARK: - Terminal-Attached Lookbehind Rejection
 
-    @Suite("Regex Lookbehind", .serialized)
-    struct RegexLookbehind {
+    @Suite("Terminal-Attached Lookbehind Rejection", .serialized)
+    struct TerminalAttachedLookbehindRejection {
         static let cases: [TestCase] = [
-            // Control: no lookbehind annotation — slash regex always wins by longest match.
-            TestCase(
-                grammar: #"slash - /\/[a-z]+\// . S = "a" slash ."#,
-                pass: ["a /b/"],
-                label: "control: no lookbehind, regex wins"
-            ),
-
-            // Negative lookbehind blocks regex after 'a' so scanner falls back to single chars.
-            TestCase(
-                grammar: #"slash - /\/[a-z]+\// . <-<("a") S = "a" "/" "b" "/" ."#,
-                pass: ["a /b/"],
-                label: "--1 blocks regex after 'a', scanner emits single '/'"
-            ),
-
-            // Same grammar as above but with slash in production — should now FAIL because
-            // the regex is blocked and the alternative path doesn't exist.
             TestCase(
                 grammar: #"slash - /\/[a-z]+\// . <-<("a") S = "a" slash ."#,
-                pass: [],
-                fail: ["a /b/"],
-                label: "--1 blocks regex, grammar has no fallback → fail"
+                illegalGrammar: true,
+                label: "post-dot negative lookbehind is not terminal metadata"
             ),
-
-            // Default allow: '(' is not in the deny list so the regex matches.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . <-<("a") S = "(" slash ")" ."#,
-                pass: ["( /b/ )"],
-                label: "default allow: '(' not in deny list"
+                grammar: #"slash - /\/[a-z]+\// . <+<("a") S = "a" slash ."#,
+                illegalGrammar: true,
+                label: "post-dot positive lookbehind is not terminal metadata"
             ),
+        ]
 
-            // Multiple operands in a single --1: each blocks independently.
+        @Test(arguments: cases)
+        func test(_ tc: TestCase) throws {
+            try runTestCase(tc)
+        }
+    }
+
+    // MARK: - Token Lookaround Boundaries
+
+    @Suite("Token Lookaround Boundaries", .serialized)
+    struct TokenLookaroundBoundaries {
+        static let cases: [TestCase] = [
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . <-<("a" "b" "c") S = "a" "/" "x" "/" | "b" "/" "x" "/" | "c" "/" "x" "/" ."#,
-                pass: ["a /x/", "b /x/", "c /x/"],
-                label: "multiple deny operands all block"
+                grammar: #"S = "a" >+>("b") ( "b" | "c" ) ."#,
+                pass: ["ab", "a b"],
+                fail: ["ac"],
+                label: "positive token lookahead boundary"
             ),
-
-            // Identifier operand: deny list can reference a named terminal by name.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . <-<(id) id - /[a-z]+/. S = id "/" id "/" ."#,
-                pass: ["x /b/", "hello /world/"],
-                label: "identifier operand blocks after named terminal"
+                grammar: #"S = "a" >->("c") ( "b" | "c" ) ."#,
+                pass: ["ab", "a b"],
+                fail: ["ac"],
+                label: "negative token lookahead boundary"
             ),
-
-            // At start of input there is no previous token — deny list cannot match → allow.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . <-<("a") S = slash ."#,
-                pass: ["/a/"],
-                label: "start of input: lookbehind cannot block"
+                grammar: #"S = ( "a" | "c" ) <+<("a") "b" ."#,
+                pass: ["ab", "a b"],
+                fail: ["cb"],
+                label: "positive token lookbehind boundary"
             ),
-
-            // Whitespace is trivia — lookbehind sees only visible tokens.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . <-<("a") S = "a" "/" "b" "/" ."#,
-                pass: ["a    /b/"],
-                label: "lookbehind skips whitespace trivia"
+                grammar: #"S = ( "a" | "c" ) <-<("c") "b" ."#,
+                pass: ["ab", "a b"],
+                fail: ["cb"],
+                label: "negative token lookbehind boundary"
             ),
-
-            // Multiple lines OR'd: each --1 line independently blocks.
             TestCase(
-                grammar: #"slash - /\/[a-z]+\// . <-<("a") <-<("b") S = "a" "/" "x" "/" | "b" "/" "x" "/" ."#,
-                pass: ["a /x/", "b /x/"],
-                label: "multiple --1 lines OR'd together"
+                grammar: #"S = "a" >+>(EOF) ."#,
+                pass: ["a"],
+                fail: ["ab"],
+                label: "explicit EOF token lookahead"
+            ),
+            TestCase(
+                grammar: #"S = "a" >->(EOF) [ "b" ] ."#,
+                pass: ["ab"],
+                fail: ["a"],
+                label: "negative explicit EOF token lookahead"
             ),
         ]
 

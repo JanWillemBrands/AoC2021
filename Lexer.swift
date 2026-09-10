@@ -172,8 +172,8 @@ struct OnDemandLiteralLexer {
             // swift-syntax lexOperatorIdentifier's regex-scan (Cursor.swift:2275),
             // letting `^^/regex/` split into `^^` + `/regex/` (X = regexOpenSlash).
             // A leading match position is not a split point. No trivia sits before
-            // the split, so end == triviaEnd. Whether the split survives in infix
-            // position is decided by X's `<-<` gate in `tokenMatch`.
+            // the split, so end == triviaEnd. Whether the split survives is
+            // decided by `@preempt` construct viability in `MessageParser.tokenMatch`.
             if let splitID = preemptStartByID[terminalID] {
                 var i = input.index(after: scanStart)
                 while i < maxEnd {

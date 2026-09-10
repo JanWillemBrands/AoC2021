@@ -334,7 +334,7 @@ private final class ApusHTMLConverter {
         let startLine = curLine
         var pragmas: [String] = []
 
-        // leading pragmas: @longest / @scalar / @lexicalClass / @preempt(X, N) / …
+        // leading pragmas: @longest / @lexicalClass / @preempt(X, N) / …
         while k == "pragma" {
             pragmas.append(t)
             pos += 1
@@ -351,15 +351,14 @@ private final class ApusHTMLConverter {
 
         var lineHTML: String
 
-        if k == ":" || k == "-" {
+        if k == "-" || (k == ":" && productionStartsWithDirectTerminalBody(at: pos)) {
             // terminal definition — the operator picks the arrow, so no "kind" tag
             let op = k
             pos += 1
             let body = parseTerminalRHS()
             expect(".")
-            let lookbehind = parseLookbehind()
-            lineHTML = pragmaPrefix + nt(name) + arrow(for: op) + body + lookbehind
-        } else if k == "=" || k == "=:" || k == "=|" {
+            lineHTML = pragmaPrefix + nt(name) + arrow(for: op) + body
+        } else if k == "=" || k == ":" || k == "=:" || k == "=|" {
             // production rule
             let op = k
             pos += 1
@@ -376,6 +375,27 @@ private final class ApusHTMLConverter {
         let g = group(named: name)
         g.lines.append(GroupLine(html: lineHTML, startLine: startLine))
         g.firstLine = min(g.firstLine, startLine)
+    }
+
+    private func productionStartsWithDirectTerminalBody(at operatorIndex: Int) -> Bool {
+        var i = operatorIndex + 1
+        guard i < toks.count else { return false }
+        switch toks[i].kind {
+        case "regex", "literal":
+            i += 1
+        case "pragma" where toks[i].text == "@builder":
+            i += 1
+            if i < toks.count, toks[i].kind == "(" {
+                i += 1
+                guard i < toks.count, toks[i].kind == "identifier" || toks[i].kind == "literal" else { return false }
+                i += 1
+                guard i < toks.count, toks[i].kind == ")" else { return false }
+                i += 1
+            }
+        default:
+            return false
+        }
+        return i < toks.count && toks[i].kind == "."
     }
 
     /// Right-hand side of a `:` / `-` terminal definition: a regex, a literal, or `@builder`.
@@ -399,36 +419,6 @@ private final class ApusHTMLConverter {
         default:
             let h = t.isEmpty ? "?" : kw(t); pos += 1; return h
         }
-    }
-
-    /// Terminal-level `<+<(…)` / `<-<(…)` lookbehind lines that follow the `.`.
-    private func parseLookbehind() -> String {
-        var out = ""
-        while k == "<+<" || k == "<-<" {
-            let positive = (k == "<+<")
-            pos += 1
-            var operands: [String] = []
-            expect("(")
-            while k == "literal" || k == "identifier" {
-                operands.append(k == "literal" ? literalContent(t) : t)
-                pos += 1
-            }
-            expect(")")
-            while k == "," {   // comma-chained rules on one line: fold into the set
-                pos += 1
-                if k == "<+<" || k == "<-<" { pos += 1 }
-                expect("(")
-                while k == "literal" || k == "identifier" {
-                    operands.append(k == "literal" ? literalContent(t) : t)
-                    pos += 1
-                }
-                expect(")")
-            }
-            out += positive
-                ? annot(precedeGlyph, operands, "only when preceded by")
-                : annot(notPrecedeGlyph, operands, "only when NOT preceded by")
-        }
-        return out
     }
 
     /// selection = sequence { "|" sequence } .

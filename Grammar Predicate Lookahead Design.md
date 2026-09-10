@@ -17,19 +17,19 @@ choose a **pivot**. None can express "pick reading A here *because* `N` can (or 
 parse here" — a **conditional** choice. That condition is the payload swift-syntax's
 recursive descent carries in its lookahead routines, and it is what this primitive adds.
 
-## The four glyphs
+## Current spelling
 
-Outer angles give **direction** (`>…>` forward, `<…<` backward); the inner sign gives
-**polarity** (`+` positive, `-` negative). The operand is any grammar symbol `N`
-(nonterminal or terminal). The annotation is written **inline** in a production; its
-position is the anchor `p` (the input position the parser has reached there).
+Oracle parse predicates use `@word` spelling. The old leading symbolic spelling
+`>+>(N)` / `>->(N)` was retired for nonterminal operands so symbolic lookaround can
+mean token lookaround only.
 
-| glyph | reads as | holds iff |
-|-------|----------|-----------|
-| `>+>(N)` | *N must follow*  | some yield of `N` **starts** at `p` |
-| `>->(N)` | *N must not follow* | no yield of `N` starts at `p` |
-| `<+<(N)` | *N must precede* | some yield of `N` **ends** at `p` |
-| `<-<(N)` | *N must not precede* | no yield of `N` ends at `p` |
+The annotation is written at the start of an alternate; its position is the
+alternate start `p`:
+
+| annotation | reads as | holds iff |
+|---|---|---|
+| `@canParse(N)` | *N must start here* | some yield of `N` **starts** at `p` |
+| `@cannotParse(N)` | *N must not start here* | no yield of `N` starts at `p` |
 
 ## Uniform anchoring
 
@@ -87,15 +87,15 @@ on demand.
 grammar never attempts at `p`, and which is not seeded, is a specification error, not a
 silent false.
 
-## The terminal operand is the degenerate case
+## Token lookaround is a sequence predicate
 
-`>->("else")` is just `>->(N)` with `N` a single terminal. The old token-set lookahead is
-therefore **subsumed**, not separate: same glyphs, same meaning, evaluated by the same
-`i == p` / `j == p` query. A terminal operand may use a cheaper fast path (a direct token
-test), but only where it is observationally equal to the query. Tokenisation-sensitive
-choices (e.g. regex-vs-divide) ride **multi-scan**: the scanner already emits every viable
-lexicalisation, the parser explores them, and the uniform backward query prunes the wrong
-one post-parse — no bespoke scanner suppression required.
+`>->("else")` and the other symbolic lookaround forms are token lookaround. They are
+zero-width predicates in the sequence, evaluated locally at their boundary. Nonterminal
+operands use the Oracle spelling instead: `@canParse(N)` and `@cannotParse(N)`.
+
+This keeps the two mechanisms separate: symbolic lookaround talks about nearby tokens;
+Oracle parse predicates talk about whether a nonterminal has a yield starting at the
+alternate boundary.
 
 ## Containment (the fifth relation)
 
@@ -145,7 +145,7 @@ Advent finds both "one declaration `open var foo`" and "bare `open` reference + 
 swift-syntax routes to the declaration (`atStartOfDeclaration`). Declaratively:
 
 ```apus
-statement = >->(declaration) expression .   // expression-statement only where a declaration does NOT start here
+statement = @cannotParse(declaration) expression .   // expression-statement only where a declaration does NOT start here
 ```
 
 `testEnum11` — a top-level `case` is not a declaration; it's valid only inside a member block:
@@ -186,7 +186,7 @@ closureExpression = @excludedFrom(conditionExpression) @excludedFrom(trailingClo
 
 **Built and validated:**
 
-- Forward lookahead `>->(N)`/`>+>(N)` with nonterminal operand, Way-1 BSR query
+- Parse predicates `@cannotParse(N)`/`@canParse(N)` with nonterminal operand, Way-1 BSR query
   (`LookaheadPredicateRule`) — fixes `open⏎var`.
 - **Both containment polarities** `@confinedTo(N)` / `@excludedFrom(N)` (one `ContainmentRule`
   with a `negated` flag; positive prunes where ¬contained-in-all, negative prunes where
@@ -210,10 +210,9 @@ closureExpression = @excludedFrom(conditionExpression) @excludedFrom(trailingClo
      (`call` pop-replay, `rtn`, `bracketCall`, `bracketRtn`) alongside `continuationViable`. One
      logical gate, one helper; the two invocation points only exist because GLL surfaces "the
      position after this slot" at different moments for terminals (inline) vs nonterminals (CRF
-     return). This honours the invariant *the Oracle never re-reads input*: a token-set lookahead is
+     return). This honours the invariant *the Oracle never re-reads input*: a token-set lookaround is
      a scanner query and belongs at parse time; only the nonterminal-*derivation* predicate
-     (`>->(N)`) is an Oracle BSR query. Blast radius is exactly disc-3 — every other `>+>`/`>->` in
-     `Swift.apus` sits after a terminal or is the leading derivation predicate.
+     (`@cannotParse(N)`) is an Oracle BSR query.
   2. **disc-3** (`}`→`else`): `trailingClosures` is partitioned by the now-live gate into two
      disjoint alternates, and `@excludedFrom` prunes the `else`-following one inside a condition:
      ```apus

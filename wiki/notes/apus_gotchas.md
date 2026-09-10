@@ -41,3 +41,33 @@ Use full path `/usr/bin/log` — zsh has a builtin `log` that conflicts. All int
 
 Never trust stale DerivedData. The Debug binary path:
 `/Users/janwillem/Library/Developer/Xcode/DerivedData/Advent-ctnlmtxiyxptaedefnxgsxptokfx/Build/Products/Debug/Advent`
+
+## Annotation Placement Is Typed
+
+Update: 2026-09-09
+
+Do not treat `pragma` as a free-floating grammar symbol. The implementation has
+position-typed annotation families:
+
+- Oracle preferences: `@prefer` / `@avoid` at alternate start; `@longest` /
+  `@shortest` / `@left` / `@right` before an LHS or bracket group.
+- Oracle constraints: `@confinedTo` / `@excludedFrom` at alternate start, plus
+  `@canParse` / `@cannotParse` with nonterminal operands.
+- Sequence predicates: layout boundaries today, and token lookaround after the
+  `.B` boundary migration.
+- Terminal pragmas: `@lexicalClass`, `@preempt`, and `@builder` on
+  terminal-like definitions.
+
+The coherent target is that token lookaround (`>+>`, `>->`, `<+<`, `<-<`) becomes
+a zero-width sequence predicate in the same placement class as `<s>`, `>s<`,
+`<n>`, and `>n<`. Symbolic lookaround is for tokens; Oracle parse predicates are
+the `@word(...)` form.
+
+Implementation note: token lookaround in production bodies is now represented as
+structured `.B` boundary nodes; the old factor-attached `followAhead` /
+`followAheadExclude` path has been removed. Terminal-definition `<+<` / `<-<`
+has also been removed; put token lookaround in the production body at the exact
+cursor position it constrains.
+
+Token lookahead EOF behavior is explicit: use `EOF` in the operand set. Do not
+infer EOF from the boundary's placement.

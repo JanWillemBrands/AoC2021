@@ -12,9 +12,9 @@ trace = false
 
 let grammarURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
-    .appendingPathComponent("apus grammars/Swift")
+//    .appendingPathComponent("apus grammars/Swift")
 //    .appendingPathComponent("apus grammars/layout")
-//    .appendingPathComponent("apus grammars/apus")
+    .appendingPathComponent("apus grammars/apus")
 //    .appendingPathComponent("grammars/Python/Python")
 //    .appendingPathComponent("apus grammars/ScanModeTest")
 //    .appendingPathComponent("apus grammars/CommentTest")

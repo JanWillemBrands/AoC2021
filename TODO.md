@@ -1,123 +1,7 @@
-# Consolidated TODOs
+# This file is the canonical TODO list in this project.
 
-This file is the canonical TODO list in this project.
-
-1. **Performance**: profile `tortureART` and decide optimization priority between speed and memory. Current Xcode Time Profiler result after removing hot-loop trace formatting: parser time is dominated by bookkeeping rather than lexing. Main signals: `MessageParser.call()` is the largest inclusive cost; `addDescriptor`, `addYield`, `continuationViable`, and `cachedLex` spend most time in `Set`/`Dictionary` hashing and mutation. `OnDemandLiteralLexer.lex` itself is small, so scanner regex work is not the bottleneck for this grammar. Candidate experiments: custom `Hashable`/`Equatable` for node-bearing keys using `GrammarNode.number` instead of hashing/comparing `GrammarNode`; evaluate whether `String.Index`-based keys should eventually move to compact integer positions; investigate replacing `[Set<BinarySpan>]` nested value mutation with parser-owned reference buckets to reduce `Array.subscript.modify` / COW overhead. Before final conclusions, confirm the Profile scheme uses Release configuration because `swift_beginAccess` / exclusivity overhead is still visible.
-Source: `Advent/claude.md` (previously in "Future Work & TODOs"); Xcode Time Profiler session on `apus grammars/tortureART` 100-b message.
-
-4. **Diagnostics**: improve failed-parse root-cause reporting for branch-local mismatches that occur before the longest committed prefix. Current Swift macro example (`macro m( )` with mandatory `genericWhereClause`) reports the earlier `parameterClause` non-empty branch mismatch (`found '(' / expected '('`) instead of the later missing `"where"`. Acceptance tests do not catch this because the input is correctly rejected either way; add a focused diagnostic test that asserts the reported farthest/root expected token after nullable continuations and optional skips. Prefer a simple model based on longest committed cursor / viable continuation over scattering mismatch records through CRF replay internals.
-Source: Jun 19 2026 diagnostic investigation around `Swift.apus` macro declarations; `MessageParser` failure reporting and nullable `OPT/KLN` skip handling.
-
-6. **LL(1) early-termination re-enable evaluation.** `CallReturnForest.addDecscriptorsForAlternates` carries `let canEarlyTerminate = false && X.isLocallyLL1`. The skeleton + per-node `isLocallyLL1` flag + `verifyLL1` infra are intact; only the `false &&` prefix disables it. Phase F closed without resurrection because the predict-set filter in `tokenMatch` already prunes the worst cases. Evaluate whether enabling early-termination meaningfully reduces descriptors on a tight LL(1)-shape grammar (e.g. APUS self-parse) and decide: delete the dead skeleton or remove the `false &&` and ship. Source: design doc Phase B Step 4, Phase F close.
-
-7. **Post-Phase F annotation review — exclude semantics + measurement.** Two open questions on the per-end LCNP exclusion gate adopted in Phase D Steps 2–3:
-   - **Correctness.** "Same end" is a proxy for "same span" — captures classical Schrödinger same-span cases but may not cover every case the head-based gate handled under variable-length regex matches. Multi-match + per-end exclude needs an audit: does "any excluded terminal lexes at *any* end matching this candidate's" still mean what the author wrote `---(…)` to mean?
-   - **Effectiveness.** Head-based gate fired once per `testSelect`; LCNP per-end gate iterates `slot.excludeBS` per candidate-terminal per candidate-end. Cache absorbs repeat work but cost profile shifted. Measure with `lexLKH` filter upstream — predict-pruned candidates plus per-end exclude may be cheaper or more expensive depending on grammar shape.
-   Source: design doc "Post-Phase F review TODO — exclude semantics and annotations" (~line 840).
-
-8. **Walk every APUS annotation against multi-lex and GrammarNode type.** Each was designed against the eager scanner's single-committed-token-stream model. For each, answer: still needed and still correct / needed but reformulate / retire?  Update apus.apus to correctly represent all.  Double-check complementarity of @prefer / @avoid both allowed at each position?  Both only working or equal length spans?  Why only equal spans?.
-   Source: design doc same section as (6).
-
-10. **Token.kindID field removal audit.** No parser hot-path consumer remains; `ApusParser` reads `Token.kind` (string) but never `kindID`. Audit any remaining caller (incl. diagnostic / instrumentation code), then delete.
-   Source: TODO comment in `Scanner.swift` near `Token`; Phase I close note.
-
-11. **Consolidate `terminalCommitsByStart` + `terminalCommitsByEnd` into one representation.** Likely shape: a single `terminalCommits: [(range: Range<CharPosition>, kindID: Int)]` array plus auxiliary `byStart` / `byEnd` indices built lazily. Cleaner mental model ("commits are source ranges; trivia is the gaps") with same information content. Also exposes "trivia between commits" as a derived property rather than implicit. Done, but why do we have both:
-```swift
-struct TerminalCommit {
-```
-    let terminalID: Int
-    let triviaStart: CharPosition
-    let start: CharPosition
-    let end: CharPosition
-    let triviaEnd: CharPosition
-}
-and
-```swift
-struct LexMatch: Hashable {
-```
-    let terminalID: Int
-    let start: CharPosition
-    let end: CharPosition
-    let triviaEnd: CharPosition
-}
-   Source: user observation in Phase I; design doc Phase I deferred list.
-
-13. **`GenerateParser.swift` LCNP migration.** The generated standalone parser (currently for LL(1) grammars only) needs to track LCNP changes. Preserve integer terminal IDs and `BitSet` select tests, but emit parser-driven terminal calls rather than assuming a pre-tokenized input stream. Tests for this live in `AdventTests/ParserGeneratorTests.swift`.
-   Source: design doc Open Questions §H.
-
-14. **Performance profiling on Swift workloads.** Specific multi-lex measurements needed: descriptor count, BSR yield count, lex-cache hit rate, regex-call distribution per terminal, wall-clock time. Swift regex literals / multi-pound strings / interpolated strings / editor placeholders introduce recognizer calls that may dominate cost. Tie this together with TODO 4 (regex caching).
-   Source: design doc Open Questions §C; Phase F close.
-
-15. **Mini-scanner parameterisation for non-Python layout-sensitive grammars.** `computeVirtualLayoutTokens` currently hardcodes Python string/comment delimiters (`"`, `'`, `"""`, `'''`, `#`). When a second layout-sensitive grammar arrives (Haskell offside, F#, YAML), refactor the hardcoded delimiters into parameters; possibly an APUS grammar-level `@layout(strings: ..., lineComment: ...)` annotation.
-   Source: Phase I implementation note in `LayoutTokenInjection.swift`.
-
-18. **Review `OPT/KLN` skip viability semantics.** `MessageParser` now uses `continuationViable(continuation:at:)` instead of `testSelect(slot:bracket:)` when offering the nullable skip path for `.OPT` / `.KLN`. This is conceptually consistent with CRF return replay and handles structural continuations like `END`, but the comparison run did not prove an acceptance bug in the old predicate. Open questions: does the broader conservative predicate add descriptors, change ambiguity shape, or mask useful branch-pruning? Add a focused metric/regression sweep before treating this as settled.
-   Source: Jun 19 2026 investigation of `macroSignature = parameterClause macroFunctionSignatureResult? .` and failed Swift macro diagnostics.
-
-1. **Review the wisdom of the following exception**: ****Exception (deliberate, Jul 6 2026): enum-case placement is left PERMISSIVE. `declaration = enumCaseDeclaration` is kept (not in TSPL), so `case` parses in any member block — struct/class/extension/top-level — matching swift-syntax's *parser* (testEnum12/13/14 use plain `assertParse`, no diagnostics; the compiler rejects them only in Sema). The stricter alternative (drop `declaration = enumCaseDeclaration`, list `enumCaseDeclaration` directly in `enumMember`, disable testEnum12/13/14) is equally unambiguous and more compiler-correct, but was NOT taken — the enum *ambiguity* fix (merging the two enum styles + single `case` parse path) is independent of this, and we chose not to reject three parses over a purely-semantic rule. Note: enum cases genuinely CANNOT be added via extension in Swift — it's a Sema error, not a parse error. When a future test surfaces a similar swift-syntax-only construct, the protocol is: prefer the compiler's restriction and disable the test (for swift-syntax only) with `disabledReason: "compiler error — <swift-syntax-source-of-truth ref>"`.
-Source: Jun 21 2026 review of widened grammar acceptance; user preference for compiler-correct grammar over swift-syntax permissive parsing.
-
-19. **Investigate eliminating the `-` vs `=` production distinction — make terminal/nonterminal LHS choice automatic.** Today the grammar author must pick `LHS - …` (terminal) vs `LHS = …` (nonterminal), and the difference is load-bearing in subtle ways: a terminal commits under its own name (so it can be referenced by lookbehind/exclusion/`>->` operand lists that match against *committed terminals*), whereas a nonterminal with a single anonymous-regex RHS commits under a generated name and is invisible to those lists. This bit us with `decimalLiteral = /…/` (nonterminal) vs `decimalLiteral - /…/` (terminal): `regexOpenSlash`'s `<-<` operand-ender list named `decimalLiteral`, but the number committed under a generated name, so the `@splitBefore` operator split wasn't suppressed after a number (`1/^/3` → spurious `/^`+`/3`, testForwardSlashRegex11#1). Investigate inferring terminal-vs-nonterminal automatically (e.g. an LHS whose RHS is a single regex/literal with no nonterminal references is a terminal) so the author can't get it wrong, or unify so any named LHS is referenceable by the lookbehind/exclusion machinery regardless of `-`/`=`.
-Source: Aug 22 2026 root-cause of the last residual ambiguity (testForwardSlashRegex11#1); `Swift.apus` `decimalLiteral` fix.
-
-20. **Source AST terminal text from tiled spans, not the commit log.** `SwiftSyntaxGenerator.collectTerminalText` and `MessageParser.terminalImage(startingAt:)` read the commit log, which is a SUPERSET of the accepted derivation — it holds terminals from derivations that later died. On `1.5` the scanner commits the float `1.5` at the `1` *and* `.5` at the `.`, so naive concatenation produced `1.5.5`. The cursor/overlap skip landed Sep 2 2026 is a patch, not a cure: `terminalImage` still resolves multiple commits at one start by taking the LONGEST (`MessageParser.swift:265`), a maximal-munch guess that hands back dead-derivation text anywhere the accepted parse committed the SHORTER token. `tileBody` already knows the exact terminal spans, so the converter should read text from the tiled span instead of scanning `commitsByStart` positionally. Related to TODO 11 (commit-index consolidation).
-Source: Sep 2 2026 Phase 1 tree-fidelity work; `GenerateSwiftSyntaxAST.swift`.
-
-21. **DONE (Sep 3 2026) — `flattenInfixExpression` dropped assignment / ternary right-hand sides.** Fixed by `flattenExpression`, which splices a nested `expression`'s elements into the parent flat sequence instead of nesting a `SequenceExpr`. See `SwiftSyntax Mapping.md` § Phase 2.
-
-22. **DONE (Sep 3 2026) — residual tiled-text walk failures are now ZERO.** Root cause was not a missing tiling: boundary assertions (`>s<`, `<s>`, `>n<`, `<n>`) sit in an alternate's body as zero-width `.B` symbols. They never commit, so `terminalContent` found no image and the whole walk failed — which is why the fallbacks clustered on regex literals, attributed function types and `~` types, all annotation-heavy rules. A zero-width span contributes no text, so `tiledText` now returns success with no output when `from == to`. Corpus-wide fallbacks went 119 → 0, and `collectTerminalText` is exact everywhere; the positional `scanTerminalText` fallback remains only as an unreachable safety net with a diagnostic. Found by instrumenting the failure reason rather than guessing — the diagnostic named `>n<` (B) directly.
-
-23. **DONE (Sep 3 2026) — Scott's punt is closed: nullable `A A` no longer loses its parse, and the two ε-readings stay distinct.**
-   `S = A A . A = "a" | "" .` on `"a"` went `(rawMatch: true, postMatch: false, pruned: 12, isUnambiguous: true)`
-   → `(postMatch: true, isUnambiguous: false)`. TWO independent ε blind-spots, both in the dead-wood
-   passes, found with `APUS_TRACE_ORACLE=1` after splitting the phase-1 log into its two components
-   (that split is kept — it is what localised this):
-
-   1. **`pruneUnproductive` validated ε alternates but never MARKED them.** `visitAlternates`
-      filters EPS out of the body (`filter { $0.kind != .EPS }`) because ε consumes nothing, then
-      accepts the alternate on `from == to` — without inserting anything into `reachable`. The
-      sweep at the end deletes every yield not in `reachable`, so the EPS nodes' `(i,k,k)` yields
-      were swept away. Fixed by marking each EPS symbol of a validated empty alternate at `(from, from)`.
-
-   2. **`hasEmptyAlt` only recognised a SYNTACTICALLY empty body.** An alternate spelled `""` is not
-      `body.isEmpty` — its body holds an EPS node — so `A = "a" | ""` was never recorded as nullable.
-      The completion `(A,i,i)` therefore fell past the `hasEmptyAlt` fast path into `lastSymSpans`,
-      which needed the very EPS yields defect 1 had just deleted. Fixed with
-      `body.allSatisfy { $0.kind == .EPS }`.
-
-   Defect 1 deleted the support, defect 2 turned the missing support into a cascade — which is why
-   the trace showed `pruneUnproductive (-3)` still ALIVE, then `pruneUnsupported (-6)` GONE.
-   Verified: full suite unchanged at 1233 differing labels, accepts 0, ambiguity 0, no wrongly
-   accepted rejects.
-
-   **The invariant is now enforced.** `logRootStatus` asserts, at EVERY phase boundary, that the
-   root's full-span yield still exists: past `disambiguate()`'s entry guard "rawMatch" holds by
-   construction, so the assertion is exactly "postMatch must still hold". Per-phase rather than
-   once at the end, so a violation names the responsible pass. Verified silent across the whole
-   corpus (0 fires). Every `postMatch` assertion in the test suite expects `true`, so nothing
-   legitimately relies on over-pruning.
-
-24. **`@shortest` extent does not resolve when a variable-length prefix MOVES the bracket's start.**
-   Repro (`AdventTests/OracleDisambiguationTests.swift`, `EpsilonAndAvoidModel.shortestTwoOptionalsSecond`):
-   ```
-   grammar:  x - /x/ .  S = [ x ] @shortest [ x ] .
-   message:  "x"
-   observed: (rawMatch: true, postMatch: true, pruned: 1, isUnambiguous: false)
-   expected: isUnambiguous == true  — @shortest on the second OPT should force it empty
-   ```
-   The sibling case **passes**: `shortestTwoOptionalsFirst` (`S = @shortest [ x ] [ x ] .`, `@shortest`
-   on the FIRST optional, whose start is fixed at the origin) resolves correctly. So the extent rule
-   works for a fixed start and fails once a variable-length prefix can move the start — only 1 yield
-   is pruned and the ambiguity survives.
-
-   The intended mechanism already exists: the comment above these two tests claims "extent compares
-   interval length (not just the end), and the OPT reads its own prunable yields so the kill
-   propagates along the sequence". For the moved-start case one of those two halves is not firing —
-   either the length comparison is still keyed on the end position, or the kill does not propagate
-   back through the preceding `[ x ]`. **That comment is now false for the second case and should be
-   corrected when this is fixed.** Narrower and lower-risk than TODO 23; no soundness implication,
-   the parse survives, it just stays ambiguous.
-   Source: red at HEAD since `95d69f8` / `73a5c6c` (node-level `@shortest`/`@longest` + length extent).
+20. **Swift AST builder does not seem to read the derivation tree but builds it piecemeal itself.** 
+Source: `GenerateSwiftSyntaxAST.swift`                
 
 25. **The `expression` / `conditionExpression` rule families are duplicated, and the copies have already drifted apart twice.**
    `conditionExpression` exists ONLY to forbid assignment (assignment returns `Void`, so it is not a
@@ -138,7 +22,7 @@ Source: Sep 2 2026 Phase 1 tree-fidelity work; `GenerateSwiftSyntaxAST.swift`.
      pivots; `if c ? try f() : g() { }` was fine, which is why nothing caught it. The identical fix
      had been applied to `infixExpression` and never mirrored. Guarded by `ConditionInfixParityTests`.
    - **Tight infix: STILL DIVERGENT, consequence UNDEMONSTRATED.** `infixExpression` carries the
-     regex gate `>->( regularExpressionLiteral )` and the `postfixOperatorToken | dotOperator | "&"`
+     regex gate `@cannotParse( regularExpressionLiteral )` and the `postfixOperatorToken | dotOperator | "&"`
      operator split; `conditionInfixExpression` has neither, just `infixOperator`. Parity probes for
      `a & b`, `a&b`, `a/b/c`, `a...b`, `x!.y` all pass in BOTH positions, so no behavioural
      difference has been shown — the divergence is textual so far. Do not "fix" it without a failing
@@ -217,29 +101,6 @@ Source: Sep 2 2026 Phase 1 tree-fidelity work; `GenerateSwiftSyntaxAST.swift`.
    Also still open: `@objc(+++)` is wrongly accepted (`AttributeSoupTests`).
    Source: Sep 5 2026; performance cliff measured Sep 6 2026.
 
-28. **The converter fallback tally covers only HALF the remaining tree mismatches — characterise the silent half.**
-   Measured Sep 5 2026 by `ConverterFallbackTriage` (accounting now printed every run):
-   ```
-   matching:                  1114
-   differing WITH diagnostic:  273      <- the .unhandled tally, 322 records
-   differing SILENTLY:         260      <- NO diagnostic at all
-   ```
-   A silent mismatch is a snippet where the converter believed it handled every node and the tree
-   still differs — a wrong SHAPE or wrong TOKEN KIND rather than a missing converter. That class has
-   produced every subtle bug this session: `x.0` needing `integerLiteral`, `T.self` needing
-   `keyword(self)`, `inout` needing the type-specifier map, `TuplePattern` vs
-   `ExpressionPattern(TupleExpr)` in match position, `ClosureCapture.name` vs `.expression`.
-   None were visible in the tally; all were found by reading one failing dump.
-
-   **Do not read the `.unhandled` tally as a completion estimate** — it is a work list for KNOWN
-   gaps only. The honest denominator is the label accounting above.
-
-   Next step: give the silent 260 a queue of their own. The cheapest characterisation is to walk
-   the reference and generated dumps in parallel and record the FIRST divergent line per label,
-   then tally those — that turns "260 unknown" into a ranked list the same way `alternateKind` did
-   for the declaration/statement buckets.
-   Source: Sep 5 2026, after the tally was mistaken for a completion estimate in conversation.
-
 29. **The converter re-derives classifications the grammar already made — read the alternate instead.**
    `convertStringLiteral` fell through to a text-based branch that rebuilt the literal from
    `collectTerminalText`: pound count, quote count, body, segments. In doing so it re-decided
@@ -258,30 +119,7 @@ Source: Sep 2 2026 Phase 1 tree-fidelity work; `GenerateSwiftSyntaxAST.swift`.
    `extendedSinglelineStringLiteral`), not on the characters. Until then the duplicated rule in
    `convertStringLiteral` must be kept in step with the library regex by hand.
    Source: Sep 6 2026, RawStringTests.testFalseMultilineDelimiters.
-
-30. **RESOLVED — multiline `StringSegment` boundaries are escape-sensitive, not line-based.**
-   Ground truth from `AdventTests/SwiftSyntaxTests.swift` `MultilineSegmentProbe`, which parses
-   each fixture with swift-syntax and prints every segment's exact text. A segment ends after:
-
-   - a real line break — the break STAYS in the segment
-   - a `\n` ESCAPE — the two escape characters STAY in the segment
-   - a `\` + line-break continuation — BOTH are elided, belonging to no segment
-
-   `\t`, `\"`, `\\` and `\u{…}` do NOT break, so "split at every escape" is wrong; only the
-   escapes that end a line of the VALUE or of the SOURCE do. In a raw literal the introducer is
-   `\` plus the delimiter's `#` count, so a bare `\n` there breaks nothing. A body ending in a
-   bare introducer is a continuation whose break was the closing delimiter's own newline: it
-   elides and leaves no trailing empty segment.
-
-   Two near-identical empty cases must be distinguished by the CALLER, since both arrive with an
-   empty body: `\"\"\"⏎    \"\"\"` has no content line and yields ZERO segments, while
-   `\"\"\"⏎⏎    \"\"\"` (a blank line) supplies a second break and yields ONE empty segment.
-
-   Lesson: two hypotheses had already been derived from tree DUMPS and contradicted each other.
-   The probe settled it in one run. Prefer probing swift-syntax directly over inferring a lexer
-   rule from diffs — same lesson as `reference_probe_hasError_not_swiftc`.
-   Fixed Sep 6 2026: 442 → 431 labels, zero newly broken.
-
+            
 31. **Model static string-literal BODIES in the grammar, so the parser chops them up.**
    Today `multilineStringLiteral` and `extendedMultilineStringLiteral` are single `@builder`
    terminals: one regex matching pounds, `"""`, the whole body and the closing delimiters as ONE
@@ -311,6 +149,150 @@ Source: Sep 2 2026 Phase 1 tree-fidelity work; `GenerateSwiftSyntaxAST.swift`.
    So: worth doing, but schedule it as its own piece of work with a full A/B, not folded into
    tree-fidelity work.
    Source: Sep 6 2026, user request after TODO 29/30.
+
+32. **Why is `>->` over a NONTERMINAL not equivalent to `>->` over that nonterminal's literals?**
+   Measured Sep 7 2026, trying to de-duplicate the builtin-attribute exclusion list that appears
+   in BOTH general `attribute` rules:
+
+   ```
+   // works
+   attribute = "@" >-> ( "abi" "attached" "available" … ) >s< attributeName attributeArgumentClause? .
+
+   // does NOT suppress the general rule
+   builtinArgumentAttributeName = "abi" | "attached" | "available" | … .
+   attribute = "@" >-> ( builtinArgumentAttributeName ) >s< attributeName attributeArgumentClause? .
+   ```
+
+   With the nonterminal, `Residual ambiguity` went 0 -> 89 and wrongly-accepted 0 -> 9, while the
+   tree-diff label set stayed BYTE-IDENTICAL and accepts stayed at 0. So the gate silently stopped
+   firing: both the bespoke rule and the general soup rule matched the same span.
+
+   That the label set did not move at all is the interesting part — it says the extra readings were
+   being discarded downstream (Oracle/`@longest`) rather than changing any tree, which is why only
+   the ambiguity and reject counters noticed. Any invariant check that watched labels alone would
+   have called this refactor clean.
+
+   Resolved note:
+   - Nonterminal gates are Oracle parse predicates spelled `@canParse(N)` /
+     `@cannotParse(N)`. Symbolic `>+>` / `>->` are token lookaround and should not carry
+     nonterminal operands.
+
+   Source: Sep 7 2026.
+
+33. **Tree fidelity: 21 labels left of the original 477 (96% closed). The CONVERTER is done.**
+   `tools/rank_tree_diffs.py <log>` regenerates the queue; `caffeinate -i` the run (TESTING.md
+   "Sleep, not flakiness"). Invariants held at every one of ~85 measured increments: accepts 0,
+   ambiguity 0, wrongly-accepted 0, `.lookupFailed` 0, crashes 0.
+
+   **Every remaining label is TODO 34–40 (grammar).** The converter one-off list is CLOSED — there
+   is no known converter gap left in the accept corpus. `testCoroutineAccessors#1` is DISABLED
+   rather than fixed: SE-0443 `read`/`modify` need `@_spi` `Keyword` cases that cannot be
+   constructed outside swift-syntax. Disabling skips all four of its tests, so the count
+   understates the gap by one and that snippet no longer verifies Advent parses it.
+
+   Three lessons, each of which cost real time and all of which recurred:
+
+   - **A silent `return nil`, or a `find` that quietly misses, is the most expensive bug shape.**
+     `labelName` lives inside `statementLabel` and `find` does not descend through nonterminals;
+     `propertyWrapperProjection`/`forceMark`/`dotOperator` are `-` TERMINALS needing
+     `findTerminal`; `initializedAccessorBlock` was routed to the willSet/didSet converter, which
+     finds no observers and returns an empty list. Each LOOKED like "not implemented" and was
+     actually "looked in the wrong place". Add a diagnostic before theorising — doing that to
+     `convertInterpolatedStringLiteral` produced the cause in one run and 5 labels.
+   - **Token kind is POSITION-dependent.** A backtick-escaped name is not an operator (one
+     omission bit three separate name maps); `Self` is `keyword(Self)` only as a LEADING
+     IdentifierType. Also `typeAsExpression`: swift-syntax spells a type that COULD be an
+     expression as one (`Void` is a DeclReferenceExpr) and wraps only type-only forms in TypeExpr.
+   - **Right-recursive grammar lists sometimes fold LEFT in swift-syntax.** Sibling nested postfix
+     `#if` blocks chain, each taking the previous as its base; nested arrow returns SPLICE into
+     one flat sequence rather than nesting. Read the reference dump before assuming the shape
+     mirrors the rule.
+
+34. **GRAMMAR: `[any P & Q]` yields a SequenceExpr instead of one TypeExpr.**
+   `@longest primaryExpression = boxedProtocolType` fixed the plain case but not the
+   array-element one: `any P` still wins there and the `&` becomes an infix operator, so the
+   element is a SequenceExpr where swift-syntax has a single `TypeExpr(SomeOrAnyType(CompositionType))`.
+   The competing readings differ in SPAN, so `@prefer` cannot key on them. testInverseTypes#3.
+
+35. **GRAMMAR: `X<T>(…)` splits into a sequence instead of a specialised call.**
+   swift-syntax gives `FunctionCallExpr(GenericSpecializationExpr(X, <T>))`; we read `X`, `<`, `T`,
+   `>` as infix operators and produce a SequenceExpr. The `<` operator-vs-generic-bracket decision
+   is the classic one and needs a lookahead gate, not a converter change. testInverseTypes#7 (2).
+
+36. **GRAMMAR: `borrow(x)` should be a CALL, not a BorrowExpr.**
+   `prefixExpression = @prefer ("consume"|"borrow"|"copy"|"unsafe") <s> >n< prefixExpression` wins
+   even with a TIGHT `(`, where swift-syntax parses a call of a function named `borrow`. The `<s>`
+   space assertion looks like it should already prevent this — check whether it is being enforced
+   here. testBorrowExpression#8 (2).
+
+37. **GRAMMAR: `#fileID` greedily absorbs a following `(…)`.**
+   `macroExpansionExpression = macroHead genericArgumentClause? functionCallArgumentClause? …`
+   takes a `(` that starts the NEXT expression. swift-syntax requires the argument `(` to be
+   tight, so this wants a `>s<` gate exactly like `attributeArgumentClause` has.
+   testBasicLiterals#1.
+
+38. **GRAMMAR: raw strings with interpolation are lexed as ONE token.**
+   `\#(…)` inside `#"…"#` has no Head/Part/Tail decomposition — the extended forms are single
+   `@builder` terminals — so the whole literal reaches the converter as static text and cannot be
+   split into segments. swift-syntax splits it. Needs pound-count-aware interpolated raw forms,
+   i.e. the same treatment the plain forms already have.
+   testRawString12/26/27/28, testStringLiterals#6, testMultilineString46#1 (~6). Closely related
+   to TODO 31 (model string bodies in the grammar) — do them together.
+
+39. **GRAMMAR: `\AStruct.Type` — no metatype alternate in `keyPathRootBase`.**
+   The `.Type` becomes a key-path COMPONENT instead of making the root a `MetatypeType`. Adding
+   `| metatypeType` risks ambiguity with the component route, so it needs `@longest`/`@prefer` and
+   a full A/B. testKeyPathMethodAndInitializers#10.
+
+40. **GRAMMAR: custom attributes with expression arguments take the balanced-token soup.**
+   `@Argument(help: "…")`, `@attr2(…)`, `@inline(__always)` all reach `attributeArgumentClause`,
+   which carries no structure, so the arguments cannot be converted. swift-syntax gives them
+   `.argumentList`. The grammar's own note says swift dispatches on the attribute NAME — known
+   attributes get token soup, unknown ones an expression list — so the fix is to route
+   NON-builtin names to `attributeArgumentExprClause`. Must stay narrow: see the measured
+   performance cliff in TODO 27. testAttributedMember#1, testTypealias#3, testYield#2 (~4).
+
+41. **Fixture LABELS are not unique — the A/B method keys on them.**
+   Measured Sep 8 2026: 114 label names appear in BOTH `SwiftSyntaxRejects.swift` and an accept
+   file with DIFFERENT sources, and 11 names are duplicated WITHIN the accept corpus
+   (`div-chain`, `if-else`, `if-simple`, `subscript`, `testDifferentiableAttribute#1`, …).
+
+   Why it matters: the tree-diff baseline is captured as
+   `grep -o "Trees differ for '…'" | sort -u`, so two differing snippets sharing one label
+   collapse into a single entry. A regression in one could be masked by the other, and the
+   "newly broken" diff would show nothing.
+
+   Currently harmless — 33 raw `Trees differ` lines, 33 unique, and none of the 11 duplicates are
+   in the differing set — so every number reported so far stands. But that is luck, not design.
+
+   Also a live trap when READING results: a label in the tree-diff output refers to the ACCEPT
+   snippet (the tree suites iterate the accept arrays), NOT to the same-named reject snippet.
+   Looking a label up in `SwiftSyntaxRejects.swift` and concluding "this is a reject fixture" is
+   wrong; that mistake was made once while triaging the final 33.
+
+   Fix options: make labels unique at harvest time (prefix with the origin file), or make the
+   suites emit `origin` alongside the label so the diff key is unambiguous.
+
+
+43. **DISABLED fixtures (≈199 `disabledReason` occurrences) — audit as one pass.**
+   They are not all the same kind of thing, and only the last group is a real backlog:
+
+   - **≈126 feature-gated**: `"underscore attribute"` (89), `"experimental feature"` (37). Bulk
+     categories applied wholesale; worth re-checking whether the corpus pin still justifies them.
+   - **≈35 compiler-invalid**: swift-syntax parses permissively but `swiftc` rejects — empty
+     case/default bodies (14), inline `where` in a generic parameter clause (8), deprecated
+     `: class`, `case foo()`, bodyless subscripts, bare types as statements, keyword macro names,
+     `\()`, misplaced `static`. We follow the COMPILER, so these are correctly disabled and only
+     need re-probing if the arbiter changes.
+   - **≈8 deliberate design divergence**: regex-body bracket balancing (7 — our
+     `plainRegularExpressionLiteral` is a balanced CFG by design, swift-syntax uses a sub-lexer we
+     do not replicate) and the leading-combining-char identifier (we follow Unicode TR31).
+   - **REAL backlog, 3 items**: `read`/`modify` `@_spi` Keyword cases (TODO 33); the greedy-keypath
+     commit needing a structural-lookahead primitive (REJECTS.md C1); and the regex-after-`?`
+     case blocked by `conditionalOperator`'s `<s>` spacing policy.
+
+   Only that last group is work. Re-probe the first three groups at the next swift-syntax bump
+   rather than one at a time.
 
 ## Maintenance Rule
 

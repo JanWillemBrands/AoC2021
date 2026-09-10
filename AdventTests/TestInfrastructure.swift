@@ -283,7 +283,7 @@ func parsePostOracle(grammar grammarString: String, message: String) throws -> (
 /// Oracle tests assert — `pruned > 0` only says *something* was removed, not that the parse
 /// became single-valued.
 func parseOracleAmbiguity(grammar grammarString: String, message: String) throws
-    -> (rawMatch: Bool, postMatch: Bool, pruned: Int, isUnambiguous: Bool) {
+    -> (rawMatch: Bool, postMatch: Bool, pruned: Int, isUnambiguous: Bool, diagnostics: [String]) {
     try withParserIsolation {
         trace = false
         traceIndent = 0
@@ -300,6 +300,6 @@ func parseOracleAmbiguity(grammar grammarString: String, message: String) throws
         let post = fullSpan()
         let builder = DerivationBuilder(parser: mp, input: message)
         _ = builder.buildAST()
-        return (raw, post, pruned, builder.diagnostics.isEmpty)
+        return (raw, post, pruned, builder.diagnostics.isEmpty, builder.diagnostics.map(\.fingerprint))
     }
 }

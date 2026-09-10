@@ -5,9 +5,7 @@
 //  Created by Johannes Brands on 25/12/2024.
 //
 
-//import OSLog
 import Foundation
-//import AdventMacros
 
 // Trace toggle. Marked `nonisolated(unsafe)` because:
 //   - In release builds the trace function is fully gated out by `#if DEBUG`.

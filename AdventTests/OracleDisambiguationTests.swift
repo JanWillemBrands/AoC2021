@@ -335,10 +335,9 @@ struct OracleDisambiguationTests {
         // S1/S2 — extent on an OPT whose start is fixed (S1) or moved by a variable-length
         // prefix (S2). S1 resolves: extent compares interval length (not just the end), and the
         // OPT reads its own prunable yields so the kill propagates along the sequence.
-        // S2 does NOT — RED at HEAD, see TODO.md 24. Observed
-        // `(rawMatch: true, postMatch: true, pruned: 1, isUnambiguous: false)`: once a
-        // variable-length prefix can move the bracket's start, one of those two halves stops
-        // firing and the ambiguity survives. (The claim that BOTH resolve was true only of S1.)
+        // S2 also resolves: the Oracle compares the annotated bracket's extent across complete
+        // body tilings, so a variable-length prefix moving the bracket start no longer hides the
+        // empty reading.
         @Test("@shortest [X] [X] — first is kept empty (fixed-start extent)")
         func shortestTwoOptionalsFirst() throws {
             let r = try parseOracleAmbiguity(grammar: #"x - /x/ . S = @shortest [ x ] [ x ] ."#, message: "x")
@@ -446,6 +445,44 @@ struct OracleDisambiguationTests {
             let r = try parseOracleAmbiguity(grammar: g, message: "m x")
             #expect(r.postMatch, "must still parse 'm x'")
             #expect(r.pruned > 0, "the mod-take reading is pruned in favour of the skip (sibling 'other' doesn't match)")
+        }
+    }
+
+    @Suite("Parse predicates", .serialized)
+    struct ParsePredicates {
+
+        @Test("@cannotParse is the Oracle predicate spelling")
+        func cannotParsePrunesAlternate() throws {
+            let g = #"a - /a/ . S = @cannotParse(A) "a" | A . A = "a" ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "a")
+            #expect(r.postMatch)
+            #expect(r.pruned > 0)
+            #expect(r.isUnambiguous)
+        }
+
+        @Test("@canParse is the positive Oracle predicate spelling")
+        func canParseKeepsAlternate() throws {
+            let g = #"a - /a/ . S = @canParse(A) B | "b" . B = A . A = "a" ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "a")
+            #expect(r.postMatch)
+            #expect(r.isUnambiguous)
+        }
+
+        @Test("leading symbolic lookaround is not an Oracle predicate")
+        func symbolicLookaheadIsNotAlternatePredicate() throws {
+            let g = #"a - /a/ . S = >->(A) "a" | A . A = "a" ."#
+            #expect(throws: (any Error).self) {
+                let parser = try ApusParser(fromString: "whitespace : /\\s+/.\n" + g)
+                _ = try parser.parse(explicitStartSymbol: "")
+            }
+        }
+
+        @Test("alternate annotations are order-independent")
+        func alternateAnnotationsAreOrderIndependent() throws {
+            let g = #"a - /a/ . S = @cannotParse(B) @prefer A | B . A = "a" . B = "b" ."#
+            let r = try parseOracleAmbiguity(grammar: g, message: "a")
+            #expect(r.postMatch)
+            #expect(r.isUnambiguous)
         }
     }
 }

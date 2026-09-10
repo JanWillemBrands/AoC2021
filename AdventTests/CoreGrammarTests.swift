@@ -503,19 +503,25 @@ struct CoreGrammarTests {
         }
     }
 
-    // MARK: - =: trivia non-terminal (Phase E Step 2)
+    // MARK: - Structured trivia non-terminal
 
     @Suite("TriviaNonTerminal", .serialized)
     struct TriviaNonTerminal {
         static let cases: [TestCase] = [
             TestCase(
-                // `nested =:` is a trivia non-terminal: its recogniser runs as
+                // Structured `nested : ...` is a trivia non-terminal: its recogniser runs as
                 // a recursive sub-parse during skipTrivia. Nested `<…>` blocks
                 // count as trivia and get consumed before matching `x`.
-                grammar: #"nested =: "<" { /[^<>]/ | nested } ">" . S = "x"."#,
+                grammar: #"nested : "<" { /[^<>]/ | nested } ">" . S = "x"."#,
                 pass: ["x", "<>x", "<a>x", "<<a>>x", "<<<a>>>x", "<a><b>x"],
                 fail: ["<x", "x<", "<a>"],
-                label: "nested-bracket trivia via =:"
+                label: "nested-bracket trivia via structured colon"
+            ),
+            TestCase(
+                grammar: #"pair : /a/ /b/ . S = "x"."#,
+                pass: ["x", "abx"],
+                fail: ["ax", "bx"],
+                label: "structured colon requires whole RHS to be one skipped recognizer"
             ),
         ]
 

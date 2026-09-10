@@ -478,3 +478,51 @@ inside the recorded band — luck, not evidence. Redone properly, the same chang
   suite, ~4 minutes for the whole of AdventTests.
 - Parallel test output interleaves. Redirect to a log and grep it; line numbers shift between
   runs, so never `sed -n '<range>p'` against a freshly re-run invocation.
+
+## Sleep, not flakiness — diagnosing a "hung" run
+
+A run that exceeds its timeout is almost always the LAPTOP SLEEPING, not a hang, a regression or
+build contention. Diagnosed Sep 7 2026 after repeatedly misattributing it.
+
+The two clocks in the log disagree in a way only suspension produces:
+
+```
+$ grep -o "IDETestOperationsObserverDebug: [0-9.]* elapsed" run.log
+IDETestOperationsObserverDebug: 465.547 elapsed        # xcodebuild: WALL clock
+$ grep -o "Test run with .* seconds" run.log
+Test run with 178 tests in 70 suites failed after 67.896 seconds   # swift-testing: does NOT
+                                                                   # advance while suspended
+```
+
+465 − 68 ≈ 400s unaccounted for. To confirm, find the gaps between timestamped log lines:
+
+```sh
+python3 - <<'EOF'
+import re, datetime
+pat = re.compile(r'^(20\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+)')
+prev = None
+for line in open('run.log', encoding='utf-8', errors='replace'):
+    m = pat.match(line)
+    if not m: continue
+    t = datetime.datetime.strptime(m.group(1)[:26].split('+')[0], '%Y-%m-%d %H:%M:%S.%f')
+    if prev and (t - prev).total_seconds() > 3:
+        print(round((t - prev).total_seconds(), 1), 's before:', line[:100])
+    prev = t
+EOF
+```
+
+A sleep shows up as ONE large gap, and the tests either side of it are unrelated and trivial —
+in the diagnosed case a 388s gap fell between `final-class` and `public-final`, two Phase4
+one-liners that take milliseconds. A REAL hang looks different: the gap lands inside a single
+expensive test, and the reported swift-testing duration grows to match the wall clock.
+
+`tools/run_tests.sh` now wraps `xcodebuild` in `caffeinate -i` to prevent this. When invoking
+`xcodebuild` by hand, do the same:
+
+```sh
+caffeinate -i xcodebuild test-without-building -project Advent.xcodeproj -scheme Advent \
+    -destination "platform=macOS,arch=arm64" -parallel-testing-enabled NO
+```
+
+**Never read a timeout as a regression without checking the two clocks first.** The tests took
+~68s on every one of ~40 consecutive runs, including every run that appeared to fail.

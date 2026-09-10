@@ -17,28 +17,6 @@
 import OSLog
 import Foundation
 import BitCollections
-//import AdventMacros
-
-/// Parser-side resolved form of a `LookbehindRule`. The `kinds: [String]` from
-/// the grammar are translated into a `BitSet` of `terminalID` once at parse
-/// setup, so the evaluator runs purely on integer IDs.
-struct ResolvedLookbehindRule {
-    let polarity: LookbehindPolarity
-    let distance: Int
-    let kindsBitSet: BitSet
-}
-
-/// A line of AND'd rules (matches the original `LookbehindLine`).
-struct ResolvedLookbehindLine {
-    let rules: [ResolvedLookbehindRule]
-}
-
-/// Parser-side resolved form of `LookbehindSpec` keyed by terminal ID.
-struct ResolvedLookbehindSpec {
-    let positiveLines: [ResolvedLookbehindLine]
-    let negativeLines: [ResolvedLookbehindLine]
-    var isEmpty: Bool { positiveLines.isEmpty && negativeLines.isEmpty }
-}
 
 /// One terminal commit recorded by the parse loop's `.T`/`.TI`/`.C` arm.
 /// Carries the four positions that fully describe the commit's span in the
@@ -55,8 +33,8 @@ struct ResolvedLookbehindSpec {
 /// Leading trivia text:     `input[triviaStart ..< start]`
 /// Trailing trivia text:    `input[end ..< triviaEnd]`
 ///
-/// Used by `terminalImage(startingAt:)`, `previousKindIDs(at:distance:)`
-/// (`++N`/`--N` lookbehind), and `boundaryMatches` (`<s>`/`>s<`/`<n>`/`>n<`).
+/// Used by `terminalImage(startingAt:)`, `previousKindIDs(at:distance:)`, and
+/// `boundaryMatches` (`<s>`/`>s<`/`<n>`/`>n<`, token lookaround).
 struct TerminalCommit {
     let terminalID: Int
     let triviaStart: CharPosition
@@ -116,30 +94,6 @@ class MessageParser {
         return result
     }
 
-    // MARK: - Lookbehind (parser-side evaluation)
-
-    /// Resolve a `LookbehindSpec` (kinds as strings) into a
-    /// `ResolvedLookbehindSpec` (kinds as `BitSet<Int>`) by looking each kind
-    /// name up via `grammar.symbolToID`. Unknown kind names are dropped — same
-    /// semantic as the original `Scanner.matchesLine` falling through on a
-    /// missing match.
-    private func resolveLookbehindSpec(_ spec: LookbehindSpec) -> ResolvedLookbehindSpec {
-        func resolveLine(_ line: LookbehindLine) -> ResolvedLookbehindLine {
-            let rules = line.rules.map { rule -> ResolvedLookbehindRule in
-                var bs = BitSet()
-                for kind in rule.kinds {
-                    if let id = grammar.symbolToID[kind] { bs.insert(id) }
-                }
-                return ResolvedLookbehindRule(polarity: rule.polarity, distance: rule.distance, kindsBitSet: bs)
-            }
-            return ResolvedLookbehindLine(rules: rules)
-        }
-        return ResolvedLookbehindSpec(
-            positiveLines: spec.positiveLines.map(resolveLine),
-            negativeLines: spec.negativeLines.map(resolveLine)
-        )
-    }
-
     /// `BitSet` of terminal kindIDs whose commit ends exactly at `pos`.
     private func terminalKindIDs(endingAt pos: CharPosition) -> BitSet {
         guard let idxs = commitsByEnd[pos] else { return BitSet() }
@@ -173,34 +127,6 @@ class MessageParser {
         return result
     }
 
-    /// Evaluate a resolved lookbehind spec at parser position `pos`. Mirrors
-    /// `Scanner.lookbehindAllows`:
-    ///   - positive lines OR'd; any match → allow (overrides negatives)
-    ///   - negative lines OR'd; any match → block
-    ///   - whitelist mode (positives only, none match) → block
-    ///   - otherwise → allow
-    /// Each rule's `kinds` comparison walks the parser's per-position kindID
-    /// union; under GLL-multi-history this means "the rule fires if any path
-    /// arrived at this position via a matching terminal" — the same OR-walk
-    /// the original implementation did across Schrödinger duals.
-    func lookbehindAllows(_ spec: ResolvedLookbehindSpec, at pos: CharPosition) -> Bool {
-        if spec.isEmpty { return true }
-        if spec.positiveLines.contains(where: { matchesLine($0, at: pos) }) { return true }
-        if spec.negativeLines.contains(where: { matchesLine($0, at: pos) }) { return false }
-        if !spec.positiveLines.isEmpty && spec.negativeLines.isEmpty { return false }
-        return true
-    }
-
-    private func matchesLine(_ line: ResolvedLookbehindLine, at pos: CharPosition) -> Bool {
-        for rule in line.rules {
-            let prev = previousKindIDs(at: pos, distance: rule.distance)
-            if prev.intersection(rule.kindsBitSet).isEmpty {
-                return false
-            }
-        }
-        return true
-    }
-
     // MARK: - Descriptor management (Paper: R, U)
     var remaining: [Descriptor] = []
     var unique: Set<Descriptor> = []
@@ -232,20 +158,13 @@ class MessageParser {
 
     var yieldCount = 0
 
-    // MARK: - Lookbehind (Phase E Step 1: parser-side lookbehind evaluation)
-    /// `terminalID → resolved lookbehind` for every terminal with a non-empty
-    /// `LookbehindSpec` in the grammar. Resolved at parse setup: kind-name
-    /// strings are translated to BitSets keyed by `grammar.symbolToID`, so the
-    /// evaluator runs entirely on integer IDs.
-    var lookbehindByTerminalID: [Int: ResolvedLookbehindSpec] = [:]
-
     /// Per-parse flat log of every terminal commit. Each `.T`/`.TI`/`.C` arm
     /// in the main parse loop appends to `commits` and indexes the new entry
     /// in both `commitsByStart` (content start → commit indices) and
     /// `commitsByEnd` (content end → commit indices). Two indices into one
     /// store keep the commit data single-sourced; the indices are pointers,
     /// not copies. `commitsByEnd` powers `previousKindIDs(at:distance:)` for
-    /// `++N`/`--N` lookbehind; `commitsByStart` powers
+    /// token lookbehind; `commitsByStart` powers
     /// `terminalImage(startingAt:)` for diagnostic / AST readers.
     var commits: [TerminalCommit] = []
     var commitsByStart: [CharPosition: [Int]] = [:]
@@ -329,37 +248,30 @@ class MessageParser {
         runGLL(root: root ?? grammar.root, start: start ?? input.startIndex)
     }
 
-    /// Per-input setup: builds the lex stack, resolves lookbehind specs,
-    /// constructs sub-parsers for `=:` non-terminals, precomputes layout
-    /// virtual tokens when the grammar uses them. Idempotent for repeated
-    /// calls on the same `input`; the expectation is that callers (including
-    /// sub-parsers) call this once per input and then `runGLL` many times
-    /// against the prepared state.
+    /// Per-input setup: builds the lex stack, constructs sub-parsers for `=:`
+    /// non-terminals, precomputes layout virtual tokens when the grammar uses
+    /// them. Idempotent for repeated calls on the same `input`; the expectation
+    /// is that callers (including sub-parsers) call this once per input and then
+    /// `runGLL` many times against the prepared state.
     func prepareInput(input: String, isSubParser: Bool = false) {
         self.isSubParser = isSubParser
         self.input = input
         // LCNP lex stack: `OnDemandLiteralLexer` only (Phase E Step 2d retired
         // `LegacyScannerLexAdapter`). All literals and regex terminals serve
-        // from `input` directly; lookbehind (`++N`/`--N`) is enforced
-        // parser-side in `tokenMatch`. `transitions`-annotated terminals lose
-        // their mode-gating — documented Python regression.
+        // from `input` directly. `transitions`-annotated terminals lose their
+        // mode-gating — documented Python regression.
         var literalSourceByID: [Int: String] = [:]
         var regexByID: [Int: Regex<AnyRegexOutput>] = [:]
         var triviaRegexes: [Regex<AnyRegexOutput>] = []
-        lookbehindByTerminalID.removeAll(keepingCapacity: true)
         for (name, pat) in grammar.terminals {
             guard let id = grammar.symbolToID[name] else { continue }
             // `=|` lexical nonterminal — its match extent is computed by a GLL sub-parse below, not
-            // by a regex/literal, so skip ONLY that registration. It must still pick up its
-            // lookbehind spec at the bottom of this loop: the gate belongs at the OUTER level (the
-            // recogniser sub-parse has no commit history of its own), and `continue`-ing here silently
-            // dropped it. See REJECTS.md C3.
+            // by a regex/literal, so skip ONLY that registration.
             if !pat.isLexicalToken {
                 if pat.isLiteral {
                     literalSourceByID[id] = pat.source
                 } else if !pat.isSkip {
-                    // Regex terminal: answer from input directly. Any lookbehind
-                    // annotation is enforced at `tokenMatch` via parser state.
+                    // Regex terminal: answer from input directly.
                     regexByID[id] = pat.regex
                 }
                 if pat.isSkip, !isSubParser {
@@ -369,9 +281,6 @@ class MessageParser {
                     // otherwise be skipped whitespace IS comment content.
                     triviaRegexes.append(pat.regex)
                 }
-            }
-            if !pat.lookbehind.isEmpty {
-                lookbehindByTerminalID[id] = resolveLookbehindSpec(pat.lookbehind)
             }
         }
         // Build trivia non-terminal recognisers for each `=:` LHS in the
@@ -460,8 +369,9 @@ class MessageParser {
         var lexicalClassIDs: [Int] = []
         
         // `@preempt(X, …)`: terminal ID → the ID of the terminal `X` whose start
-        // positions define the split points. Terminal-keyed (not char-keyed) so the
-        // split inherits `X`'s `<-<` gate (see the split-gate in `tokenMatch`).
+        // positions define the split points. Terminal-keyed (not char-keyed) so
+        // split discovery still follows the grammar's token definitions; parser
+        // viability decides which offered split points survive.
         var preemptStartByID: [Int: Int] = [:]
         for (name, pat) in grammar.terminals {
             guard let id = grammar.symbolToID[name] else { continue }
@@ -540,7 +450,7 @@ class MessageParser {
                     addYield(L: cL, i: cU, k: cI, j: cI)
                     cL = cL.seq!
                 case .B:
-                    if boundaryMatches(cL.name, at: cI) {
+                    if boundaryMatches(cL, at: cI) {
                         addYield(L: cL, i: cU, k: cI, j: cI)
                         cL = cL.seq!
                     } else {
@@ -675,7 +585,7 @@ class MessageParser {
     /// Re-run lex + the `tokenMatch` filters for the failed terminal slot and
     /// print which step zeroed out the match list. This catches diagnostics
     /// like "found '(' / expected '('" where raw lex succeeded, but parser-side
-    /// lookbehind, exclusion, or predict-set pruning rejected the branch.
+    /// exclusion rejected the branch.
     func explainNoMatch(slot: GrammarNode, at pos: CharPosition) {
         guard [.T, .TI, .C].contains(slot.kind) else { return }
         let id = slot.nameID!
@@ -693,13 +603,6 @@ class MessageParser {
         }
 
         var survivors = raw
-        if let lookbehind = lookbehindByTerminalID[id] {
-            let allowed = lookbehindAllows(lookbehind, at: pos)
-            print("  after lookbehind: \(allowed ? survivors.count : 0)  (allowed=\(allowed))")
-            if !allowed { return }
-        } else {
-            print("  after lookbehind: \(survivors.count)  (no lookbehind on this terminal)")
-        }
 
         if !slot.excludeBS.isEmpty {
             survivors = survivors.filter { m in
@@ -716,12 +619,11 @@ class MessageParser {
             print("  after exclude:    \(survivors.count)  (no exclude on this terminal)")
         }
 
-        let predictBS = slot.followAheadBS.isEmpty ? slot.followBS : slot.followAheadBS
-        let predictKind = slot.followAheadBS.isEmpty ? "followBS" : "followAheadBS (>+>)"
+        let predictBS = slot.followBS
         if !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
             let idToName = Dictionary(uniqueKeysWithValues: grammar.symbolToID.map { ($0.value, $0.key) })
             let names = predictBS.compactMap { idToName[$0] }.sorted()
-            print("  predict (\(predictKind)): \(names.joined(separator: ","))")
+            print("  predict (followBS): \(names.joined(separator: ","))")
             survivors = survivors.filter { m in
                 if m.triviaEnd >= input.endIndex { return true }
                 for fID in predictBS where fID != grammar.epsilonID {
@@ -843,7 +745,39 @@ class MessageParser {
         return input[pos..<end]
     }
 
-    /// Evaluate a boundary operator at a parser cursor position.
+    /// Evaluate a boundary node at a parser cursor position. Structured token
+    /// lookaround is stored on `.B.boundaryPredicate`; legacy layout boundaries use
+    /// the boundary's textual `name`.
+    func boundaryMatches(_ boundary: GrammarNode, at position: CharPosition) -> Bool {
+        guard let predicate = boundary.boundaryPredicate else {
+            return boundaryMatches(boundary.name, at: position)
+        }
+        switch predicate {
+        case .tokenLookahead(let positive, _):
+            if position >= input.endIndex {
+                let matches = boundary.boundaryPredicateBS.contains(grammar.symbolToID["○"]!)
+                return positive ? matches : !matches
+            }
+            let matches = tokenLookaheadMatches(boundary.boundaryPredicateBS, at: position)
+            return positive ? matches : !matches
+        case .tokenLookbehind(let positive, _, let distance):
+            let previous = previousKindIDs(at: position, distance: distance)
+            let matches = !previous.intersection(boundary.boundaryPredicateBS).isEmpty
+            return positive ? matches : !matches
+        }
+    }
+
+    private func tokenLookaheadMatches(_ kinds: BitSet, at position: CharPosition) -> Bool {
+        if position >= input.endIndex { return false }
+        for terminalID in kinds where terminalID != grammar.epsilonID {
+            if !cachedLex(at: position, terminalID: terminalID).isEmpty {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Evaluate a layout boundary operator at a parser cursor position.
     /// Boundaries are predicates over the *trivia gap* between the previous
     /// committed terminal's content end and the current cursor — i.e. they
     /// ask "what (if anything) did `skipTrivia` skip to get the cursor here?".
@@ -917,8 +851,7 @@ class MessageParser {
     /// Phase D Step 3: the Schrödinger `---(…)` exclude semantic is now a
     /// per-end LCNP filter — for each candidate terminal in the predict set,
     /// suppress its matches whose end coincides with an excluded terminal's
-    /// match at this position. Retires the `tokens[idx].kindID` head lookup
-    /// that the eager scanner used to canonicalise same-span ambiguity.
+    /// match at this position.
     func testSelect(slot: GrammarNode, bracket: GrammarNode) -> Bool {
         func anyTerminalMatches(in bs: BitSet) -> Bool {
             for kID in bs {
@@ -948,11 +881,9 @@ class MessageParser {
     /// Match the current terminal against the input at cI.
     ///
     /// Asks the memoizing lex cache for matches of `cL.nameID` at `cI`, then
-    /// applies the two parser-level filters the LCNP API doesn't see:
-    ///   - `---(…)` exclusion: if the head token's kindID is in `cL.excludeBS`,
-    ///     suppress matches whose terminalID differs from the head's kindID.
-    ///   - `>>1(…)` followAhead: when set, the NEXT token must satisfy the
-    ///     followAhead bitset (or be EOS).
+    /// applies the parser-level filters the LCNP API doesn't see:
+    ///   - `---(…)` exclusion: suppress candidates whose end coincides with an
+    ///     excluded terminal.
     ///
     /// Phase C Step 2: returns the full set of distinct matches so the main
     /// parse loop can fork descriptors over them. Each match carries `start`
@@ -965,55 +896,24 @@ class MessageParser {
         var matches = cachedLex(at: cI, terminalID: cL.nameID)
         guard !matches.isEmpty else { return [] }
 
-        // Lookbehind: `++N(…)` / `--N(…)` — evaluate against parser-side
-        // commit history (Phase E Step 1). Filters out matches whose context
-        // doesn't satisfy the grammar's lookbehind annotation. Cheap when the
-        // terminal has no lookbehind (most do not).
-        // Own-lookbehind gate (`++N`/`--N`): for a terminal carrying its own
-        // lookbehind that is NOT a `@preempt` terminal, a failing lookbehind
-        // blocks it entirely — the regex-vs-division case (`regexOpenSlash` after an
-        // operand-ender is division, not a regex start).
-        if grammar.terminals[cL.name]?.preemptStart == nil,
-           let lookbehind = lookbehindByTerminalID[cL.nameID],
-           !lookbehindAllows(lookbehind, at: cI) {
-            return []
-        }
-        // Inherited split gate: a `@preempt(X, …)` terminal offers its SPLIT
-        // (shorter) matches only where terminal `X` could legitimately begin — i.e.
-        // when `X`'s own `<-<` lookbehind passes at `cI`. `X = regexOpenSlash` carries
-        // the operand-ender exclusion (swift-syntax `preferRegexOverBinaryOperator`),
-        // so in infix position (operator preceded by an operand) the split — which
-        // would expose a competing regex — is dropped and maximal munch wins; the
-        // maximal base match always survives (operators legitimately follow operands).
-        // Keying on `X` means the operator terminal needs no duplicated `<-<` list.
-        if let splitName = grammar.terminals[cL.name]?.preemptStart,
-           let splitID = grammar.symbolToID[splitName],
-           let splitLookbehind = lookbehindByTerminalID[splitID],
-           !lookbehindAllows(splitLookbehind, at: cI) {
-            let maxEnd = matches.map(\.end).max()!
-            matches = matches.filter { $0.end == maxEnd }
-        }
-
-        // `@preempt(X, N)` COMMIT — the mirror of the gate above, at the same anchor. The first operand
-        // only OFFERS the shorter reading ("give the regex a chance"); this makes it WIN wherever `N`
-        // genuinely parses, so maximal munch cannot swallow the start of a real `N`
-        // (`_ = ^/"/"` → `^` + regex, not `^/` + string). Every candidate here shares the start `cI`,
-        // so this is a plain choice among sibling EXTENTS — no span geometry, no post-parse rule.
-        // Commit at the EARLIEST viable split: swift's `lexOperatorIdentifier` scans the operator
-        // left-to-right for its first internal `/` and `break`s (keeping the whole operator) if the
-        // regex there fails, so `^/a/b/` must commit at the first slash, not at any.
+        // `@preempt(X, N)` COMMIT. The first operand only OFFERS shorter
+        // readings; this keeps the earliest one whose construct `N` genuinely
+        // parses and discards non-viable offers. If no offered split is viable,
+        // maximal munch keeps only the longest match.
         if matches.count > 1, let viable = preemptViable[cL.nameID] {
             let maxEnd = matches.map(\.end).max()!
-            if let commitEnd = Set(matches.map(\.end)).filter({ $0 < maxEnd }).sorted().first(where: viable) {
+            let splitEnds = Set(matches.map(\.end)).filter { $0 < maxEnd }.sorted()
+            if let commitEnd = splitEnds.first(where: viable) {
                 matches = matches.filter { $0.end <= commitEnd }
+            } else {
+                matches = matches.filter { $0.end == maxEnd }
             }
         }
 
         // Exclude: `---(…)` — for each candidate end, if any excluded terminal
         // also lexes at this position with the same end, suppress the match.
-        // Phase D Step 2: per-end LCNP query, retiring the `tokens[idx].kindID`
-        // head lookup that the eager scanner used to canonicalise same-span
-        // ambiguity. Relies on the lexer's keyword-boundary guard so e.g.
+        // Phase D Step 2: per-end LCNP query. Relies on the lexer's
+        // keyword-boundary guard so e.g.
         // literal "let" doesn't over-match "letx".
         if !cL.excludeBS.isEmpty {
             matches = matches.filter { m in
@@ -1021,56 +921,6 @@ class MessageParser {
                     for em in cachedLex(at: cI, terminalID: eID) where em.triviaEnd == m.triviaEnd {
                         return false
                     }
-                }
-                return true
-            }
-            if matches.isEmpty { return [] }
-        }
-
-        // The grammar-authored POSITIVE forward gate `>+>(…)`: one of the named terminals must lex at
-        // the match end. Semantics the grammar asked for, nothing inferred.
-        //
-        // This used to do DOUBLE DUTY, falling back to the FOLLOW-derived predict set ("Phase F's
-        // `lexLKH`") when no gate was authored. That half is GONE (2026-08-29). History, because it
-        // was reinstated once already: deleting it in 2026-08-28 cost 4 accepts (`_ = /\ /`, a regex
-        // whose whole body is an escaped space) — a pruning filter cannot lose a parse directly, so
-        // the loss came via disambiguation, the extra surviving derivations changing what the
-        // Oracle's `@prefer`/`@longest` rules saw. Both causes have since been fixed independently
-        // (existential `boundaryMatches`; the `@preempt` viability cut), and the over-accept it was
-        // masking turned out to be a regex case now handled properly. Re-measured over three hash
-        // seeds: reject 39 / accept 0 / ambiguity 0 either way, and marginally FASTER without it
-        // (13.31s vs 13.76s) since it costs a `cachedLex` per candidate match.
-        //
-        // Skipped for a RECOGNISER sub-parse: the gate is a claim about the ENCLOSING context, which
-        // a recogniser does not have (same rationale as `followCheck`). Without this skip, a
-        // speculative viability query inherits the outer obligation and dies on the last token of the
-        // very construct it is asked about — for `_ = ^/"/"`, `regexCloseSlash` was refused because
-        // nothing legal lexes at the trailing `"`, so "is a regex viable here?" answered NO for a
-        // perfectly well-formed regex.
-        let predictBS = cL.followAheadBS
-        if !isSubParser, !predictBS.isEmpty && !predictBS.contains(grammar.epsilonID) {
-            matches = matches.filter { m in
-                // Past the end of input acts as EOS — always allowed.
-                if m.triviaEnd >= input.endIndex { return true }
-                for fID in predictBS where fID != grammar.epsilonID {
-                    if !cachedLex(at: m.triviaEnd, terminalID: fID).isEmpty { return true }
-                }
-                return false
-            }
-            if matches.isEmpty { return [] }
-        }
-
-        // Negative forward lookahead — `>->(…)` followAheadExclude. Drop a match
-        // whose NEXT token (past trailing trivia, i.e. at `triviaEnd`) is one of the
-        // excluded terminals. Mirrors swift-syntax's `preferPostfixExpr` gate: the
-        // `yield`/`discard` contextual keywords do NOT introduce a statement when
-        // followed by a postfix suffix (`(`/`[`/`.`) — that reading is a call /
-        // subscript / member instead. EOS (past end of input) is always allowed.
-        if !cL.followAheadExcludeBS.isEmpty {
-            matches = matches.filter { m in
-                if m.triviaEnd >= input.endIndex { return true }
-                for eID in cL.followAheadExcludeBS where eID != grammar.epsilonID {
-                    if !cachedLex(at: m.triviaEnd, terminalID: eID).isEmpty { return false }
                 }
                 return true
             }
@@ -1117,10 +967,10 @@ class MessageParser {
     /// Test whether a continuation grammar slot can proceed with input at the
     /// given position. Used to suppress descriptors in rtn/bracketRtn/pop replay
     /// when the continuation cannot match. Conservative: returns true for
-    /// nullable, END, EPS to avoid false rejections.
+    /// nullable, END, EPS, and zero-width boundaries to avoid false rejections.
     func continuationViable(continuation: GrammarNode, at position: CharPosition) -> Bool {
         // Structural nodes that don't consume input are always viable
-        if continuation.kind == .END || continuation.kind == .EPS { return true }
+        if continuation.kind == .END || continuation.kind == .EPS || continuation.kind == .B { return true }
         // Nullable continuation: can't determine without enclosing FOLLOW context
         if continuation.firstBS.contains(grammar.epsilonID) { return true }
         // Per-terminal LCNP iteration over FIRST(continuation)
@@ -1129,48 +979,6 @@ class MessageParser {
             if !cachedLex(at: position, terminalID: kID).isEmpty { return true }
         }
         return false
-    }
-
-    /// Forward 1-token gate applied at a nonterminal/bracket COMPLETION — the parse-time analogue
-    /// of the terminal-slot follow gate in `tokenMatch` (the `followAheadBS`/`followAheadExcludeBS`
-    /// block). `slot` is the reference node that was just completed and carries the postfix
-    /// `>+>`/`>->` annotation; `position` is where it ended (the token past trailing trivia).
-    /// Mirrors swift-syntax's contextual "what may follow" checks:
-    ///   • `followAheadExcludeBS` (`>->`): fails when an excluded terminal lexes at `position`.
-    ///   • `followAheadBS` (`>+>`): requires some approved terminal to lex at `position`.
-    /// End-of-input is handled EXPLICITLY per polarity (see the `atEOF` branches below), not via a
-    /// blanket "EOS always allowed": nothing follows at EOF, so a negative gate is satisfied (nothing
-    /// to exclude) while a positive gate is NOT (no token to match). Empty sets impose no constraint.
-    /// See disc-3 in `Grammar Predicate Lookahead Design.md`
-    /// (`trailingClosures … closureExpression >-> ("else")`).
-    func forwardGateAllows(slot: GrammarNode, at position: CharPosition) -> Bool {
-        let atEOF = position >= input.endIndex
-
-        // Negative gate `>->(X)`: fail if an excluded terminal lexes next.
-        if !slot.followAheadExcludeBS.isEmpty {
-            if atEOF {
-                // Nothing follows → nothing to exclude → allowed.
-            } else {
-                for eID in slot.followAheadExcludeBS where eID != grammar.epsilonID {
-                    if !cachedLex(at: position, terminalID: eID).isEmpty { return false }
-                }
-            }
-        }
-
-        // Positive gate `>+>(X)`: require an approved terminal to lex next.
-        if !slot.followAheadBS.isEmpty {
-            // Nothing follows at EOF → "a token actually follows" cannot hold → fail. (This differs
-            // from the terminal-path predict gate in `tokenMatch`, where EOF is a valid end/EOS —
-            // that gate is generic-argument closing, `<…>` closed by EOF. A nonterminal-completion
-            // `>+>` like `>+>("else")` means "else actually follows", so EOF must fail — otherwise a
-            // `>->(X)`/`>+>(X)` partition would BOTH pass at EOF → duplicate readings.)
-            if atEOF { return false }
-            for fID in slot.followAheadBS where fID != grammar.epsilonID {
-                if !cachedLex(at: position, terminalID: fID).isEmpty { return true }
-            }
-            return false
-        }
-        return true
     }
 
 }

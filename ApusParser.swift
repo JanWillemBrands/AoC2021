@@ -143,18 +143,13 @@ class ApusParser {
         }
         grammar.isLL1 = isLL1
         grammar.propagateExcludeSets()
-        grammar.populateBitSets()
+        try grammar.populateBitSets()
 
         return grammar
     }
     
     private var skip = false
     private var terminalAlias: String?
-    /// `@scalar` — compile this regex terminal with `.matchingSemantics(.unicodeScalar)`
-    /// so explicit code-point ranges (`\u{…}-\u{…}`) mean scalar-value intervals and
-    /// combining marks / variation selectors are matched per-scalar (not grapheme-clustered).
-    /// Set by the `@scalar` pragma in `production()`, consumed in `regex()`.
-    private var scalarSemantics = false
     
     func parseApusGrammar() throws {
         trace("parseApusGrammar", token)
@@ -203,10 +198,9 @@ class ApusParser {
         // `@preempt(X)` / `@preempt(X, N)` — this terminal's maximal munch must not swallow something
         // of higher priority. Both regex literals and generics were bolted onto an already-mature
         // Swift, so its lexer has to pre-empt operator munching for them; this states that directly.
-        //   X — the terminal whose start positions define the SPLIT POINTS, and whose `<-<` gate
-        //       (checked at the operator's own start) decides whether a split is offered at all. That
-        //       gate is swift's `isLeftBound` analogue, which is why it must name a specific terminal
-        //       rather than be derived from `FIRST(N)` (whose members may differ in gating).
+        //   X — the terminal whose start positions define the SPLIT POINTS. It names a specific
+        //       token shape rather than deriving split points from `FIRST(N)`, whose members may
+        //       differ in spelling and boundary behavior.
         //   N — OPTIONAL: the construct that must actually PARSE at a split point for the shorter
         //       reading to win. Without it the split is merely offered (today's generics use).
         var preemptStartName: String? = nil
@@ -225,25 +219,24 @@ class ApusParser {
             }
             try expect([")"]); cI += 1
         }
-        // `@scalar` — unicode-scalar matching semantics for this regex terminal.
-        if token.kind == "pragma", token.stripped == "scalar" {
-            scalarSemantics = true
-            cI += 1
-        }
         try expect(["identifier"])
         let nonTerminalName = String(token.image)
         cI += 1
         
-        if token.kind == ":" || token.kind == "-" {
-            // terminal definition: ":" = silent, "-" = visible
+        let operatorKind = token.kind
+        let hasDirectTerminalBody = productionStartsWithDirectTerminalBody(afterOperatorAt: cI)
+        
+        if operatorKind == "-" || (operatorKind == ":" && hasDirectTerminalBody) {
+            // direct terminal definition: ":" = silent, "-" = visible.
+            // Structured ":" is handled below as a trivia nonterminal; structured "-"
+            // remains future work and still requires a direct regex/literal/@builder RHS.
             skip = (token.kind == ":")
             cI += 1
-            var terminal: GrammarNode!
             switch token.kind {
             case "regex":
                 // assign the name of the production to the regex
                 terminalAlias = nonTerminalName
-                terminal = try regex()
+                _ = try regex()
                 if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
                 if let ps = preemptStartName { grammar.terminals[nonTerminalName]?.preemptStart = ps }
                 if let pc = preemptConstructName { grammar.terminals[nonTerminalName]?.preemptConstruct = pc }
@@ -252,13 +245,13 @@ class ApusParser {
                 // regex branch applies via `terminalAlias`. It used to register kind `"…"` (the
                 // quoted form) and file the LHS in a `literalAliases` side table, so the name never
                 // became a kind at all; that asymmetry between the two terminal shapes is gone.
-                terminal = literal(named: nonTerminalName)
+                _ = literal(named: nonTerminalName)
             case "pragma" where token.stripped == "builder":
                 // `@builder` — the terminal's scanner regex comes from the Swift
                 // RegexBuilder library (GrammarRegexLibrary.swift), keyed by name.
                 //   name - @builder .          → ApusRegexLibrary.patterns["name"]
                 //   name - @builder(key) .     → ApusRegexLibrary.patterns["key"]
-                terminal = try regexBuilder(name: nonTerminalName)
+                _ = try regexBuilder(name: nonTerminalName)
                 if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
                 if let ps = preemptStartName { grammar.terminals[nonTerminalName]?.preemptStart = ps }
                 if let pc = preemptConstructName { grammar.terminals[nonTerminalName]?.preemptConstruct = pc }
@@ -269,7 +262,6 @@ class ApusParser {
             // reset
             terminalAlias = nil
             skip = false
-            scalarSemantics = false
             
             try expect(["."])
             cI += 1
@@ -279,16 +271,15 @@ class ApusParser {
             // `TokenPattern.transitions` are gone; LCNP per-terminal lex
             // makes mode gating unnecessary.
 
-            try lookbehindAnnotations(attachingTo: terminal.name)
 
         } else {
-            // production rule — `=` for emit, `=:` for trivia (Phase E Step 2),
+            // production rule — `=` for emit, `:`/`=:` for trivia,
             // `=|` for a lexical nonterminal (body recognized by a GLL sub-parse, emitted
             // as one token; references to it resolve to a terminal — see GrammarNode.isLexicalToken).
-            try expect(["=", "=:", "=|"])
-            let isTrivia = token.kind == "=:"
+            try expect(["=", ":", "=:", "=|"])
+            let isTrivia = token.kind == ":" || token.kind == "=:"
             let isLexical = token.kind == "=|"
-            // Collect signature actions (between nonterminal name and `=`/`=:`)
+            // Collect signature actions (between nonterminal name and operator)
             let signatureActions = collectActions(at: cI)
             cI += 1
             // Actions between operator and body naturally land on the first ALT
@@ -337,69 +328,30 @@ class ApusParser {
             try expect(["."])
             cI += 1
 
-            // A `=|` LHS is registered as a terminal, so it can carry the same position gates as any
-            // other terminal. Attaching them HERE (not inside the body) is the point: the recogniser
-            // sub-parse has no commit history of its own, so an operand-ender gate written on an inner
-            // terminal is structurally bypassed. At this level the gate is evaluated against the OUTER
-            // parser's commit log, where the recogniser's token competes with other lexicalisations.
-            // See REJECTS.md C3 and TODO #19 (unify which LHS forms can carry / be named by these lists).
-            if isLexical {
-                try lookbehindAnnotations(attachingTo: nonTerminalName)
-            }
         }
     }
 
-    /// Parse zero or more `<+<(…)` / `<-<(…)` lookbehind lines and attach them to
-    /// `grammar.terminals[targetName]`. Each line is a comma-separated chain (AND); polarity must be
-    /// uniform within a line; separate lines accumulate (OR). Single-token distance only.
-    /// Shared by a terminal definition (`name - /re/ .`) and a `=|` lexical nonterminal.
-    private func lookbehindAnnotations(attachingTo targetName: String) throws {
-        let lookbehindHeads: Set<String> = ["<+<", "<-<"]
-        while lookbehindHeads.contains(token.kind) {
-            var rules: [LookbehindRule] = []
-            var linePolarity: LookbehindPolarity?
-            repeat {
-                let head = token.kind
-                let polarity: LookbehindPolarity = head == "<+<" ? .positive : .negative
-                let distance = 1
-                if let lp = linePolarity, lp != polarity {
-                    Logger.parse.error("lookbehind line mixes polarities: \(head, privacy: .public) cannot follow opposite polarity in the same comma chain")
-                    throw ApusParserError.unexpectedToken(explanation: "mixed-polarity lookbehind chain")
-                }
-                linePolarity = polarity
-                cI += 1
-                try expect(["("])
-                cI += 1
-                var kinds: [String] = []
-                while token.kind == "literal" || token.kind == "identifier" {
-                    // Operand must resolve to a Token.kind value (matched against tokens at lex time).
-                    //   quoted "X"  → the ANONYMOUS-literal kind, i.e. the full quoted form `"X"`
-                    //   bare name   → a NAMED terminal's kind (its LHS), used as-is
-                    let kind = token.kind == "literal" ? String(token.image) : token.stripped
-                    kinds.append(kind)
-                    cI += 1
-                }
-                try expect([")"])
-                cI += 1
-                rules.append(LookbehindRule(polarity: polarity, distance: distance, kinds: kinds))
-                if token.kind == "," {
-                    cI += 1
-                } else {
-                    break
-                }
-            } while lookbehindHeads.contains(token.kind)
-
-            guard grammar.terminals[targetName] != nil else {
-                Logger.parse.warning("WARNING: terminal \(targetName, privacy: .public) not found when parsing lookbehind")
-                continue
+    /// True when a `:` / `-` RHS is the direct scanner-terminal shape:
+    /// regex, literal, `@builder`, or `@builder(key)`, followed by the dot.
+    /// Anything else is treated as structured syntax.
+    private func productionStartsWithDirectTerminalBody(afterOperatorAt operatorIndex: Int) -> Bool {
+        var i = operatorIndex + 1
+        switch tokens[i].kind {
+        case "regex", "literal":
+            i += 1
+        case "pragma" where tokens[i].stripped == "builder":
+            i += 1
+            if tokens[i].kind == "(" {
+                i += 1
+                guard tokens[i].kind == "identifier" || tokens[i].kind == "literal" else { return false }
+                i += 1
+                guard tokens[i].kind == ")" else { return false }
+                i += 1
             }
-            let line = LookbehindLine(rules: rules)
-            if linePolarity == .positive {
-                grammar.terminals[targetName]?.lookbehind.positiveLines.append(line)
-            } else {
-                grammar.terminals[targetName]?.lookbehind.negativeLines.append(line)
-            }
+        default:
+            return false
         }
+        return tokens[i].kind == "."
     }
 
     func message() {
@@ -430,73 +382,68 @@ class ApusParser {
     }
     
     func sequence() throws -> GrammarNode {
-        // sequence = < layout | factor [ "?" | "*" | "+" ] > .
+        // sequence = < layout | tokenLookaround | factor [ "?" | "*" | "+" ] > .
         // Actions are collected from skippedTokens at each position.
         trace("sequence", token)
         let startOfSequence = GrammarNode(kind: .ALT, name: "")
         var termNode = startOfSequence
 
-        // Alternate-level pragmas, placed at the alternate's start (right after `=`,
-        // `|`, or an opening `(`/`[`/`{`/`<`). They ALWAYS annotate this ALT node —
-        // there is no separate "bracket-level" form:
-        //   `@prefer` marks this alternate a WINNER (its siblings lose where they tile
-        //             the same span).
-        //   `@avoid`  marks this alternate a LOSER — the dual of `@prefer`. Its rivals are
-        //             its explicit siblings AND, when the enclosing group is an OPT/KLN,
-        //             that group's implicit empty (skip) branch. So `[ @avoid X ]` means
-        //             "prefer the skip", spelled as an annotation on the body alternate `X`
-        //             rather than on the bracket. The Oracle picks the mechanism by group
-        //             shape (same-span `PreferRule` for non-empty siblings; follower-pivot
-        //             for the ε skip) — see `registerPrefer` / the OPT/KLN walk.
+        // Alternate-level annotations, placed at the alternate's start (right after `=`,
+        // `|`, or an opening `(`/`[`/`{`/`<`). They ALWAYS annotate this ALT node and
+        // can appear in any order before the first factor.
+        //
+        // `@prefer` marks this alternate a WINNER (its siblings lose where they tile the
+        // same span). `@avoid` marks this alternate a LOSER — the dual of `@prefer`. Its
+        // rivals are its explicit siblings AND, when the enclosing group is an OPT/KLN,
+        // that group's implicit empty (skip) branch. So `[ @avoid X ]` means "prefer the
+        // skip", spelled as an annotation on the body alternate `X` rather than on the
+        // bracket. The Oracle picks the mechanism by group shape (same-span `PreferRule`
+        // for non-empty siblings; follower-pivot for the epsilon skip) — see
+        // `registerPrefer` / the OPT/KLN walk.
+        //
+        // `@confinedTo(N)` / `@excludedFrom(N)` are containment predicates on this
+        // alternate's span.
+        //
+        // `@cannotParse(N)` / `@canParse(N)` are parse predicates with NONTERMINAL
+        // operands at this alternate start. Captured on this ALT node; the Oracle anchors
+        // the prune on the alternate's first body symbol (yield start = alternate start).
+        // Symbolic `>->`/`>+>` stays reserved for token lookaround.
+        //
         // Node-level extent/associativity (`@longest`/`@shortest`/`@left`/`@right`) are
         // NOT here — they attach to the whole group, parsed before the LHS
         // (`production()`) or before the bracket (`factor()`).
-        if token.kind == "pragma" && token.stripped == "prefer" {
-            startOfSequence.isPreferred = true
-            cI += 1
-        } else if token.kind == "pragma" && token.stripped == "avoid" {
-            startOfSequence.isAvoided = true
-            cI += 1
-        }
-
-        // Leading containment predicate(s) at the alternate start (repeatable = conjunction):
-        //   `@confinedTo(N)`  — keep this alternate only where its span is contained in a yield of N;
-        //   `@excludedFrom(N)`— prune this alternate where its span is contained in a yield of N.
-        // Kept on this ALT node; the Oracle anchors the prune on the alternate's first body symbol.
-        // See `Grammar Predicate Lookahead Design.md`.
-        while token.kind == "pragma", token.stripped == "confinedTo" || token.stripped == "excludedFrom" {
-            let negated = token.stripped == "excludedFrom"
-            cI += 1
-            try expect(["("]); cI += 1
-            try expect(["identifier"])
-            if negated { startOfSequence.excludedFromContainers.append(String(token.image)) }
-            else       { startOfSequence.confinedToContainers.append(String(token.image)) }
-            cI += 1
-            try expect([")"]); cI += 1
-        }
-
-        // Leading forward lookahead predicate with a NONTERMINAL operand — `>->(N)` (negative)
-        // or `>+>(N)` (positive) at the alternate start. Captured on this ALT node; the Oracle
-        // anchors the prune on the alternate's first body symbol (yield start = alternate start).
-        // See `Grammar Predicate Lookahead Design.md`. Postfix `>->`/`>+>` on a TERMINAL stays
-        // the parse-time token gate in `factor()`.
-        // The operand is a LIST — `>->(A B)` means "neither A nor B derives here" — matching the
-        // TERMINAL-operand form (`>->( "(" "[" "." )`) and `---( … )`, which both take a set inside
-        // one pair of parens. The pragma is also repeatable, and everything composes as a
-        // CONJUNCTION: every predicate must hold. One single-target gate could not state "not a
-        // declaration AND not an attribute".
-        while token.kind == ">->" || token.kind == ">+>" {
-            let negated = token.kind == ">->"
-            cI += 1
-            try expect(["("]); cI += 1
-            repeat {
-                try expect(["identifier"])
-                startOfSequence.forwardPredicates.append(
-                    ForwardPredicate(targetName: String(token.image), negated: negated)
-                )
+        annotationLoop: while token.kind == "pragma" {
+            switch token.stripped {
+            case "prefer":
+                startOfSequence.isPreferred = true
                 cI += 1
-            } while token.kind == "identifier"
-            try expect([")"]); cI += 1
+            case "avoid":
+                startOfSequence.isAvoided = true
+                cI += 1
+            case "confinedTo", "excludedFrom":
+                let negated = token.stripped == "excludedFrom"
+                cI += 1
+                try expect(["("]); cI += 1
+                try expect(["identifier"])
+                if negated { startOfSequence.excludedFromContainers.append(String(token.image)) }
+                else       { startOfSequence.confinedToContainers.append(String(token.image)) }
+                cI += 1
+                try expect([")"]); cI += 1
+            case "cannotParse", "canParse":
+                let negated = token.stripped == "cannotParse"
+                cI += 1
+                try expect(["("]); cI += 1
+                repeat {
+                    try expect(["identifier"])
+                    startOfSequence.forwardPredicates.append(
+                        ForwardPredicate(targetName: String(token.image), negated: negated)
+                    )
+                    cI += 1
+                } while token.kind == "identifier"
+                try expect([")"]); cI += 1
+            default:
+                break annotationLoop
+            }
         }
 
         // leading actions (before first factor)
@@ -508,6 +455,11 @@ class ApusParser {
                 let layoutNode = layout()
                 termNode.seq = layoutNode
                 termNode = layoutNode
+                termNode.actions = collectActions(at: cI)
+            case ">+>", ">->", "<+<", "<-<":
+                let lookaroundNode = try tokenLookaround(after: termNode)
+                termNode.seq = lookaroundNode
+                termNode = lookaroundNode
                 termNode.actions = collectActions(at: cI)
             case "(", "<", "[", "epsilon", "empty", "identifier", "literal", "regex", "{", "pragma":
                 // "pragma" here = a node-level group prefix (@longest/@shortest/@left/
@@ -541,10 +493,10 @@ class ApusParser {
                 termNode = factorNode
                 termNode.actions = collectActions(at: cI)
             default:
-                try expect(["(", "<", "<n>", "<s>", ">>|", ">n<", ">s<", "[", "identifier", "literal", "regex", "epsilon", "empty", "{", "|<<"])
+                try expect(["(", "<", "<n>", "<s>", ">>|", ">n<", ">s<", ">+>", ">->", "<+<", "<-<", "[", "identifier", "literal", "regex", "epsilon", "empty", "{", "|<<"])
             }
             
-        } while ["(", "<", "<n>", "<s>", ">>|", ">n<", ">s<", "[", "epsilon", "empty", "identifier", "literal", "regex", "{", "|<<", "pragma"].contains(token.kind)
+        } while ["(", "<", "<n>", "<s>", ">>|", ">n<", ">s<", ">+>", ">->", "<+<", "<-<", "[", "epsilon", "empty", "identifier", "literal", "regex", "{", "|<<", "pragma"].contains(token.kind)
         
         termNode.seq = GrammarNode(kind: .END, name: "")
         // the .alt and .seq links of an END node are set in resolveEndNodeLinks()
@@ -622,6 +574,43 @@ class ApusParser {
             return GrammarNode(kind: .T, name: name)
         }
     }
+
+    func tokenLookaround(after previous: GrammarNode) throws -> GrammarNode {
+        let head = token.kind
+        let positive = head == ">+>" || head == "<+<"
+        let isLookbehind = head == "<+<" || head == "<-<"
+        cI += 1
+        try expect(["("])
+        cI += 1
+
+        var kinds: Set<String> = []
+        while token.kind == "literal" || token.kind == "identifier" {
+            let kind = token.kind == "literal" ? String(token.image) : token.stripped
+            if !token.stripped.isEmpty {
+                let resolvedKind = kind == "EOF" ? "○" : kind
+                if token.kind == "literal", grammar.terminals[resolvedKind] == nil {
+                    let source = token.stripped.escapesRemoved
+                    let regex = Regex { source }
+                    grammar.terminals[resolvedKind] = TokenPattern(source, regex, true, false)
+                    grammar.registerTerminal(resolvedKind)
+                }
+                kinds.insert(resolvedKind)
+            }
+            cI += 1
+        }
+        try expect([")"])
+        cI += 1
+
+        let name = "\(head)(\(kinds.sorted().joined(separator: " ")))"
+        grammar.registerTerminal(name)
+        let node = GrammarNode(kind: .B, name: name)
+        if isLookbehind {
+            node.boundaryPredicate = .tokenLookbehind(positive: positive, kinds: kinds, distance: 1)
+        } else {
+            node.boundaryPredicate = .tokenLookahead(positive: positive, kinds: kinds)
+        }
+        return node
+    }
     
 //    func layout() throws -> GrammarNode? {
 //        switch token.kind {
@@ -659,11 +648,7 @@ class ApusParser {
             // the token is a regex definition, try to initialize a Regex with it
             // Construct as AnyRegexOutput so regexes that include capturing groups (e.g. backreferences like `(#+)…\1`) don't fail the type check.
             // We only ever need the whole-match boundary in the hot path; captures are not consulted by the lexer.
-            var regex = try Regex(String(token.stripped))
-            // `@scalar`: match one Unicode scalar at a time so `\u{…}-\u{…}` ranges compare by
-            // code-point value (not grapheme-cluster order) and variation selectors / combining
-            // marks are ordinary scalars. Without this, code-point ranges silently mis-behave.
-            if scalarSemantics { regex = regex.matchingSemantics(.unicodeScalar) }
+            let regex = try Regex(String(token.stripped))
             grammar.terminals[name] = TokenPattern(String(token.image), regex, false, skip)
             grammar.registerTerminal(name)
             trace("regex name:", name, "image:", token.image)
@@ -815,33 +800,6 @@ class ApusParser {
                 let excluded = String(token.image)
                 if !token.stripped.isEmpty {
                     node.exclude.insert(excluded)
-                }
-                cI += 1
-            }
-            try expect([")"])
-            cI += 1
-        }
-
-        // Forward 1-token lookahead annotations (operand may be a literal OR a named terminal).
-        // Checks the NEXT token at parse time (trivia-insensitive: the token past trailing trivia), not duals.
-        //   >+>("(" ")" ...)  positive — next token MUST be in the set (EOS always approved,
-        //                     matching Swift's canParseAsGenericArgumentList where EOF closes `<…>`).
-        //   >->("(" "[" ".")  negative — next token MUST NOT be in the set (EOS approved),
-        //                     mirroring swift-syntax's preferPostfixExpr gate.
-        if token.kind == ">+>" || token.kind == ">->" {
-            let negated = token.kind == ">->"
-            cI += 1
-            try expect(["("])
-            cI += 1
-            while token.kind == "literal" || token.kind == "identifier" {
-                // Operand resolves to a Token.kind matched against the next token:
-                //   quoted "X"  → the ANONYMOUS-literal kind, i.e. the full quoted form `"X"`
-                //   bare name   → a NAMED terminal's kind (its LHS), used as-is
-                // Same resolution as the `<-<`/`<+<` lookbehind and `---` exclusion loops.
-                let approved = token.kind == "literal" ? String(token.image) : token.stripped
-                if !token.stripped.isEmpty {
-                    if negated { node.followAheadExclude.insert(approved) }
-                    else       { node.followAhead.insert(approved) }
                 }
                 cI += 1
             }

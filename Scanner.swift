@@ -14,40 +14,11 @@ enum ScannerFailure: Error {
     case couldNotReadFile
 }
 
-// Scanner-level lookbehind annotation: ++N(...) / --N(...).
-// A LookbehindRule fires when the visible token N positions before the
-// current scan position has a kind in `kinds`. Rules inside a LookbehindLine
-// are AND'd; lines are OR'd. Positive lines override negative lines.
-enum LookbehindPolarity { case positive, negative }
-
-struct LookbehindRule: CustomStringConvertible {
-    let polarity: LookbehindPolarity
-    let distance: Int          // 1 or 2 — N in ++N / --N
-    let kinds:    [String]     // matched against Token.kind
-
-    var description: String {
-        let op = polarity == .positive ? "++" : "--"
-        return "\(op)\(distance)(\(kinds.map { "\"\($0)\"" }.joined(separator: " ")))"
-    }
-}
-
-struct LookbehindLine: CustomStringConvertible {
-    let rules: [LookbehindRule]
-    var description: String { rules.map(\.description).joined(separator: ", ") }
-}
-
-struct LookbehindSpec {
-    var positiveLines: [LookbehindLine] = []
-    var negativeLines: [LookbehindLine] = []
-    var isEmpty: Bool { positiveLines.isEmpty && negativeLines.isEmpty }
-}
-
 struct TokenPattern {
     let source: String
     let regex: Regex<AnyRegexOutput>
     let isLiteral: Bool
     let isSkip: Bool
-    var lookbehind: LookbehindSpec
     /// `@lexicalClass` — this (regex) terminal is a lexical class (e.g. identifier,
     /// operator). Maximal-munch default: a literal match is suppressed when a
     /// lexical-class terminal has a strictly longer match at the same start
@@ -60,10 +31,10 @@ struct TokenPattern {
     /// regex-scan (Cursor.swift:2275): an operator token is split before an internal
     /// `regexOpenSlash` so a regex literal can follow a prefix operator
     /// (`^^/regex/` → `^^` + `/regex/`). A leading match position is not a split
-    /// point. Keying on a *terminal* (not a raw char) names the construct and lets
-    /// the split inherit `X`'s `<-<` position gate — see the split-gate in
-    /// `MessageParser.tokenMatch`. Stores the terminal *name*; resolved to an ID at
-    /// parser build.
+    /// point. Keying on a *terminal* (not a raw char) names the construct. The
+    /// parser keeps only split points where `preemptConstruct` is viable, so
+    /// production-body lookaround gates live with that construct. Stores the
+    /// terminal *name*; resolved to an ID at parser build.
     var preemptStart: String? = nil
     /// `@preempt(X, N)` second operand — the COMMIT half. The first operand only *offers* the split
     /// ("give X a chance"); this says the shorter reading WINS where the named construct `N` actually
@@ -82,26 +53,17 @@ struct TokenPattern {
     // Accept any RegexComponent (e.g. Swift literal `/foo/` typed as Regex<Substring>) and wrap
     // to Regex<AnyRegexOutput> so the storage can also hold regexes that include capturing
     // groups (e.g. backreference forms like `(#+)…\1`).
-    init<R: RegexComponent>(_ source: String, _ regex: R, _ isLiteral: Bool, _ isSkip: Bool, lookbehind: LookbehindSpec = LookbehindSpec()) {
+    init<R: RegexComponent>(_ source: String, _ regex: R, _ isLiteral: Bool, _ isSkip: Bool) {
         self.source = source
         self.regex = Regex<AnyRegexOutput>(regex.regex)
         self.isLiteral = isLiteral
         self.isSkip = isSkip
-        self.lookbehind = lookbehind
     }
 }
 
 final class Token: CustomStringConvertible {
     var image: Substring
     var kind: String
-    /// TODO (Phase I close, Jun 16, 2026): `kindID` is no longer read by
-    /// anything on the parser hot path — `MessageParser` operates on
-    /// `cL.nameID` (grammar-side) and lex queries the OnDemandLiteralLexer
-    /// by terminal ID. `Token` is now used only by `ApusParser` to tokenize
-    /// `.apus` grammar sources, and `ApusParser` reads `Token.kind` (string),
-    /// never `kindID`. The field should be removable — but doing so requires
-    /// confirming no remaining caller depends on it. Tracked, not urgent.
-    var kindID: Int!
 
     init(image: Substring, kind: String) {
         self.image = image
@@ -129,8 +91,7 @@ final class Token: CustomStringConvertible {
     var description: String { "'" + kind + "'" }
 
     var debugDescription: String {
-        let idStr = kindID.map(String.init) ?? "?"
-        return "'" + kind + "':" + idStr
+        "'" + kind + "'"
     }
 }
 
@@ -193,10 +154,6 @@ final class Scanner {
             let remaining = input[matchStart...]
 
             // Phase 1: literal keywords via hasPrefix.
-            // Lookbehind (`++N`/`--N`) used to gate here; as of Phase E Step 1
-            // it's evaluated parser-side in `MessageParser.tokenMatch`, so the
-            // scanner emits all syntactically-possible matches and the parser
-            // suppresses ones that don't satisfy the annotation.
             let litT0 = CFAbsoluteTimeGetCurrent()
             for lp in literalPatterns {
                 if remaining.hasPrefix(lp.source) {

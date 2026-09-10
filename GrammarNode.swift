@@ -36,11 +36,19 @@ enum GrammarNodeKind { case EOS, T, TI, C, B, EPS, N, ALT, END, DO, OPT, POS, KL
 
 enum Disambiguation: String { case shortest, longest, left, right }
 
-/// One leading `>->(N)` / `>+>(N)` forward lookahead predicate on an alternate, `N` a NONTERMINAL.
+/// One leading `@cannotParse(N)` / `@canParse(N)` predicate on an alternate, `N` a NONTERMINAL.
 /// See `GrammarNode.forwardPredicates`.
 struct ForwardPredicate {
     let targetName: String
     let negated: Bool
+}
+
+/// Structured predicate for `.B` boundary nodes. Layout boundaries still use `name`
+/// directly; token lookaround uses this payload plus `boundaryPredicateBS` after
+/// grammar symbol resolution.
+enum BoundaryPredicate {
+    case tokenLookahead(positive: Bool, kinds: Set<String>)
+    case tokenLookbehind(positive: Bool, kinds: Set<String>, distance: Int)
 }
 
 /// Per-grammar-build scratch state, created fresh for each grammar load and
@@ -122,28 +130,10 @@ final class GrammarNode {
     var ambiguous:  Set<String> = []
 
     /// Exclusion set for Schrödinger dual suppression.
-    /// When a Schrödinger token's primary (head) kindID is in `excludeBS`,
-    /// the parser will not try this node's dual path.
+    /// When an excluded terminal matches the same end as a candidate, the
+    /// parser suppresses that candidate.
     /// Populated by `---("if" "let" ...)` annotations in APUS grammar rules.
     var exclude:    Set<String> = []
-
-    /// Positive forward-1-token lookahead set for this grammar slot.
-    /// When non-empty, this terminal only matches if the token AFTER the
-    /// matched one has a kindID in `followAheadBS` (or is the EOS sentinel,
-    /// which is always treated as approved).
-    /// Populated by `>+>("(" ")" ...)` annotations in APUS grammar rules.
-    /// Mirrors e.g. Swift's `canParseAsGenericArgumentList` follow-set commit:
-    /// generic-clause `>` only matches when the next token closes an expression.
-    var followAhead: Set<String> = []
-
-    /// Negative forward-1-token lookahead set for this grammar slot.
-    /// When non-empty, this terminal only matches if the token AFTER the matched
-    /// one does NOT have a kindID in `followAheadExcludeBS` (EOS is always allowed).
-    /// Populated by `>->("(" "[" ".")` annotations. The negation of `followAhead`;
-    /// mirrors swift-syntax's `preferPostfixExpr` gate — e.g. the `yield`/`discard`
-    /// contextual keywords introduce a statement only when NOT followed by a postfix
-    /// suffix (`(`/`[`/`.`), which would make them a call/subscript/member instead.
-    var followAheadExclude: Set<String> = []
 
     /// BitSet mirrors of first/follow/etc, populated by `Grammar.populateBitSets()`.
     /// Used by `testSelect()` and the follow check on the hot path for O(1) membership tests.
@@ -151,8 +141,11 @@ final class GrammarNode {
     var followBS:               BitSet = []
     var ambiguousBS:            BitSet = []
     var excludeBS:              BitSet = []
-    var followAheadBS:          BitSet = []
-    var followAheadExcludeBS:   BitSet = []
+
+    /// Structured payload for `.B` sequence boundaries such as token lookaround.
+    /// Layout boundaries (`<s>`, `>s<`, `<n>`, `>n<`) leave this nil and use `name`.
+    var boundaryPredicate: BoundaryPredicate?
+    var boundaryPredicateBS: BitSet = []
 
     /// Alternate-level `@prefer` annotation. Captured at parse time on the `.ALT`
     /// node heading the alternate (prefix, right after `=` or `|`). Resolved by the
@@ -175,10 +168,11 @@ final class GrammarNode {
     /// NOT `@shortest` (extent over-prunes and changes acceptance).
     var isAvoided: Bool = false
 
-    /// Forward lookahead predicate on an alternate — a leading `>->(N)` / `>+>(N)` whose
+    /// Parse predicate on an alternate — a leading `@cannotParse(N)` / `@canParse(N)` whose
     /// operand `N` is a NONTERMINAL. Captured on the `.ALT` node heading the alternate.
-    /// The Oracle prunes the alternate's reading at its start position `i` where `N` does
-    /// (`>->`, negated) / does not (`>+>`, positive) derive at `i` — a Way-1 BSR query.
+    /// The Oracle prunes the alternate's reading at its start position `i` when `N` does
+    /// derive (`@cannotParse`, negated) or does not derive (`@canParse`, positive) at `i` —
+    /// a Way-1 BSR query.
     /// See `Grammar Predicate Lookahead Design.md`. (Postfix `>->`/`>+>` with a TERMINAL
     /// operand remains the parse-time token gate in `factor()`.)
     /// REPEATABLE, and they compose as a CONJUNCTION — every predicate must hold, exactly like the
@@ -209,11 +203,6 @@ final class GrammarNode {
     var isLexicalToken: Bool = false
 
     static var sizeofSets = 0
-    
-    /// Per-node LL(1) flag: true when this nonterminal or bracket has disjoint
-    /// prediction sets across its alternates. Used to enable early termination
-    /// in addDescriptorsForAlternates(). Default true, set to false during verifyLL1().
-    var isLocallyLL1 = true
     
     /// Whether this node is intrinsically nullable (can derive ε).
     /// Per Definition 6 of "GLL syntax analysers for EBNF grammars":
