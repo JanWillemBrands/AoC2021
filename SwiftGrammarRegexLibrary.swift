@@ -536,6 +536,11 @@ enum ApusRegexLibrary {
 
     static let horizontalWhitespace = CharacterClass.anyOf(" \t")
 
+    static let anyMultilineLookaheadScalar = ChoiceOf {
+        lineBreak
+        CharacterClass.any
+    }
+
     static let tripleQuote = "\"\"\""
 
     /// Body item of a NON-raw multiline string. The three alternatives are DISJOINT on
@@ -575,12 +580,14 @@ enum ApusRegexLibrary {
     static let poundDelimiter = Reference(Substring.self)
 
     /// As `multilineBodyItem` but never crossing a line break — the line-partition model below
-    /// delimits lines explicitly. `\` + any scalar is still admitted, so a `\⏎` continuation
-    /// remains body content and a LOGICAL line may still span physical lines.
+    /// delimits lines explicitly. `\(` is not static text in a plain Swift string; it terminates
+    /// the static token so the interpolated Head/Part/Tail path owns the literal. Other
+    /// backslash escapes, including escaped newlines, remain body content here.
     static let multilineLineItem = ChoiceOf {
         CharacterClass.anyOf("\"\\\r\n").inverted
         Regex {
             "\\"
+            NegativeLookahead { "(" }
             CharacterClass.any
         }
         Regex {
@@ -618,7 +625,7 @@ enum ApusRegexLibrary {
         // Preserved verbatim from the previous `/…/`: a `\(` anywhere ahead means the
         // INTERPOLATED Head/Part/Tail path owns this literal, not the static one.
         NegativeLookahead {
-            ZeroOrMore { CharacterClass.any }
+            ZeroOrMore { anyMultilineLookaheadScalar }
             "\\("
         }
         // Zero-width: scan to the closing delimiter and bind its indentation. The reluctant scan
@@ -658,7 +665,7 @@ enum ApusRegexLibrary {
         tripleQuote
         lineBreak
         NegativeLookahead {
-            ZeroOrMore { CharacterClass.any }
+            ZeroOrMore { anyMultilineLookaheadScalar }
             "\\"
             poundDelimiter
             "("

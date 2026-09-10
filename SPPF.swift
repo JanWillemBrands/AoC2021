@@ -84,25 +84,26 @@ class SPPFNode: CustomStringConvertible {
     
     /// Label for display
     var label: String {
+        let jLabel = j.map(String.init(describing:)) ?? "nil"
         switch kind {
         case .symbol:
             if isNonterminal {
-                return "\(slot.name),\(i),\(j)"
+                return "\(slot.name),\(i),\(jLabel)"
             } else if slot.kind == .EPS {
-                return "ε,\(i),\(j)"
+                return "ε,\(i),\(jLabel)"
             } else if slot.kind.isBracket {
                 // Bracket symbol node — use bracket's internal END to get {τ·}
                 if let end = slot.bracketEndNode {
-                    return "\(end.ebnfDot()),\(i),\(j)"
+                    return "\(end.ebnfDot()),\(i),\(jLabel)"
                 }
-                return "\(slot.ebnfDot()),\(i),\(j)"
+                return "\(slot.ebnfDot()),\(i),\(jLabel)"
             } else {
                 // terminal
-                return "\"\(slot.name)\",\(i),\(j)"
+                return "\"\(slot.name)\",\(i),\(jLabel)"
             }
         case .intermediate:
             // Dot after the slot node: terminals get "a"·, brackets get {"a"}·
-            return "\(slot.ebnfDot()),\(i),\(j)"
+            return "\(slot.ebnfDot()),\(i),\(jLabel)"
         case .packed:
             return "\(slot.ebnfDot()),\(i)"  // i is the pivot k for packed nodes
         }

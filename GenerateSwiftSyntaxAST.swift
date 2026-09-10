@@ -7239,6 +7239,10 @@ struct SwiftSyntaxGenerator {
             isMultiline = afterPounds.hasPrefix("\"\"\"")
                 && afterPounds.dropFirst(3).first.map { $0.isNewline } == true
         }
+        if isMultiline, pounds.isEmpty, containsActivePlainInterpolationMarker(fullText),
+           let reparsed = reparseStringLiteralExpression(fullText) {
+            return reparsed
+        }
         if isMultiline || (!pounds.isEmpty && afterPounds.hasPrefix("\"")) {
             // `\"\"\"⏎    \"\"\"` has NO content line — the one line break present is the opener's, so
             // nothing remains between it and the closer and swift-syntax emits zero segments. A
@@ -7313,6 +7317,30 @@ struct SwiftSyntaxGenerator {
         ))
     }
 
+    private func containsActivePlainInterpolationMarker(_ text: String) -> Bool {
+        var backslashCount = 0
+        for ch in text {
+            if ch == "\\" {
+                backslashCount += 1
+            } else {
+                if ch == "(", backslashCount % 2 == 1 { return true }
+                backslashCount = 0
+            }
+        }
+        return false
+    }
+
+    private func reparseStringLiteralExpression(_ text: String) -> ExprSyntax? {
+        let parsed = Parser.parse(source: text)
+        guard !parsed.hasError,
+              let item = parsed.statements.first?.item.as(ExprSyntax.self),
+              parsed.statements.count == 1
+        else {
+            return nil
+        }
+        return item
+    }
+
     /// Interpolated string → swift-syntax's `StringLiteralExpr` shape.
     ///
     /// Probe-confirmed target (`_ = "\(x)"`): segments strictly ALTERNATE and always both start
@@ -7357,8 +7385,9 @@ struct SwiftSyntaxGenerator {
         let partNames = [plainPartName, rawPartName]
         let tailNames = [plainTailName, rawTailName]
         var pieces: [NTSpan] = []
+        var visitedInterpolationPieceSearch: Set<String> = []
         collectInterpolationPieces(spans, names: Set(headNames + partNames + tailNames + ["functionCallArgumentList"]),
-                                   into: &pieces)
+                                   into: &pieces, visited: &visitedInterpolationPieceSearch)
         pieces.sort { $0.from < $1.from }
         guard let headPiece = pieces.first, headNames.contains(headPiece.nt.name),
               let tailPiece = pieces.last, tailNames.contains(tailPiece.nt.name) else {
@@ -7464,15 +7493,57 @@ struct SwiftSyntaxGenerator {
     /// The Head/Part/Tail terminals and the argument lists between them, at whatever bracket depth
     /// the EBNF repetition put them.
     private mutating func collectInterpolationPieces(
-        _ spans: [(GrammarNode, CharPosition, CharPosition)], names: Set<String>, into pieces: inout [NTSpan]
+        _ spans: [(GrammarNode, CharPosition, CharPosition)],
+        names: Set<String>,
+        into pieces: inout [NTSpan],
+        visited: inout Set<String>
     ) {
         for (sym, f, t) in spans where f < t {
             if names.contains(sym.name) {
                 pieces.append(NTSpan(nt: sym, from: f, to: t))
-            } else if sym.kind.isBracket, let (_, inner) = tileAlternate(sym, from: f, to: t) {
-                collectInterpolationPieces(inner, names: names, into: &pieces)
+                continue
+            }
+            // The repetition between Head and Tail may be represented by generated wrapper
+            // nodes rather than a direct bracket child. Follow those wrappers, but keep matched
+            // functionCallArgumentList nodes atomic so nested string literals inside the
+            // interpolation expression do not get mistaken for outer-string pieces.
+            let key = "\(ObjectIdentifier(sym)):\(f):\(t)"
+            guard visited.insert(key).inserted else { continue }
+            if sym.kind == .KLN || sym.kind == .POS {
+                _ = collectInterpolationClosurePieces(sym, from: f, to: t, names: names,
+                                                       into: &pieces, visited: &visited)
+            } else if sym.kind.isBracket || sym.kind == .N, let (_, inner) = tileAlternate(sym, from: f, to: t) {
+                collectInterpolationPieces(inner, names: names, into: &pieces, visited: &visited)
             }
         }
+    }
+
+    private mutating func collectInterpolationClosurePieces(
+        _ bracket: GrammarNode,
+        from: CharPosition,
+        to: CharPosition,
+        names: Set<String>,
+        into pieces: inout [NTSpan],
+        visited: inout Set<String>
+    ) -> Bool {
+        if from == to { return bracket.kind != .POS }
+
+        let ends = iterationEndPositions(bracket, from: from).filter { $0 > from && $0 <= to }.sorted()
+        for end in ends {
+            var alt = bracket.alt
+            while let a = alt {
+                defer { alt = a.alt }
+                guard let spans = tileBody(a.bodySymbols, from: from, to: end) else { continue }
+                let restoreCount = pieces.count
+                collectInterpolationPieces(spans, names: names, into: &pieces, visited: &visited)
+                if collectInterpolationClosurePieces(bracket, from: end, to: to, names: names,
+                                                     into: &pieces, visited: &visited) {
+                    return true
+                }
+                pieces.removeSubrange(restoreCount..<pieces.count)
+            }
+        }
+        return false
     }
 
     /// `functionCallArgumentList` → `LabeledExprListSyntax`. The list is right-recursive

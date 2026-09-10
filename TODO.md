@@ -127,6 +127,10 @@
    The INTERPOLATED forms already show the shape to copy — `singleLineInterpolatedStringLiteral`
    and `multilineInterpolatedStringLiteral` decompose into Head/Part/Tail terminals, and that
    converter path has never had this class of bug because it just walks the children.
+   Sep 10 2026 update: the known repeated/nested interpolation tree mismatches were fixed by
+   making the converter walk EBNF closure iterations for Head/Part/Tail and by adding a narrow
+   plain-multiline recovery for active `\(` markers. The broader structural TODO remains: static
+   bodies are still opaque builder terminals.
 
    Proposed: give the static forms the same treatment — a body as a sequence of segment and
    escape nodes, so `convertStringLiteral` reads segments instead of computing them, and
@@ -203,14 +207,6 @@
      `#if` blocks chain, each taking the previous as its base; nested arrow returns SPLICE into
      one flat sequence rather than nesting. Read the reference dump before assuming the shape
      mirrors the rule.
-
-38. **GRAMMAR: multiline interpolation still collapses nested/repeated pieces.**
-   Raw single-line/multiline Head/Part/Tail builder terminals now cover `\#(…)` / `\##(…)`, and
-   static raw `\#n` segmentation is handled. Remaining mismatches are broader multiline
-   interpolation cases: repeated interpolations after line-continuations and nested interpolated
-   string literals inside an interpolation expression are still treated as text. Closely related
-   to TODO 31 (model string bodies in the grammar) — do them together.
-   Remaining labels: testStringLiterals#6, testMultilineString46#1.
 
 39. **GRAMMAR: `\AStruct.Type` — no metatype alternate in `keyPathRootBase`.**
    The `.Type` becomes a key-path COMPONENT instead of making the root a `MetatypeType`. Adding

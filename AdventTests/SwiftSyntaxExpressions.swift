@@ -1341,7 +1341,7 @@ struct ExpressionSyntaxTests {
         }
     }
 
-    @Test("raw interpolated strings split into SwiftSyntax segments")
+    @Test("interpolated strings split into SwiftSyntax segments")
     func rawInterpolatedStringSegments() throws {
         let snippets = [
             SwiftSnippet(label: "raw-single-interpolation", source: ###"let foo = "Interpolation"; _ = #"\b\b \#(foo)\#(foo) Kappa"#"###, origin: "regression", syntaxVersion: "local"),
@@ -1358,6 +1358,14 @@ struct ExpressionSyntaxTests {
                 "testRawString26#1",
                 "testRawString27#1",
                 "testRawString28#1",
+            ].contains(snippet.label)
+        } + expressionSnippets.filter { snippet in
+            [
+                "testStringLiterals#6",
+            ].contains(snippet.label)
+        } + translatedSnippets.filter { snippet in
+            [
+                "testMultilineString46#1",
             ].contains(snippet.label)
         }
 

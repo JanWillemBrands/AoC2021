@@ -33,11 +33,11 @@ topLevelDeclaration = shebang? statements? .
 /// multiline-comment-text-item → comment-text-item
 /// multiline-comment-text-item → Any Unicode scalar value except /* or */
 
-whitespace : /[\u{0000}\u{0009}\u{000A}\u{000B}\u{000C}\u{000D}\u{0020}\u{00A0}\u{FEFF}]+/ .
+whitespace          : /[\u{0000}\u{0009}\u{000A}\u{000B}\u{000C}\u{000D}\u{0020}\u{00A0}\u{FEFF}]+/ .
 
-comment : /\/\/.*\r?\n?/ .
+comment             : /\/\/.*\r?\n?/ .
 
-multilineComment : "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineComment } "*/" .
+multilineComment    : "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineComment } "*/" .
 
 
 /// IDENTIFIERS
@@ -70,34 +70,26 @@ multilineComment : "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineComment
 /// implicit-parameter-name → $ decimal-digits
 /// property-wrapper-projection → $ identifier-characters
 
-// @lexicalClass = keywords longest-matched.
-// @builder regex defined in GrammarRegexLibrary.swift (SwiftGrammarRegexLibrary.identifier). Bare `_` is the wildcard, so every NAME-CONSUMING use excludes it via `---("_")`: hardIdentifier, softIdentifier, typeName, moduleGenericIdentifier, keyPathArgumentLabel, macroHead.
-
 @lexicalClass
-identifier - @builder .
+identifier                  - @builder .
 
-escapedIdentifier - @builder .
+escapedIdentifier           - @builder .
 
-//`implicitParameterName` ($0/$1) is NOT an identifier — swift-syntax lexes it as
-// `.dollarIdentifier` and parses it as a distinct primary expression form via `parseAnonymousClosureArgument`
-// (Expressions.swift:1348). It appears as its own `primaryExpression` alternate below.
+implicitParameterName       - /\$[0-9]+/ .
 
-implicitParameterName - /\$[0-9]+/ .
+propertyWrapperProjection   - @builder .
 
-propertyWrapperProjection - @builder .   // `$name`, `$0abc` — at least one non-digit identChar after `$`; excludes `$0`, `$1` (closure shorthand)
+// Swift allows keywords as argument labels and as member names; a few "soft" keywords are excluded for legacy reasons.
+softIdentifier              = identifier ---( "_" "let" "var" "inout" )
+                            | escapedIdentifier
+                            | propertyWrapperProjection .
 
-// Most Swift identifiers exclude the hard reserved keywords
-hardIdentifier  = identifier
-                  ---( "_" "Any" "as" "associatedtype" "break" "case" "catch" "class" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while" )
-                  // `open`/`await` removed: NOT lexer-classified in swift-syntax (IsLexerClassified.swift) — contextual, usable as identifier/callee (`open(set)` call, `func await()`). `init` kept excluded: also non-reserved but removing it adds 6 init-decl-vs-identifier ambiguities (measured), no gain.
-                | escapedIdentifier
-                | propertyWrapperProjection .
-
-// Swift allows keywords as argument labels and as member names, just a few keywords are excluded for legacy reasons.
-softIdentifier  = identifier
-                  ---( "_" "let" "var" "inout" )
-                | escapedIdentifier
-                | propertyWrapperProjection .
+// Most Swift identifiers exclude the "hard" reserved keywords
+hardIdentifier              = identifier
+                              ---( "_" "Any" "as" "associatedtype" "break" "case" "catch" "class" "continue" "default" "defer" "deinit" "do" "else" "enum" "extension" "fallthrough" "false" "fileprivate" "for" "func" "guard" "if" "import" "in" "init" "inout" "internal" "is" "let" "nil" "operator" "precedencegroup" "private" "protocol" "public" "repeat" "rethrows" "return" "self" "Self" "static" "struct" "subscript" "super" "switch" "throw" "throws" "true" "try" "typealias" "var" "where" "while" )
+                            // `open`/`await` removed: NOT lexer-classified in swift-syntax (IsLexerClassified.swift) — contextual, usable as identifier/callee (`open(set)` call, `func await()`). `init` kept excluded: also non-reserved but removing it adds 6 init-decl-vs-identifier ambiguities (measured), no gain.
+                            | escapedIdentifier
+                            | propertyWrapperProjection .
 
 identifierList = hardIdentifier { "," hardIdentifier } .
 
@@ -113,7 +105,9 @@ identifierList = hardIdentifier { "," hardIdentifier } .
 // and swift-syntax parses it as a plain identifier — a module selector's `::x` is left as unexpected
 // code → hasError (`case let Optional.some(Swift::decl)`, `case let Swift::decl?`). A module selector
 // only qualifies a REFERENCE, so prune it wherever it lands inside a binding pattern.
+
 moduleSelector = @excludedFrom(valueBindingPattern) hardIdentifier "::" >n< .
+
 // TODO: I don't think escapedIdentifier and propertyWrapperProjection should be moduleSelector.
 // TODO: can we avoid using '@excludedFrom' by modifying the grammar slightly ?
 
@@ -241,92 +235,60 @@ integerLiteral = hexadecimalLiteral .
 /// unicode-scalar-digits → Between one and eight hexadecimal digits
 /// escaped-newline → escape-sequence inline-spaces? line-break
 
-stringLiteral = staticStringLiteral | interpolatedStringLiteral .
+singleLineStringLiteral                         - @builder .
+extendedSinglelineStringLiteral                 - @builder .
 
-singleLineStringLiteral         - @builder .
-extendedSinglelineStringLiteral - @builder .
+multilineStringLiteral                          - @builder .
+extendedMultilineStringLiteral                  - @builder .
 
-// Both multiline forms are `@builder` — see `SwiftGrammarRegexLibrary.swift` for the delimiter-shape
-// rule they enforce (line break required after the opener; closer alone on its line but for
-// horizontal whitespace), probe-confirmed for every multiline form. RegexBuilder because the shape
-// needs a backreference for the `#` count and CRLF-correct line breaks, and because the components
-// are shared with the interpolated Head/Tail below instead of copy-pasted.
-multilineStringLiteral          - @builder .
-extendedMultilineStringLiteral  - @builder .
+interpolatedStringLiteralHead                   - @builder .
+interpolatedStringLiteralPart                   - @builder .
+interpolatedStringLiteralTail                   - @builder .
 
-staticStringLiteral             = singleLineStringLiteral | multilineStringLiteral .
-// The RAW ("extended escaping") forms are excluded from `@available` arguments — see the note at
-// `availableAttribute`. Split into their own alternates so the annotation can attach.
-staticStringLiteral             = @excludedFrom(availableAttribute) extendedSinglelineStringLiteral .
-staticStringLiteral             = @excludedFrom(availableAttribute) extendedMultilineStringLiteral .
+extendedInterpolatedStringLiteralHead           - @builder .
+extendedInterpolatedStringLiteralPart           - @builder .
+extendedInterpolatedStringLiteralTail           - @builder .
+
+multilineInterpolatedStringLiteralHead          - @builder .
+multilineInterpolatedStringLiteralPart          - @builder .
+multilineInterpolatedStringLiteralTail          - @builder .
+
+extendedMultilineInterpolatedStringLiteralHead  - @builder .
+extendedMultilineInterpolatedStringLiteralPart  - @builder .
+extendedMultilineInterpolatedStringLiteralTail  - @builder .
+
+stringLiteral                   = staticStringLiteral
+                                | interpolatedStringLiteral .
+
+staticStringLiteral             = singleLineStringLiteral
+                                | multilineStringLiteral
+                                | @excludedFrom(availableAttribute) extendedSinglelineStringLiteral
+                                | @excludedFrom(availableAttribute) extendedMultilineStringLiteral .
                                 
-// Under LCNP these terminals are queried per-slot, so the spurious matches that
-// would happen outside an interpolated-string context are never asked for.
-interpolatedStringLiteralHead   - @builder .
-extendedInterpolatedStringLiteralHead - @builder .
+interpolatedStringLiteral       = @excludedFrom(availableAttribute) singleLineInterpolatedStringLiteral
+                                | @excludedFrom(availableAttribute) multilineInterpolatedStringLiteral .
 
-interpolatedStringLiteralPart   - @builder .
-extendedInterpolatedStringLiteralPart - @builder .
+// `@sameLine` — this literal's span may not cross a newline that was consumed as TRIVIA.
+// Transcribed from swift-syntax `Cursor.swift`.
 
-interpolatedStringLiteralTail   - @builder .
-extendedInterpolatedStringLiteralTail - @builder .
-
-// Multiline variants — structurally symmetric to the single-line trio above.
-// Differences: open is """ (Head), close is """ (Tail); content alternation adds `"(?!"")` so a single `"`
-// (not followed by `""`) is valid body content — the only multiline-specific feature.
-// Multiline body's catch-all backslash uses `[\s\S]` (not `.`) so `\<NL>` line-continuation per swift-syntax Cursor.swift:1766 is body content.
-// Head and Tail are `@builder`: they carry the multiline DELIMITER, so the shape rule applies to them
-// too (probe: `"""A\(x)⏎"""` → "content must begin on a new line"; `"""⏎\(x)"""` → "closing delimiter
-// must begin on a new line"). Part touches no delimiter, so it stays a plain regex.
-multilineInterpolatedStringLiteralHead - @builder .
-extendedMultilineInterpolatedStringLiteralHead - @builder .
-
-multilineInterpolatedStringLiteralPart - @builder .
-extendedMultilineInterpolatedStringLiteralPart - @builder .
-
-multilineInterpolatedStringLiteralTail - @builder .
-extendedMultilineInterpolatedStringLiteralTail - @builder .
-
-// Split into one nonterminal PER STRING KIND so the single-line form can carry `@sameLine`. The
-// annotation prunes LHS completion yields, whose span is exactly the construct; a shared LHS would
-// make that impossible, since pruning would take the multiline form's yields too.
-// Interpolated strings are likewise excluded from `@available` arguments.
-interpolatedStringLiteral       = @excludedFrom(availableAttribute) singleLineInterpolatedStringLiteral .
-interpolatedStringLiteral       = @excludedFrom(availableAttribute) multilineInterpolatedStringLiteral .
-
-// `@sameLine` — this literal's span may not cross a newline that was consumed as TRIVIA. Transcribed
-// from swift-syntax `Cursor.swift`, which makes newlines non-trivia by LEXER STATE rather than by a
-// check:
-//     func leadingTriviaLexingMode(cursor:) -> TriviaLexingMode? {
-//       case .inStringInterpolation(let stringLiteralKind, _):
-//         switch stringLiteralKind {
-//         case .singleLine, .singleQuote: return .noNewlines
-//         case .multiLine:                return .normal
-//     ...and `lexInStringInterpolation` on `case CR, LF` emits an empty `.stringSegment` and POPS the
-//     state - the literal simply ENDS at the newline (hence swift's "expected ')'").
-//
-// A SPAN rule, not a boundary gate, because swift's state persists at any paren depth: the newline in
-// `"test \(label:<NL>foo)"` sits between two tokens of the shared `functionCallArgumentList`, which no
-// gate in this production can reach. Newlines INSIDE a token stay legal, which is what keeps a nested
-// multiline literal inside a single-line interpolation parseable. Replaces four `>n<` gates that
-// reached only the boundaries this production owns.
 @sameLine
 singleLineInterpolatedStringLiteral = interpolatedStringLiteralHead
-                                  functionCallArgumentList
-                                  { interpolatedStringLiteralPart functionCallArgumentList }
-                                  interpolatedStringLiteralTail .
-singleLineInterpolatedStringLiteral = extendedInterpolatedStringLiteralHead
-                                  functionCallArgumentList
-                                  { extendedInterpolatedStringLiteralPart functionCallArgumentList }
-                                  extendedInterpolatedStringLiteralTail .
+                                      functionCallArgumentList
+                                      { interpolatedStringLiteralPart functionCallArgumentList }
+                                      interpolatedStringLiteralTail
+                                    | extendedInterpolatedStringLiteralHead
+                                      functionCallArgumentList
+                                      { extendedInterpolatedStringLiteralPart functionCallArgumentList }
+                                      extendedInterpolatedStringLiteralTail .
 
-// Ungated: swift returns `.normal` for the multiline kind, so newlines ARE trivia here.
-multilineInterpolatedStringLiteral = multilineInterpolatedStringLiteralHead
-                                  functionCallArgumentList { multilineInterpolatedStringLiteralPart functionCallArgumentList }
-                                  multilineInterpolatedStringLiteralTail .
-multilineInterpolatedStringLiteral = extendedMultilineInterpolatedStringLiteralHead
-                                  functionCallArgumentList { extendedMultilineInterpolatedStringLiteralPart functionCallArgumentList }
-                                  extendedMultilineInterpolatedStringLiteralTail .
+multilineInterpolatedStringLiteral  = multilineInterpolatedStringLiteralHead
+                                      functionCallArgumentList
+                                      { multilineInterpolatedStringLiteralPart functionCallArgumentList }
+                                      multilineInterpolatedStringLiteralTail
+                                    | extendedMultilineInterpolatedStringLiteralHead
+                                      functionCallArgumentList
+                                      { extendedMultilineInterpolatedStringLiteralPart functionCallArgumentList }
+                                      extendedMultilineInterpolatedStringLiteralTail .
 
 
 /// REGULAR EXPRESSIONS
@@ -2959,10 +2921,12 @@ attribute = "@" >s< "isolated" >s< "(" identifier ")" .
 // `self`/`Self` (and identifiers) are valid keyword names — every OTHER hard keyword is rejected
 // (`named(class)` fails). Encoded as token-soup whose identifier atom excludes those forbidden
 // keywords. `literal` is omitted so `named(true)`/`named(nil)` stay rejected.
+
 @longest
 attribute = "@" >s< "attached"     >s< "(" macroRoleArguments? ")" .
 @longest
 attribute = "@" >s< "freestanding" >s< "(" macroRoleArguments? ")" .
+
 // `@available` gets its own production purely so it can NAME a region for `@excludedFrom` below:
 // its arguments may not contain an interpolated or a raw ("extended escaping") string literal.
 // Probed: `message: "\(x)"` → "argument cannot be an interpolated string literal";
@@ -2972,8 +2936,10 @@ attribute = "@" >s< "freestanding" >s< "(" macroRoleArguments? ")" .
 // clause here and legitimately take both forms (`@Wrapper("\(x)")` and `@Wrapper(#"raw"#)` both parse
 // clean), because swift dispatches on the attribute NAME — known attributes get balanced-token args,
 // unknown ones an expression list.
+
 @longest
 attribute = availableAttribute .
+
 // `@available` arguments are a SUPERSET of `#available` condition arguments: the condition form
 // (`availabilityArguments`, above) takes only platform-version pairs and `*`, while the attribute
 // also takes labelled arguments (`deprecated`, `message: "…"`, `introduced: 10.15`, `renamed: "y"`).
@@ -2982,6 +2948,8 @@ attribute = availableAttribute .
 // and `@available(1 + 2)` both parsed. See `AttributeSoupTests`.
 // swift-syntax: AvailabilityArgumentSyntax.Argument = .token | .availabilityVersionRestriction
 // | .availabilityLabeledArgument.
+// The RAW ("extended escaping") String forms are excluded from `@available` arguments.
+
 availableAttribute = "@" >s< "available" >s< "(" availabilityAttributeArguments ")" .
 availabilityAttributeArguments = availabilityAttributeArgument
                                | availabilityAttributeArgument "," availabilityAttributeArguments .
@@ -3191,6 +3159,7 @@ nonWordToken = "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" |
 // standalone `#` plus a plain string. Without the gate, `@available(…, renamed: #"g()"#)` parsed as
 // `#` + `"g()"` + `#` inside the attribute token soup, which routed around the raw-string terminal and
 // so around the `@excludedFrom(availableAttribute)` restriction on it.
+
 nonWordToken = "#" >-> ( singleLineStringLiteral multilineStringLiteral ) .
 
 balancedToken = @prefer identifier
@@ -3198,6 +3167,7 @@ balancedToken = @prefer identifier
               | nonWordToken
               | literal
               | operator .
+              
 // @prefer identifier over literal: `true`/`false`/`nil` are keyword-shaped and match BOTH; in attribute token-soup (`@_specialize(exported: true, …)`) they are raw keyword tokens, so take the identifier reading. Numbers/strings match only `literal`, so they're unaffected.
 
 balancedTokens = balancedToken balancedTokens? .
