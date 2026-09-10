@@ -263,10 +263,13 @@ staticStringLiteral             = @excludedFrom(availableAttribute) extendedMult
 // Under LCNP these terminals are queried per-slot, so the spurious matches that
 // would happen outside an interpolated-string context are never asked for.
 interpolatedStringLiteralHead   - @builder .
+extendedInterpolatedStringLiteralHead - @builder .
 
 interpolatedStringLiteralPart   - @builder .
+extendedInterpolatedStringLiteralPart - @builder .
 
 interpolatedStringLiteralTail   - @builder .
+extendedInterpolatedStringLiteralTail - @builder .
 
 // Multiline variants — structurally symmetric to the single-line trio above.
 // Differences: open is """ (Head), close is """ (Tail); content alternation adds `"(?!"")` so a single `"`
@@ -276,10 +279,13 @@ interpolatedStringLiteralTail   - @builder .
 // too (probe: `"""A\(x)⏎"""` → "content must begin on a new line"; `"""⏎\(x)"""` → "closing delimiter
 // must begin on a new line"). Part touches no delimiter, so it stays a plain regex.
 multilineInterpolatedStringLiteralHead - @builder .
+extendedMultilineInterpolatedStringLiteralHead - @builder .
 
 multilineInterpolatedStringLiteralPart - @builder .
+extendedMultilineInterpolatedStringLiteralPart - @builder .
 
 multilineInterpolatedStringLiteralTail - @builder .
+extendedMultilineInterpolatedStringLiteralTail - @builder .
 
 // Split into one nonterminal PER STRING KIND so the single-line form can carry `@sameLine`. The
 // annotation prunes LHS completion yields, whose span is exactly the construct; a shared LHS would
@@ -309,11 +315,18 @@ singleLineInterpolatedStringLiteral = interpolatedStringLiteralHead
                                   functionCallArgumentList
                                   { interpolatedStringLiteralPart functionCallArgumentList }
                                   interpolatedStringLiteralTail .
+singleLineInterpolatedStringLiteral = extendedInterpolatedStringLiteralHead
+                                  functionCallArgumentList
+                                  { extendedInterpolatedStringLiteralPart functionCallArgumentList }
+                                  extendedInterpolatedStringLiteralTail .
 
 // Ungated: swift returns `.normal` for the multiline kind, so newlines ARE trivia here.
 multilineInterpolatedStringLiteral = multilineInterpolatedStringLiteralHead
                                   functionCallArgumentList { multilineInterpolatedStringLiteralPart functionCallArgumentList }
                                   multilineInterpolatedStringLiteralTail .
+multilineInterpolatedStringLiteral = extendedMultilineInterpolatedStringLiteralHead
+                                  functionCallArgumentList { extendedMultilineInterpolatedStringLiteralPart functionCallArgumentList }
+                                  extendedMultilineInterpolatedStringLiteralTail .
 
 
 /// REGULAR EXPRESSIONS
@@ -929,17 +942,22 @@ prefixExpression = inOutExpression .
 // sequence-expression-element (recursive). We recurse on prefixExpression —
 // simpler than expression-level placement and still covers `consume try` /
 // `borrow try` indirectly via GLL exploration.
-// `<s> >n<` mirrors swift-syntax's two-rule check:
-//   <s>  — non-empty trivia gap → rejects `borrow(msg)` (Statements.swift:993).
+// `>->( "(" "[" "." ) <s> >n<` mirrors swift-syntax's atContextualKeywordPrefixedSyntax
+// for ownership operators (`preferPostfixExpr: true`):
+//   >->  — a following call/subscript/member suffix belongs to an identifier named borrow/copy/consume,
+//          even when spaced (`borrow (msg)` is a FunctionCallExpr, not BorrowExpr).
+//   <s>  — non-empty trivia gap → rejects `borrow(msg)`.
 //   >n<  — no newline in gap    → rejects `borrow\nmsg` (Statements.swift:911).
+// `unsafe` is different: swift-syntax calls the same helper with `preferPostfixExpr: false`, so
+// spaced `unsafe ()` / `unsafe .lock` are UnsafeExprs. Keep that alternate without the postfix gate.
 // `@prefer`: where BOTH the keyword and the identifier reading parse a spaced operand
 // (`unsafe ()`, `unsafe []`, `unsafe .lock` — spaced call/subscript/member on an identifier
 // named `unsafe` are also grammatical), swift-syntax picks the KEYWORD expression
 // (probe: UnsafeExpr, not FunctionCall/Subscript/MemberAccess). Tight forms (`unsafe(1)`)
 // don't enter the keyword rule at all (<s>), so the call reading survives unchallenged.
-prefixExpression = @prefer "consume" <s> >n< prefixExpression .
-prefixExpression = @prefer "borrow"  <s> >n< prefixExpression .
-prefixExpression = @prefer "copy"    <s> >n< prefixExpression .
+prefixExpression = @prefer "consume" >->( "(" "[" "." ) <s> >n< prefixExpression .
+prefixExpression = @prefer "borrow"  >->( "(" "[" "." ) <s> >n< prefixExpression .
+prefixExpression = @prefer "copy"    >->( "(" "[" "." ) <s> >n< prefixExpression .
 prefixExpression = @prefer "unsafe"  <s> >n< prefixExpression .
 
 /// Grammar of an in-out expression
@@ -990,7 +1008,7 @@ awaitOperator = "await" .
 // reused here rather than cloned; `dotOperator` (`a...b`) and `"&"` (`a&b`) stay reachable, and the
 // `@cannotParse( regularExpressionLiteral )` regex gate is kept from `operator`.
 @longest
-infixExpression = >s< ( @cannotParse( regularExpressionLiteral ) postfixOperatorToken | dotOperator | "&" ) >s< tryOperator? awaitOperator? prefixExpression .
+infixExpression = @cannotParse( genericArgumentClause ) >s< ( @cannotParse( regularExpressionLiteral ) postfixOperatorToken | dotOperator | "&" ) >s< tryOperator? awaitOperator? prefixExpression .
 infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
 // `arrowExpr` — swift-syntax `ExprNodes.swift:71`:
 //     Node(kind: .arrowExpr, base: .expr,
@@ -1384,12 +1402,13 @@ wildcardExpression = "_" .
 /// Grammar of a macro-expansion expression
 /// macro-expansion-expression → # identifier generic-argument-clause? function-call-argument-clause? trailing-closures?
 
-// `@longest`: a macro greedily takes its (single) argument clause. `#foo(bar)` is macro-with-args,
-// not argless-`#foo` + call `(bar)` (probe-verified: swift-syntax yields MacroExpansionExpr with
-// args, even when spaced `#foo (bar)`; `#foo(1)(2)` = macro `#foo(1)` then a call `(2)`). The two
-// readings give macroExpansionExpression different extents at the same start; keep the longest.
+// `@longest`: a macro greedily takes its same-line argument clause. `#foo(bar)` and `#foo (bar)`
+// are macro-with-args, not argless-`#foo` + call `(bar)` (SwiftParser uses
+// `TokenSpec(.leftParen, allowAtStartOfLine: false)`). But `#foo` newline `(bar)` is NOT one macro;
+// the parenthesized expression starts the next item. The two same-line readings give
+// macroExpansionExpression different extents at the same start; keep the longest.
 @longest
-macroExpansionExpression = macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+macroExpansionExpression = macroHead genericArgumentClause? [ >n< functionCallArgumentClause ] trailingClosures? .
 
 
 /// Grammar of a key-path expression
@@ -2224,11 +2243,11 @@ declaration = macroExpansionDeclaration .   // attributed/modified freestanding 
 // macroExpansionDeclaration REQUIRES a leading attribute or declaration-modifier (so a bare `#foo`
 // is not a decl at statement level — it's an expression). Two alternates: attributes (modifiers
 // optional), or modifiers alone. Reachable via `declaration` (statement + member).
-macroExpansionDeclaration = attributes declarationModifiers? macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
-macroExpansionDeclaration = declarationModifiers macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+macroExpansionDeclaration = attributes declarationModifiers? macroHead genericArgumentClause? [ >n< functionCallArgumentClause ] trailingClosures? .
+macroExpansionDeclaration = declarationModifiers macroHead genericArgumentClause? [ >n< functionCallArgumentClause ] trailingClosures? .
 // Bare freestanding macro expansion (no attributes/modifiers) — a declaration only in MEMBER
 // position (added via memberDeclaration); at statement level the bare form is an expression.
-freestandingMacroExpansionDeclaration = macroHead genericArgumentClause? functionCallArgumentClause? trailingClosures? .
+freestandingMacroExpansionDeclaration = macroHead genericArgumentClause? [ >n< functionCallArgumentClause ] trailingClosures? .
 // A macro head is a SINGLE token `#name` (regex — `#` and the name are one lexeme). This is what
 // lets `---` exclude the RESERVED pound-keywords: the excluded literal (`#available`) co-matches the
 // exact same span as `poundName`, so the exclusion (same-position/same-end suppression) fires. With

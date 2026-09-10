@@ -1,8 +1,4 @@
 # This file is the canonical TODO list in this project.
-
-20. **Swift AST builder does not seem to read the derivation tree but builds it piecemeal itself.** 
-Source: `GenerateSwiftSyntaxAST.swift`                
-
 25. **The `expression` / `conditionExpression` rule families are duplicated, and the copies have already drifted apart twice.**
    `conditionExpression` exists ONLY to forbid assignment (assignment returns `Void`, so it is not a
    condition). Every other difference between the two families is drift. Measured diff of the
@@ -179,12 +175,12 @@ Source: `GenerateSwiftSyntaxAST.swift`
 
    Source: Sep 7 2026.
 
-33. **Tree fidelity: 21 labels left of the original 477 (96% closed). The CONVERTER is done.**
+33. **Tree fidelity frontier — refresh the count with `tools/rank_tree_diffs.py`.**
    `tools/rank_tree_diffs.py <log>` regenerates the queue; `caffeinate -i` the run (TESTING.md
    "Sleep, not flakiness"). Invariants held at every one of ~85 measured increments: accepts 0,
    ambiguity 0, wrongly-accepted 0, `.lookupFailed` 0, crashes 0.
 
-   **Every remaining label is TODO 34–40 (grammar).** The converter one-off list is CLOSED — there
+   **Every remaining known label is TODO 38–40 (grammar).** The converter one-off list is CLOSED — there
    is no known converter gap left in the accept corpus. `testCoroutineAccessors#1` is DISABLED
    rather than fixed: SE-0443 `read`/`modify` need `@_spi` `Keyword` cases that cannot be
    constructed outside swift-syntax. Disabling skips all four of its tests, so the count
@@ -208,36 +204,13 @@ Source: `GenerateSwiftSyntaxAST.swift`
      one flat sequence rather than nesting. Read the reference dump before assuming the shape
      mirrors the rule.
 
-34. **GRAMMAR: `[any P & Q]` yields a SequenceExpr instead of one TypeExpr.**
-   `@longest primaryExpression = boxedProtocolType` fixed the plain case but not the
-   array-element one: `any P` still wins there and the `&` becomes an infix operator, so the
-   element is a SequenceExpr where swift-syntax has a single `TypeExpr(SomeOrAnyType(CompositionType))`.
-   The competing readings differ in SPAN, so `@prefer` cannot key on them. testInverseTypes#3.
-
-35. **GRAMMAR: `X<T>(…)` splits into a sequence instead of a specialised call.**
-   swift-syntax gives `FunctionCallExpr(GenericSpecializationExpr(X, <T>))`; we read `X`, `<`, `T`,
-   `>` as infix operators and produce a SequenceExpr. The `<` operator-vs-generic-bracket decision
-   is the classic one and needs a lookahead gate, not a converter change. testInverseTypes#7 (2).
-
-36. **GRAMMAR: `borrow(x)` should be a CALL, not a BorrowExpr.**
-   `prefixExpression = @prefer ("consume"|"borrow"|"copy"|"unsafe") <s> >n< prefixExpression` wins
-   even with a TIGHT `(`, where swift-syntax parses a call of a function named `borrow`. The `<s>`
-   space assertion looks like it should already prevent this — check whether it is being enforced
-   here. testBorrowExpression#8 (2).
-
-37. **GRAMMAR: `#fileID` greedily absorbs a following `(…)`.**
-   `macroExpansionExpression = macroHead genericArgumentClause? functionCallArgumentClause? …`
-   takes a `(` that starts the NEXT expression. swift-syntax requires the argument `(` to be
-   tight, so this wants a `>s<` gate exactly like `attributeArgumentClause` has.
-   testBasicLiterals#1.
-
-38. **GRAMMAR: raw strings with interpolation are lexed as ONE token.**
-   `\#(…)` inside `#"…"#` has no Head/Part/Tail decomposition — the extended forms are single
-   `@builder` terminals — so the whole literal reaches the converter as static text and cannot be
-   split into segments. swift-syntax splits it. Needs pound-count-aware interpolated raw forms,
-   i.e. the same treatment the plain forms already have.
-   testRawString12/26/27/28, testStringLiterals#6, testMultilineString46#1 (~6). Closely related
+38. **GRAMMAR: multiline interpolation still collapses nested/repeated pieces.**
+   Raw single-line/multiline Head/Part/Tail builder terminals now cover `\#(…)` / `\##(…)`, and
+   static raw `\#n` segmentation is handled. Remaining mismatches are broader multiline
+   interpolation cases: repeated interpolations after line-continuations and nested interpolated
+   string literals inside an interpolation expression are still treated as text. Closely related
    to TODO 31 (model string bodies in the grammar) — do them together.
+   Remaining labels: testStringLiterals#6, testMultilineString46#1.
 
 39. **GRAMMAR: `\AStruct.Type` — no metatype alternate in `keyPathRootBase`.**
    The `.Type` becomes a key-path COMPONENT instead of making the root a `MetatypeType`. Adding

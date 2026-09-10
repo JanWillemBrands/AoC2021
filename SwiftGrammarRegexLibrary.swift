@@ -391,6 +391,10 @@ enum ApusRegexLibrary {
                     "\\"
                     NegativeLookahead {
                         extendedSinglelinePoundDelimiter
+                        "("
+                    }
+                    NegativeLookahead {
+                        extendedSinglelinePoundDelimiter
                         OneOrMore { "#" }
                     }
                 }
@@ -402,6 +406,76 @@ enum ApusRegexLibrary {
         }
         "\""
         extendedSinglelinePoundDelimiter
+    }.matchingSemantics(.unicodeScalar)
+
+    static let extendedInterpolatedSinglelinePoundDelimiter = Reference(Substring.self)
+    static let extendedInterpolatedStringLiteralHead = Regex {
+        Capture(poundRun, as: extendedInterpolatedSinglelinePoundDelimiter)
+        "\""
+        ZeroOrMore(.reluctant) {
+            ChoiceOf {
+                CharacterClass.anyOf("\"\\\r\n").inverted
+                Regex {
+                    "\\"
+                    NegativeLookahead {
+                        extendedInterpolatedSinglelinePoundDelimiter
+                        "("
+                    }
+                    NegativeLookahead {
+                        extendedInterpolatedSinglelinePoundDelimiter
+                        OneOrMore { "#" }
+                    }
+                }
+                Regex {
+                    "\""
+                    NegativeLookahead { extendedInterpolatedSinglelinePoundDelimiter }
+                }
+            }
+        }
+        "\\"
+        extendedInterpolatedSinglelinePoundDelimiter
+        "("
+    }.matchingSemantics(.unicodeScalar)
+
+    static let extendedInterpolatedStringLiteralPart = Regex {
+        ")"
+        ZeroOrMore(.reluctant) {
+            ChoiceOf {
+                CharacterClass.anyOf("\\\r\n").inverted
+                Regex {
+                    "\\"
+                    NegativeLookahead {
+                        OneOrMore { "#" }
+                        "("
+                    }
+                }
+            }
+        }
+        "\\"
+        OneOrMore { "#" }
+        "("
+    }.matchingSemantics(.unicodeScalar)
+
+    static let extendedInterpolatedStringLiteralTail = Regex {
+        ")"
+        ZeroOrMore(.reluctant) {
+            ChoiceOf {
+                CharacterClass.anyOf("\"\\\r\n").inverted
+                Regex {
+                    "\\"
+                    NegativeLookahead {
+                        OneOrMore { "#" }
+                        "("
+                    }
+                }
+                Regex {
+                    "\""
+                    NegativeLookahead { OneOrMore { "#" } }
+                }
+            }
+        }
+        "\""
+        OneOrMore { "#" }
     }.matchingSemantics(.unicodeScalar)
 
     /// `interpolatedStringLiteralHead` — `"` … up to the first `\(`.
@@ -583,6 +657,12 @@ enum ApusRegexLibrary {
         Capture(poundRun, as: poundDelimiter)
         tripleQuote
         lineBreak
+        NegativeLookahead {
+            ZeroOrMore { CharacterClass.any }
+            "\\"
+            poundDelimiter
+            "("
+        }
         Optionally {
             ZeroOrMore(.reluctant) { CharacterClass.any }
             lineBreak
@@ -590,6 +670,81 @@ enum ApusRegexLibrary {
         ZeroOrMore { horizontalWhitespace }
         tripleQuote
         poundDelimiter
+    }.matchingSemantics(.unicodeScalar)
+
+    static let extendedMultilineInterpolatedPoundDelimiter = Reference(Substring.self)
+    static let extendedMultilineInterpolatedStringLiteralHead = Regex {
+        Capture(poundRun, as: extendedMultilineInterpolatedPoundDelimiter)
+        tripleQuote
+        lineBreak
+        ZeroOrMore(.reluctant) {
+            ChoiceOf {
+                CharacterClass.anyOf("\"\\").inverted
+                Regex {
+                    "\\"
+                    NegativeLookahead {
+                        extendedMultilineInterpolatedPoundDelimiter
+                        "("
+                    }
+                    CharacterClass.any
+                }
+                Regex {
+                    "\""
+                    NegativeLookahead {
+                        "\"\""
+                        extendedMultilineInterpolatedPoundDelimiter
+                    }
+                }
+            }
+        }
+        "\\"
+        extendedMultilineInterpolatedPoundDelimiter
+        "("
+    }.matchingSemantics(.unicodeScalar)
+
+    static let extendedMultilineInterpolatedStringLiteralPart = Regex {
+        ")"
+        ZeroOrMore(.reluctant) {
+            ChoiceOf {
+                CharacterClass.anyOf("\\").inverted
+                Regex {
+                    "\\"
+                    NegativeLookahead {
+                        OneOrMore { "#" }
+                        "("
+                    }
+                    CharacterClass.any
+                }
+            }
+        }
+        "\\"
+        OneOrMore { "#" }
+        "("
+    }.matchingSemantics(.unicodeScalar)
+
+    static let extendedMultilineInterpolatedStringLiteralTail = Regex {
+        ")"
+        ZeroOrMore(.reluctant) {
+            ChoiceOf {
+                CharacterClass.anyOf("\"\\").inverted
+                Regex {
+                    "\\"
+                    NegativeLookahead {
+                        OneOrMore { "#" }
+                        "("
+                    }
+                    CharacterClass.any
+                }
+                Regex {
+                    "\""
+                    NegativeLookahead { "\"\"" }
+                }
+            }
+        }
+        lineBreak
+        ZeroOrMore { horizontalWhitespace }
+        tripleQuote
+        OneOrMore { "#" }
     }.matchingSemantics(.unicodeScalar)
 
     /// `multilineInterpolatedStringLiteralHead` — `"""⏎` … up to the first `\(`.
@@ -667,15 +822,21 @@ enum ApusRegexLibrary {
 
         "singleLineStringLiteral":                Regex<AnyRegexOutput>(singleLineStringLiteral.regex),
         "extendedSinglelineStringLiteral":        Regex<AnyRegexOutput>(extendedSinglelineStringLiteral.regex),
+        "extendedInterpolatedStringLiteralHead":  Regex<AnyRegexOutput>(extendedInterpolatedStringLiteralHead.regex),
+        "extendedInterpolatedStringLiteralPart":  Regex<AnyRegexOutput>(extendedInterpolatedStringLiteralPart.regex),
+        "extendedInterpolatedStringLiteralTail":  Regex<AnyRegexOutput>(extendedInterpolatedStringLiteralTail.regex),
         "interpolatedStringLiteralHead":          Regex<AnyRegexOutput>(interpolatedStringLiteralHead.regex),
         "interpolatedStringLiteralPart":          Regex<AnyRegexOutput>(interpolatedStringLiteralPart.regex),
         "interpolatedStringLiteralTail":          Regex<AnyRegexOutput>(interpolatedStringLiteralTail.regex),
 
-        "extendedRegularExpressionLiteral":       Regex<AnyRegexOutput>(extendedRegularExpressionLiteral.regex),
-        "multilineStringLiteral":                 Regex<AnyRegexOutput>(multilineStringLiteral.regex),
-        "extendedMultilineStringLiteral":         Regex<AnyRegexOutput>(extendedMultilineStringLiteral.regex),
-        "multilineInterpolatedStringLiteralHead": Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralHead.regex),
-        "multilineInterpolatedStringLiteralPart": Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralPart.regex),
-        "multilineInterpolatedStringLiteralTail": Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralTail.regex),
+        "extendedRegularExpressionLiteral":                 Regex<AnyRegexOutput>(extendedRegularExpressionLiteral.regex),
+        "multilineStringLiteral":                           Regex<AnyRegexOutput>(multilineStringLiteral.regex),
+        "extendedMultilineStringLiteral":                   Regex<AnyRegexOutput>(extendedMultilineStringLiteral.regex),
+        "extendedMultilineInterpolatedStringLiteralHead":   Regex<AnyRegexOutput>(extendedMultilineInterpolatedStringLiteralHead.regex),
+        "extendedMultilineInterpolatedStringLiteralPart":   Regex<AnyRegexOutput>(extendedMultilineInterpolatedStringLiteralPart.regex),
+        "extendedMultilineInterpolatedStringLiteralTail":   Regex<AnyRegexOutput>(extendedMultilineInterpolatedStringLiteralTail.regex),
+        "multilineInterpolatedStringLiteralHead":           Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralHead.regex),
+        "multilineInterpolatedStringLiteralPart":           Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralPart.regex),
+        "multilineInterpolatedStringLiteralTail":           Regex<AnyRegexOutput>(multilineInterpolatedStringLiteralTail.regex),
     ]
 }

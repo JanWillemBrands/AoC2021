@@ -64,43 +64,43 @@ func expect(_ expected: String...) {
 // MARK: - start of generated code
 let tokenPatterns: [String:TokenPattern] = [
 	"action":	("/\'(?:[^\'\\\\]|\\\\.)*\'/",	/'(?:[^'\\]|\\.)*'/,	false,	true),
-	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
-	"pragma":	("/@\\p{XID_Start}\\p{XID_Continue}*/",	/@\p{XID_Start}\p{XID_Continue}*/,	false,	false),
-	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)+\\\"/",	/\"(?:[^\"\\]|\\.)+\"/,	false,	false),
-	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
-	"identifier":	("/[_\\p{XID_Start}][-\\p{XID_Continue}]*/",	/[_\p{XID_Start}][-\p{XID_Continue}]*/,	false,	false),
-	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
 	"whitespace":	("/\\s+/",	/\s+/,	false,	true),
-	"\".\"":	(".",	Regex { "." },	true,	false),
-	"\"*\"":	("*",	Regex { "*" },	true,	false),
-	"\"|\"":	("|",	Regex { "|" },	true,	false),
-	"\">\"":	(">",	Regex { ">" },	true,	false),
-	"\"EOF\"":	("EOF",	Regex { "EOF" },	true,	false),
-	"\"=\"":	("=",	Regex { "=" },	true,	false),
-	"\"<s>\"":	("<s>",	Regex { "<s>" },	true,	false),
-	"\">s<\"":	(">s<",	Regex { ">s<" },	true,	false),
+	"regex":	("/\\/(?!\\*)(?:[^\\/\\\\]|\\\\.)+\\//",	/\/(?!\*)(?:[^\/\\]|\\.)+\//,	false,	false),
+	"comment":	("/\\/\\/.*/",	/\/\/.*/,	false,	true),
+	"pragma":	("/@\\p{XID_Start}\\p{XID_Continue}*/",	/@\p{XID_Start}\p{XID_Continue}*/,	false,	false),
+	"identifier":	("/[_\\p{XID_Start}][-\\p{XID_Continue}]*/",	/[_\p{XID_Start}][-\p{XID_Continue}]*/,	false,	false),
+	"literal":	("/\\\"(?:[^\\\"\\\\]|\\\\.)+\\\"/",	/\"(?:[^\"\\]|\\.)+\"/,	false,	false),
+	"message":	("/\\^\\^\\^(?:(?s).*?)(?=\\^\\^\\^|$)/",	/\^\^\^(?:(?s).*?)(?=\^\^\^|$)/,	false,	false),
 	"\"---\"":	("---",	Regex { "---" },	true,	false),
-	"\":\"":	(":",	Regex { ":" },	true,	false),
-	"\"{\"":	("{",	Regex { "{" },	true,	false),
-	"\"<+<\"":	("<+<",	Regex { "<+<" },	true,	false),
-	"\">->\"":	(">->",	Regex { ">->" },	true,	false),
-	"\"?\"":	("?",	Regex { "?" },	true,	false),
-	"\"|<<\"":	("|<<",	Regex { "|<<" },	true,	false),
-	"\"]\"":	("]",	Regex { "]" },	true,	false),
-	"\">n<\"":	(">n<",	Regex { ">n<" },	true,	false),
 	"\"[\"":	("[",	Regex { "[" },	true,	false),
-	"\"+\"":	("+",	Regex { "+" },	true,	false),
-	"\">>|\"":	(">>|",	Regex { ">>|" },	true,	false),
-	"\"<n>\"":	("<n>",	Regex { "<n>" },	true,	false),
-	"\"<\"":	("<",	Regex { "<" },	true,	false),
-	"\"(\"":	("(",	Regex { "(" },	true,	false),
-	"\">+>\"":	(">+>",	Regex { ">+>" },	true,	false),
-	"\")\"":	(")",	Regex { ")" },	true,	false),
-	"\"ε\"":	("ε",	Regex { "ε" },	true,	false),
-	"\"-\"":	("-",	Regex { "-" },	true,	false),
-	"\"}\"":	("}",	Regex { "}" },	true,	false),
+	"\"EOF\"":	("EOF",	Regex { "EOF" },	true,	false),
+	"\".\"":	(".",	Regex { "." },	true,	false),
 	"\"\\\"\\\"\"":	("\"\"",	Regex { "\"\"" },	true,	false),
 	"\"<-<\"":	("<-<",	Regex { "<-<" },	true,	false),
+	"\">+>\"":	(">+>",	Regex { ">+>" },	true,	false),
+	"\">\"":	(">",	Regex { ">" },	true,	false),
+	"\"{\"":	("{",	Regex { "{" },	true,	false),
+	"\"]\"":	("]",	Regex { "]" },	true,	false),
+	"\"<s>\"":	("<s>",	Regex { "<s>" },	true,	false),
+	"\"ε\"":	("ε",	Regex { "ε" },	true,	false),
+	"\"<n>\"":	("<n>",	Regex { "<n>" },	true,	false),
+	"\"+\"":	("+",	Regex { "+" },	true,	false),
+	"\"}\"":	("}",	Regex { "}" },	true,	false),
+	"\"|<<\"":	("|<<",	Regex { "|<<" },	true,	false),
+	"\">n<\"":	(">n<",	Regex { ">n<" },	true,	false),
+	"\"*\"":	("*",	Regex { "*" },	true,	false),
+	"\")\"":	(")",	Regex { ")" },	true,	false),
+	"\"|\"":	("|",	Regex { "|" },	true,	false),
+	"\"(\"":	("(",	Regex { "(" },	true,	false),
+	"\"?\"":	("?",	Regex { "?" },	true,	false),
+	"\"<+<\"":	("<+<",	Regex { "<+<" },	true,	false),
+	"\"<\"":	("<",	Regex { "<" },	true,	false),
+	"\"=\"":	("=",	Regex { "=" },	true,	false),
+	"\"-\"":	("-",	Regex { "-" },	true,	false),
+	"\">>|\"":	(">>|",	Regex { ">>|" },	true,	false),
+	"\":\"":	(":",	Regex { ":" },	true,	false),
+	"\">s<\"":	(">s<",	Regex { ">s<" },	true,	false),
+	"\">->\"":	(">->",	Regex { ">->" },	true,	false),
 ]
 func alternates() throws {
 	try sequence()
@@ -155,24 +155,6 @@ func grammar() throws {
 	} while ["identifier", "pragma"].contains(token.kind)
 	while ["message"].contains(token.kind) {
 		cI += 1
-	}
-}
-func layout() throws {
-	switch token.kind {
-	case "\">>|\"":
-		cI += 1
-	case "\"|<<\"":
-		cI += 1
-	case "\"<n>\"":
-		cI += 1
-	case "\"<s>\"":
-		cI += 1
-	case "\">n<\"":
-		cI += 1
-	case "\">s<\"":
-		cI += 1
-	default:
-		expect("\"<n>\"", "\"<s>\"", "\">>|\"", "\">n<\"", "\">s<\"", "\"|<<\"")
 	}
 }
 func lookaround() throws {
@@ -241,7 +223,7 @@ func sequence() throws {
 				break
 			}
 		case "\"<n>\"", "\"<s>\"", "\">>|\"", "\">n<\"", "\">s<\"", "\"|<<\"":
-			try layout()
+			try spacing()
 		case "pragma":
 			cI += 1
 		case "\"<+<\"", "\"<-<\"", "\">+>\"", "\">->\"":
@@ -250,6 +232,24 @@ func sequence() throws {
 			expect("\"(\"", "\"<\"", "\"<+<\"", "\"<-<\"", "\"<n>\"", "\"<s>\"", "\">+>\"", "\">->\"", "\">>|\"", "\">n<\"", "\">s<\"", "\"[\"", "\"\\\"\\\"\"", "\"{\"", "\"|<<\"", "\"ε\"", "identifier", "literal", "pragma", "regex")
 		}
 	} while ["\"(\"", "\"<\"", "\"<+<\"", "\"<-<\"", "\"<n>\"", "\"<s>\"", "\">+>\"", "\">->\"", "\">>|\"", "\">n<\"", "\">s<\"", "\"[\"", "\"\\\"\\\"\"", "\"{\"", "\"|<<\"", "\"ε\"", "identifier", "literal", "pragma", "regex"].contains(token.kind)
+}
+func spacing() throws {
+	switch token.kind {
+	case "\">>|\"":
+		cI += 1
+	case "\"|<<\"":
+		cI += 1
+	case "\"<n>\"":
+		cI += 1
+	case "\"<s>\"":
+		cI += 1
+	case "\">n<\"":
+		cI += 1
+	case "\">s<\"":
+		cI += 1
+	default:
+		expect("\"<n>\"", "\"<s>\"", "\">>|\"", "\">n<\"", "\">s<\"", "\"|<<\"")
+	}
 }
 func terminal() throws {
 	switch token.kind {

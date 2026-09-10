@@ -1298,4 +1298,79 @@ struct ExpressionSyntaxTests {
 
         #expect(refDump == adventDump, "Trees differ for '\(snippet.label)'")
     }
+
+    @Test("ownership keywords prefer postfix call/member/subscript")
+    func ownershipKeywordsPreferPostfixCall() throws {
+        let snippets = [
+            SwiftSnippet(label: "borrow-call-tight", source: "borrow(msg)", origin: "regression", syntaxVersion: "local"),
+            SwiftSnippet(label: "borrow-call-spaced", source: "borrow (msg)", origin: "regression", syntaxVersion: "local"),
+            SwiftSnippet(label: "borrow-expression", source: "borrow msg", origin: "regression", syntaxVersion: "local"),
+            SwiftSnippet(label: "unsafe-spaced-tuple", source: "unsafe ()", origin: "regression", syntaxVersion: "local"),
+        ]
+
+        for snippet in snippets {
+            let reference = Parser.parse(source: snippet.source)
+            let refDump = dumpSwiftSyntaxNode(Syntax(reference), indent: 0)
+
+            guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+                Issue.record("Advent failed to produce SwiftSyntax tree: \(snippet.source)")
+                continue
+            }
+            let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+            #expect(refDump == adventDump, "Trees differ for '\(snippet.label)'")
+        }
+    }
+
+    @Test("macro arguments may be spaced but not on the next line")
+    func macroArgumentClauseLineBoundary() throws {
+        let snippets = [
+            SwiftSnippet(label: "macro-arg-spaced", source: "#foo (bar)", origin: "regression", syntaxVersion: "local"),
+            SwiftSnippet(label: "macro-arg-next-line", source: "#fileID\n(#line)", origin: "regression", syntaxVersion: "local"),
+        ]
+
+        for snippet in snippets {
+            let reference = Parser.parse(source: snippet.source)
+            let refDump = dumpSwiftSyntaxNode(Syntax(reference), indent: 0)
+
+            guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+                Issue.record("Advent failed to produce SwiftSyntax tree: \(snippet.source)")
+                continue
+            }
+            let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+            #expect(refDump == adventDump, "Trees differ for '\(snippet.label)'")
+        }
+    }
+
+    @Test("raw interpolated strings split into SwiftSyntax segments")
+    func rawInterpolatedStringSegments() throws {
+        let snippets = [
+            SwiftSnippet(label: "raw-single-interpolation", source: ###"let foo = "Interpolation"; _ = #"\b\b \#(foo)\#(foo) Kappa"#"###, origin: "regression", syntaxVersion: "local"),
+            SwiftSnippet(label: "raw-multiline-interpolation", source: ####"""
+            _ = """
+              interpolating \(##"""
+                delimited \##("string")\#n\##n
+                """##)
+              """
+            """####, origin: "regression", syntaxVersion: "local"),
+        ] + translatedSnippets.filter { snippet in
+            [
+                "testRawString12#1",
+                "testRawString26#1",
+                "testRawString27#1",
+                "testRawString28#1",
+            ].contains(snippet.label)
+        }
+
+        for snippet in snippets {
+            let reference = Parser.parse(source: snippet.source)
+            let refDump = dumpSwiftSyntaxNode(Syntax(reference), indent: 0)
+
+            guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+                Issue.record("Advent failed to produce SwiftSyntax tree: \(snippet.source)")
+                continue
+            }
+            let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+            #expect(refDump == adventDump, "Trees differ for '\(snippet.label)'")
+        }
+    }
 }

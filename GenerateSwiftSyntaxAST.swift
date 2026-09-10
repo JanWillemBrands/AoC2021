@@ -2259,7 +2259,7 @@ struct SwiftSyntaxGenerator {
         }
         if accessors.isEmpty {
             // The shorthand `{ statements }` getter form.
-            if let cbNT = find("codeBlock", in: spans) {
+            if find("codeBlock", in: spans) != nil {
                 return convertGetterSetterBlock(nt, from: from, to: to)
             }
             record(.unhandled, "initialized accessor block with no accessors", from: from, to: to)
@@ -6204,7 +6204,15 @@ struct SwiftSyntaxGenerator {
            let (_, itemSpans) = tileAlternate(itemNT.nt, from: itemNT.from, to: itemNT.to) {
             // arrayLiteralItem = @prefer expression . | typeExpression .
             if let exprNT = find("expression", in: itemSpans) {
-                elements.append(ArrayElementSyntax(expression: convertExpression(exprNT.nt, from: exprNT.from, to: exprNT.to)))
+                // The expression alternate is preferred for function-type elements, but
+                // swift-syntax keeps full-span `any P & Q` as a TypeExpr in array items.
+                if let boxed = fullSpanBoxedProtocolType(from: exprNT.from, to: exprNT.to) {
+                    elements.append(ArrayElementSyntax(expression: typeAsExpression(
+                        convertType(boxed, from: exprNT.from, to: exprNT.to)
+                    )))
+                } else {
+                    elements.append(ArrayElementSyntax(expression: convertExpression(exprNT.nt, from: exprNT.from, to: exprNT.to)))
+                }
             } else if let teNT = find("typeExpression", in: itemSpans),
                       let (_, teSpans) = tileAlternate(teNT.nt, from: teNT.from, to: teNT.to),
                       let typeNT = find("type", in: teSpans) {
@@ -6569,6 +6577,11 @@ struct SwiftSyntaxGenerator {
             return ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier(name)))
         }
         return ExprSyntax(TypeExprSyntax(type: type))
+    }
+
+    private func fullSpanBoxedProtocolType(from: CharPosition, to: CharPosition) -> GrammarNode? {
+        guard let boxed = grammar.nonTerminals["boxedProtocolType"] else { return nil }
+        return parser.yield(of: boxed).contains { $0.i == from && $0.j == to } ? boxed : nil
     }
 
     /// The token inside an `IdentifierPattern`. `if let self = self` binds `self`, and
@@ -7089,6 +7102,29 @@ struct SwiftSyntaxGenerator {
         return out
     }
 
+    private func singleLineRawSegmentTexts(_ body: String, pounds: Int) -> [String] {
+        let intro = "\\" + String(repeating: "#", count: pounds)
+        var out: [String] = []
+        var cur = ""
+        var i = body.startIndex
+        while i < body.endIndex {
+            if body[i...].hasPrefix(intro) {
+                let after = body.index(i, offsetBy: intro.count)
+                if after < body.endIndex, body[after] == "n" {
+                    cur += body[i...after]
+                    out.append(cur)
+                    cur = ""
+                    i = body.index(after: after)
+                    continue
+                }
+            }
+            cur.append(body[i])
+            i = body.index(after: i)
+        }
+        out.append(cur)
+        return out
+    }
+
     /// Convert an `attributes?` child if present. Every declaration, parameter and closure
     /// signature in the grammar carries one; dropping it silently produced an empty
     /// `AttributeList` where swift-syntax had entries.
@@ -7235,7 +7271,7 @@ struct SwiftSyntaxGenerator {
             // raw string has no line breaks and is always exactly one segment.
             let texts = isMultiline
                 ? (hasContentLine ? multilineSegmentTexts(body, pounds: pounds.count) : [])
-                : [body]
+                : (!pounds.isEmpty ? singleLineRawSegmentTexts(body, pounds: pounds.count) : [body])
             let segments = texts.map { text in
                 StringLiteralSegmentListSyntax.Element.stringSegment(StringSegmentSyntax(
                     content: .stringSegment(text)
@@ -7311,26 +7347,43 @@ struct SwiftSyntaxGenerator {
             record(.lookupFailed, "interpolated literal: no alternate tiles the span", from: from, to: to)
             return nil
         }
-        let prefix = multiline ? "multiline" : ""
-        let headName = prefix + (multiline ? "InterpolatedStringLiteralHead" : "interpolatedStringLiteralHead")
-        let partName = prefix + (multiline ? "InterpolatedStringLiteralPart" : "interpolatedStringLiteralPart")
-        let tailName = prefix + (multiline ? "InterpolatedStringLiteralTail" : "interpolatedStringLiteralTail")
+        let plainHeadName = multiline ? "multilineInterpolatedStringLiteralHead" : "interpolatedStringLiteralHead"
+        let plainPartName = multiline ? "multilineInterpolatedStringLiteralPart" : "interpolatedStringLiteralPart"
+        let plainTailName = multiline ? "multilineInterpolatedStringLiteralTail" : "interpolatedStringLiteralTail"
+        let rawHeadName = multiline ? "extendedMultilineInterpolatedStringLiteralHead" : "extendedInterpolatedStringLiteralHead"
+        let rawPartName = multiline ? "extendedMultilineInterpolatedStringLiteralPart" : "extendedInterpolatedStringLiteralPart"
+        let rawTailName = multiline ? "extendedMultilineInterpolatedStringLiteralTail" : "extendedInterpolatedStringLiteralTail"
+        let headNames = [plainHeadName, rawHeadName]
+        let partNames = [plainPartName, rawPartName]
+        let tailNames = [plainTailName, rawTailName]
         var pieces: [NTSpan] = []
-        collectInterpolationPieces(spans, names: [headName, partName, tailName, "functionCallArgumentList"],
+        collectInterpolationPieces(spans, names: Set(headNames + partNames + tailNames + ["functionCallArgumentList"]),
                                    into: &pieces)
         pieces.sort { $0.from < $1.from }
-        guard pieces.first?.nt.name == headName, pieces.last?.nt.name == tailName else {
+        guard let headPiece = pieces.first, headNames.contains(headPiece.nt.name),
+              let tailPiece = pieces.last, tailNames.contains(tailPiece.nt.name) else {
             record(.unhandled, "interpolated literal pieces: \(pieces.map(\.nt.name).joined(separator: "+"))",
                    from: from, to: to)
             return nil
         }
+        let raw = headPiece.nt.name == rawHeadName
+        let headName = raw ? rawHeadName : plainHeadName
+        let partName = raw ? rawPartName : plainPartName
+        let tailName = raw ? rawTailName : plainTailName
         let quote = multiline ? "\"\"\"" : "\""
+        let headText = String(input[headPiece.from..<headPiece.to])
+        let poundCount = raw ? headText.prefix(while: { $0 == "#" }).count : 0
+        let poundText = String(repeating: "#", count: poundCount)
+        let poundToken: TokenSyntax? = raw ? .rawStringPoundDelimiter(poundText) : nil
+        let opener = poundText + quote
+        let interpolationMarker = "\\" + poundText + "("
+        let closer = quote + poundText
         // The closer's INDENTATION is stripped from every content line, and it is only visible in
         // the tail, so it has to be read before any piece is split.
         var indent = ""
         if multiline, let tail = pieces.last {
             let tailText = String(input[tail.from..<tail.to])
-            if let close = tailText.range(of: quote, options: .backwards) {
+            if let close = tailText.range(of: closer, options: .backwards) {
                 let beforeClose = tailText[tailText.startIndex..<close.lowerBound]
                 if let lastNewline = beforeClose.lastIndex(of: "\n") {
                     indent = String(beforeClose[beforeClose.index(after: lastNewline)...])
@@ -7348,7 +7401,7 @@ struct SwiftSyntaxGenerator {
                     .map { $0.hasPrefix(indent) ? String($0.dropFirst(indent.count)) : String($0) }
                     .joined(separator: "\n")
             }
-            return multilineSegmentTexts(text, pounds: 0).map {
+            return multilineSegmentTexts(text, pounds: poundCount).map {
                 .stringSegment(StringSegmentSyntax(content: .stringSegment($0)))
             }
         }
@@ -7358,26 +7411,26 @@ struct SwiftSyntaxGenerator {
             let text = String(input[piece.from..<piece.to])
             switch piece.nt.name {
             case headName:
-                guard text.hasPrefix(quote), text.hasSuffix("\\(") else {
+                guard text.hasPrefix(opener), text.hasSuffix(interpolationMarker) else {
                     record(.unhandled, "interpolated head has an unexpected shape: \(text.debugDescription)", from: piece.from, to: piece.to)
                     return nil
                 }
-                var body = String(text.dropFirst(quote.count).dropLast(2))
+                var body = String(text.dropFirst(opener.count).dropLast(interpolationMarker.count))
                 // The line break after a multiline opener is a delimiter, not content.
                 if multiline {
                     if body.hasPrefix("\r\n") { body.removeFirst(2) } else if body.hasPrefix("\n") { body.removeFirst() }
                 }
                 elements += segments(of: body)
             case partName:
-                guard text.hasPrefix(")"), text.hasSuffix("\\(") else {
+                guard text.hasPrefix(")"), text.hasSuffix(interpolationMarker) else {
                     record(.unhandled, "interpolated part has an unexpected shape: \(text.debugDescription)", from: piece.from, to: piece.to)
                     return nil
                 }
-                elements += segments(of: String(text.dropFirst().dropLast(2)))
+                elements += segments(of: String(text.dropFirst().dropLast(interpolationMarker.count)))
             case tailName:
                 // The tail SPAN can run past the closing delimiter and include trailing layout, so
                 // cut at the LAST delimiter rather than requiring it to end the text.
-                guard text.hasPrefix(")"), let close = text.range(of: quote, options: .backwards) else {
+                guard text.hasPrefix(")"), let close = text.range(of: closer, options: .backwards) else {
                     record(.unhandled, "interpolated tail has an unexpected shape: \(text.debugDescription)", from: piece.from, to: piece.to)
                     return nil
                 }
@@ -7391,6 +7444,7 @@ struct SwiftSyntaxGenerator {
             default:
                 elements.append(.expressionSegment(ExpressionSegmentSyntax(
                     backslash: .backslashToken(),
+                    pounds: poundToken,
                     leftParen: .leftParenToken(),
                     expressions: convertArgumentList(piece.nt, from: piece.from, to: piece.to),
                     rightParen: .rightParenToken()
@@ -7399,9 +7453,11 @@ struct SwiftSyntaxGenerator {
         }
         let quoteToken: TokenSyntax = multiline ? .multilineStringQuoteToken() : .stringQuoteToken()
         return ExprSyntax(StringLiteralExprSyntax(
+            openingPounds: poundToken,
             openingQuote: quoteToken,
             segments: StringLiteralSegmentListSyntax(elements),
-            closingQuote: quoteToken
+            closingQuote: quoteToken,
+            closingPounds: poundToken
         ))
     }
 

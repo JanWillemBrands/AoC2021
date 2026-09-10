@@ -5,23 +5,22 @@
 //  Created by Johannes Brands on 29/04/2025.
 //
 
-// Paper: descriptor = (L, k, i) — grammar slot, cluster index, input index
-//
+import OSLog
+import Foundation
+import BitCollections
+
 // The same letters mean different things in a descriptor and in a BinarySpan:
 //   descriptor  (L, k, i):  k = cluster index,  i = input index
 //   BinarySpan  (i, k, j):  i = left extent,    k = pivot,  j = right extent
 // A descriptor's `k` therefore becomes a span's `i`, which is why the yields are
 // added as addYield(L: cL, i: cU, k: cI, ...) — the swap is deliberate.
-import OSLog
-import Foundation
-import BitCollections
 
-// this is now back to 24 bytes (three 64-bit words)
+// Paper: descriptor = (L, k, i) — grammar slot, cluster index, input index
 struct Descriptor: Hashable {
     let L: GrammarNode          // grammar slot
     let k: CharPosition         // cluster index
     let i: CharPosition         // input index
-}
+}   // this is hree 64-bit words (24 bytes)
 
 // MARK: - MessageParser Descriptor Operations
 

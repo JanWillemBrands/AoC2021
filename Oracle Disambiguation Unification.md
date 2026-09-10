@@ -212,6 +212,58 @@ different extents, it buys nothing, and `@avoid` already works. **Keep `@avoid`.
 direction is the opposite: generalise `@avoid` to any alt chain as "prefer the siblings" (finding 3),
 not replace it with `@shortest`.
 
+### Open shape: conditional same-span sibling choice (`@avoidIf`?)
+
+The remaining `testInverseTypes#3`-class problem exposed a gap between the existing
+same-span mechanisms:
+
+- `@left` / `@right` choose between **same node, same span `(i,j)`, different pivot `k`**.
+- `@prefer` / alternate-level `@avoid` choose between **sibling alternates that tile the same
+  span `(i,j)`**, unconditionally.
+- `@cannotParse(N)` / `@canParse(N)` are start predicates: they ask whether `N` can parse at
+  the alternate's start, not whether `N` covers this alternate's exact span.
+
+`[any P & ~Copyable]()` wants a conditional same-span sibling choice:
+
+```apus
+arrayLiteralItem = @prefer expression .
+arrayLiteralItem = typeExpression .
+```
+
+The expression route is normally preferred because swift-syntax spells array elements such as
+`(Int, Double) -> Bool` as a `SequenceExpr`, not a `TypeExpr`. But when the exact array element
+span is also a `boxedProtocolType` (`any P & ~Copyable`), swift-syntax keeps it as one
+`TypeExpr(SomeOrAnyType(CompositionType))`, not `(any P) & ~Copyable`.
+
+The current `@cannotParse(boxedProtocolType)` is too blunt here: it prunes by start position and
+can destroy the full parse. The current working fix is deliberately local in
+`GenerateSwiftSyntaxAST`: when converting an array element through the preferred `expression`
+alternate, it checks whether the post-Oracle forest still contains a full-span
+`boxedProtocolType` yield and emits that as a `TypeExpr`. This is acceptable as a narrow tree
+fidelity bridge because it does not affect parsing, acceptance or Oracle pruning, but it is a
+conversion-time parse-shape choice and should not become the general pattern.
+
+If this recurs, the orthogonal Oracle primitive is likely a conditional same-span alternate
+constraint, for example:
+
+```apus
+arrayLiteralItem = @avoidIf(boxedProtocolType) @prefer expression .
+arrayLiteralItem = typeExpression .
+```
+
+Semantics sketch:
+
+```text
+@avoidIf(N) on alternate A:
+  prune A's yield (i,j) iff N has a yield with the exact same (i,j).
+```
+
+This is closer to `@prefer`/`@avoid` than to lookahead: it is an equal-span sibling/tree-shape
+selector, analogous to `@left`/`@right` choosing a pivot for a fixed span. Keep it distinct from
+start-based parse predicates (`@cannotParse`) and from containment predicates
+(`@confinedTo`/`@excludedFrom`). Do not add it for one isolated case; look for at least one more
+concrete use, probably another equal-span type/expression or key-path-root ambiguity.
+
 ---
 
 ## Key file references
