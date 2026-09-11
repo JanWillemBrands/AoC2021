@@ -531,6 +531,80 @@ struct CoreGrammarTests {
         }
     }
 
+    // MARK: - Mixed layout scopes
+
+    @Suite("MixedLayoutScopes", .serialized)
+    struct MixedLayoutScopes {
+        static let cases: [TestCase] = [
+            TestCase(
+                grammar: #"island - "a" "b" "c" . S = island ."#,
+                pass: ["abc"],
+                fail: ["a bc", "ab c", "a b c", "a b c extra"],
+                label: "structured dash lexical island preserves trivia"
+            ),
+            TestCase(
+                // Structured `-` is a visible lexical island: ordinary terminals preserve
+                // trivia, but entering an `=` payload still gives the payload normal Swift-like
+                // trivia skipping before `id` and `)`.
+                grammar: #"island - "a" payload "c" . S = island . payload = "b" ."#,
+                pass: ["abc", "a bc"],
+                fail: ["ab c", "a b c"],
+                label: "equals callee inside lexical island skips only within callee"
+            ),
+            TestCase(
+                grammar: #"S = island . island - "a" "b" "c" ."#,
+                illegalGrammar: true,
+                label: "structured dash terminal must be defined before use"
+            ),
+            TestCase(
+                // Miniature interpolation shape. The interpolation close lives inside the `=`
+                // payload so Swift-style trivia before `)` is skipped there. After `)` the
+                // structured `-` island resumes immediately, so spaces before `tail` are content.
+                grammar: #"""
+                    quote - /"/ .
+                    stringText - /[^"\\]+/ .
+                    id - /[A-Za-z_][A-Za-z_0-9]*/ .
+                    stringIsland - quote { stringText | interpolation } quote .
+                    S = stringIsland .
+                    interpolation = /\\\(/ payload .
+                    payload = id ")" .
+                    """#,
+                pass: [
+                    #""hello""#,
+                    #""hello \(name) tail""#,
+                    #""hello \( name ) tail""#,
+                    #""hello \( name )tail ""#,
+                    #""hello \( name )   tail""#,
+                ],
+                fail: [
+                    #""hello \( name tail""#,
+                    #""hello \( name ) tail" extra"#,
+                ],
+                label: "mini string interpolation over current lexical island mixed-scope behavior"
+            ),
+        ]
+
+        @Test(arguments: cases)
+        func currentBehavior(_ tc: TestCase) throws {
+            try runTestCase(tc)
+        }
+
+        @Test("structured dash body terminals suppress leading trivia")
+        func structuredDashMarksBodyTerminals() throws {
+            let parser = try ApusParser(fromString: #"whitespace : /\s+/. island - "a" "b" "c" . S = island ."#)
+            let grammar = try parser.parse()
+            guard let island = grammar.nonTerminals["island"] else {
+                Issue.record("missing island nonterminal")
+                return
+            }
+            let body = island.alt?.bodySymbols ?? []
+            let bodyNames = body.map(\.name)
+            let allSuppressLeadingTrivia = body.allSatisfy { $0.suppressesLeadingTrivia }
+            #expect(bodyNames == [#""a""#, #""b""#, #""c""#])
+            #expect(allSuppressLeadingTrivia)
+        }
+    }
+
     // MARK: - Oracle Disambiguation
     //
     // Moved to `OracleDisambiguationTests.swift` (suite `Oracle Disambiguation`),

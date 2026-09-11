@@ -26,12 +26,12 @@ import BitCollections
 ///                     `triviaEnd`, or parse origin for the first commit)
 ///   - `start`       — content start (after leading trivia)
 ///   - `end`         — content end (before trailing trivia)
-///   - `triviaEnd`   — past trailing trivia; the parser cursor advances here
-///                     and the next commit's `triviaStart` equals this
+///   - `triviaEnd`   — cursor position after trailing-trivia handling; the parser cursor advances
+///                     here and the next commit's `triviaStart` equals this
 ///
 /// Image of the terminal:   `input[start ..< end]`
 /// Leading trivia text:     `input[triviaStart ..< start]`
-/// Trailing trivia text:    `input[end ..< triviaEnd]`
+/// Trailing trivia text, when consumed by this parser mode: `input[end ..< triviaEnd]`
 ///
 /// Used by `terminalImage(startingAt:)`, `previousKindIDs(at:distance:)`, and
 /// `boundaryMatches` (`<s>`/`>s<`/`<n>`/`>n<`, token lookaround).
@@ -61,7 +61,7 @@ class MessageParser {
     /// Per-terminal lex queries the parser issues at every `.T`/`.TI`/`.C` slot
     /// and every `testSelect` / `followCheck` / `continuationViable` callsite.
     /// Backed by `OnDemandLiteralLexer` against `input` directly: literals via
-    /// `hasPrefix`, regex via `prefixMatch`, trivia (whitespace + `=:`
+    /// `hasPrefix`, regex via `prefixMatch`, trivia (whitespace + structured `:`
     /// non-terminal recognisers) via `skipTrivia`.
     var lexer: OnDemandLiteralLexer!
 
@@ -70,11 +70,16 @@ class MessageParser {
     /// Built in `prepareInput`; empty for sub-parsers. Consumed by the commit rule in `tokenMatch`.
     var preemptViable: [Int: (CharPosition) -> Bool] = [:]
 
-    /// True when this parser instance is a recogniser sub-parser (a `=:` trivia or `=|` lexical
-    /// nonterminal, prepared with `isSubParser: true`). Such a root is a RECOGNISER: it may
+    /// True when this parser instance is a recogniser sub-parser (structured `:` trivia or
+    /// structured `-` lexical nonterminal, prepared with `isSubParser: true`). Such a root is a RECOGNISER: it may
     /// complete at any position (the outer parser supplies the "next token" context), so its
     /// root completion is not gated on FOLLOW/EOF. See `followCheck`.
     var isSubParser = false
+    /// True only for structured `:` / `-` recognizer sub-parsers. These parse inside a token/trivia
+    /// island: direct body terminals can suppress leading trivia, normal `=` payloads may skip
+    /// trivia, and token commits return at content end so the surrounding recognizer owns following
+    /// trivia. Speculative recognizers such as `@preempt` keep the normal lex policy.
+    var usesRecognizerLexBoundaries = false
 
     // MARK: - Lex memoization
     /// `(pos, terminalID) → [LexMatch]` cache. Lex queries are pure given the
@@ -86,7 +91,21 @@ class MessageParser {
     var lexCache: [LexCacheKey: [LexMatch]] = [:]
 
     @inline(always)
-    final func cachedLex(at pos: CharPosition, terminalID: Int) -> [LexMatch] {
+    final func cachedLex(
+        at pos: CharPosition,
+        terminalID: Int,
+        suppressesLeadingTrivia: Bool = false
+    ) -> [LexMatch] {
+        if suppressesLeadingTrivia || usesRecognizerLexBoundaries {
+            // Sparse side-channel for structured recognizer bodies. Keep the hot cache key
+            // unchanged for ordinary lex queries; exact-start slots and sub-parser roots are rare.
+            return lexer.lex(
+                at: pos,
+                terminalID: terminalID,
+                suppressesLeadingTrivia: suppressesLeadingTrivia,
+                consumesTrailingTrivia: !usesRecognizerLexBoundaries
+            )
+        }
         let key = LexCacheKey(pos: pos, terminalID: terminalID)
         if let cached = lexCache[key] { return cached }
         let result = lexer.lex(at: pos, terminalID: terminalID)
@@ -232,7 +251,7 @@ class MessageParser {
 
     // MARK: - Parse API
 
-    /// `root` defaults to `grammar.root` (full parse); pass a `=:` non-terminal
+    /// `root` defaults to `grammar.root` (full parse); pass a structured `:` non-terminal
     /// to run a sub-parse for trivia recognition. `start` defaults to
     /// `input.startIndex`; pass a `CharPosition` to seed the GLL at a different
     /// position. Yields end up in `self.yields` indexed by `node.number`;
@@ -248,13 +267,18 @@ class MessageParser {
         runGLL(root: root ?? grammar.root, start: start ?? input.startIndex)
     }
 
-    /// Per-input setup: builds the lex stack, constructs sub-parsers for `=:`
+    /// Per-input setup: builds the lex stack, constructs sub-parsers for structured `:`
     /// non-terminals, precomputes layout virtual tokens when the grammar uses
     /// them. Idempotent for repeated calls on the same `input`; the expectation
     /// is that callers (including sub-parsers) call this once per input and then
     /// `runGLL` many times against the prepared state.
-    func prepareInput(input: String, isSubParser: Bool = false) {
+    func prepareInput(
+        input: String,
+        isSubParser: Bool = false,
+        usesRecognizerLexBoundaries: Bool = false
+    ) {
         self.isSubParser = isSubParser
+        self.usesRecognizerLexBoundaries = usesRecognizerLexBoundaries
         self.input = input
         // LCNP lex stack: `OnDemandLiteralLexer` only (Phase E Step 2d retired
         // `LegacyScannerLexAdapter`). All literals and regex terminals serve
@@ -265,8 +289,8 @@ class MessageParser {
         var triviaRegexes: [Regex<AnyRegexOutput>] = []
         for (name, pat) in grammar.terminals {
             guard let id = grammar.symbolToID[name] else { continue }
-            // `=|` lexical nonterminal — its match extent is computed by a GLL sub-parse below, not
-            // by a regex/literal, so skip ONLY that registration.
+            // Structured `-` lexical nonterminal — its match extent is computed by a GLL sub-parse
+            // below, not by a regex/literal, so skip ONLY that registration.
             if !pat.isLexicalToken {
                 if pat.isLiteral {
                     literalSourceByID[id] = pat.source
@@ -274,16 +298,15 @@ class MessageParser {
                     // Regex terminal: answer from input directly.
                     regexByID[id] = pat.regex
                 }
-                if pat.isSkip, !isSubParser {
-                    // Trivia (whitespace, line comment, etc.) applies only to the
-                    // full parse. Sub-parsers running a `=:` body don't strip
-                    // outer trivia — inside a multiline comment, what would
-                    // otherwise be skipped whitespace IS comment content.
+                if pat.isSkip, !isSubParser || usesRecognizerLexBoundaries {
+                    // Trivia (whitespace, line comment, etc.) is available in recognizer
+                    // sub-parsers too. Direct terminal slots in structured `:` / `-` bodies
+                    // suppress the leading skip; normal `=` payloads keep it.
                     triviaRegexes.append(pat.regex)
                 }
             }
         }
-        // Build trivia non-terminal recognisers for each `=:` LHS in the
+        // Build trivia non-terminal recognisers for each structured `:` LHS in the
         // grammar. Each recogniser owns a sub-parser instance prepared on the
         // *same* input as the outer parser; the closure calls `sub.runGLL`
         // (cheap) rather than `sub.parse` (rebuilds everything). Skipped for
@@ -292,7 +315,7 @@ class MessageParser {
         if !isSubParser {
             for (_, nt) in grammar.nonTerminals where nt.isTrivia {
                 let sub = MessageParser(grammar: grammar)
-                sub.prepareInput(input: input, isSubParser: true)
+                sub.prepareInput(input: input, isSubParser: true, usesRecognizerLexBoundaries: true)
                 let recogniser: (CharPosition) -> CharPosition? = { pos in
                     sub.runGLL(root: nt, start: pos)
                     let ends = sub.yield(of: nt).lazy.filter { $0.i == pos }.map(\.j)
@@ -301,8 +324,9 @@ class MessageParser {
                 triviaRecognisers.append(recogniser)
             }
         }
-        // Lexical-nonterminal recognisers for each `=|` LHS. Same sub-parse machinery as the
-        // `=:` trivia recognisers, but keyed by the terminal kind ID and used by the lexer to
+        // Lexical-nonterminal recognisers for each structured `-` LHS. Same sub-parse machinery as
+        // the structured `:` trivia recognisers, but keyed by the terminal kind ID and used by the
+        // lexer to
         // emit ONE token spanning the sub-parse's longest accept from `pos`. Skipped for
         // sub-parsers (would recurse). The sub-parser strips no trivia (isSubParser), so the
         // body is matched character-tight — right for whitespace-sensitive constructs like regex.
@@ -311,7 +335,7 @@ class MessageParser {
             for (name, nt) in grammar.nonTerminals where nt.isLexicalToken {
                 guard let id = grammar.symbolToID[name] else { continue }
                 let sub = MessageParser(grammar: grammar)
-                sub.prepareInput(input: input, isSubParser: true)
+                sub.prepareInput(input: input, isSubParser: true, usesRecognizerLexBoundaries: true)
                 lexicalTokenRecognisers[id] = { pos in
                     sub.runGLL(root: nt, start: pos)
                     return sub.yield(of: nt).lazy.filter { $0.i == pos }.map(\.j).max()
@@ -348,7 +372,7 @@ class MessageParser {
         // resolved by `OnDemandLiteralLexer` from a precomputed source-position
         // table instead of being injected into `tokens[]`. Gated on
         // `grammar.usesInjectedLayoutTokens` so non-layout grammars allocate
-        // nothing. Sub-parsers (`=:` bodies) skip the precompute — synthetic
+        // nothing. Sub-parsers for structured tokens skip the precompute — synthetic
         // tokens live at the outer parse level only.
         var virtualTokensAt: [CharPosition: [Int]] = [:]
         if grammar.usesInjectedLayoutTokens, !isSubParser,
@@ -424,7 +448,7 @@ class MessageParser {
         furthestMismatchSlot = currentParseRoot
         furthestMismatchExpected = []
 
-        // Set up root cluster (root may be a `=:` non-terminal for a sub-parse)
+        // Set up root cluster (root may be a structured-token non-terminal for a sub-parse)
         let rootNode = currentParseRoot!
         crf[ParsePosition(slot: rootNode, index: origin)] = ParseCluster()
 
@@ -556,7 +580,7 @@ class MessageParser {
             return !lexer.lex(at: y.j, terminalID: grammar.eosID).isEmpty
         }.count
 //        trace = false
-        // Skip the diagnostic prints for sub-parses (`=:` recogniser runs);
+        // Skip the diagnostic prints for sub-parses (structured recogniser runs);
         // they fire at every trivia-skip position and drown out the console.
         guard root === grammar.root else { return }
         print(
@@ -844,6 +868,23 @@ class MessageParser {
         ch == "\n" || ch == "\r"
     }
 
+    private func suppressesLeadingTriviaForPrediction(slot: GrammarNode, terminalID: Int) -> Bool {
+        switch slot.kind {
+        case .T, .TI, .C:
+            return slot.nameID == terminalID && slot.suppressesLeadingTrivia
+        case .ALT:
+            for symbol in slot.bodySymbols {
+                if symbol.firstBS.contains(terminalID) {
+                    return suppressesLeadingTriviaForPrediction(slot: symbol, terminalID: terminalID)
+                }
+                if !symbol.isNullable { break }
+            }
+            return false
+        default:
+            return false
+        }
+    }
+
     /// Test whether the current token is in the selection set for a grammar slot.
     /// Returns true if some terminal that LCNP can lex at `cI` is in
     ///   FIRST(slot)  ∨  (ε ∈ FIRST(slot) ∧ FOLLOW(bracket))
@@ -856,7 +897,11 @@ class MessageParser {
         func anyTerminalMatches(in bs: BitSet) -> Bool {
             for kID in bs {
                 if kID == grammar.epsilonID { continue }
-                let matches = cachedLex(at: cI, terminalID: kID)
+                let matches = cachedLex(
+                    at: cI,
+                    terminalID: kID,
+                    suppressesLeadingTrivia: suppressesLeadingTriviaForPrediction(slot: slot, terminalID: kID)
+                )
                 if matches.isEmpty { continue }
                 if slot.excludeBS.isEmpty { return true }
                 let survives = matches.contains { m in
@@ -888,12 +933,16 @@ class MessageParser {
     /// Phase C Step 2: returns the full set of distinct matches so the main
     /// parse loop can fork descriptors over them. Each match carries `start`
     /// (content start after leading-trivia skip), `end` (content end), and
-    /// `triviaEnd` (post trailing-trivia, where the parser cursor advances).
+    /// `triviaEnd` (the parser cursor advance position).
     /// The parse loop records all of these in the commit log so boundary
     /// checks (`<s>`/`>s<`/`<n>`/`>n<`) can answer trivia-gap questions and
     /// image extraction can recover the exact source slice.
     func tokenMatch() -> [LexMatch] {
-        var matches = cachedLex(at: cI, terminalID: cL.nameID)
+        var matches = cachedLex(
+            at: cI,
+            terminalID: cL.nameID,
+            suppressesLeadingTrivia: cL.suppressesLeadingTrivia
+        )
         guard !matches.isEmpty else { return [] }
 
         // `@preempt(X, N)` COMMIT. The first operand only OFFERS shorter
@@ -943,7 +992,7 @@ class MessageParser {
     /// Test whether some terminal in the bracket's FOLLOW set can be lexed at `cI`.
     /// Phase B Step 3: per-terminal LCNP iteration through the lex cache.
     func followCheck(bracket: GrammarNode) -> Bool {
-        // A standalone sub-parse root (e.g. a `=:` trivia recogniser like
+        // A standalone sub-parse root (e.g. a structured `:` trivia recogniser like
         // `multilineComment`) may legitimately complete at end-of-input — there is
         // no "next token" requirement for a recogniser invoked by `skipTrivia`.
         // Such non-terminals aren't referenced in any production, so their FOLLOW
@@ -951,9 +1000,9 @@ class MessageParser {
         // closing `*/` lands exactly at EOF would fail to yield. Mirrors the EOF
         // allowance in `boundaryMatches` and the parse-success criterion. The main
         // parse root already carries `○` in its follow, so it's unaffected.
-        // A recogniser sub-parse root (a `=:`/`=|` nonterminal) may complete at ANY position:
+        // A recogniser sub-parse root (structured `:` / structured `-`) may complete at ANY position:
         // it is a lexical recogniser and the OUTER parser supplies the following context. A
-        // lexical-token recogniser (`=|`) whose match ends mid-input (e.g. a `/regex/` followed
+        // lexical-token recogniser whose match ends mid-input (e.g. a `/regex/` followed
         // by `.member`) would otherwise never yield, because its FOLLOW is empty (no productions
         // reference it — they resolve to a terminal). The main parse root keeps the FOLLOW/EOF gate.
         if bracket === currentParseRoot && (isSubParser || cI == input.endIndex) { return true }
@@ -976,7 +1025,11 @@ class MessageParser {
         // Per-terminal LCNP iteration over FIRST(continuation)
         for kID in continuation.firstBS {
             if kID == grammar.epsilonID { continue }
-            if !cachedLex(at: position, terminalID: kID).isEmpty { return true }
+            if !cachedLex(
+                at: position,
+                terminalID: kID,
+                suppressesLeadingTrivia: suppressesLeadingTriviaForPrediction(slot: continuation, terminalID: kID)
+            ).isEmpty { return true }
         }
         return false
     }

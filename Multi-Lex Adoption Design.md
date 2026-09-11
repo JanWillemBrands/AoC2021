@@ -957,7 +957,7 @@ This is intentionally permissive in the ambiguous case — under GLL, both inter
 
 That's the only category left. Phase E Step 2 will tackle gated transitions; once done, `LegacyScannerLexAdapter` retires and the eager scanner can be deleted (or kept only as a diagnostics-feed).
 
-#### Phase E — Step 2 design: `=:` non-terminal trivia + outer-grammar interpolation (Jun 13, 2026)
+#### Phase E — Step 2 design: structured `:` non-terminal trivia + outer-grammar interpolation (Jun 13, 2026)
 
 Working through Swift.apus's three remaining scanner-mode uses (`multiline-comment`, `string-interpolation`, `inside-parentheses`), the design converged on **two complementary moves** that together retire `LegacyScannerLexAdapter` and the entire `GatedTransition` machinery, with one small new operator and zero scanner-mode infrastructure.
 
@@ -980,36 +980,36 @@ stringText        - /(?:[^"\\]|\\(?!\())+/ .   // stops before " or \(
 
 `stringText`'s negative-lookahead regex does the work the `===`/`>>>`/`<<<` mode machinery used to do. Python f-strings work identically with one extra recursion level for the format spec (`fSpec` contains `( fSpecText | nestedFExpr )*` where `nestedFExpr = "{" expression "}"`). The `inside-parentheses` mode in Swift.apus was disambiguating ternary `:` vs dictionary `:` — that disambiguation was always parser-level (different grammar slots accept `:` in different contexts), so its mode annotation was carrying nothing the LCNP slot context doesn't already carry.
 
-##### Move 2: new operator `=:` for non-terminal-shaped trivia
+##### Move 2: new operator structured `:` for non-terminal-shaped trivia
 
 The remaining hard case — Swift's *nested* `/* … */` block comments — can't be regular (regexes don't count) and the body shouldn't appear in the outer BSR (it's trivia). The fit is a new production operator:
 
 | | Terminal | Non-terminal |
 |---|---|---|
 | Emit | `-` | `=` |
-| Skip | `:` | `=:` (new) |
+| Skip | `:` | structured `:` (new) |
 
-`=:` is a non-terminal production whose recognised extent is consumed as trivia rather than emitted to the outer BSR. The existing `:` regex/literal trivia is the trivial case — a single-factor `=:` production.
+structured `:` is a non-terminal production whose recognised extent is consumed as trivia rather than emitted to the outer BSR. The existing `:` regex/literal trivia is the trivial case — a single-factor structured `:` production.
 
 Swift.apus's three multilineComment* terminals + six `===`/`>>>` annotations become:
 
 ```apus
-multilineComment =: "/*" multilineCommentBody "*/" .
+multilineComment structured : "/*" multilineCommentBody "*/" .
 multilineCommentBody = ( multilineCommentText | multilineComment )* .
 multilineCommentText - /[^*\/]|\*(?!\/)|\/(?!\*)/ .
 ```
 
 (or inlined into one production). Recursion in the grammar replaces mode-stacking; full GLL handles nesting naturally; the sub-parse's BSR is internal to the recogniser, never reaches the outer BSR.
 
-##### Semantic rules for `=:`
+##### Semantic rules for structured `:`
 
-1. `=:` body can reference: `-` terminals, `:` terminals, other `=:` non-terminals, plus `=` helper non-terminals that are reachable only via `=:` (so factoring helper productions like `multilineCommentBody = …` works whether you mark them `=` or `=:`).
-2. `=` (outer) non-terminals must not reference `=:` non-terminals (trivia shouldn't leak into structure). Enforced at grammar load.
-3. Identifier references inside any `:`/`-`/`=:` body resolve against the *union* of terminal symbols (`:` and `-`) and `=:` non-terminals. The `:`/`-` flag only controls outer-grammar treatment (skip vs emit), not what gets recognised.
+1. structured `:` body can reference: `-` terminals, `:` terminals, other structured `:` non-terminals, plus `=` helper non-terminals that are reachable only via structured `:` (so factoring helper productions like `multilineCommentBody = …` works whether you mark them `=` or structured `:`).
+2. `=` (outer) non-terminals must not reference structured `:` non-terminals (trivia shouldn't leak into structure). Enforced at grammar load.
+3. Identifier references inside any `:`/`-`/structured `:` body resolve against the *union* of terminal symbols (`:` and `-`) and structured `:` non-terminals. The `:`/`-` flag only controls outer-grammar treatment (skip vs emit), not what gets recognised.
 
 ##### Implementation outline
 
-Each `=:` non-terminal becomes a recogniser at grammar load: a `MessageParser` sub-instance whose root is that `=:` node. At trivia-skip time, `OnDemandLiteralLexer.skipTrivia` tries `=:` recognisers alongside `triviaRegexes`. The sub-parser shares the grammar but has its own descriptor/CRF/BSR state; only accepting end-positions propagate back to the outer parse. Cached in the outer `lexCache` like any other lex query.
+Each structured `:` non-terminal becomes a recogniser at grammar load: a `MessageParser` sub-instance whose root is that structured `:` node. At trivia-skip time, `OnDemandLiteralLexer.skipTrivia` tries structured `:` recognisers alongside `triviaRegexes`. The sub-parser shares the grammar but has its own descriptor/CRF/BSR state; only accepting end-positions propagate back to the outer parse. Cached in the outer `lexCache` like any other lex query.
 
 ##### Architectural payoff
 
@@ -1018,13 +1018,13 @@ When this lands:
 - `TokenPattern.transitions`: deleted.
 - `LegacyScannerLexAdapter`: **deleted** — no remaining users.
 - The eager scanner becomes optional (kept only if any diagnostics path still needs it).
-- The grammar language gains exactly one new operator (`=:`) and **loses** an entire mechanism (scanner modes).
+- The grammar language gains exactly one new operator (structured `:`) and **loses** an entire mechanism (scanner modes).
 
 ##### Scope and cost
 
 | Step | LoC | Purpose |
 |---|---|---|
-| 2a | ~100 | Add `=:` operator: parse, grammar-load classification, `OnDemandLiteralLexer` trivia-recogniser dispatch, Swift.apus nested-comment migration |
+| 2a | ~100 | Add structured `:` operator: parse, grammar-load classification, `OnDemandLiteralLexer` trivia-recogniser dispatch, Swift.apus nested-comment migration |
 | 2b | ~20 grammar | Refactor Swift.apus string-interpolation terminals to outer productions; delete mode annotations |
 | 2c | ~10 grammar | Same for `inside-parentheses` mode (confirm it was always parser-context anyway) |
 | 2d | ~−200 | Delete `GatedTransition` machinery, `LegacyScannerLexAdapter`, `Scanner.swift` mode parsing |
@@ -1051,7 +1051,7 @@ So `bracketNewline`'s regex eagerly consumes every `\n` during `skipTrivia`, inc
 
 *Minimal patch (reverted):* gate the `triviaRegexes.append` on `pat.transitions.isEmpty`. Tried and verified: Python tests 1–17 recover (simple/expression cases); the Swift `parseMessagesSequentially` regression also clears. Tests 18+ (multi-line with `INDENT`/`DEDENT`) remain failing because of Issue 2.
 
-*Why reverted:* this gate is a symptom-fix. The architectural cause is "the on-demand trivia pipeline has no mode state, but it's being asked to honour mode-gated patterns". Step 2's outer-grammar move for string-interpolation and the `=:` operator for nested comments retire the mode mechanism entirely; `pat.transitions` becomes empty for every terminal once `Scanner.swift`'s `GatedTransition` machinery is deleted. The gate then trivially holds — no special case needed.
+*Why reverted:* this gate is a symptom-fix. The architectural cause is "the on-demand trivia pipeline has no mode state, but it's being asked to honour mode-gated patterns". Step 2's outer-grammar move for string-interpolation and the structured `:` operator for nested comments retire the mode mechanism entirely; `pat.transitions` becomes empty for every terminal once `Scanner.swift`'s `GatedTransition` machinery is deleted. The gate then trivially holds — no special case needed.
 
 **Issue 2 — `LegacyScannerLexAdapter` finds only one token at a position.**
 
@@ -1071,20 +1071,20 @@ So `bracketNewline`'s regex eagerly consumes every `\n` during `skipTrivia`, inc
 
 All four sub-steps landed in sequence; Swift is fully migrated, the legacy lex backend is gone, and Python is on the documented "needs its own design" track.
 
-**Step 2a — `=:` operator + recursive `MessageParser` infrastructure.**
+**Step 2a — structured `:` operator + recursive `MessageParser` infrastructure.**
 
-`ApusTerminals` registers `=:` as a new operator token. `ApusParser.production()` accepts `=:` alongside `=`, flagging the LHS as `isTrivia = true`. `GrammarNode` gains an `isTrivia: Bool` field; `MessageParser.parse(...)` accepts optional `root:` / `start:` parameters so a sub-parser can run from any non-terminal at any position.
+`ApusTerminals` registers structured `:` as a new operator token. `ApusParser.production()` accepts structured `:` alongside `=`, flagging the LHS as `isTrivia = true`. `GrammarNode` gains an `isTrivia: Bool` field; `MessageParser.parse(...)` accepts optional `root:` / `start:` parameters so a sub-parser can run from any non-terminal at any position.
 
-For each `=:` non-terminal in the grammar, the outer parser builds a sub-`MessageParser` instance and a recogniser closure. `OnDemandLiteralLexer.skipTrivia` tries those recognisers alongside `triviaRegexes`. Validated on a new `CoreGrammarTests/TriviaNonTerminal` case with grammar `nested =: "<" { /[^<>]/ | nested } ">" . S = "x" .` — accepts `<<<a>>>x`, rejects `<x`, `<a>`.
+For each structured `:` non-terminal in the grammar, the outer parser builds a sub-`MessageParser` instance and a recogniser closure. `OnDemandLiteralLexer.skipTrivia` tries those recognisers alongside `triviaRegexes`. Validated on a new `CoreGrammarTests/TriviaNonTerminal` case with grammar `nested structured : "<" { /[^<>]/ | nested } ">" . S = "x" .` — accepts `<<<a>>>x`, rejects `<x`, `<a>`.
 
 **Crucial structural fix during Step 2a:** the naive sub-parser invocation looped horribly under Swift.apus because `parse()` rebuilds the entire per-input setup on every call. Split `parse()` into:
 
 - `prepareInput(tokens:trivia:input:isSubParser:)` — per-input setup (`kindID`s, `tokenIndexByStart`, `literalSourceByID`, `regexByID`, `triviaRegexes`, `lookbehindByTerminalID`, sub-parser construction). Runs once per input.
 - `runGLL(root:start:)` — per-call: resets descriptor/CRF/yields state, seeds the root cluster, runs the GLL loop. Cheap; called many times against the prepared input.
 
-`parse()` is now `prepareInput + runGLL`. Sub-parsers get `prepareInput` once during outer-parse setup; their recogniser closures call only `runGLL`. A no-match `=:` recogniser call is now O(state-reset + one lex query) instead of O(grammar size). `lexCache` survives across `runGLL` calls within the same prepared input, so repeated queries at the same position become hits.
+`parse()` is now `prepareInput + runGLL`. Sub-parsers get `prepareInput` once during outer-parse setup; their recogniser closures call only `runGLL`. A no-match structured `:` recogniser call is now O(state-reset + one lex query) instead of O(grammar size). `lexCache` survives across `runGLL` calls within the same prepared input, so repeated queries at the same position become hits.
 
-**Sub-parser semantics:** when a sub-parser is set up (`isSubParser: true`), `triviaRegexes` stays empty and `triviaRecognisers` stays empty. Inside a `=:` body, what would otherwise be outer trivia (whitespace, line comments) is actual content. This matches the grammar author's intent — `multilineComment` body chars include literal whitespace.
+**Sub-parser semantics:** when a sub-parser is set up (`isSubParser: true`), `triviaRegexes` stays empty and `triviaRecognisers` stays empty. Inside a structured `:` body, what would otherwise be outer trivia (whitespace, line comments) is actual content. This matches the grammar author's intent — `multilineComment` body chars include literal whitespace.
 
 **Step 2b — string interpolation: scanner-mode annotations retired.**
 
@@ -1137,7 +1137,7 @@ Deletions:
 
 #### Phase E close — `boundaryMatches` retired the scanner-tokens dependency (Jun 14, 2026)
 
-After Step 2d, `ternary-with-spaces` (`let r = b ? /1/ : /2/`) still failed. Debugging traced it to the SCANNER producing one giant token for the entire input (matched by the anonymous inline regex inside `multilineComment =:`), which then broke `<s>`/`>s<` boundary checks: the old `boundaryMatches` indexed into `parser.tokens[]` and the giant token gave hasInterTokenGap nonsense answers.
+After Step 2d, `ternary-with-spaces` (`let r = b ? /1/ : /2/`) still failed. Debugging traced it to the SCANNER producing one giant token for the entire input (matched by the anonymous inline regex inside `multilineComment structured :`), which then broke `<s>`/`>s<` boundary checks: the old `boundaryMatches` indexed into `parser.tokens[]` and the giant token gave hasInterTokenGap nonsense answers.
 
 Root cause: `boundaryMatches` had no business reading scanner tokens at all under LCNP. The lex queries that actually drive the parse are per-terminal and predict-set-bounded, so they never spuriously match an anonymous interior regex (it's not in the FIRST set of any outer-grammar slot). Only the eager scanner — pattern-blind — would match it. The fix moved boundary semantics off `parser.tokens[]` entirely.
 
@@ -1249,7 +1249,7 @@ Synthetic layout tokens (Python's `>>|` INDENT and `|<<` DEDENT) routed through 
 
 **Mechanism.** `OnDemandLiteralLexer` gains a `virtualTokensAt: [CharPosition: [Int]]` field — zero-length synthetic terminals keyed by source position. The `lex` path checks `virtualTokensAt[skipTrivia(from: pos)]` for the requested terminalID before falling through to EOS/literal/regex matching. Multiple synthetics at one position (e.g. two DEDENTs at the same column) appear as multiple entries in the value array; each parser slot asking for the terminal at that position gets a successful match (grammar structure controls how many ask — Python.apus's `block = … |<<` is one per block end).
 
-**Precompute.** `computeVirtualLayoutTokens(tokens:input:indentKindID:dedentKindID:bracketPairs:)` in `LayoutTokenInjection.swift` mirrors the algorithm of `injectLayoutTokens` exactly — same indent-stack walk, same bracket-depth counter, same blank-line / NEWLINE-token treatment — but writes its output to a `[CharPosition: [Int]]` table instead of mutating `tokens[]`. Called from `MessageParser.prepareInput`, gated on `grammar.usesInjectedLayoutTokens` and `!isSubParser`. Sub-parsers (`=:` bodies) skip the precompute; synthetic tokens live at the outer parse level only.
+**Precompute.** `computeVirtualLayoutTokens(tokens:input:indentKindID:dedentKindID:bracketPairs:)` in `LayoutTokenInjection.swift` mirrors the algorithm of `injectLayoutTokens` exactly — same indent-stack walk, same bracket-depth counter, same blank-line / NEWLINE-token treatment — but writes its output to a `[CharPosition: [Int]]` table instead of mutating `tokens[]`. Called from `MessageParser.prepareInput`, gated on `grammar.usesInjectedLayoutTokens` and `!isSubParser`. Sub-parsers (structured `:` bodies) skip the precompute; synthetic tokens live at the outer parse level only.
 
 **Gating.** Existing `grammar.usesInjectedLayoutTokens` flag (set by `ApusParser` when `>>|` / `|<<` appear unquoted in grammar structure) reused unchanged — non-layout grammars allocate an empty dictionary and pay nothing. Verified: SwiftGrammar full-message suite, CoreGrammarTests, SpecialTokenTests, RegexLookbehindIntegration — all pass identically; no overhead measured on non-layout grammars.
 
@@ -1337,7 +1337,7 @@ After Phase H the eager `Scanner` was kept alive only to feed diagnostic readers
 
 **Architectural insight that drove the migration.** The parser already records, for every committed terminal, an exact `(start, rawEnd, kindID)` triple in `terminalCommitsByEnd`. That's grammar-authoritative boundary information — *no* whitespace heuristic, *no* language-specific assumption. Phase I exposed it as the source of truth: the parser dual-indexes commits as `terminalCommitsByStart` and offers `parser.terminalImage(startingAt: CharPosition) -> Substring?` returning the literal source content of the terminal that committed at that position. Trivia falls out as "everything between consecutive commits" — also available by walking the same sidecar.
 
-**`MessageParser` API simplified.** `parse(tokens:trivia:input:…)` → `parse(input:…)`. `prepareInput(tokens:trivia:input:isSubParser:)` → `prepareInput(input:isSubParser:)`. The `tokens: [Token]`, `trivia: [[Token]]`, `tokenIndexByStart` fields and the `tokenIdx(at:)` helper are gone. Sub-parsers (`=:` bodies) share the simplified API.
+**`MessageParser` API simplified.** `parse(tokens:trivia:input:…)` → `parse(input:…)`. `prepareInput(tokens:trivia:input:isSubParser:)` → `prepareInput(input:isSubParser:)`. The `tokens: [Token]`, `trivia: [[Token]]`, `tokenIndexByStart` fields and the `tokenIdx(at:)` helper are gone. Sub-parsers (structured `:` bodies) share the simplified API.
 
 **Mini-scanner for layout precompute.** `computeVirtualLayoutTokens` previously walked the scanner's `tokens[]`. It now walks `input` char-by-char with hardcoded Python-shaped string and comment delimiters (`"`, `'`, `"""`, `'''`, `#`). 80 lines, language-parameterisable when a second grammar needs different delimiters (Haskell, F#, YAML); no per-language hack today. Gating on `grammar.usesInjectedLayoutTokens` unchanged; non-layout grammars allocate nothing.
 

@@ -1281,7 +1281,7 @@ struct ExpressionSyntaxTests {
             return
         }
         #expect(result.isUnambiguous,
-                "Residual ambiguity in '\(snippet.label)': \(result.builder.diagnostics)")
+                "Residual ambiguity in '\(snippet.diagnosticID)': \(result.builder.diagnostics)")
     }
 
     @Test("trees match", arguments: expressionSnippets)
@@ -1296,7 +1296,7 @@ struct ExpressionSyntaxTests {
         }
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
 
-        #expect(refDump == adventDump, "Trees differ for '\(snippet.label)'")
+        #expect(refDump == adventDump, "Trees differ for '\(snippet.diagnosticID)'")
     }
 
     @Test("ownership keywords prefer postfix call/member/subscript")
@@ -1317,7 +1317,7 @@ struct ExpressionSyntaxTests {
                 continue
             }
             let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
-            #expect(refDump == adventDump, "Trees differ for '\(snippet.label)'")
+            #expect(refDump == adventDump, "Trees differ for '\(snippet.diagnosticID)'")
         }
     }
 
@@ -1337,7 +1337,7 @@ struct ExpressionSyntaxTests {
                 continue
             }
             let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
-            #expect(refDump == adventDump, "Trees differ for '\(snippet.label)'")
+            #expect(refDump == adventDump, "Trees differ for '\(snippet.diagnosticID)'")
         }
     }
 
@@ -1378,7 +1378,7 @@ struct ExpressionSyntaxTests {
                 continue
             }
             let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
-            #expect(refDump == adventDump, "Trees differ for '\(snippet.label)'")
+            #expect(refDump == adventDump, "Trees differ for '\(snippet.diagnosticID)'")
         }
     }
 }

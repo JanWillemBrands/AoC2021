@@ -1418,8 +1418,10 @@ keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents? .   // compo
 @longest
 keyPathExpression =         "\\" keyPathComponents .                    // root-absent (`\.foo`): keyPathComponents must start with `.`
 
+@longest
 keyPathRootType = keyPathRootBase keyPathRootOptionals? .   // dev 1,2
-keyPathRootBase = typeName typeGenericArgumentClause?
+keyPathRootBase = @prefer metatypeType
+                | typeName typeGenericArgumentClause?
                 | tupleType
                 | arrayType
                 | inlineArrayType
@@ -3080,7 +3082,7 @@ attribute = "@" >s< "specialized" >s< "(" genericWhereClause ")" .
 @longest
 attribute = "@"
             >-> ( "abi" "attached" "available" "convention" "freestanding" "isolated" "backDeployed" "derivative" "differentiable" "lifetime" "objc" "specialized" "transpose" )
-            >s< attributeName attributeArgumentClause? .
+            >s< attributeName attributeArgumentExprClause? .
 
 // Module-qualified attribute name = a custom attribute → its args are an EXPRESSION argument list, not
 // the balanced-token soup builtins allow. `@main::available(macOS 10.15, *)` rejects (availability spec

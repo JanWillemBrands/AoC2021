@@ -24,9 +24,8 @@ import BitCollections
 ///
 ///   - `start`      — content start (after leading-trivia skip)
 ///   - `end`        — content end (before trailing-trivia skip)
-///   - `triviaEnd`  — cursor position after trailing-trivia skip; the parser
-///                    advances `cI` to this position so subsequent lex calls
-///                    sit at a token boundary
+///   - `triviaEnd`  — cursor position after trailing-trivia handling. Normal parses skip trailing
+///                    trivia; recognizer sub-parses leave it for the surrounding recognizer.
 ///
 /// `boundaryMatches` uses `end` vs. `triviaEnd` to answer
 /// `<s>`/`>s<`/`<n>`/`>n<` from a single commit record.
@@ -58,7 +57,7 @@ struct LexCacheKey: Hashable {
 
 /// On-demand per-terminal lexer covering literal terminals (Phase B Step 2) and regex
 /// terminals (Phase C Step 1) directly against `input`. Trivia skipping uses
-/// the grammar's `isSkip` patterns plus `=:` non-terminal recognisers.
+/// the grammar's `isSkip` patterns plus structured `:` non-terminal recognisers.
 ///
 /// Phase E Step 2d (Jun 14, 2026): `LegacyScannerLexAdapter` retired — this
 /// lexer is the only path now. Terminals not present in `literalSourceByID`
@@ -74,9 +73,9 @@ struct LexCacheKey: Hashable {
 /// EOS still has a fallback special-case for grammars that don't populate
 /// the table.
 ///
-/// Match `end` is the position **after skipping trailing trivia**, so it
-/// coincides with the next visible-token start in well-formed inputs and
-/// preserves the parser's "cursor sits at a token boundary" invariant.
+/// In normal parses, `triviaEnd` coincides with the next visible-token start in well-formed inputs.
+/// Recognizer sub-parses return at `end` so the surrounding structured token keeps ownership of
+/// following trivia.
 struct OnDemandLiteralLexer {
     let input: String
     /// `terminalID → literal source text` for every literal terminal in the grammar.
@@ -100,13 +99,13 @@ struct OnDemandLiteralLexer {
     /// comments / etc. between the parser's cursor and the next meaningful
     /// character.
     let triviaRegexes: [Regex<AnyRegexOutput>]
-    /// Recognisers for `=:` non-terminal trivia (Phase E Step 2). Each closure
-    /// runs a recursive `MessageParser` sub-parse rooted at the `=:` non-
+    /// Recognisers for structured `:` non-terminal trivia (Phase E Step 2). Each closure
+    /// runs a recursive `MessageParser` sub-parse rooted at the trivia non-
     /// terminal and returns the longest accepting end position at `pos`, or
     /// `nil` if no match. Tried after `triviaRegexes` in `skipTrivia`.
     let triviaRecognisers: [(CharPosition) -> CharPosition?]
-    /// `=|` lexical-nonterminal recognisers, keyed by terminal kind ID. Each runs a GLL
-    /// sub-parse rooted at the `=|` nonterminal and returns its longest accept end at `pos`.
+    /// Structured `-` lexical-nonterminal recognisers, keyed by terminal kind ID. Each runs a GLL
+    /// sub-parse rooted at the lexical nonterminal and returns its longest accept end at `pos`.
     /// A terminal in this map is matched by its recogniser (one token) instead of a regex/literal.
     let lexicalTokenRecognisers: [Int: (CharPosition) -> CharPosition?]
     /// Terminal ID of the synthetic EOS sentinel (`"○"`). Matched directly at
@@ -119,9 +118,13 @@ struct OnDemandLiteralLexer {
     /// Multiple synthetic terminals at the same position appear once each in
     /// the value array (e.g. two DEDENTs at the same column).
     let virtualTokensAt: [CharPosition: [Int]]
-
-    func lex(at pos: CharPosition, terminalID: Int) -> [LexMatch] {
-        let scanStart = skipTrivia(from: pos)
+    func lex(
+        at pos: CharPosition,
+        terminalID: Int,
+        suppressesLeadingTrivia: Bool = false,
+        consumesTrailingTrivia: Bool = true
+    ) -> [LexMatch] {
+        let scanStart = suppressesLeadingTrivia ? pos : skipTrivia(from: pos)
         // Virtual zero-length match: registered at this position by the
         // layout-table precompute (e.g. INDENT/DEDENT in Python).
         if let virtuals = virtualTokensAt[scanStart], virtuals.contains(terminalID) {
@@ -132,11 +135,11 @@ struct OnDemandLiteralLexer {
             guard scanStart == input.endIndex else { return [] }
             return [LexMatch(terminalID: terminalID, start: scanStart, end: scanStart, triviaEnd: scanStart)]
         }
-        // `=|` lexical nonterminal: match extent via the GLL sub-parse recogniser. One token
+        // Structured `-` lexical nonterminal: match extent via the GLL sub-parse recogniser. One token
         // spanning the sub-parse's longest accept from `scanStart`; no match → no token.
         if let recognise = lexicalTokenRecognisers[terminalID] {
             guard scanStart < input.endIndex, let end = recognise(scanStart), end > scanStart else { return [] }
-            let cursorEnd = skipTrivia(from: end)
+            let cursorEnd = consumesTrailingTrivia ? skipTrivia(from: end) : end
             return [LexMatch(terminalID: terminalID, start: scanStart, end: end, triviaEnd: cursorEnd)]
         }
         if let literal = literalSourceByID[terminalID] {
@@ -155,7 +158,7 @@ struct OnDemandLiteralLexer {
                     return []
                 }
             }
-            let cursorEnd = skipTrivia(from: literalEnd)
+            let cursorEnd = consumesTrailingTrivia ? skipTrivia(from: literalEnd) : literalEnd
             return [LexMatch(terminalID: terminalID, start: scanStart, end: literalEnd, triviaEnd: cursorEnd)]
         }
         if let regex = regexByID[terminalID] {
@@ -165,7 +168,7 @@ struct OnDemandLiteralLexer {
             guard let m = input[scanStart...].prefixMatch(of: regex),
                   m.range.upperBound > scanStart else { return [] }
             let maxEnd = m.range.upperBound
-            let cursorEnd = skipTrivia(from: maxEnd)
+            let cursorEnd = consumesTrailingTrivia ? skipTrivia(from: maxEnd) : maxEnd
             var results = [LexMatch(terminalID: terminalID, start: scanStart, end: maxEnd, triviaEnd: cursorEnd)]
             // @preempt(X, …): besides the maximal match, offer the prefix ending
             // before each internal position where terminal `X` begins — ports
@@ -205,7 +208,7 @@ struct OnDemandLiteralLexer {
     }
 
     /// Advance past any sequence of trivia matches starting at `pos`. Tries
-    /// regex trivia first (fast path), then `=:` non-terminal recognisers
+    /// regex trivia first (fast path), then structured `:` non-terminal recognisers
     /// (heavier, for nested constructs that regex can't express). Stops as
     /// soon as nothing advances the cursor.
     func skipTrivia(from pos: CharPosition) -> CharPosition {

@@ -116,7 +116,7 @@ multiline comments), even the gated-transition version — *three* mode terminal
 trivia non-terminal that lets the ordinary GLL machinery count the nesting:
 
 ```apus
-multilineComment =: "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineComment } "*/" .
+multilineComment structured : "/*" { /(?s)(?:[^*\/]|\*(?!\/)|\/(?!\*))+/ | multilineComment } "*/" .
 ```
 
 Recognised as trivia during `OnDemandLiteralLexer.skipTrivia`. So `Swift.apus` no longer

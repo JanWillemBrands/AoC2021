@@ -98,7 +98,7 @@ struct SwiftSyntaxGenerator {
 
     mutating func generate() -> SourceFileSyntax? {
         diagnostics.removeAll()
-        // The root derivation covers the input MODULO TRIVIA. Comments are `=:` productions the
+        // The root derivation covers the input MODULO TRIVIA. Comments are structured `:` productions the
         // scanner skips, so a source beginning with `//` yields a root span that starts at the
         // first real TOKEN, not at `startIndex`. Demanding `i == startIndex && j == endIndex`
         // therefore rejected every comment-led source outright (33 corpus snippets), even though
@@ -3294,9 +3294,8 @@ struct SwiftSyntaxGenerator {
                 rightParen: selector == nil ? nil : .rightParenToken()
             )
         }
-        // Every OTHER argument form is still balanced-token soup at this level — see the note above.
-        if find(firstOf: ["attributeArgumentClause", "attributeArgumentExprClause",
-                          "macroRoleArguments"], in: spans) != nil {
+        // Every OTHER balanced-token argument form is still soup at this level — see the note above.
+        if find(firstOf: ["attributeArgumentClause", "macroRoleArguments"], in: spans) != nil {
             // Name the attribute so the triage says WHICH argument shapes actually occur.
             let head = String(input[from..<to]).prefix(while: { $0 != "(" })
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -3347,7 +3346,14 @@ struct SwiftSyntaxGenerator {
                 record(.unhandled, "dot-qualified attribute name with an unexpected tail", from: from, to: to)
                 return nil
             }
-            return AttributeSyntax(atSign: .atSignToken(), attributeName: name)
+            let arguments = attributeExprArguments(in: spans)
+            return AttributeSyntax(
+                atSign: .atSignToken(),
+                attributeName: name,
+                leftParen: arguments == nil ? nil : .leftParenToken(),
+                arguments: arguments,
+                rightParen: arguments == nil ? nil : .rightParenToken()
+            )
         }
         if find("typeIdentifier", in: nameSpans) != nil {
             record(.unhandled, "dot-qualified attribute name not converted", from: from, to: to)
@@ -3360,9 +3366,13 @@ struct SwiftSyntaxGenerator {
                 record(.lookupFailed, "attributeName resolved to no text", from: from, to: to)
                 return nil
             }
+            let arguments = attributeExprArguments(in: spans)
             return AttributeSyntax(
                 atSign: .atSignToken(),
-                attributeName: IdentifierTypeSyntax(name: .identifier(text))
+                attributeName: IdentifierTypeSyntax(name: .identifier(text)),
+                leftParen: arguments == nil ? nil : .leftParenToken(),
+                arguments: arguments,
+                rightParen: arguments == nil ? nil : .rightParenToken()
             )
         }
         var generics: GenericArgumentClauseSyntax? = nil
@@ -3370,6 +3380,7 @@ struct SwiftSyntaxGenerator {
             generics = convertGenericArgumentClause(gNT.nt, from: gNT.from, to: gNT.to)
         }
         let name = collectTerminalText(headNT.nt, from: headNT.from, to: headNT.to)
+        let arguments = attributeExprArguments(in: spans)
         return AttributeSyntax(
             atSign: .atSignToken(),
             // `@Swift::Foo` (SE-0491) — the selector hangs off the attribute NAME's type, which is
@@ -3378,8 +3389,23 @@ struct SwiftSyntaxGenerator {
                 moduleSelector: moduleSelector(in: spans),
                 name: .identifier(name),
                 genericArgumentClause: generics
-            )
+            ),
+            leftParen: arguments == nil ? nil : .leftParenToken(),
+            arguments: arguments,
+            rightParen: arguments == nil ? nil : .rightParenToken()
         )
+    }
+
+    private mutating func attributeExprArguments(
+        in spans: [(GrammarNode, CharPosition, CharPosition)]
+    ) -> AttributeSyntax.Arguments? {
+        guard let clauseNT = find("attributeArgumentExprClause", in: spans),
+              let (_, clauseSpans) = tileAlternate(clauseNT.nt, from: clauseNT.from, to: clauseNT.to)
+        else { return nil }
+        if let listNT = find("functionCallArgumentList", in: clauseSpans) {
+            return .argumentList(convertArgumentList(listNT.nt, from: listNT.from, to: listNT.to))
+        }
+        return .argumentList(LabeledExprListSyntax([]))
     }
 
     /// availableAttribute            = "@" >s< "available" >s< "(" availabilityAttributeArguments ")" .
@@ -5705,7 +5731,9 @@ struct SwiftSyntaxGenerator {
            let (_, rSpans) = tileAlternate(rootNT.nt, from: rootNT.from, to: rootNT.to) {
             if let baseNT = find("keyPathRootBase", in: rSpans),
                let (_, bSpans) = tileAlternate(baseNT.nt, from: baseNT.from, to: baseNT.to) {
-                if let nameNT = find("typeName", in: bSpans) {
+                if let metaNT = find("metatypeType", in: bSpans) {
+                    root = convertType(metaNT.nt, from: metaNT.from, to: metaNT.to)
+                } else if let nameNT = find("typeName", in: bSpans) {
                     var generics: GenericArgumentClauseSyntax? = nil
                     if let gNT = find(firstOf: ["typeGenericArgumentClause", "genericArgumentClause"], in: bSpans) {
                         generics = convertGenericArgumentClause(gNT.nt, from: gNT.from, to: gNT.to)
@@ -5727,6 +5755,22 @@ struct SwiftSyntaxGenerator {
                     ))
                 } else {
                     root = convertType(baseNT.nt, from: baseNT.from, to: baseNT.to)
+                }
+            }
+            if let currentRoot = root, currentRoot.as(MetatypeTypeSyntax.self) == nil {
+                let rootText = collectTerminalText(rootNT.nt, from: rootNT.from, to: rootNT.to)
+                if rootText.hasSuffix(".Type") {
+                    root = TypeSyntax(MetatypeTypeSyntax(
+                        baseType: currentRoot,
+                        period: .periodToken(),
+                        metatypeSpecifier: .keyword(.Type)
+                    ))
+                } else if rootText.hasSuffix(".Protocol") {
+                    root = TypeSyntax(MetatypeTypeSyntax(
+                        baseType: currentRoot,
+                        period: .periodToken(),
+                        metatypeSpecifier: .keyword(.Protocol)
+                    ))
                 }
             }
         }
@@ -6373,8 +6417,10 @@ struct SwiftSyntaxGenerator {
                 moduleSelector: moduleSelector(in: spans),
                 // `.self` needs `keyword(self)`, but NOT the full member-name map: that one reads
                 // a backtick-escaped name as an operator (`.\`escaped\`` broke on it).
-                baseName: (name == "self" || name == "Self") ? .keyword(name == "self" ? .self : .Self)
-                                                             : .identifier(name)
+                baseName: name == "self" ? .keyword(.self)
+                    : name == "Self" ? .keyword(.Self)
+                    : name == "init" ? .keyword(.`init`)
+                    : .identifier(name)
             )
         ))
     }

@@ -45,7 +45,7 @@ struct TokenPattern {
     /// which scans an operator for an internal `/`, tries the regex, and COMMITS when it scans — while
     /// keeping the whole operator when it does not (`^/x`). Stores the nonterminal *name*.
     var preemptConstruct: String? = nil
-    /// `=|` lexical-nonterminal marker. This terminal has no regex/literal source; its match
+    /// Structured `-` lexical-nonterminal marker. This terminal has no regex/literal source; its match
     /// is computed by a GLL sub-parse of the same-named nonterminal (see `GrammarNode.isLexicalToken`
     /// and `MessageParser` lexicalTokenRecognisers). Skipped when building regexByID/literalSourceByID.
     var isLexicalToken: Bool = false

@@ -968,7 +968,7 @@ struct AttributeSyntaxTests {
             return
         }
         #expect(result.isUnambiguous,
-                "Residual ambiguity in '\(snippet.label)': \(result.builder.diagnostics)")
+                "Residual ambiguity in '\(snippet.diagnosticID)': \(result.builder.diagnostics)")
     }
 
     @Test("trees match", arguments: attributeSnippets)
@@ -983,6 +983,6 @@ struct AttributeSyntaxTests {
         }
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
 
-        #expect(refDump == adventDump, "Trees differ for '\(snippet.label)'")
+        #expect(refDump == adventDump, "Trees differ for '\(snippet.diagnosticID)'")
     }
 }

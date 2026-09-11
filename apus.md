@@ -464,8 +464,8 @@ production  = productionPragma* identifier ( ":" | "-" | "=" ) productionBody ".
 
 // `:` makes the LHS skipped trivia/token, `-` makes it an emitted token, and
 // `=` makes it a grammar node. A direct terminal body uses the scanner fast path;
-// a structured `:` body uses a trivia recognizer sub-parse. Structured `-` is
-// still represented by the legacy `=|` implementation while migration continues.
+// a structured `:` body uses a trivia recognizer sub-parse, and a structured `-`
+// body uses a lexical recognizer sub-parse that emits one token.
 productionBody = terminalBody | selection .
 
 terminalBody = regex | literal | "@builder" builderKey? .

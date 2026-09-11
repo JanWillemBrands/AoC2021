@@ -226,10 +226,10 @@ class ApusParser {
         let operatorKind = token.kind
         let hasDirectTerminalBody = productionStartsWithDirectTerminalBody(afterOperatorAt: cI)
         
-        if operatorKind == "-" || (operatorKind == ":" && hasDirectTerminalBody) {
+        if (operatorKind == "-" || operatorKind == ":") && hasDirectTerminalBody {
             // direct terminal definition: ":" = silent, "-" = visible.
-            // Structured ":" is handled below as a trivia nonterminal; structured "-"
-            // remains future work and still requires a direct regex/literal/@builder RHS.
+            // Structured ":" and "-" are handled below as recogniser-backed trivia / lexical
+            // nonterminals.
             skip = (token.kind == ":")
             cI += 1
             switch token.kind {
@@ -273,12 +273,12 @@ class ApusParser {
 
 
         } else {
-            // production rule — `=` for emit, `:`/`=:` for trivia,
-            // `=|` for a lexical nonterminal (body recognized by a GLL sub-parse, emitted
-            // as one token; references to it resolve to a terminal — see GrammarNode.isLexicalToken).
-            try expect(["=", ":", "=:", "=|"])
-            let isTrivia = token.kind == ":" || token.kind == "=:"
-            let isLexical = token.kind == "=|"
+            // production rule — `=` for emit, `:` for trivia, `-` for a lexical nonterminal
+            // (body recognized by a GLL sub-parse, emitted as one token; references to it resolve
+            // to a terminal — see GrammarNode.isLexicalToken).
+            try expect(["=", ":", "-"])
+            let isTrivia = token.kind == ":"
+            let isLexical = token.kind == "-"
             // Collect signature actions (between nonterminal name and operator)
             let signatureActions = collectActions(at: cI)
             cI += 1
@@ -303,9 +303,11 @@ class ApusParser {
             }
             if isTrivia {
                 lhsNode.isTrivia = true
+                markRecognizerBodySuppressesLeadingTrivia(node)
             }
             if isLexical {
                 lhsNode.isLexicalToken = true
+                markRecognizerBodySuppressesLeadingTrivia(node)
                 // Register the name as a terminal so references in other productions resolve to
                 // `.T` (a single token) rather than expanding the body inline. The TokenPattern is
                 // a marker only — its match is computed by a GLL sub-parse (lexicalTokenRecognisers).
@@ -328,6 +330,32 @@ class ApusParser {
             try expect(["."])
             cI += 1
 
+        }
+    }
+
+    private func markRecognizerBodySuppressesLeadingTrivia(_ node: GrammarNode?) {
+        guard let node else { return }
+        switch node.kind {
+        case .T, .TI, .C:
+            node.suppressesLeadingTrivia = true
+            markRecognizerBodySuppressesLeadingTrivia(node.seq)
+        case .B, .EPS:
+            markRecognizerBodySuppressesLeadingTrivia(node.seq)
+        case .ALT:
+            for symbol in node.bodySymbols {
+                markRecognizerBodySuppressesLeadingTrivia(symbol)
+            }
+            markRecognizerBodySuppressesLeadingTrivia(node.alt)
+        case .DO, .OPT, .POS, .KLN:
+            markRecognizerBodySuppressesLeadingTrivia(node.alt)
+            markRecognizerBodySuppressesLeadingTrivia(node.seq)
+        case .N:
+            // Do not cross into the referenced nonterminal's definition. This is the scoped
+            // boundary: a structured recognizer may call a normal `=` payload, whose terminals
+            // keep normal leading-trivia skipping, then resume exact matching in the recognizer body.
+            markRecognizerBodySuppressesLeadingTrivia(node.seq)
+        default:
+            markRecognizerBodySuppressesLeadingTrivia(node.seq)
         }
     }
 

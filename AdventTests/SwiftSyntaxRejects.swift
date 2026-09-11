@@ -9544,9 +9544,8 @@ struct RejectSyntaxTests {
     func adventRejects(_ snippet: SwiftSnippet) throws {
         guard snippet.disabledReason == nil else { return }
         let result = try adventParse(snippet)
-        #expect(result == nil, "Advent wrongly accepted invalid input '\(snippet.label)': \(snippet.source)")
+        #expect(result == nil, "Advent wrongly accepted invalid input '\(snippet.diagnosticID)': \(snippet.source)")
     }
 
 
 }
-

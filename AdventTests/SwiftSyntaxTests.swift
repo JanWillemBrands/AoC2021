@@ -35,6 +35,7 @@ struct SwiftSnippet: CustomTestStringConvertible, Sendable {
     let syntaxVersion: String
     var disabledReason: String?
     var testDescription: String { label }
+    var diagnosticID: String { "\(origin)/\(label)" }
 }
 
 // MARK: - SwiftSyntax Reference Helper
@@ -298,7 +299,7 @@ func adventParse(_ source: String) throws -> AdventParseResult? {
 /// into the baseline CSV. SwiftSyntax suites call this; older callers use
 /// `adventParse` and get a derived label.
 func adventParse(_ snippet: SwiftSnippet) throws -> AdventParseResult? {
-    runAdventOnce(snippet.source, label: snippet.label).result
+    runAdventOnce(snippet.source, label: snippet.diagnosticID).result
 }
 
 func adventSwiftSyntaxTree(_ source: String) throws -> SourceFileSyntax? {
@@ -306,13 +307,13 @@ func adventSwiftSyntaxTree(_ source: String) throws -> SourceFileSyntax? {
 }
 
 func adventSwiftSyntaxTree(_ snippet: SwiftSnippet) throws -> SourceFileSyntax? {
-    runAdventOnce(snippet.source, label: snippet.label).swiftSyntaxTree
+    runAdventOnce(snippet.source, label: snippet.diagnosticID).swiftSyntaxTree
 }
 
 /// Why the converter could not build a faithful tree for this snippet. Empty does NOT
 /// imply the tree matches, but a non-empty list names every place it gave up.
 func adventGeneratorDiagnostics(_ snippet: SwiftSnippet) -> [GeneratorDiagnostic] {
-    runAdventOnce(snippet.source, label: snippet.label).generatorDiagnostics
+    runAdventOnce(snippet.source, label: snippet.diagnosticID).generatorDiagnostics
 }
 
 private func shortLabel(_ source: String) -> String {
@@ -424,7 +425,7 @@ struct Phase1TreeTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -442,7 +443,7 @@ struct Phase1TreeTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -513,7 +514,7 @@ struct Phase4AttrTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -528,7 +529,7 @@ struct Phase4AttrTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -579,7 +580,7 @@ struct Phase4ClosureTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -594,7 +595,7 @@ struct Phase4ClosureTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -639,7 +640,7 @@ struct Phase4DeclTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -654,7 +655,7 @@ struct Phase4DeclTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -705,7 +706,7 @@ struct Phase4TypeTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -720,7 +721,7 @@ struct Phase4TypeTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -766,7 +767,7 @@ struct Phase3BranchTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -781,7 +782,7 @@ struct Phase3BranchTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -826,7 +827,7 @@ struct Phase3ModifierTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -841,7 +842,7 @@ struct Phase3ModifierTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -883,7 +884,7 @@ struct Phase3EnumCaseTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -898,7 +899,7 @@ struct Phase3EnumCaseTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -947,7 +948,7 @@ struct Phase3StatementTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -962,7 +963,7 @@ struct Phase3StatementTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1005,7 +1006,7 @@ struct Phase2LiteralTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1020,7 +1021,7 @@ struct Phase2LiteralTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1066,7 +1067,7 @@ struct Phase2InfixTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1081,7 +1082,7 @@ struct Phase2InfixTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1130,7 +1131,7 @@ struct Phase2PostfixTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1145,7 +1146,7 @@ struct Phase2PostfixTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1190,7 +1191,7 @@ struct Phase3TypeTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1205,7 +1206,7 @@ struct Phase3TypeTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1231,7 +1232,7 @@ struct Phase3FunctionTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1246,7 +1247,7 @@ struct Phase3FunctionTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1353,7 +1354,7 @@ struct Phase4CoroutineTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1397,7 +1398,7 @@ struct Phase4PatternTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1444,7 +1445,7 @@ struct Phase4PrecedenceTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1491,7 +1492,7 @@ struct Phase4IfConfigTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1538,7 +1539,7 @@ struct Phase4StringTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1585,7 +1586,7 @@ struct Phase4KeyPathTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1600,7 +1601,7 @@ struct Phase4KeyPathTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1643,7 +1644,7 @@ struct Phase4ImportTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1658,7 +1659,7 @@ struct Phase4ImportTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1700,7 +1701,7 @@ struct Phase4MacroTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1715,7 +1716,7 @@ struct Phase4MacroTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1760,7 +1761,7 @@ struct Phase4LoopTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1775,7 +1776,7 @@ struct Phase4LoopTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1816,7 +1817,7 @@ struct Phase4AccessorTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1831,7 +1832,7 @@ struct Phase4AccessorTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1874,7 +1875,7 @@ struct Phase4MiscTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1889,7 +1890,7 @@ struct Phase4MiscTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -1929,7 +1930,7 @@ struct Phase4AvailableTests {
         let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
         let why = adventGeneratorDiagnostics(snippet)
         #expect(refDump == adventDump, """
-            Trees differ for '\(snippet.label)' — \(snippet.source)
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
             --- swift-syntax ---
             \(refDump)
             --- advent ---
@@ -1944,7 +1945,7 @@ struct Phase4AvailableTests {
         guard snippet.disabledReason == nil else { return }
         let diagnostics = adventGeneratorDiagnostics(snippet)
         #expect(diagnostics.isEmpty, """
-            Converter fell back on '\(snippet.label)' — \(snippet.source)
+            Converter fell back on '\(snippet.diagnosticID)' — \(snippet.source)
             \(diagnostics.map(\.description).joined(separator: "\n"))
             """)
     }
@@ -2001,12 +2002,12 @@ struct ConverterFallbackTriage {
                 switch d.kind {
                 case .lookupFailed:
                     tally[key, default: 0] += 1
-                    if failures.count < 20 { failures.append("\(snippet.label): \(d)") }
+                    if failures.count < 20 { failures.append("\(snippet.diagnosticID): \(d)") }
                 case .unhandled:
                     unhandled[key, default: 0] += 1
                 }
                 if samples[key, default: []].count < 6 {
-                    samples[key, default: []].append("\(snippet.label) «\(d.text.prefix(60))»")
+                    samples[key, default: []].append("\(snippet.diagnosticID) «\(d.text.prefix(60))»")
                 }
             }
         }
@@ -2037,7 +2038,7 @@ struct ConverterFallbackTriage {
             let got = i < mineLines.count ? mineLines[i].trimmingCharacters(in: .whitespaces) : "<end>"
             silentCauses["expected \(expected)   got \(got)", default: 0] += 1
             if silentSamples[expected, default: []].count < 2 {
-                silentSamples[expected, default: []].append(snippet.label)
+                silentSamples[expected, default: []].append(snippet.diagnosticID)
             }
         }
         _ = silentSamples
@@ -2168,7 +2169,7 @@ struct MultilineSegmentProbe {
         ]
         for snippet in translatedSnippets where labels.contains(snippet.label) {
             let tree = Parser.parse(source: snippet.source)
-            print("### \(snippet.label)  source=\(snippet.source.debugDescription)")
+            print("### \(snippet.diagnosticID)  source=\(snippet.source.debugDescription)")
             dumpLiterals(in: Syntax(tree))
         }
     }

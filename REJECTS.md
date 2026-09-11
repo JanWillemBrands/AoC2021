@@ -665,11 +665,11 @@ becomes that instance's identity. The seam already exists and already varies pol
 `isSubParser` switches off the FOLLOW obligation and the predict filter, and `@preempt` constructs
 sub-parsers exactly this way. "Newlines are not trivia in this sub-parse" is the same kind of
 per-instance policy and needs no descriptor/CRF identity change. Mechanically: make the single-line
-interpolated string a `=|` lexical nonterminal — one token spanning the literal, body recognised by a
+interpolated string a structured `-` lexical nonterminal — one token spanning the literal, body recognised by a
 newline-free sub-parse — which mirrors swift emitting it as one bounded token stream.
 
 Caveats to weigh first:
-- The `=|` attempt earlier in this session failed (76/26/1), for an unrelated cause since fixed
+- The structured `-` attempt earlier in this session failed (76/26/1), for an unrelated cause since fixed
   (`prepareInput` skipped lookbehind resolution for lexical tokens). Less proven than it looks.
 - If the literal becomes ONE token, the interpolation's expressions leave the main forest — moving
   `trees differ` and affecting AST generation. That trades a reject fix against tree fidelity, which
@@ -876,16 +876,16 @@ Three findings, all measured:
    follow?" and the honest answer is no, which is *why* swift errors. **Removing `lexLKH` would not
    help**, and neither gate is wrong. (Contrast `/foo/{}` and `qux(/, "(")/2`, where the regex
    COMPLETED and only the enclosing expression failed — already handled by the RAW-forest snapshot.)
-3. **`=|` (lexical-token recogniser) is NOT a viable framing for regex.** Declaring
-   `plainRegularExpressionLiteral =| …` loads and runs, but: **reject 43 → 76, accept 0 → 26,
+3. **structured `-` (lexical-token recogniser) is NOT a viable framing for regex.** Declaring
+   `plainRegularExpressionLiteral structured - …` loads and runs, but: **reject 43 → 76, accept 0 → 26,
    ambiguity 0 → 1** (all 13 accept-failure labels regex-related). Cause: a recogniser sub-parse
    strips OUTER CONTEXT, and Advent's regex rules are built from outer-context gates — `<-<` on
    `regexOpenSlash` (evaluated against the commit log, which is empty at sub-parse start, while the
    outer `cL` is now the `plainRegularExpressionLiteral` terminal carrying no lookbehind) and the
    `>n<`/`<n>` newline split. Smoking gun: `testForwardSlashRegex41#1` (`/x/??/x/`), the case the
    `optionalMark` gate had just fixed, became an accept failure. Also `<-<` is currently parsed only
-   in the TERMINAL branch of `production()`, so it cannot even be written on a `=|` production
-   (tracked as a TODO). Lesson: `=|` suits self-contained bodies; it hides rather than solves context
+   in the TERMINAL branch of `production()`, so it cannot even be written on a structured `-` production
+   (tracked as a TODO). Lesson: structured `-` suits self-contained bodies; it hides rather than solves context
    dependence, which is the whole substance of regex-vs-divide.
 
 **Direction considered — lexicalisation-DAG framing, and its FALSIFICATION (2026-08-24).**
@@ -896,12 +896,12 @@ lexical analysis.pdf`. That gives a well-formed side condition, the same shape a
 rule already in `Descriptor.swift`: *remove edge `(T,i,j)` if `T` carries `@splitBefore(X)` and an
 `X`-edge starts at some `p`, `i < p < j`*. Prune the edge and the straddle never reaches the parser.
 
-Prerequisite built (kept): `<-<`/`<+<` are now attachable to `=|` productions
+Prerequisite built (kept): `<-<`/`<+<` are now attachable to structured `-` productions
 (`lookbehindAnnotations(attachingTo:)`, hoisted out of the terminal-only branch of `production()`) —
 the TODO #19 unification in the "can *carry*" direction. It also exposed a real bug: `prepareInput`
 `continue`d on `pat.isLexicalToken`, which skipped not just the regex/literal registration but the
-**lookbehind resolution** at the bottom of the same loop, so a `=|` terminal could never have a gate.
-Both fixes are behaviour-neutral at 43/0/0 and currently UNEXERCISED (no grammar uses `=|`).
+**lookbehind resolution** at the bottom of the same loop, so a structured `-` terminal could never have a gate.
+Both fixes are behaviour-neutral at 43/0/0 and currently UNEXERCISED (no grammar uses structured `-`).
 
 **The test failed.** Prediction: with the gate attached outward, most accept failures recover and
 `testForwardSlashRegex41#1` (`/x/??/x/`) passes.
@@ -909,12 +909,12 @@ Both fixes are behaviour-neutral at 43/0/0 and currently UNEXERCISED (no grammar
 | config | reject | accept | ambiguity |
 |---|---|---|---|
 | baseline | 43 | 0 | 0 |
-| regex as `=|`, no outward gate | 76 | 26 | 1 |
-| `=|` + outward gate, bug present | 76 | 26 | 1 (byte-identical — gate discarded) |
-| `=|` + outward gate, bug fixed | 73 | 24 | 1 |
+| regex as structured `-`, no outward gate | 76 | 26 | 1 |
+| structured `-` + outward gate, bug present | 76 | 26 | 1 (byte-identical — gate discarded) |
+| structured `-` + outward gate, bug fixed | 73 | 24 | 1 |
 
 Only 2 of 26 recovered and FSR41 still fails, with the gate demonstrably live (it moved 3 rejects /
-2 accepts). So the *engineering* claim is disproven: pushing the regex into a `=|` edge with the gate
+2 accepts). So the *engineering* claim is disproven: pushing the regex into a structured `-` edge with the gate
 moved outward does NOT restore correct behaviour. The 24 residual accept failures are all regex, with
 `ForwardSlashRegexSkipping*` dominating, so the regex rules depend on more inner structure than the
 two gates identified (`<-<`, `>n<`/`<n>`). The DAG *description* remains accurate and still explains

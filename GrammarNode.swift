@@ -82,7 +82,7 @@ final class GrammarNode {
     let kind: GrammarNodeKind
     let name: String
 
-    /// True for LHS non-terminals declared with `=:` — their parse result is
+    /// True for LHS non-terminals declared with `:` — their parse result is
     /// consumed as trivia rather than emitted to the outer BSR. Recognised at
     /// trivia-skip time via a recursive `MessageParser` sub-instance.
     var isTrivia: Bool = false
@@ -195,8 +195,13 @@ final class GrammarNode {
     /// Newlines INSIDE a committed token (nested multiline string, block comment) are permitted.
     var requiresSameLine: Bool = false
 
-    /// `=|` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at lex
-    /// time and emitted as a SINGLE token (like `=:` trivia, but a token not trivia). References
+    /// Terminal occurrence belongs directly to a structured `:` / `-` recognizer body and should
+    /// match at the exact parser cursor instead of skipping leading trivia first. Normal `=`
+    /// payloads reached from that body keep the default trivia skip.
+    var suppressesLeadingTrivia: Bool = false
+
+    /// Structured `-` lexical-nonterminal. The LHS production is recognized by a GLL sub-parse at
+    /// lex time and emitted as a SINGLE token (like structured `:` trivia, but a token not trivia). References
     /// to it in other productions resolve to a terminal (`.T`) — the outer parser never sees the
     /// body characters, so they can't be re-read (e.g. a regex body can't alias an operator
     /// sequence). Mirrors swift-syntax's lexer committing to one `/…/` token.

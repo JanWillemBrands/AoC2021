@@ -420,6 +420,14 @@ extension Grammar {
             try populateFirstFollowSets(for: seq)
             updateFollow(for: node)
             if let production = nonTerminals[node.name] {
+                if production.isLexicalToken {
+                    let error = """
+                    grammar parse error: '\(node.name)' was used as a nonterminal before it was defined as a structured lexical terminal
+                    define the terminal before using it in the grammar
+                    """
+                    Logger.grammar.error("\(error, privacy: .public)")
+                    throw GrammarNodeError.undefinedNonTerminal(name: node.name, definedAsTerminal: true)
+                }
                 node.alt = production
                 node.first = production.first
                 if node.first.contains("") {

@@ -39,7 +39,7 @@
 //
 //  Definition operators get distinct arrows (no separate "kind" tag):
 //    =   production          →      -   token terminal     ↦
-//    :   discarded terminal  ⇢      =:  trivia rule         ↝      =|  lexical token  ↠
+//    :   discarded terminal  ⇢
 //
 //  Standalone ALL-CAPS comment lines (e.g. `// TYPES`, `// EXPRESSIONS`) become
 //  section headers, mirroring the TSPL chapter structure. All other comments,
@@ -121,7 +121,7 @@ private final class ApusHTMLConverter {
     private let rePragma  = /@\p{XID_Start}\p{XID_Continue}*/
 
     // Multi-character operators, longest-first so prefixes never shadow them.
-    private let multiOps = ["=:", "=|", ">>|", "|<<", ">+>", ">->", "<+<", "<-<",
+    private let multiOps = [">>|", "|<<", ">+>", ">->", "<+<", "<-<",
                             ">n<", ">s<", "<n>", "<s>", "---", "~~~"]
     private let singleOps: Set<Character> = [".", ":", "=", "-", "|", "(", ")",
                                              "[", "]", "{", "}", "<", ">",
@@ -358,7 +358,7 @@ private final class ApusHTMLConverter {
             let body = parseTerminalRHS()
             expect(".")
             lineHTML = pragmaPrefix + nt(name) + arrow(for: op) + body
-        } else if k == "=" || k == ":" || k == "=:" || k == "=|" {
+        } else if k == "=" || k == ":" || k == "-" {
             // production rule
             let op = k
             pos += 1
@@ -557,14 +557,11 @@ private final class ApusHTMLConverter {
     /// Distinct arrow glyph per definition operator (the operator's meaning, so no
     /// separate "kind" tag on the label):
     ///   =  → (production)   -  ↦ (token terminal)   :  ⇢ (discarded terminal)
-    ///   =: ↝ (trivia rule)  =| ↠ (lexical token)
     private func arrow(for op: String) -> String {
         let g: String
         switch op {
         case "-":  g = "↦"
         case ":":  g = "⇢"
-        case "=:": g = "↝"
-        case "=|": g = "↠"
         default:   g = "→"
         }
         return " <span class=\"apus-arrow\">\(g)</span> "

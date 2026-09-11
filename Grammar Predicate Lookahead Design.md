@@ -69,7 +69,7 @@ produced all derivations, so evaluation is a **yield-set query**, not a re-scan:
   parsed here, so it yielded here.
 - **Unreachable target (on-demand fallback).** When `N` is *not* otherwise attempted at
   `p`, seed an isolated GLL sub-parse from `(N, p)` — the same mechanism that runs
-  `=|`/`=:` lexical sub-parses — collect whether `N` yields, memoise `(N, p) → Bool`,
+  structured `-`/structured `:` lexical sub-parses — collect whether `N` yields, memoise `(N, p) → Bool`,
   discard. The sub-parse honours every parse-time gate natively (it *is* a parse), so there
   is no procedural re-derivation of the condition.
 
