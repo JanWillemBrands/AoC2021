@@ -1,151 +1,171 @@
 # This file is the canonical TODO list in this project.
 
-25. **The `expression` / `conditionExpression` rule families are duplicated, and the copies have already drifted apart twice.**
-   `conditionExpression` exists ONLY to forbid assignment (assignment returns `Void`, so it is not a
-   condition). Every other difference between the two families is drift. Measured diff of the
-   alternates (Sep 3 2026):
+Status Sep 11 2026, full suite: **8 issues, all `trees match`, all one family (item 1).**
+accepts 0 · residual ambiguity 0 · wrongly-accepted 0 · `.lookupFailed` 0 · crashes 0 ·
+`.unhandled` 5.
 
-   | alternate | `infixExpression` | `conditionInfixExpression` |
-   |---|---|---|
-   | `<s> infixOperator <s> …` | yes | yes |
-   | `typeCastingOperator` | yes | yes |
-   | tight infix | `>s< ( >->(regex) postfixOperatorToken \| dotOperator \| "&" ) >s< …` | `>s< infixOperator >s< …` |
-   | ternary | `conditionalOperator expression` | FIXED — was `conditionalOperator tryOperator? awaitOperator? expression` |
-   | `arrowExpr`, `assignmentOperator` | yes | absent (deliberate) |
+Headline metric is `grep -c 'recorded an issue'` on the whole suite. Do NOT use
+`grep 'Trees differ'` — it only fires when BOTH trees are built and differ, so it silently omits
+snippets that produce no tree at all (that mistake hid 33 failures for most of the converter work).
 
-   - **Ternary: FIXED Sep 3 2026.** The repeated `tryOperator? awaitOperator?` let `try` attach two
-     ways to the ternary's FALSE branch (`conditionalOperator` holds the then-branch internally).
-     `if c ? f() : try g() { }`, the `await` form and the both-branches form were all ambiguous
-     pivots; `if c ? try f() : g() { }` was fine, which is why nothing caught it. The identical fix
-     had been applied to `infixExpression` and never mirrored. Guarded by `ConditionInfixParityTests`.
-   - **Tight infix: STILL DIVERGENT, consequence UNDEMONSTRATED.** `infixExpression` carries the
-     regex gate `@cannotParse( regularExpressionLiteral )` and the `postfixOperatorToken | dotOperator | "&"`
-     operator split; `conditionInfixExpression` has neither, just `infixOperator`. Parity probes for
-     `a & b`, `a&b`, `a/b/c`, `a...b`, `x!.y` all pass in BOTH positions, so no behavioural
-     difference has been shown — the divergence is textual so far. Do not "fix" it without a failing
-     case first; add rows to `infixParityCases` when one is found.
+---
 
-   **The duplication is the real defect.** Two families that must be kept in sync, and the sync has
-   failed twice already: once in the grammar (above) and once in `GenerateSwiftSyntaxAST`, which
-   looked only for `infixExpressions` and silently dropped `x > 0` from `if let x = y, x > 0`.
-   Proposed factoring: a shared `commonInfixExpression` included by both, with `infixExpression`
-   adding the assignment and arrow alternates. These are the hottest rules in the grammar and carry
-   the `@longest`/`@prefer` annotations, so this needs its own ambiguity A/B — NOT a drive-by.
+## Open work
 
-   **`@excludedFrom(condition)` is NOT a substitute — checked Sep 3 2026.** The obvious collapse is
-   to delete the whole condition family and write
-   `infixExpression = @excludedFrom(condition) assignmentOperator expression .`, letting one
-   annotation express the single sanctioned difference. It does not work: `ContainmentRule`
-   (Oracle.swift) is pure SPAN containment — it prunes a reading whose span lies inside any yield of
-   the container (`$0.i <= span.i && span.j <= $0.j`) — not an ancestor walk, and it knows nothing
-   about scope boundaries. An assignment inside a CLOSURE inside a condition is lexically contained
-   in the `condition` span, so it would be pruned despite being legal Swift:
-   `if xs.contains(where: { c in count = 1; return true }) { g() }`.
+1. **Types in expression position — the last 8 failures, and they are ONE question.**
+   `testInverseTypes#2/#3/#5/#7/#8`, `testCompositionTypeExpr#8`, `testNonisolatedSpecifier#4/#13`.
+   In each, a type-only construct sits where an expression is also viable and we pick by SPAN
+   rather than by context:
 
-   The duplication handles that for free: a closure body re-enters via
-   `statements → statement → expression`, the UNRESTRICTED family, so the restriction stops at the
-   scope boundary automatically. Any factoring must preserve this; the case is pinned by
-   `ConditionInfixParityTests.assignmentInClosureInsideCondition`.
+   - `[any P & Q]` → SequenceExpr instead of one `TypeExpr(SomeOrAnyType(CompositionType))`
+   - `X<~Copyable>()`, `X<P & ~Copyable>()` → the `<`…`>` read as comparison operators instead of
+     `GenericSpecializationExpr`
+   - `~Copyable` / nonisolated forms → type spliced into a sequence
 
-   This generalises: containment predicates express "nowhere inside X", but most language rules of
-   this shape mean "nowhere inside X, until a new scope begins". Reach for a separate nonterminal
-   whenever the restriction should reset at a scope boundary, and for `@confinedTo`/`@excludedFrom`
-   only when it genuinely applies to the whole span.
-   Source: Sep 3 2026 AST work; `ConditionInfixParityTests`.
+   Evidence they are one problem, not three: `@longest` on `primaryExpression = boxedProtocolType`
+   fixed the plain `any P & Q` case and did NOT fix the array-element case. That is the signature of
+   a span-based remedy applied to a context-based problem. Expect one coherent treatment (a
+   commit/lookahead primitive, or `@cannotParse` in the other direction) to close all 8; resist
+   patching them individually.
 
-26. **`matchPattern = @prefer expressionPattern` prevents the grammar from expressing binding-vs-match context.**
-   In `case let y`, swift-syntax emits `IdentifierPattern` — the name is BOUND. In a plain match
-   position the same spelling is an `ExpressionPattern` — the value is COMPARED. Our grammar cannot
-   say this: `@prefer expressionPattern` prunes the identifierPattern alternate before any consumer
-   sees it, so `GenerateSwiftSyntaxAST.convertMatchPattern` carries a `binding: Bool` flag and
-   re-applies the distinction after the fact.
+2. **Five remaining `.unhandled` records.** Not all cause tree failures, but each is a real gap:
+   `abiVariableDeclaration` and `abiSubscriptDeclaration` (testABIAttribute#19/#7 — the bodyless
+   ABI-only decl forms); `genericWhereClause` in `declHeadModifiers` (testForeachAsync2#1);
+   `convertType` flattening an unrecognised `type` to `IdentifierType`; and a multiline
+   interpolation whose head contains a comment holding `"""` (testMultilineString46#1).
 
-   The grammar already has the right idiom for exactly this shape of problem: `bindingSubpattern`
-   (`= wildcardPattern | identifierPattern | tupleBindingPattern`) was introduced so tuple binding
-   elements get an annotation-free sub-pattern, and its comment notes the structural split "removes
-   the spurious typed reading WITHOUT an @prefer". The analogous move here is a `bindingMatchPattern`
-   used by `valueBindingPattern`'s operand, which would let the converter's `binding` flag go away
-   and would match the project's standing preference for structural fixes over `@prefer`.
+3. **Enum-case placement — needs a NEW primitive; do not retry the obvious fix.**
+   `declaration = @confinedTo(memberDeclaration) enumCaseDeclaration` already rejects top-level
+   `case`. `case` still parses in struct/class/extension bodies (testEnum12/13/14).
 
-   Riskier than it looks: `@prefer` is load-bearing in pattern position, and a value binding can
-   contain enum-case, tuple and optional patterns, so the new nonterminal is not a two-line split.
-   Needs its own ambiguity A/B.
-   Source: Sep 3 2026 AST work; `Phase3BranchTests` `switch-bind` / `switch-where`.
+   **`@confinedTo(enumMember)` does NOT work — probed Sep 8 2026 and reverted.** It correctly
+   rejects those three, but WRONGLY ACCEPTS `enum E { struct S { case X } }`, because
+   `ContainmentRule` is pure interval containment (`$0.i <= span.i && span.j <= $0.j`) and the
+   enclosing `enumMember` yield for `struct S { … }` contains the inner `case` span. Net trade was
+   3 working parses lost for a rule that still has a hole.
 
-27. **Bespoke attribute-argument grammars — NARROW ones only.**
-   Most attributes still take `attributeArgumentClause = >s< "(" balancedTokens? ")"` — token soup
-   with no structure to convert, so `convertAttribute` records `.unhandled` rather than guessing.
-   `@abi`, `@available`, `@isolated`, `@attached`/`@freestanding` and now `@convention` have real
-   argument grammars; the rest do not.
+   **Cheap fix that would work: co-initial containment.** `enumMember → memberDeclaration →
+   declaration → enumCaseDeclaration` is a chain of CO-INITIAL spans, so "directly a member of an
+   enum" is exactly "some `enumMember` yield BEGINS where I begin" — `$0.i == span.i && span.j <=
+   $0.j`. One flag on `ContainmentRule` plus apus syntax (`@directlyIn(N)`). Stays
+   path-independent, so it drops into `prune(_ yields:)` unchanged, and is reusable for any
+   "directly a member/element of X" rule.
 
-   **Measured constraint: do NOT reuse `functionCallArgumentList`.** Routing attribute arguments
-   through the general expression grammar closes an
-   `attribute -> expression -> type -> attribute` cycle and is a performance cliff: the full test
-   run went from 85s to NOT FINISHING within 10 minutes. Reverting restored 85s and the exact same
-   label set, confirming the cause. Write a narrow rule per attribute instead — `@convention` took
-   four lines (`conventionArguments`/`conventionArgument`/`conventionValue`) and cost nothing.
+   **Full scope-awareness is a DESIGN change, and BSR access is not the obstacle.** Containment
+   runs while the forest is still ambiguous, and "correctly scoped" is a property of a DERIVATION,
+   not of a span: one span may be reached by several parent chains, valid on one and invalid on
+   another. `prune(_ yields: inout Set<BinarySpan>)` can only remove a span for ALL derivations, so
+   a path-dependent predicate is ill-typed against the interface — it would need pruning of BSR
+   ELEMENTS (span + parent slot), touching every `DisambiguationRule`, the two-phase pipeline and
+   the span-keyed `@prefer`/`@longest`. Almost certainly what the retired procedural `@within`
+   filter was avoiding.
 
-   Useful discovery while doing `@convention`: swift-syntax has NO dedicated node for it. The
-   arguments surface as a plain `.argumentList(LabeledExprListSyntax)`, and the same is true of
-   `@attached`/`@freestanding` (checked against the reference dumps). So several of these need only
-   a narrow grammar plus the EXISTING `convertArgumentList` — not a new syntax node. The ones that
-   really do have bespoke nodes are `@objc` (`objCName`), `@differentiable`
-   (`differentiableArguments`), `@derivative`/`@transpose` (`derivativeRegistrationArguments`),
-   `@backDeployed`, `@specialized` (`specializedArguments`) and `@lifetime`.
+4. **Model static string-literal BODIES in the grammar.**
+   `multilineStringLiteral` / `extendedMultilineStringLiteral` are single `@builder` terminals
+   matching delimiters AND body as one token, so the converter recomputes every segment boundary,
+   escape rule and indentation strip from raw text. Both string bugs of Sep 6 came from that. The
+   INTERPOLATED forms already show the shape to copy (Head/Part/Tail), and that path has never had
+   this class of bug. Raw strings with interpolation (`\#(…)` inside `#"…"#`) are also one token
+   and cannot be segmented at all — same fix.
 
-   Remaining, by `.unhandled` count: @differentiable 11, @attached 10, @isolated 6, @lifetime 6,
-   @objc 5, @freestanding 5, @derivative 4, @transpose 4, @backDeployed 3, @specialized 3.
-   Also still open: `@objc(+++)` is wrongly accepted (`AttributeSoupTests`).
-   Source: Sep 5 2026; performance cliff measured Sep 6 2026.
+   Trade-off: the escape/continuation/indentation rules move into `Swift.apus` where they are
+   declarative and testable, but the indentation rule is CONTEXTUAL (depends on the closing
+   delimiter's column) — which a CFG expresses badly, and which `REJECTS.md` §C2 Group D already
+   lists as unenforced for that reason. Schedule as its own piece with a full A/B, not folded into
+   tree work.
 
-29. **The converter re-derives classifications the grammar already made — read the alternate instead.**
-   `convertStringLiteral` fell through to a text-based branch that rebuilt the literal from
-   `collectTerminalText`: pound count, quote count, body, segments. In doing so it re-decided
-   "is this multiline?" with `hasPrefix("\"\"\"")` and reached the OPPOSITE conclusion from the
-   scanner, which had already classified `#""""#` as `extendedSinglelineStringLiteral` (its regex
-   requires `tripleQuote` then `lineBreak`, and `GrammarRegexLibrary` even names this case).
-   Result: we synthesised `"""` delimiters the source never had, on 11 labels.
-
-   Measured extent: 77 `collectTerminalText` call sites, ~16 of which re-decide STRUCTURE by
-   sniffing the collected text (`var`/`let`, leading `.`, trailing `?`/`!`, regex and string
-   delimiters). Most are safe only because a single grammar terminal can reach them; the string
-   one was not, because four terminals share the `"` prefix.
-
-   Fix shape: where several grammar alternates can reach a converter, branch on WHICH alternate
-   the parse took (`find`/`findTerminal` for `multilineStringLiteral` vs
-   `extendedSinglelineStringLiteral`), not on the characters. Until then the duplicated rule in
-   `convertStringLiteral` must be kept in step with the library regex by hand.
-   Source: Sep 6 2026, RawStringTests.testFalseMultilineDelimiters.
-            
-39. **Key-path greedy commit: invalid method-specialization member still accepted.**
-   `\Foo.method<Int>()` is still accepted even though swift-syntax rejects it. This is the
-   long-standing greedy-keypath commit gap: Advent finds a shorter valid key-path prefix and lets
-   the remaining postfix expression parse, while swift-syntax commits to the key-path shape and
-   diagnoses the invalid member. Needs a structural commit/lookahead primitive, not a tree
-   converter fix. testKeyPathMethodAndInitializers#3 / REJECTS.md C1.
-
-   Resolved Sep 11 2026: `\AStruct.Type.property` and `\Foo.Type.[2]` now make `.Type` part of
-   the key-path root and convert it to `MetatypeType`.
-
-43. **DISABLED fixtures (≈199 `disabledReason` occurrences) — audit as one pass.**
-   They are not all the same kind of thing, and only the last group is a real backlog:
+5. **DISABLED fixtures (≈199 `disabledReason` occurrences) — audit as one pass.**
+   Only the last group is work:
 
    - **≈126 feature-gated**: `"underscore attribute"` (89), `"experimental feature"` (37). Bulk
-     categories applied wholesale; worth re-checking whether the corpus pin still justifies them.
-   - **≈35 compiler-invalid**: swift-syntax parses permissively but `swiftc` rejects — empty
+     categories applied wholesale; re-check whether the corpus pin still justifies them.
+   - **≈35 compiler-invalid**: swift-syntax parses permissively, `swiftc` rejects — empty
      case/default bodies (14), inline `where` in a generic parameter clause (8), deprecated
      `: class`, `case foo()`, bodyless subscripts, bare types as statements, keyword macro names,
-     `\()`, misplaced `static`. We follow the COMPILER, so these are correctly disabled and only
-     need re-probing if the arbiter changes.
-   - **≈8 deliberate design divergence**: regex-body bracket balancing (7 — our
-     `plainRegularExpressionLiteral` is a balanced CFG by design, swift-syntax uses a sub-lexer we
-     do not replicate) and the leading-combining-char identifier (we follow Unicode TR31).
-   - **REAL backlog, 3 items**: `read`/`modify` `@_spi` Keyword cases (TODO 33); the greedy-keypath
-     commit needing a structural-lookahead primitive (REJECTS.md C1); and the regex-after-`?`
-     case blocked by `conditionalOperator`'s `<s>` spacing policy.
+     `\()`, misplaced `static`. We follow the COMPILER, so these are correctly disabled.
+   - **≈8 deliberate divergence**: regex-body bracket balancing (7 — our
+     `plainRegularExpressionLiteral` is a balanced CFG by design; swift-syntax uses a sub-lexer we
+     do not replicate) and the leading-combining-char identifier (Unicode TR31).
+   - **REAL backlog, 2 items**: `read`/`modify` `@_spi` `Keyword` cases (unconstructible outside
+     swift-syntax — `testCoroutineAccessors#1` is disabled for this, and disabling skips all four
+     of its tests, so the count understates the gap by one); and the regex-after-`?` case blocked
+     by `conditionalOperator`'s `<s>` spacing policy.
 
-   Only that last group is work. Re-probe the first three groups at the next swift-syntax bump
-   rather than one at a time.
+   Re-probe the first three groups at the next swift-syntax bump, not one at a time.
+
+6. **Bespoke attribute-argument grammars — the remaining ones only.**
+   Done: `@abi`, `@available`, `@isolated`, `@attached`/`@freestanding`, `@convention`, `@objc`,
+   `@specialized`, `@differentiable`, `@backDeployed`, `@lifetime`, `@derivative`/`@transpose`.
+   Still token soup: CUSTOM attributes with expression arguments (`@Argument(help:)`, `@inline`),
+   which reach `attributeArgumentClause`. The grammar's own note says swift dispatches on the
+   attribute NAME — known attributes get soup, unknown ones an expression list — so the fix is to
+   route NON-builtin names to `attributeArgumentExprClause`.
+
+   **Measured constraint: do NOT reuse `functionCallArgumentList`.** It closes an
+   `attribute → expression → type → attribute` cycle and is a performance cliff — the full run went
+   from 85s to NOT FINISHING in 10 minutes; reverting restored 85s and the identical label set.
+   Write a narrow rule per attribute. Two useful facts found on the way: several attributes have NO
+   dedicated swift-syntax node (arguments surface as plain `.argumentList`, so the existing
+   `convertArgumentList` suffices), and each narrow rule initially OVER-rejects a form nobody
+   enumerated — caught only by the accepts corpus, never by the tree diff. Budget a widening round
+   per attribute.
+
+---
+
+## Settled — do not redo
+
+- **LL(1) early termination stays OFF; `isLocallyLL1` is REMOVED.** Enabling it broke 103 valid
+  parses (issues 55 → 226) and saved 0.45% of descriptors. Unsound because the multi-lex guard
+  never detected two DISTINCT regex sources co-matching, while `testSelect` answers true when ANY
+  terminal in an alternate's FIRST matches. Removal verified byte-identical (3,773 parses,
+  1,762,627 descriptors, 391,163 CRF). `subtreeIsLL1` and the FIRST/FOLLOW detection `verifyLL1`
+  reports are KEPT.
+
+- **What `verifyLL1` reliably means.** Only: no terminal ID appears in two alternates' FIRST sets
+  (or in FIRST and FOLLOW when nullable) — a statement about SYMBOLS. It does NOT imply prediction
+  determinism under lex-on-demand, because distinct IDs co-match the same characters, `testSelect`
+  asks a per-position question, and the lexer returns a SET of differing-length matches. Nothing in
+  the parser consumes it; it feeds `LL1DetectionTests`, `main`'s report and the `ambiguous` set.
+
+- **`@cannotParse(N)` is the sound negative predicate; `>->( nonterminal )` was not.** `>->` over a
+  nonterminal silently did nothing — measured: substituting a nonterminal for a literal list took
+  ambiguity 0 → 89 and wrongly-accepted 0 → 9 while the tree-diff label set stayed BYTE-IDENTICAL.
+  (That last part is the warning: an invariant check watching labels alone would have called it
+  clean.) `@cannotParse` replaced it and fixed the greedy key-path commit — `\Foo.method<Int>()` is
+  now rejected via `@cannotParse(keyPathExpression)` on the generic-member `explicitMemberExpression`
+  alternate. An unparenthesized key-path is a POSTFIX ISLAND; `(\Foo).method<Int>()` still parses,
+  because at `(` a key-path cannot start (fixtures `probeParenKeyPathPostfix/Member`).
+
+---
+
+## Method notes
+
+- **Measure parser WORK, not wall clock.** Every parse prints `descriptors:` / `crf size:` /
+  `duplicateDescriptors:`. Summing across the suite is deterministic, immune to machine load and to
+  laptop sleep, and resolves sub-1% changes wall clock cannot see:
+  `grep -o 'descriptors: [0-9]*' run.log | awk -F': ' '{s+=$2} END {print s}'`
+
+- **A timeout is almost always the laptop SLEEPING.** `caffeinate -i` the run. To confirm after the
+  fact, compare `IDETestOperationsObserverDebug: N elapsed` (wall) against
+  `Test run with … after N seconds` (suspending clock); one large gap between unrelated trivial
+  tests is sleep, whereas a real hang lands inside one expensive test. See TESTING.md.
+
+- **A silent `return nil`, or a `find` that quietly misses, is the most expensive bug shape.**
+  `find` does NOT descend through nonterminals (`labelName` inside `statementLabel`), and `-`
+  TERMINALS need `findTerminal` (`propertyWrapperProjection`, `forceMark`, `dotOperator`). Each
+  LOOKED like "not implemented" and was "looked in the wrong place". Add a diagnostic before
+  theorising — doing that to `convertInterpolatedStringLiteral` gave the cause in one run.
+
+- **Token kind is POSITION-dependent.** A backtick-escaped name is not an operator (one omission
+  bit three separate name maps); `Self` is `keyword(Self)` only as a LEADING `IdentifierType`; a
+  type that COULD be an expression is spelled as one (`Void` is a `DeclReferenceExpr`). Probe each
+  new name position.
+
+- **Right-recursive grammar lists sometimes fold LEFT in swift-syntax.** Sibling nested postfix
+  `#if` blocks chain (each takes the previous as base); nested arrow returns SPLICE into one flat
+  sequence. Read the reference dump before assuming the tree mirrors the rule.
+
+---
 
 ## Maintenance Rule
 
