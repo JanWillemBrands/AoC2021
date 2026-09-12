@@ -119,8 +119,7 @@ let statementSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "StatementTests.testSwitch",
-        syntaxVersion: "603.0.1",
-        disabledReason: "$-prefixed attribute name — not in TSPL; swift-syntax only accepts it via error recovery (attribute-name → Self/Any/identifier/(/[/_), compiler rejects"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testSwitch#3",
@@ -140,7 +139,7 @@ let statementSnippets: [SwiftSnippet] = [
         origin: "StatementTests.testSwitch",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testMissingIfClauseIntroducer#1", source: "if _ = 42 {}", origin: "StatementTests.testMissingIfClauseIntroducer", syntaxVersion: "603.0.1", disabledReason: "compiler error — assignment (`_ = 42`) can't be an if-condition; swift-syntax accepts it syntactically but the compiler rejects it, and our `conditionExpression` deliberately excludes `assignmentOperator` (we follow compiler)"),
+    SwiftSnippet(label: "testMissingIfClauseIntroducer#1", source: "if _ = 42 {}", origin: "StatementTests.testMissingIfClauseIntroducer", syntaxVersion: "603.0.1", compilerRejects: "use of '=' in a boolean context, did you mean '=='?"),
     SwiftSnippet(
         label: "testIfHasSymbol#1",
         source: """

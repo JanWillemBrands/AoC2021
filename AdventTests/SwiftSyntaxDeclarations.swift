@@ -15,9 +15,9 @@ import SwiftParser
 
 let declarationSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "testImports#1", source: "import Foundation", origin: "DeclarationTests.testImports", syntaxVersion: "603.0.1"),
-    SwiftSnippet(label: "testImports#2", source: "@_spi(Private) import SwiftUI", origin: "DeclarationTests.testImports", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testImports#3", source: "@_exported import class Foundation.Thread", origin: "DeclarationTests.testImports", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testImports#4", source: #"@_private(sourceFile: "YetAnotherFile.swift") import Foundation"#, origin: "DeclarationTests.testImports", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
+    SwiftSnippet(label: "testImports#2", source: "@_spi(Private) import SwiftUI", origin: "DeclarationTests.testImports", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testImports#3", source: "@_exported import class Foundation.Thread", origin: "DeclarationTests.testImports", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testImports#4", source: #"@_private(sourceFile: "YetAnotherFile.swift") import Foundation"#, origin: "DeclarationTests.testImports", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testStructParsing#1", source: "struct Foo {}", origin: "DeclarationTests.testStructParsing", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testFuncParsing#1", source: "func foo() {}", origin: "DeclarationTests.testFuncParsing", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testFuncParsing#2", source: "func foo() -> Slice<MinimalMutableCollection<T>> {}", origin: "DeclarationTests.testFuncParsing", syntaxVersion: "603.0.1"),
@@ -90,7 +90,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testProtocolParsing",
-        syntaxVersion: "603.0.1", disabledReason: "bodyless `subscript` in a protocol without `{ get }` — compiler rejects (`subscript in protocol must have explicit { get } or { get set } specifier`). Same family as testSubscripting17."
+        syntaxVersion: "603.0.1", compilerRejects: "subscript in protocol must have explicit { get } or { get set } specif"
     ),
     SwiftSnippet(
         label: "testVariableDeclarations#1",
@@ -306,7 +306,7 @@ let declarationSnippets: [SwiftSnippet] = [
       """#,
         origin: "DeclarationTests.testParseSpecializeAttribute",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "'mutating' is only valid on methods"
     ),
     SwiftSnippet(
         label: "testParseSpecializeAttribute#2",
@@ -322,7 +322,7 @@ let declarationSnippets: [SwiftSnippet] = [
       """,
         origin: "DeclarationTests.testParseSpecializeAttribute",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "too few generic parameters are specified in '_specialize' attribute (g"
     ),
     SwiftSnippet(
         label: "testParseSpecializeAttribute#3",
@@ -419,7 +419,7 @@ let declarationSnippets: [SwiftSnippet] = [
       """,
         origin: "DeclarationTests.testParseDynamicReplacement",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "'subscript' functions may only be declared within a type"
     ),
     SwiftSnippet(
         label: "testParseDynamicReplacement#3",
@@ -443,7 +443,7 @@ let declarationSnippets: [SwiftSnippet] = [
       """,
         origin: "DeclarationTests.testParseDynamicReplacement",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "initializers may only be declared within a type"
     ),
     SwiftSnippet(
         label: "testEnumParsing#1",
@@ -641,8 +641,7 @@ let declarationSnippets: [SwiftSnippet] = [
       func nonEphemeralIsolatedConst(@_nonEmphemeral isolated _const _ map: String) {}
       """,
         origin: "DeclarationTests.testModifiedParameter",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testModifiedParameter#5",
@@ -693,7 +692,7 @@ let declarationSnippets: [SwiftSnippet] = [
       """,
         origin: "DeclarationTests.testReasyncFunctions",
         syntaxVersion: "603.0.1",
-        disabledReason: "experimental feature"
+        compilerRejects: "consecutive declarations on a line must be separated by ';'"
     ),
     SwiftSnippet(
         label: "testMacroExpansionDeclaration#1",
@@ -721,7 +720,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testMacroExpansionDeclarationWithKeywordName",
-        syntaxVersion: "603.0.1", disabledReason: "freestanding macro with a keyword name (`#case`) in a decl context — compiler rejects (`no macro named 'case'`). See testMacroExpansionExpressionWithKeywordName."
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testAttributedMacroExpansionDeclaration#1",
@@ -828,7 +827,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testAttributedMacroExpansionDeclaration",
-        syntaxVersion: "603.0.1", disabledReason: "attributed freestanding macro with keyword name (`@attrib #class`) — compiler rejects (unnameable macro). See testMacroExpansionDeclarationWithKeywordName."
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testAttributedMacroExpansionDeclaration#12",
@@ -838,7 +837,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testAttributedMacroExpansionDeclaration",
-        syntaxVersion: "603.0.1", disabledReason: "freestanding macro with keyword name (`#struct`) — compiler rejects (unnameable macro). See testMacroExpansionDeclarationWithKeywordName."
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testVariableGetSetNextLine#1",
@@ -968,7 +967,7 @@ let declarationSnippets: [SwiftSnippet] = [
       """,
         origin: "DeclarationTests.testWhereClauseWithFunctionType",
         syntaxVersion: "603.0.1",
-        disabledReason: "compiler error — function type as conformance subject; swift-syntax accepts but the compiler rejects (we follow compiler)"
+        compilerRejects: "type '(T) -> ()' in conformance requirement does not refer to a generic parameter or associated type"
     ),
     SwiftSnippet(
         label: "testSuppressedImplicitConformance#1",
@@ -1087,9 +1086,9 @@ let declarationSnippets: [SwiftSnippet] = [
         origin: "DeclarationTests.testEnumCaseWithGenericParameter",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testLiteralInitializerWithTrailingClosure#1", source: "let foo = 1 { return 1 }", origin: "DeclarationTests.testLiteralInitializerWithTrailingClosure", syntaxVersion: "603.0.1", disabledReason: "compiler error — `1` is not callable; swift-syntax accepts without hasError but B1 grammar correctly rejects (we follow compiler)"),
-    SwiftSnippet(label: "testInitializerWithReturnType#1", source: "init(_ ptr: UnsafeRawBufferPointer, _ a: borrowing Array<Int>) -> dependsOn(a) Self", origin: "DeclarationTests.testInitializerWithReturnType", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
-    SwiftSnippet(label: "testInitializerWithReturnType#2", source: "public init() -> Int", origin: "DeclarationTests.testInitializerWithReturnType", syntaxVersion: "603.0.1", disabledReason: "compiler error — initializers can't have a return type; swift-syntax accepts via parseFunctionSignature for error recovery (Declarations.swift:1260) but the compiler rejects (we follow compiler)"),
+    SwiftSnippet(label: "testLiteralInitializerWithTrailingClosure#1", source: "let foo = 1 { return 1 }", origin: "DeclarationTests.testLiteralInitializerWithTrailingClosure", syntaxVersion: "603.0.1", compilerRejects: "computed property must have an explicit type"),
+    SwiftSnippet(label: "testInitializerWithReturnType#1", source: "init(_ ptr: UnsafeRawBufferPointer, _ a: borrowing Array<Int>) -> dependsOn(a) Self", origin: "DeclarationTests.testInitializerWithReturnType", syntaxVersion: "603.0.1", compilerRejects: "initializers may only be declared within a type"),
+    SwiftSnippet(label: "testInitializerWithReturnType#2", source: "public init() -> Int", origin: "DeclarationTests.testInitializerWithReturnType", syntaxVersion: "603.0.1", compilerRejects: "initializers may only be declared within a type"),
     SwiftSnippet(label: "testSendingTypeSpecifier#1", source: "func testVarDeclTupleElt() -> (sending String, String) {}", origin: "DeclarationTests.testSendingTypeSpecifier", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testVarDeclTupleElt#1", source: "func testVarDeclTuple2(_ x: (sending String)) {}", origin: "DeclarationTests.testVarDeclTupleElt", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testVarDeclTuple2#1", source: "func testVarDeclTuple2(_ x: (sending String, String)) {}", origin: "DeclarationTests.testVarDeclTuple2", syntaxVersion: "603.0.1"),
@@ -1192,10 +1191,10 @@ let declarationSnippets: [SwiftSnippet] = [
         origin: "DeclarationTests.testTrailingCommas",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testUsing#1", source: "using @MainActor", origin: "DeclarationTests.testUsing", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
-    SwiftSnippet(label: "testUsing#2", source: "using nonisolated", origin: "DeclarationTests.testUsing", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
-    SwiftSnippet(label: "testUsing#3", source: "using @Test", origin: "DeclarationTests.testUsing", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
-    SwiftSnippet(label: "testUsing#4", source: "using test", origin: "DeclarationTests.testUsing", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
+    SwiftSnippet(label: "testUsing#1", source: "using @MainActor", origin: "DeclarationTests.testUsing", syntaxVersion: "603.0.1", compilerRejects: "'using' is an experimental feature that is currently disabled"),
+    SwiftSnippet(label: "testUsing#2", source: "using nonisolated", origin: "DeclarationTests.testUsing", syntaxVersion: "603.0.1", compilerRejects: "'using' is an experimental feature that is currently disabled"),
+    SwiftSnippet(label: "testUsing#3", source: "using @Test", origin: "DeclarationTests.testUsing", syntaxVersion: "603.0.1", compilerRejects: "'using' is an experimental feature that is currently disabled"),
+    SwiftSnippet(label: "testUsing#4", source: "using test", origin: "DeclarationTests.testUsing", syntaxVersion: "603.0.1", compilerRejects: "'using' is an experimental feature that is currently disabled"),
     SwiftSnippet(
         label: "testUsing#5",
         source: """
@@ -1243,6 +1242,15 @@ let declarationSnippets: [SwiftSnippet] = [
         syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(label: "testUsing#10", source: "let (x: Int, using: String) = (x: 42, using: \"\")", origin: "DeclarationTests.testUsing", syntaxVersion: "603.0.1"),
+
+    // Stored property with BOTH an initializer and an observer. Compiler-verified valid
+    // (`swiftc -typecheck`, no diagnostic). Added Sep 12 2026 with the fix for the residual
+    // ambiguity these exposed: the `codeBlock` alternate of `initializedAccessorBlock` competed
+    // with `willSetDidSetBlock` over the same braces. See TODO #2.
+    SwiftSnippet(label: "observer-with-initializer-willSet", source: "var x: Int = 0 { willSet {} }", origin: "regression", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "observer-with-initializer-didSet", source: "var y: Int = 0 { didSet {} }", origin: "regression", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "observer-with-initializer-both", source: "var z: Int = 0 { willSet {} didSet {} }", origin: "regression", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "observer-no-annotation", source: "var w = 0 { didSet {} }", origin: "regression", syntaxVersion: "603.0.1"),
     SwiftSnippet(
         label: "testUsing#11",
         source: """
@@ -1252,7 +1260,7 @@ let declarationSnippets: [SwiftSnippet] = [
       """,
         origin: "DeclarationTests.testUsing",
         syntaxVersion: "603.0.1",
-        disabledReason: "experimental feature"
+        compilerRejects: "'using' is an experimental feature that is currently disabled"
     ),
     SwiftSnippet(
         label: "testAccessorBlockDisambiguationMarker#1",
@@ -1263,7 +1271,7 @@ let declarationSnippets: [SwiftSnippet] = [
       """,
         origin: "DeclarationTests.testAccessorBlockDisambiguationMarker",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "expected '{' to start getter definition"
     ),
     SwiftSnippet(
         label: "testAccessorBlockAfterPatternBindingDeclWithAttribute#1",

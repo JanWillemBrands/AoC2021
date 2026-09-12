@@ -22,7 +22,7 @@ let attributeSnippets: [SwiftSnippet] = [
       """,
         origin: "AttributeTests.testSpecializeAttribute",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "trailing 'where' clause in '_specialize' attribute of non-generic func"
     ),
     SwiftSnippet(
         label: "testSpecializeAttribute#2",
@@ -32,7 +32,7 @@ let attributeSnippets: [SwiftSnippet] = [
       """,
         origin: "AttributeTests.testSpecializeAttribute",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "trailing 'where' clause in '_specialize' attribute of non-generic func"
     ),
     SwiftSnippet(
         label: "testSpecializeAttribute#3",
@@ -107,8 +107,7 @@ let attributeSnippets: [SwiftSnippet] = [
       @_Concurrency.MainActor(unsafe) public struct Image : SwiftUI.View {}
       """,
         origin: "AttributeTests.testQualifiedAttribute",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testDerivativeAttribute#1",
@@ -243,11 +242,11 @@ let attributeSnippets: [SwiftSnippet] = [
       """,
         origin: "AttributeTests.testImplementsAttribute",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "static methods may only be declared on a type"
     ),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#1", source: "@_implements(X<T>, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#2", source: "@_implements(X.Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#3", source: "@_implements(Any, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#1", source: "@_implements(X<T>, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "603.0.1", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#2", source: "@_implements(X.Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "603.0.1", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#3", source: "@_implements(Any, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "603.0.1", compilerRejects: "expected declaration"),
     SwiftSnippet(
         label: "testSemanticsAttribute#1",
         source: """
@@ -262,8 +261,7 @@ let attributeSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "AttributeTests.testSemanticsAttribute",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testObjcImplementationAttribute#1",
@@ -276,12 +274,11 @@ let attributeSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "AttributeTests.testObjcImplementationAttribute",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testSpiAttributeWithoutParameter#1", source: "@_spi() class Foo {}", origin: "AttributeTests.testSpiAttributeWithoutParameter", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testSpiAttributeWithUnderscore#1", source: "@_spi(_) class Foo {}", origin: "AttributeTests.testSpiAttributeWithUnderscore", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testSpiAttributeWithUnderscore#2", source: "@_spi(_) import Foo", origin: "AttributeTests.testSpiAttributeWithUnderscore", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
+    SwiftSnippet(label: "testSpiAttributeWithoutParameter#1", source: "@_spi() class Foo {}", origin: "AttributeTests.testSpiAttributeWithoutParameter", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testSpiAttributeWithUnderscore#1", source: "@_spi(_) class Foo {}", origin: "AttributeTests.testSpiAttributeWithUnderscore", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testSpiAttributeWithUnderscore#2", source: "@_spi(_) import Foo", origin: "AttributeTests.testSpiAttributeWithUnderscore", syntaxVersion: "603.0.1"),
     SwiftSnippet(
         label: "testSilgenName#1",
         source: """
@@ -289,8 +286,7 @@ let attributeSnippets: [SwiftSnippet] = [
       private static func _testExclusivityBogusPC()
       """,
         origin: "AttributeTests.testSilgenName",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testSilgenName#2",
@@ -298,8 +294,7 @@ let attributeSnippets: [SwiftSnippet] = [
       @_silgen_name("") func foo() {}
       """,
         origin: "AttributeTests.testSilgenName",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testSilgenName#3",
@@ -307,8 +302,7 @@ let attributeSnippets: [SwiftSnippet] = [
       @_silgen_name("foo") var global: Int
       """,
         origin: "AttributeTests.testSilgenName",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testSilgenName#4",
@@ -316,8 +310,7 @@ let attributeSnippets: [SwiftSnippet] = [
       @_silgen_name(raw: "foo") var global: Int
       """,
         origin: "AttributeTests.testSilgenName",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testBackDeployed#1",
@@ -355,7 +348,7 @@ let attributeSnippets: [SwiftSnippet] = [
       """,
         origin: "AttributeTests.testBackDeployed",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "'@backDeployed' attribute cannot be applied to this declaration"
     ),
     SwiftSnippet(
         label: "testBackDeployed#5",
@@ -365,7 +358,7 @@ let attributeSnippets: [SwiftSnippet] = [
       """,
         origin: "AttributeTests.testBackDeployed",
         syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        compilerRejects: "'@backDeployed' attribute cannot be applied to this declaration"
     ),
     SwiftSnippet(
         label: "testBackDeployed#6",
@@ -384,8 +377,7 @@ let attributeSnippets: [SwiftSnippet] = [
       @_expose(Cxx) func foo() {}
       """,
         origin: "AttributeTests.testExpose",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testExpose#2",
@@ -393,8 +385,7 @@ let attributeSnippets: [SwiftSnippet] = [
       @_expose(Cplusplus) func foo() {}
       """,
         origin: "AttributeTests.testExpose",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testExpose#3",
@@ -402,8 +393,7 @@ let attributeSnippets: [SwiftSnippet] = [
       @_expose(!Cxx) func foo() {}
       """,
         origin: "AttributeTests.testExpose",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testExpose#4",
@@ -411,8 +401,7 @@ let attributeSnippets: [SwiftSnippet] = [
       @_expose(Cxx, "baz") func foo() {}
       """,
         origin: "AttributeTests.testExpose",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testOriginallyDefinedIn#1",
@@ -421,8 +410,7 @@ let attributeSnippets: [SwiftSnippet] = [
       struct Vehicle {}
       """,
         origin: "AttributeTests.testOriginallyDefinedIn",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testOriginallyDefinedIn#2",
@@ -431,8 +419,7 @@ let attributeSnippets: [SwiftSnippet] = [
       struct Vehicle {}
       """,
         origin: "AttributeTests.testOriginallyDefinedIn",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testOriginallyDefinedIn#3",
@@ -441,8 +428,7 @@ let attributeSnippets: [SwiftSnippet] = [
       struct Vehicle {}
       """,
         origin: "AttributeTests.testOriginallyDefinedIn",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testUnavailableFromAsync#1",
@@ -451,8 +437,7 @@ let attributeSnippets: [SwiftSnippet] = [
       func foo() {}
       """,
         origin: "AttributeTests.testUnavailableFromAsync",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testUnavailableFromAsync#2",
@@ -461,8 +446,7 @@ let attributeSnippets: [SwiftSnippet] = [
       func foo() {}
       """,
         origin: "AttributeTests.testUnavailableFromAsync",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testUnavailableFromAsync#3",
@@ -471,8 +455,7 @@ let attributeSnippets: [SwiftSnippet] = [
       func foo() {}
       """,
         origin: "AttributeTests.testUnavailableFromAsync",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testUnavailableFromAsync#4",
@@ -481,8 +464,7 @@ let attributeSnippets: [SwiftSnippet] = [
       func foo() {}
       """,
         origin: "AttributeTests.testUnavailableFromAsync",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testEffects#1",
@@ -513,8 +495,7 @@ let attributeSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "AttributeTests.testNonSendable",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(label: "testDocumentationAttribute#1", source: "@_documentation(visibility: internal) @_exported import A", origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
     SwiftSnippet(label: "testDocumentationAttribute#2", source: "@_documentation(visibility: package) @objc final public class Klass {}", origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
@@ -530,8 +511,7 @@ let attributeSnippets: [SwiftSnippet] = [
       func lexy(_ c: C) {}
       """,
         origin: "AttributeTests.testLexicalLifetimes",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testImportAttributes#1",

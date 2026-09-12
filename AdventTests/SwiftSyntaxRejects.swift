@@ -1793,8 +1793,7 @@ let attributeRejectSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "AttributeTests.testMissingArgumentToAttribute",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testMissingArgumentToAttribute#2",
@@ -1823,8 +1822,7 @@ let attributeRejectSnippets: [SwiftSnippet] = [
       func foo() {}
       """,
         origin: "AttributeTests.testMissingClosingParenToAttribute",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testMultipleInvalidSpecializeParams#1",
@@ -1853,8 +1851,7 @@ let attributeRejectSnippets: [SwiftSnippet] = [
       func foo() {}
       """,
         origin: "AttributeTests.testUnavailableFromAsync",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testMacroRoleNames#1",
@@ -2417,8 +2414,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(a + b)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers7",
-        syntaxVersion: "603.0.1",
-        disabledReason: "git conflict markers — not Swift syntax"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testConflictMarkers8#1",
@@ -2430,8 +2426,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(d)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers8",
-        syntaxVersion: "603.0.1",
-        disabledReason: "git conflict markers — not Swift syntax"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testConflictMarkers10#1",
@@ -2448,8 +2443,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(fake_b + fake_c)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers10",
-        syntaxVersion: "603.0.1",
-        disabledReason: "git conflict markers — not Swift syntax"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testConflictMarkers12#1",
@@ -2488,8 +2482,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(a + b)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers14",
-        syntaxVersion: "603.0.1",
-        disabledReason: "git conflict markers — not Swift syntax"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testConflictMarkers15#1",
@@ -2502,8 +2495,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       print(d)
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers15",
-        syntaxVersion: "603.0.1",
-        disabledReason: "git conflict markers — not Swift syntax"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(label: "testSimple1#1", source: "let x = 2 let y = 3", origin: "ConsecutiveStatementsTests.testSimple1", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testSimple2#1", source: "let x = 2 let y = 3", origin: "ConsecutiveStatementsTests.testSimple2", syntaxVersion: "603.0.1"),
@@ -2762,8 +2754,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DiagnoseDynamicReplacementTests.testDiagnoseDynamicReplacement3",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testDiagnoseDynamicReplacement4#1",
@@ -2773,8 +2764,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DiagnoseDynamicReplacementTests.testDiagnoseDynamicReplacement4",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testDiagnoseInitializerAsTypedPattern3a#1",
@@ -6145,8 +6135,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       public func fn<T>() -> T { fatalError() }
       """,
         origin: "ModuleSelectorTests.testModuleSelectorAttrs",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testModuleSelectorAttrs#2",
@@ -6852,8 +6841,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       public func foo1() {}
       """#,
         origin: "OriginalDefinedInAttrTests.testOriginalDefinedInAttr2",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testOriginalDefinedInAttr4#1",
@@ -6872,8 +6860,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       public class ToplevelClass2 {}
       """,
         origin: "OriginalDefinedInAttrTests.testOriginalDefinedInAttr5",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testOriginalDefinedInAttr6#1",
@@ -6882,8 +6869,7 @@ let translatedRejectSnippets: [SwiftSnippet] = [
       public class ToplevelClass3 {}
       """#,
         origin: "OriginalDefinedInAttrTests.testOriginalDefinedInAttr6",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testPoundAssert3a#1",

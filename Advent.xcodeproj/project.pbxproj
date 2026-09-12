@@ -16,6 +16,7 @@
 		4E4E48CA2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */; };
 		4E4E48CB2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */; };
 		4E4E48CC2FA2F2670094DFC6 /* ScannerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */; };
+		4E5D00033055F3CC0025E456 /* ApusToMD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5D00023055F3CC0025E456 /* ApusToMD.swift */; };
 		4E6933482FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6933472FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift */; };
 		4E6933492FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6933472FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift */; };
 		4E95A4EC30151FFC000C251E /* SwiftGrammarRegexLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E95A4EB30151FC6000C251E /* SwiftGrammarRegexLibrary.swift */; };
@@ -122,6 +123,7 @@
 		4E4E48C72FA219ED0094DFC6 /* Trivia Oracle.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Trivia Oracle.md"; sourceTree = "<group>"; };
 		4E4E48C92FA2F1400094DFC6 /* ScannerTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerTelemetry.swift; sourceTree = "<group>"; };
 		4E5754B42F5894BB0067165C /* SPPF.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = SPPF.svg; sourceTree = "<group>"; };
+		4E5D00023055F3CC0025E456 /* ApusToMD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApusToMD.swift; sourceTree = "<group>"; };
 		4E6933472FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateSwiftSyntaxAST.swift; sourceTree = "<group>"; };
 		4E6A46AD3035DE8200A4FCCC /* ambiguity resolution.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ambiguity resolution.md"; sourceTree = "<group>"; };
 		4E6A470E3039B4E400A4FCCC /* Grammar Predicate Lookahead Design.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Grammar Predicate Lookahead Design.md"; sourceTree = "<group>"; };
@@ -500,6 +502,7 @@
 				4ED277CF3042218F00C05B68 /* tinyGLL */,
 				4E9B2F79304D6F55006BD801 /* tinyGLL-generated */,
 				4E8D34F03051F279008F7C30 /* Lookaround Boundary Conversion Plan.md */,
+				4E5D00023055F3CC0025E456 /* ApusToMD.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -731,6 +734,7 @@
 				4EEBC9A32F9DECF000E838A7 /* BinarySubtreeRepresentation.swift in Sources */,
 				4EEBC9A42F9DECF000E838A7 /* StringExtensions.swift in Sources */,
 				4EEBC9A52F9DECF000E838A7 /* Loggers.swift in Sources */,
+				4E5D00033055F3CC0025E456 /* ApusToMD.swift in Sources */,
 				4EEBC9A62F9DECF000E838A7 /* MessageParser.swift in Sources */,
 				4EEBC9A72F9DECF000E838A7 /* GenerateDerivationDiagram.swift in Sources */,
 				4E6933482FA9D41E005B3E92 /* GenerateSwiftSyntaxAST.swift in Sources */,

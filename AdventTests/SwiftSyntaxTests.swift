@@ -33,7 +33,30 @@ struct SwiftSnippet: CustomTestStringConvertible, Sendable {
     let source: String
     let origin: String
     let syntaxVersion: String
-    var disabledReason: String?
+
+    /// A genuine GAP: skipped by the accept-side tests, asserting nothing. Shrinking this set is
+    /// the work; a snippet carrying one is a known defect, not a decision.
+    var gapReason: String?
+
+    /// An asserted DIVERGENCE, not a gap: swift-syntax parses this, the COMPILER rejects it, and so
+    /// do we. The accept-side tests skip it (its tree would be meaningless) but
+    /// `CompilerRejectTests` asserts Advent still rejects it, so it guards against regression
+    /// instead of being silently ignored. The string is the compiler's own diagnostic, captured
+    /// with `swiftc -typecheck` at classification time.
+    var compilerRejects: String?
+
+    init(label: String, source: String, origin: String, syntaxVersion: String,
+         disabledReason: String? = nil, compilerRejects: String? = nil) {
+        self.label = label
+        self.source = source
+        self.origin = origin
+        self.syntaxVersion = syntaxVersion
+        self.gapReason = disabledReason
+        self.compilerRejects = compilerRejects
+    }
+
+    /// Accept-side tests skip BOTH kinds — only `gapReason` means "nothing is asserted".
+    var disabledReason: String? { gapReason ?? compilerRejects }
     var testDescription: String { label }
     var diagnosticID: String { "\(origin)/\(label)" }
 }
@@ -2206,5 +2229,31 @@ struct MultilineSegmentProbe {
             }
         }
         for child in node.children(viewMode: .sourceAccurate) { dumpLiterals(in: child) }
+    }
+}
+
+/// Snippets swift-syntax parses, the COMPILER rejects, and Advent therefore also rejects.
+///
+/// These used to sit behind `disabledReason` — skipped, asserting nothing. Here they assert what
+/// actually matters: that we still follow the COMPILER. Each `compilerRejects` string is the
+/// compiler's own diagnostic, captured with `swiftc -typecheck` when the snippet was classified.
+///
+/// Deliberately does NOT assert `Parser.parse(source:).hasError`, the way `RejectSyntaxTests` does:
+/// for every snippet here swift-syntax is the permissive one, which is the whole point.
+@Suite("SwiftSyntax - Compiler-rejected (swift-syntax disagrees)")
+struct CompilerRejectTests {
+
+    static let corpus: [SwiftSnippet] =
+        (declarationSnippets + expressionSnippets + statementSnippets + typeSnippets
+         + patternSnippets + attributeSnippets + translatedSnippets + allRejectSnippets)
+        .filter { $0.compilerRejects != nil }
+
+    @Test("Advent rejects what the compiler rejects", arguments: corpus)
+    func adventRejects(_ snippet: SwiftSnippet) throws {
+        #expect(try adventParse(snippet.source) == nil, """
+            Advent ACCEPTED a snippet the compiler rejects — '\(snippet.diagnosticID)'
+            compiler: \(snippet.compilerRejects ?? "?")
+            source:   \(snippet.source)
+            """)
     }
 }

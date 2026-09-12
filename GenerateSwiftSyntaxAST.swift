@@ -729,7 +729,15 @@ struct SwiftSyntaxGenerator {
     /// declaration = importDeclaration | constantDeclaration | variableDeclaration
     ///             | typealiasDeclaration | functionDeclaration | … (21 alternates).
     /// Only the two binding forms are converted; the rest are Phase 3/4.
-    private mutating func convertDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> DeclSyntax? {
+    ///
+    /// `speculative` suppresses the final `.unhandled` record for callers that EXPECT the
+    /// lookup to miss and have their own recovery — `@abi`, whose `abiDeclaration` admits
+    /// bodyless forms `declaration` does not. Without it the probe reports a gap that the
+    /// caller then fills, which is a false alarm in the fallback tally. A `.lookupFailed`
+    /// is still recorded: that one means the span does not tile at all, which is a real
+    /// structural problem no matter who is asking.
+    private mutating func convertDeclaration(_ nt: GrammarNode, from: CharPosition, to: CharPosition,
+                                             speculative: Bool = false) -> DeclSyntax? {
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
             return nil
@@ -835,7 +843,9 @@ struct SwiftSyntaxGenerator {
         if let d = find("macroExpansionDeclaration", in: spans) {
             return convertMacroExpansionDeclaration(d.nt, from: d.from, to: d.to)
         }
-        record(.unhandled, "declaration kind has no converter: \(alternateKind(spans))", from: from, to: to)
+        if !speculative {
+            record(.unhandled, "declaration kind has no converter: \(alternateKind(spans))", from: from, to: to)
+        }
         return nil
     }
 
@@ -1092,13 +1102,11 @@ struct SwiftSyntaxGenerator {
     /// alternate with `"final"` BEFORE the access level. So the modifiers cannot be looked up by
     /// name and concatenated — they are collected by walking the alternate's spans in order.
     ///
-    /// Attributes and generic clauses are still unconverted; emitting an empty `AttributeList`
-    /// where swift-syntax has entries WILL mismatch, so that is recorded rather than hidden.
+    /// This reads MODIFIERS only. The head's `genericWhereClause` is not its business — the
+    /// nominal-decl callers convert it themselves via `nominalWhereClause` and pass it to their
+    /// own `genericWhereClause:` parameter. (There used to be an `.unhandled` record here for
+    /// it, from before those callers did; it outlived the gap.)
     private mutating func declHeadModifiers(_ spans: [(GrammarNode, CharPosition, CharPosition)], from: CharPosition, to: CharPosition) -> DeclModifierListSyntax {
-        if find("genericWhereClause", in: spans) != nil {
-            record(.unhandled, "genericWhereClause not converted", from: from, to: to)
-        }
-
         var items: [DeclModifierSyntax] = []
         for (sym, f, t) in spans where f < t {
             if let accNT = findNonterminal(named: "accessLevelModifier", sym: sym, from: f, to: t) {
@@ -1149,6 +1157,14 @@ struct SwiftSyntaxGenerator {
     private mutating func appendInheritedType(_ inheritanceNT: NTSpan, into types: inout [InheritedTypeSyntax]) {
         guard let (_, spans) = tileAlternate(inheritanceNT.nt, from: inheritanceNT.from, to: inheritanceNT.to) else {
             record(.lookupFailed, "no alternate tiles the span", from: inheritanceNT.from, to: inheritanceNT.to)
+            return
+        }
+        // typeInheritance = classRestrictionType .   (`protocol P : class`)
+        // swift-syntax consumes the keyword before attempting a type at all and has a dedicated
+        // node for it — `parseInheritedTypeList` (Nominals.swift:298-304) builds a
+        // `ClassRestrictionTypeSyntax`, NOT an IdentifierType named `class`.
+        if find("classRestrictionType", in: spans) != nil {
+            types.append(InheritedTypeSyntax(type: TypeSyntax(ClassRestrictionTypeSyntax())))
             return
         }
         guard let tiNT = find("typeIdentifier", in: spans) else { return }
@@ -2475,9 +2491,9 @@ struct SwiftSyntaxGenerator {
     ///
     /// swift-syntax: `AttributeListSyntax` of `AttributeSyntax(atSign:attributeName:…)`, where
     /// `attributeName` is a TYPE. Arguments are a large enum of specific shapes
-    /// (`AttributeSyntax.Arguments`), but our grammar collects them as `balancedTokens` — an
-    /// unstructured token soup — so an attribute WITH arguments cannot be converted faithfully
-    /// here and records `.unhandled` instead of guessing.
+    /// (`AttributeSyntax.Arguments`), matched in the grammar by one bespoke rule per builtin
+    /// attribute plus `attributeArgumentExprClause` for custom ones. A shape with no bespoke rule
+    /// records `.unhandled` rather than guessing.
     private mutating func convertAttributes(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> AttributeListSyntax {
         var items: [AttributeListSyntax.Element] = []
         collectAttributes(nt, from: from, to: to, into: &items)
@@ -2710,6 +2726,42 @@ struct SwiftSyntaxGenerator {
         }
         if let restNT = find("backDeployedPlatforms", in: spans) {
             collectBackDeployedPlatforms(restNT.nt, from: restNT.from, to: restNT.to, into: &items)
+        }
+    }
+
+    /// originallyDefinedInPlatforms = originallyDefinedInPlatform
+    ///                              | originallyDefinedInPlatform "," originallyDefinedInPlatforms .
+    /// originallyDefinedInPlatform  = platformName platformVersion? | "*" platformVersion? .
+    ///
+    /// Same shape as `collectBackDeployedPlatforms`, but the platform may be a bare `*`: swift-syntax
+    /// consumes it `remapping: .identifier` (Availability.swift:200), so it lands in the platform
+    /// slot as an identifier token rather than as a wildcard node.
+    private mutating func collectOriginallyDefinedInPlatforms(
+        _ nt: GrammarNode, from: CharPosition, to: CharPosition, into items: inout [PlatformVersionItemSyntax]
+    ) {
+        guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
+            record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
+            return
+        }
+        if let oneNT = find("originallyDefinedInPlatform", in: spans),
+           let (_, oneSpans) = tileAlternate(oneNT.nt, from: oneNT.from, to: oneNT.to) {
+            var version: VersionTupleSyntax? = nil
+            if let verNT = find("platformVersion", in: oneSpans) {
+                version = versionTuple(verNT)
+            }
+            let name: String
+            if let nameNT = find("platformName", in: oneSpans) {
+                name = collectTerminalText(nameNT.nt, from: nameNT.from, to: nameNT.to)
+            } else {
+                name = "*"
+            }
+            items.append(PlatformVersionItemSyntax(platformVersion: PlatformVersionSyntax(
+                platform: .identifier(name),
+                version: version
+            )))
+        }
+        if let restNT = find("originallyDefinedInPlatforms", in: spans) {
+            collectOriginallyDefinedInPlatforms(restNT.nt, from: restNT.from, to: restNT.to, into: &items)
         }
     }
 
@@ -3081,7 +3133,7 @@ struct SwiftSyntaxGenerator {
             // `abiDeclaration` admits BODYLESS forms that `declaration` does not
             // (`abiSubscriptDeclaration`, `abiVariableDeclaration`, `bodylessInitializerDeclaration`),
             // so fall back to the member-only reader before giving up.
-            var converted = convertDeclaration(abiNT.nt, from: abiNT.from, to: abiNT.to)
+            var converted = convertDeclaration(abiNT.nt, from: abiNT.from, to: abiNT.to, speculative: true)
             if converted == nil, let (_, abiSpans) = tileAlternate(abiNT.nt, from: abiNT.from, to: abiNT.to) {
                 converted = memberOnlyDeclaration(abiSpans, from: abiNT.from, to: abiNT.to)
                 if converted == nil, let subNT = find("abiSubscriptDeclaration", in: abiSpans) {
@@ -3201,6 +3253,38 @@ struct SwiftSyntaxGenerator {
                 rightParen: .rightParenToken()
             )
         }
+        // attribute = "@" >s< "_originallyDefinedIn" >s<
+        //             "(" "module" ":" staticStringLiteral "," originallyDefinedInPlatforms ")" .
+        if spansContainKeyword(spans, "_originallyDefinedIn"),
+           let listNT = find("originallyDefinedInPlatforms", in: spans),
+           let modNT = find("staticStringLiteral", in: spans) {
+            var items: [PlatformVersionItemSyntax] = []
+            collectOriginallyDefinedInPlatforms(listNT.nt, from: listNT.from, to: listNT.to, into: &items)
+            for i in items.indices.dropLast() {
+                items[i] = items[i].with(\.trailingComma, .commaToken())
+            }
+            let raw = collectTerminalText(modNT.nt, from: modNT.from, to: modNT.to)
+            let body = String(raw.dropFirst().dropLast())     // strip the quotes
+            return AttributeSyntax(
+                atSign: .atSignToken(),
+                attributeName: TypeSyntax(IdentifierTypeSyntax(name: .identifier("_originallyDefinedIn"))),
+                leftParen: .leftParenToken(),
+                arguments: .originallyDefinedInArguments(OriginallyDefinedInAttributeArgumentsSyntax(
+                    moduleLabel: .keyword(.module),
+                    colon: .colonToken(),
+                    moduleName: StringLiteralExprSyntax(
+                        openingQuote: .stringQuoteToken(),
+                        segments: StringLiteralSegmentListSyntax([
+                            .stringSegment(StringSegmentSyntax(content: .stringSegment(body)))
+                        ]),
+                        closingQuote: .stringQuoteToken()
+                    ),
+                    comma: .commaToken(),
+                    platforms: PlatformVersionItemListSyntax(items)
+                )),
+                rightParen: .rightParenToken()
+            )
+        }
         // attribute = "@" >s< "differentiable" >s< "(" differentiableArguments ")" .
         if spansContainKeyword(spans, "differentiable"),
            let argsNT = find("differentiableArguments", in: spans),
@@ -3294,8 +3378,10 @@ struct SwiftSyntaxGenerator {
                 rightParen: selector == nil ? nil : .rightParenToken()
             )
         }
-        // Every OTHER balanced-token argument form is still soup at this level — see the note above.
-        if find(firstOf: ["attributeArgumentClause", "macroRoleArguments"], in: spans) != nil {
+        // A macro-role argument list reaching THIS fallthrough means an `@attached`/`@freestanding`
+        // shape that the bespoke branches above did not claim. (The list used to also name
+        // `attributeArgumentClause`, the balanced-token soup; that rule no longer exists.)
+        if find("macroRoleArguments", in: spans) != nil {
             // Name the attribute so the triage says WHICH argument shapes actually occur.
             let head = String(input[from..<to]).prefix(while: { $0 != "(" })
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -5963,19 +6049,26 @@ struct SwiftSyntaxGenerator {
 
     // MARK: - Closures
 
-    /// closureExpression = "{" >n< closureSignature? statements? "}" .
-    /// closureExpression = @excludedFrom(…) newlineOpenedClosure .
+    /// closureExpression       = samelineOpenedClosure
+    ///                         | @excludedFrom(conditionExpression) @excludedFrom(trailingClosures)
+    ///                           newlineOpenedClosure .
+    /// samelineOpenedClosure   = "{" >n< closureSignature? statements? "}" .
+    /// newlineOpenedClosure    = "{" <n> closureSignature? statements? "}" .
     private mutating func convertClosureExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ClosureExprSyntax {
         guard let (_, outer) = tileAlternate(nt, from: from, to: to) else {
             record(.lookupFailed, "no alternate tiles the span", from: from, to: to)
             return ClosureExprSyntax(statements: [])
         }
-        // The `newlineOpenedClosure` alternate is the same shape one level down — it exists only
-        // to carry the `@excludedFrom` partition, so unwrap it and convert the inner closure.
+        // BOTH alternates are now a single nonterminal wrapping the same shape one level down —
+        // they exist only to carry the open-brace layout partition and its `@excludedFrom`s. `find`
+        // does not descend through a nonterminal, so unwrap whichever one tiles here before looking
+        // for `closureSignature` / `statements`. (When `samelineOpenedClosure` was spelled inline
+        // this only had to unwrap the newline one; missing the new wrapper cost 54 labels — every
+        // closure lost its signature and body.)
         var spans = outer
-        if let inner = find("newlineOpenedClosure", in: outer) {
+        if let inner = find(firstOf: ["samelineOpenedClosure", "newlineOpenedClosure"], in: outer) {
             guard let (_, innerSpans) = tileAlternate(inner.nt, from: inner.from, to: inner.to) else {
-                record(.lookupFailed, "no alternate tiles newlineOpenedClosure", from: inner.from, to: inner.to)
+                record(.lookupFailed, "no alternate tiles \(inner.nt.name)", from: inner.from, to: inner.to)
                 return ClosureExprSyntax(statements: [])
             }
             spans = innerSpans
@@ -6888,6 +6981,33 @@ struct SwiftSyntaxGenerator {
                 )
             ))
         }
+        // primaryExpression = parenthesisedSpecifierType .
+        // parenthesisedSpecifierType = "(" parenthesisedTypeSpecifier type ")" .
+        // swift-syntax keeps the parens as a TupleExpr and makes the CONTENT a TypeExpr.
+        if let pstNT = find("parenthesisedSpecifierType", in: spans),
+           let (_, pstSpans) = tileAlternate(pstNT.nt, from: pstNT.from, to: pstNT.to),
+           let modNT = find("parenthesisedTypeSpecifier", in: pstSpans),
+           let typeNT = find("type", in: pstSpans) {
+            var specifiers = [typeSpecifier(modNT.nt, from: modNT.from, to: modNT.to)]
+            var base = convertType(typeNT.nt, from: typeNT.from, to: typeNT.to)
+            // A specifier CHAIN arrives as nested AttributedTypes; swift-syntax keeps ONE node.
+            if let inner = base.as(AttributedTypeSyntax.self) {
+                specifiers.append(contentsOf: inner.specifiers)
+                base = inner.baseType
+            }
+            let attributed = TypeSyntax(AttributedTypeSyntax(
+                specifiers: TypeSpecifierListSyntax(specifiers),
+                attributes: AttributeListSyntax([]),
+                baseType: base
+            ))
+            return ExprSyntax(TupleExprSyntax(
+                leftParen: .leftParenToken(),
+                elements: LabeledExprListSyntax([
+                    LabeledExprSyntax(expression: typeAsExpression(attributed))
+                ]),
+                rightParen: .rightParenToken()
+            ))
+        }
         // primaryExpression = "(" functionType ")" .
         // swift-syntax has no "function type in expression position" node: it reads the arrow form
         // as a FLAT SequenceExpr — the parameter clause as a TupleExpr, then an ArrowExpr, then the
@@ -7446,7 +7566,14 @@ struct SwiftSyntaxGenerator {
         let partName = raw ? rawPartName : plainPartName
         let tailName = raw ? rawTailName : plainTailName
         let quote = multiline ? "\"\"\"" : "\""
-        let headText = String(input[headPiece.from..<headPiece.to])
+        // Read each piece through `collectTerminalText`, NOT as a raw `input[from..<to]`
+        // slice. A piece's SPAN runs to the start of the next token, so it carries that
+        // token's leading trivia; `terminalContent` returns the terminal's own image. The
+        // slice is only equal to the image when no trivia intervenes, which is why this
+        // held for every interpolation until one arrived with a block comment between the
+        // head's `\(` and the next token (`testMultilineString46`: a comment containing
+        // `"""` — the comment is what breaks it, not the delimiter inside it).
+        let headText = collectTerminalText(headPiece.nt, from: headPiece.from, to: headPiece.to)
         let poundCount = raw ? headText.prefix(while: { $0 == "#" }).count : 0
         let poundText = String(repeating: "#", count: poundCount)
         let poundToken: TokenSyntax? = raw ? .rawStringPoundDelimiter(poundText) : nil
@@ -7457,7 +7584,7 @@ struct SwiftSyntaxGenerator {
         // the tail, so it has to be read before any piece is split.
         var indent = ""
         if multiline, let tail = pieces.last {
-            let tailText = String(input[tail.from..<tail.to])
+            let tailText = collectTerminalText(tail.nt, from: tail.from, to: tail.to)
             if let close = tailText.range(of: closer, options: .backwards) {
                 let beforeClose = tailText[tailText.startIndex..<close.lowerBound]
                 if let lastNewline = beforeClose.lastIndex(of: "\n") {
@@ -7483,7 +7610,11 @@ struct SwiftSyntaxGenerator {
 
         var elements: [StringLiteralSegmentListSyntax.Element] = []
         for piece in pieces {
-            let text = String(input[piece.from..<piece.to])
+            // Only the three delimiter terminals are read as text; the interpolation pieces are
+            // argument lists, and walking one for text it does not use would both waste the walk
+            // and risk a spurious `.unhandled` from `collectTerminalText`.
+            let isDelimiter = piece.nt.name == headName || piece.nt.name == partName || piece.nt.name == tailName
+            let text = isDelimiter ? collectTerminalText(piece.nt, from: piece.from, to: piece.to) : ""
             switch piece.nt.name {
             case headName:
                 guard text.hasPrefix(opener), text.hasSuffix(interpolationMarker) else {
@@ -7503,8 +7634,8 @@ struct SwiftSyntaxGenerator {
                 }
                 elements += segments(of: String(text.dropFirst().dropLast(interpolationMarker.count)))
             case tailName:
-                // The tail SPAN can run past the closing delimiter and include trailing layout, so
-                // cut at the LAST delimiter rather than requiring it to end the text.
+                // Cut at the LAST delimiter rather than requiring it to end the text: the raw form
+                // ends `"""#`, so `closer` is a proper prefix of the tail's own ending.
                 guard text.hasPrefix(")"), let close = text.range(of: closer, options: .backwards) else {
                     record(.unhandled, "interpolated tail has an unexpected shape: \(text.debugDescription)", from: piece.from, to: piece.to)
                     return nil
@@ -7833,6 +7964,20 @@ struct SwiftSyntaxGenerator {
                 baseType: baseType ?? TypeSyntax(MissingTypeSyntax())
             ))
         }
+        // opaqueType = "some" type .   boxedProtocolType = "any" >-> ( … ) type .
+        // Callers may hand us the boxed/opaque node ITSELF rather than a `type` wrapping it — the
+        // array-element route does — in which case the loop above cannot see it as a CHILD and
+        // `any ~Copyable` degraded to the raw-text identifier "any~Copyable". Same trap as the
+        // composition case above; checked last so a more specific alternate always wins.
+        if let baseNT = find("type", in: spans) {
+            for (word, keyword) in [("any", Keyword.any), ("some", Keyword.some)]
+            where spansContainKeyword(spans, word) {
+                return TypeSyntax(SomeOrAnyTypeSyntax(
+                    someOrAnySpecifier: .keyword(keyword),
+                    constraint: convertType(baseNT.nt, from: baseNT.from, to: baseNT.to)
+                ))
+            }
+        }
         // Everything else (composition, opaque, …) degrades to a flat IdentifierType
         // over the raw source text.
         let text = collectTerminalText(nt, from: from, to: to)
@@ -7850,6 +7995,20 @@ struct SwiftSyntaxGenerator {
     ///
     /// The grammar nests to the right; swift-syntax keeps ONE flat `CompositionType` whose
     /// elements each carry the following `&`, so the nesting is walked out here.
+    /// protocolCompositionElement = "~"? typeIdentifier | anyType .
+    ///
+    /// The SE-0390 `~` sits on the ELEMENT, and its child is a `typeIdentifier` — not a `type` —
+    /// so `convertType`'s `type = "~" type` branch cannot see it and the tilde was dropped
+    /// silently, giving `IdentifierType` where swift-syntax has `SuppressedType`.
+    private mutating func compositionElement(_ span: NTSpan) -> CompositionTypeElementSyntax {
+        var type = convertType(span.nt, from: span.from, to: span.to)
+        if let (_, spans) = tileAlternate(span.nt, from: span.from, to: span.to),
+           spansContainKeyword(spans, "~") {
+            type = TypeSyntax(SuppressedTypeSyntax(withoutTilde: .prefixOperator("~"), type: type))
+        }
+        return CompositionTypeElementSyntax(type: type)
+    }
+
     private mutating func collectCompositionElements(
         _ nt: GrammarNode, from: CharPosition, to: CharPosition, into elements: inout [CompositionTypeElementSyntax]
     ) {
@@ -7858,18 +8017,14 @@ struct SwiftSyntaxGenerator {
             return
         }
         if let elNT = find("protocolCompositionElement", in: spans) {
-            elements.append(CompositionTypeElementSyntax(
-                type: convertType(elNT.nt, from: elNT.from, to: elNT.to)
-            ))
+            elements.append(compositionElement(elNT))
         }
         if let contNT = find("protocolCompositionContinuation", in: spans),
            let (_, contSpans) = tileAlternate(contNT.nt, from: contNT.from, to: contNT.to) {
             if let nestedNT = find("protocolCompositionType", in: contSpans) {
                 collectCompositionElements(nestedNT.nt, from: nestedNT.from, to: nestedNT.to, into: &elements)
             } else if let lastNT = find("protocolCompositionElement", in: contSpans) {
-                elements.append(CompositionTypeElementSyntax(
-                    type: convertType(lastNT.nt, from: lastNT.from, to: lastNT.to)
-                ))
+                elements.append(compositionElement(lastNT))
             }
         }
     }

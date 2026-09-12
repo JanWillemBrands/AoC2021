@@ -201,6 +201,13 @@ let expressionSnippets: [SwiftSnippet] = [
     ),
     SwiftSnippet(label: "testKeyPathMethodAndInitializers#1", source: #"\Foo.method()"#, origin: "ExpressionTests.testKeyPathMethodAndInitializers", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
     SwiftSnippet(label: "testKeyPathMethodAndInitializers#2", source: #"\Foo.method(10)"#, origin: "ExpressionTests.testKeyPathMethodAndInitializers", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
+    // PROBE (TODO 39): does swift-syntax PARSE a parenthesized key-path with outer postfix?
+    // The `@cannotParse(keyPathExpression)` proposal relies on this staying legal as the escape
+    // hatch; nothing in the corpus covered it.
+    SwiftSnippet(label: "probeParenKeyPathPostfix#1", source: #"(\Foo).method<Int>()"#,
+                 origin: "TODO39 probe", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "probeParenKeyPathMember#1", source: #"(\Foo).bar"#,
+                 origin: "TODO39 probe", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testKeyPathMethodAndInitializers#3", source: #"\Foo.method(arg: 10)"#, origin: "ExpressionTests.testKeyPathMethodAndInitializers", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
     SwiftSnippet(label: "testKeyPathMethodAndInitializers#4", source: #"\Foo.method(_:)"#, origin: "ExpressionTests.testKeyPathMethodAndInitializers", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testKeyPathMethodAndInitializers#5", source: #"\Foo.method(arg:)"#, origin: "ExpressionTests.testKeyPathMethodAndInitializers", syntaxVersion: "603.0.1"),
@@ -254,8 +261,7 @@ let expressionSnippets: [SwiftSnippet] = [
       _ = ([S.Type]()).map(\.init)
       """#,
         origin: "ExpressionTests.testKeyPathMethodAndInitializers",
-        syntaxVersion: "603.0.1",
-        disabledReason: "key-path to initializer `\\.init` — compiler rejects (fails to produce a diagnostic / ICE); key paths cannot reference initializers. swift-syntax parses permissively."
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testKeyPathMethodAndInitializers#15",
@@ -642,7 +648,7 @@ let expressionSnippets: [SwiftSnippet] = [
         origin: "ExpressionTests.testMacroExpansionExpression",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testMacroExpansionExpressionWithKeywordName#1", source: "#case", origin: "ExpressionTests.testMacroExpansionExpressionWithKeywordName", syntaxVersion: "603.0.1", disabledReason: "freestanding macro with a keyword name (`#case`) — compiler rejects (`no macro named 'case'`); a macro can never be declared with a keyword name. swift-syntax parses permissively; broadening `macroName` to keywords would clash with `#if`/`#warning`/etc."),
+    SwiftSnippet(label: "testMacroExpansionExpressionWithKeywordName#1", source: "#case", origin: "ExpressionTests.testMacroExpansionExpressionWithKeywordName", syntaxVersion: "603.0.1"),
     SwiftSnippet(
         label: "testPostProcessMultilineStringLiteral#1",
         source: #"""
@@ -1158,7 +1164,7 @@ let expressionSnippets: [SwiftSnippet] = [
         origin: "ExpressionTests.testClosureWithExternalParameterName",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testClosureParameterWithAttribute#1", source: "_ = { (@_noImplicitCopy _ x: Int) -> () in }", origin: "ExpressionTests.testClosureParameterWithAttribute", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
+    SwiftSnippet(label: "testClosureParameterWithAttribute#1", source: "_ = { (@_noImplicitCopy _ x: Int) -> () in }", origin: "ExpressionTests.testClosureParameterWithAttribute", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testClosureParameterWithAttribute#2", source: "_ = { (@Wrapper x) in }", origin: "ExpressionTests.testClosureParameterWithAttribute", syntaxVersion: "603.0.1"),
     SwiftSnippet(
         label: "testClosureParameterWithAttribute#3",

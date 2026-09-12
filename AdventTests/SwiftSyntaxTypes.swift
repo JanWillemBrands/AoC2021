@@ -16,7 +16,7 @@ import SwiftParser
 let typeSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "testClosureParsing#1", source: "let a: (a, b) -> c", origin: "TypeTests.testClosureParsing", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testClosureParsing#2", source: "let a: @MainActor (a, b) async throws -> c", origin: "TypeTests.testClosureParsing", syntaxVersion: "603.0.1"),
-    SwiftSnippet(label: "testClosureParsing#3", source: "() -> (\u{feff})", origin: "TypeTests.testClosureParsing", syntaxVersion: "603.0.1", disabledReason: "bare function type `() -> (…)` as a top-level statement, with a U+FEFF BOM inside the parens — compiler rejects (`expected type after '->'`; a type is not a statement). swift-syntax parses the type-suite snippet in type mode with BOM as trivia."),
+    SwiftSnippet(label: "testClosureParsing#3", source: "() -> (\u{feff})", origin: "TypeTests.testClosureParsing", syntaxVersion: "603.0.1"),
     SwiftSnippet(
         label: "testGenericTypeWithTrivia#1",
         source: """
@@ -61,8 +61,7 @@ let typeSnippets: [SwiftSnippet] = [
       public typealias Body = @_opaqueReturnTypeOf("$s6CatKit10pspspspspsV5cmereV6lilguyQrvp", 0) __
       """,
         origin: "TypeTests.testOpaqueReturnTypes",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testVariadics#1",
@@ -107,15 +106,25 @@ let typeSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "TypeTests.testNamedOpaqueReturnTypes",
-        syntaxVersion: "603.0.1", disabledReason: "named opaque result types (`-> <T> Int` / `var x: <U,V> (U,V)`) — compiler rejects (`expected type for function result`); experimental syntax that never shipped. swift-syntax parses permissively."
+        syntaxVersion: "603.0.1", compilerRejects: "expected type for function result"
     ),
     SwiftSnippet(label: "testUppercaseSelf#1", source: "let a: Self", origin: "TypeTests.testUppercaseSelf", syntaxVersion: "603.0.1"),
-    SwiftSnippet(label: "testNestedLowercaseSelf#1", source: "let a: Foo.self", origin: "TypeTests.testNestedLowercaseSelf", syntaxVersion: "603.0.1", disabledReason: "`Foo.self` in type-annotation position — compiler rejects (`'self' is not a member type of …`); `Foo.self` is a metatype *value*, not a type (use `Foo.Type`). swift-syntax parses it as a member type permissively."),
+    SwiftSnippet(label: "testNestedLowercaseSelf#1", source: "let a: Foo.self", origin: "TypeTests.testNestedLowercaseSelf", syntaxVersion: "603.0.1", compilerRejects: "'self' is not a member type of struct 'Foo'"),
     SwiftSnippet(label: "testNestedUppercaseSelf#1", source: "let a: Foo.Self", origin: "TypeTests.testNestedUppercaseSelf", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testInverseTypes#1", source: "[~Copyable]()", origin: "TypeTests.testInverseTypes", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testInverseTypes#2", source: "[any ~Copyable]()", origin: "TypeTests.testInverseTypes", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testInverseTypes#3", source: "[any P & ~Copyable]()", origin: "TypeTests.testInverseTypes", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testInverseTypes#4", source: "[P & ~Copyable]()", origin: "TypeTests.testInverseTypes", syntaxVersion: "603.0.1"),
+    // Tilde-position coverage (TODO 1a). `~T` is a type only where `~` lexes as `.prefixOperator`
+    // (swift-syntax Types.swift `canParseSimpleType`), i.e. where `~` is NOT left-bound. These five
+    // all MATCH swift-syntax already and exist to keep it that way: a `<-<( openAngle )` lookbehind
+    // would break the first one, because `<-<` is token-identity and not adjacency-sensitive.
+    // The ONE divergent case is `X<~Copyable>()` (testInverseTypes#5), where `<` is munch-exempt.
+    SwiftSnippet(label: "probeTildeAngleSpaced#1",  source: "X< ~Copyable>()",   origin: "TODO1a probe", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "probeTildeCommaTight#1",   source: "X<A,~Copyable>()",  origin: "TODO1a probe", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "probeTildeCommaSpaced#1",  source: "X<A, ~Copyable>()", origin: "TODO1a probe", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "probeTildeAmpTight#1",     source: "X<A&~Copyable>()",  origin: "TODO1a probe", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "probeTildeAfterParen#1",   source: "f(~Copyable.self)", origin: "TODO1a probe", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testInverseTypes#5", source: "X<~Copyable>()", origin: "TypeTests.testInverseTypes", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testInverseTypes#6", source: "X<any ~Copyable>()", origin: "TypeTests.testInverseTypes", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testInverseTypes#7", source: "X<P & ~Copyable>()", origin: "TypeTests.testInverseTypes", syntaxVersion: "603.0.1"),
@@ -150,7 +159,7 @@ let typeSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "testLifetimeSpecifier#2", source: "func foo() -> dependsOn(x, y) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
     SwiftSnippet(label: "testLifetimeSpecifier#3", source: "func foo() -> dependsOn(x) dependsOn(scoped y) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
     SwiftSnippet(label: "testLifetimeSpecifier#4", source: "func foo() -> dependsOn(scoped x) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
-    SwiftSnippet(label: "testLifetimeSpecifier#5", source: "func foo() -> dependsOn(self) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1", disabledReason: "experimental feature"),
+    SwiftSnippet(label: "testLifetimeSpecifier#5", source: "func foo() -> dependsOn(self) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1", compilerRejects: "consecutive statements on a line must be separated by ';'"),
     SwiftSnippet(
         label: "testNonisolatedSpecifier#1",
         source: """
@@ -243,8 +252,8 @@ let typeSnippets: [SwiftSnippet] = [
         origin: "TypeTests.testTrailingCommas",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testBasic#1", source: "[3 of Int]", origin: "TypeTests.testBasic", syntaxVersion: "603.0.1", disabledReason: "bare InlineArray type `[3 of Int]` as a top-level statement — compiler rejects (`expected member name or initializer call after type name`); a type is not a statement (valid only in type position, or with `.self`/`()`). swift-syntax parses the type-suite snippet in type mode."),
-    SwiftSnippet(label: "testBasic#2", source: "[Int of _]", origin: "TypeTests.testBasic", syntaxVersion: "603.0.1", disabledReason: "bare InlineArray type `[Int of _]` as a top-level statement — compiler rejects (type is not a statement). See testBasic#1."),
+    SwiftSnippet(label: "testBasic#1", source: "[3 of Int]", origin: "TypeTests.testBasic", syntaxVersion: "603.0.1", compilerRejects: "expected member name or initializer call after type name"),
+    SwiftSnippet(label: "testBasic#2", source: "[Int of _]", origin: "TypeTests.testBasic", syntaxVersion: "603.0.1", compilerRejects: "cannot pass type 'Int' as a value for generic value 'count'"),
     SwiftSnippet(
         label: "testMultiline#1",
         source: """
