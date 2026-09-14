@@ -55,7 +55,7 @@ position-typed annotation families:
   `@canParse` / `@cannotParse` with nonterminal operands.
 - Sequence predicates: layout boundaries today, and token lookaround after the
   `.B` boundary migration.
-- Terminal pragmas: `@lexicalClass`, `@preempt`, and `@builder` on
+- Terminal pragmas: `@literalMunch`, `@preempt`, and `@builder` on
   terminal-like definitions.
 
 The coherent target is that token lookaround (`>+>`, `>->`, `<+<`, `<-<`) becomes

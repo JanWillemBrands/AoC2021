@@ -225,7 +225,7 @@ private final class ApusMarkdownConverter {
         if !output.isEmpty, output.last != "" {
             output.append("")
         }
-        output.append("```swift")
+        output.append("```apus")
         isInCodeBlock = true
     }
 

@@ -67,13 +67,13 @@ lookaround  = ( "<+<" | "<-<" | ">+>" | ">->" ) "(" < literal | identifier | "EO
 //    parse.
 //
 //    production   = extent? "@sameLine"? identifier "=" alternates "." .
-//    production   = extent? "@sameLine"? "@lexicalClass"? preempt?
+//    production   = extent? "@sameLine"? "@literalMunch"? preempt?
 //                   identifier ( "-" | ":" ) terminalBody "." .
 //
 //    extent       = "@longest" | "@shortest" | "@left" | "@right" .
 //    preempt      = "@preempt" "(" identifier [ "," identifier ] ")" .
 //
-//    `@lexicalClass` and `@preempt` are terminal-only: the parser reads them at any
+//    `@literalMunch` and `@preempt` are terminal-only: the parser reads them at any
 //    production start but only ever applies them to `grammar.terminals[LHS]`, so on an
 //    `=` production they are accepted and inert.
 //
@@ -180,13 +180,13 @@ lookaround  = ( "<+<" | "<-<" | ">+>" | ">->" ) "(" < literal | identifier | "EO
 //    parse.
 //
 //    production   = extent? "@sameLine"? identifier "=" alternates "." .
-//    production   = extent? "@sameLine"? "@lexicalClass"? preempt?
+//    production   = extent? "@sameLine"? "@literalMunch"? preempt?
 //                   identifier ( "-" | ":" ) terminalBody "." .
 //
 //    extent       = "@longest" | "@shortest" | "@left" | "@right" .
 //    preempt      = "@preempt" "(" identifier [ "," identifier ] ")" .
 //
-//    `@lexicalClass` and `@preempt` are terminal-only: the parser reads them at any
+//    `@literalMunch` and `@preempt` are terminal-only: the parser reads them at any
 //    production start but only ever applies them to `grammar.terminals[LHS]`, so on an
 //    `=` production they are accepted and inert.
 //

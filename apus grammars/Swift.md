@@ -3,7 +3,7 @@
 ### Grammar of a top-level declaration
 _top-level-declaration → statements?_
 
-```swift
+```apus
 shebang - /#!.*/ .
 topLevelDeclaration = shebang? statements? .
 ```
@@ -32,7 +32,7 @@ _multiline-comment-text-item → multiline-comment_
 _multiline-comment-text-item → comment-text-item_
 _multiline-comment-text-item → **Any** Unicode scalar value except **/\*** or **\*/**_
 
-```swift
+```apus
 whitespace          : /[\u{0000}\u{0009}\u{000A}\u{000B}\u{000C}\u{000D}\u{0020}\u{00A0}\u{FEFF}]+/ .
 
 comment             : /\/\/.*\r?\n?/ .
@@ -72,8 +72,8 @@ _identifier-characters → identifier-character identifier-characters?_
 _implicit-parameter-name → $ decimal-digits_
 _property-wrapper-projection → $ identifier-characters_
 
-```swift
-@lexicalClass
+```apus
+@literalMunch
 identifier                  - @builder .
 
 escapedIdentifier           - @builder .
@@ -94,7 +94,7 @@ hardIdentifier              = identifier
 identifierList = hardIdentifier { "," hardIdentifier } .
 ```
 
-```swift
+```apus
 moduleSelector = @excludedFrom(valueBindingPattern) hardIdentifier "::" >n< .
 ```
 
@@ -142,21 +142,17 @@ _floating-point-e → e | E_
 _floating-point-p → p | P_
 _sign → + | **-**_
 
-```swift
+```apus
 binaryLiteral - /0b[0-1][0-1_]*/ .
 
 octalLiteral - /0o[0-7][0-7_]*/ .
 
 decimalLiteral - /[0-9][0-9_]*/ .
-```
 
-```swift
 decimalDigits - /[0-9]+/ .
 
 hexadecimalLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*/ .
-```
 
-```swift
 decimalFloatingPointLiteral     - /[0-9][0-9_]*(?:\.[0-9][0-9_]*(?:[eE][+-]?[0-9][0-9_]*)?|[eE][+-]?[0-9][0-9_]*)/ .
 
 hexadecimalFloatingPointLiteral - /0x[0-9a-fA-F][0-9a-fA-F_]*(?:\.[0-9a-fA-F][0-9a-fA-F_]*)?(?:[pP][+-]?[0-9][0-9_]*)/ .
@@ -211,7 +207,7 @@ _escaped-character → escape-sequence u **{** unicode-scalar-digits **}**_
 _unicode-scalar-digits → Between one and eight hexadecimal digits_
 _escaped-newline → escape-sequence inline-spaces? line-break_
 
-```swift
+```apus
 singleLineStringLiteral                         - @builder .
 extendedSinglelineStringLiteral                 - @builder .
 
@@ -246,7 +242,7 @@ interpolatedStringLiteral       = singleLineInterpolatedStringLiteral
                                 | multilineInterpolatedStringLiteral .
 ```
 
-```swift
+```apus
 @sameLine
 singleLineInterpolatedStringLiteral = interpolatedStringLiteralHead
                                       functionCallArgumentList
@@ -277,15 +273,13 @@ _regular-expression-literal-opening-delimiter → extended-regular-expression-li
 _regular-expression-literal-closing-delimiter → / extended-regular-expression-literal-delimiter?_
 _extended-regular-expression-literal-delimiter → **#** extended-regular-expression-literal-delimiter?_
 
-```swift
+```apus
 regexEscape          - /\\[^\r\n]/ .
 regexNonOperatorAtom - /[^\/\\\[\]\(\)\r\n\u{20}\u{09}\+\-\*%&\|\^~<>=!\?\.#;:,]/ .
 regexSpaceAtom       - /[\u{20}\u{09}]/ .
 regexClassAtom       - /[^\\\]\r\n]/ .
 regexOperatorChar    - /[-+*%|^~<>=!?&.]/ .
-```
 
-```swift
 regexSlash - /\// .
 
 extendedRegularExpressionLiteral    - @builder .
@@ -305,26 +299,18 @@ plainRegularExpressionLiteral = >n<
      regexSlash >s< regexBody >s< regexSlash .
 plainRegularExpressionLiteral = <n> regexSlash >s< regexBody >s< regexSlash .
 
-regexBody       = regexItem | regexItem regexBodyTail .
-regexBodyTail   = regexItem | ( regexSpaceAtom | regexItem ) regexBodyTail .
-regexItem       = regexEscape | regexCharacterClass | regexGroup | regexAtom .
-regexGroup      = "(" { regexSpaceAtom | regexItem } ")" .
-regexCharacterClass = "[" regexClassBody "]" .
-regexClassBody  = regexClassItem | regexClassItem regexClassBody .
-regexClassItem  = regexEscape | regexClassAtom .
-```
-
-```swift
-regexAtom       = regexNonOperatorAtom
+regexBody       = regexItem { regexSpaceAtom? regexItem } .
+regexItem       = regexEscape
+                | regexCharacterClass
+                | regexGroup
+                | regexNonOperatorAtom
                 | regexOperatorChar
                 | "#" | ":" | ";" | "," .
-```
+regexGroup      = "(" { regexSpaceAtom | regexItem } ")" .
+regexCharacterClass = "[" ( regexEscape | regexClassAtom ) { regexEscape | regexClassAtom } "]" .
 
-```swift
 regexShapeAtom   - /[^\/\\\r\n\u{20}\u{09}\(\)]/ .
-```
 
-```swift
 regexLexemeShape = >n<
      <-< ( "true" "false" "nil" "self" "Self" "super" "Any"
          "func" "operator"
@@ -338,12 +324,9 @@ regexLexemeShape = >n<
          optionalMark
          "->" "..." "." "@" )
      regexSlash >s< regexShapeBody >s< regexSlash .
-regexShapeBody   = regexShapeItem | regexShapeItem regexShapeTail .
-regexShapeTail   = regexShapeItem | ( regexSpaceAtom | regexShapeItem ) regexShapeTail .
+regexShapeBody   = regexShapeItem { regexSpaceAtom? regexShapeItem } .
 regexShapeItem   = regexEscape | regexShapeGroup | "(" | regexShapeAtom .
-```
 
-```swift
 regexShapeGroup  = "(" { regexSpaceAtom | regexShapeItem } ")" .
 
 regularExpressionLiteral = plainRegularExpressionLiteral
@@ -395,15 +378,15 @@ _infix-operator → **operator**_
 _prefix-operator → **operator**_
 _postfix-operator → **operator**_
 
-```swift
-@lexicalClass @preempt(regexSlash, regexLexemeShape)
+```apus
+@literalMunch @preempt(regexSlash, regexLexemeShape)
 nonArrowOperatorToken - @builder .
 
-@lexicalClass
+@literalMunch
 dotOperator - @builder .
 ```
 
-```swift
+```apus
 operator = @cannotParse( regularExpressionLiteral ) nonArrowOperatorToken .
 operator = dotOperator .
 
@@ -448,7 +431,7 @@ _type → any-type_
 _type → self-type_
 _type → **(** type **)**_
 
-```swift
+```apus
 type = functionType .
 type = arrayType .
 type = inlineArrayType .
@@ -473,7 +456,7 @@ type = attribute type .
 ### Grammar of a type annotation
 _type-annotation → **:** attributes? type_
 
-```swift
+```apus
 typeAnnotation = ":" type .
 ```
 
@@ -482,7 +465,7 @@ typeAnnotation = ":" type .
 _type-identifier → type-name generic-argument-clause? | type-name generic-argument-clause? **.** type-identifier_
 _type-name → identifier_
 
-```swift
+```apus
 typeIdentifier = typeName typeGenericArgumentClause? .
 typeIdentifier = typeIdentifier "." typeName typeGenericArgumentClause? .
 
@@ -498,7 +481,7 @@ _tuple-type-element-list → tuple-type-element | tuple-type-element **,** tuple
 _tuple-type-element → element-name type-annotation | type_
 _element-name → identifier_
 
-```swift
+```apus
 tupleType = "(" ")" | "(" tupleTypeElement "," tupleTypeElementList ","? ")" .
 tupleTypeElementList = tupleTypeElement { "," tupleTypeElement } .
 
@@ -516,7 +499,7 @@ _function-type-argument → attributes? parameter-modifier? type | argument-labe
 _argument-label → identifier_
 _throws-clause → **throws** | **throws** **(** type **)**_
 
-```swift
+```apus
 functionType = functionTypeArgumentClause "async"? throwsClause? "->" type .
 
 functionTypeArgumentClause = "(" ")" .
@@ -538,7 +521,7 @@ declarationThrowsClause = throwsClause | "rethrows" .
 ### Grammar of an array type
 _array-type → **[** type **]**_
 
-```swift
+```apus
 arrayType = "[" type "]" .
 
 inlineArrayType = "[" genericArgument >n< "of" genericArgument "]" .
@@ -548,7 +531,7 @@ inlineArrayType = "[" genericArgument >n< "of" genericArgument "]" .
 ### Grammar of a dictionary type
 _dictionary-type → **[** type **:** type **]**_
 
-```swift
+```apus
 dictionaryType = "[" type ":" type "]" .
 
 simpleType = typeIdentifier | tupleType | arrayType | inlineArrayType | dictionaryType
@@ -560,7 +543,7 @@ simpleType = typeIdentifier | tupleType | arrayType | inlineArrayType | dictiona
 ### Grammar of an optional type
 _optional-type → type **?**_
 
-```swift
+```apus
 optionalType = simpleType >s< optionalMark .
 ```
 
@@ -568,7 +551,7 @@ optionalType = simpleType >s< optionalMark .
 ### Grammar of an implicitly unwrapped optional type
 _implicitly-unwrapped-optional-type → type **!**_
 
-```swift
+```apus
 implicitlyUnwrappedOptionalType = simpleType >s< forceMark .
 ```
 
@@ -577,7 +560,7 @@ implicitlyUnwrappedOptionalType = simpleType >s< forceMark .
 _protocol-composition-type → type-identifier **&** protocol-composition-continuation_
 _protocol-composition-continuation → type-identifier | protocol-composition-type_
 
-```swift
+```apus
 protocolCompositionType = protocolCompositionElement "&" protocolCompositionContinuation .
 protocolCompositionContinuation = protocolCompositionElement | protocolCompositionType .
 protocolCompositionElement = "~"? typeIdentifier | anyType .
@@ -587,7 +570,7 @@ protocolCompositionElement = "~"? typeIdentifier | anyType .
 ### Grammar of an opaque type
 _opaque-type → **some** type_
 
-```swift
+```apus
 opaqueType = "some" type .
 ```
 
@@ -595,7 +578,7 @@ opaqueType = "some" type .
 ### Grammar of a boxed protocol type
 _boxed-protocol-type → **any** type_
 
-```swift
+```apus
 boxedProtocolType = "any" >-> ( "inout" "borrowing" "consuming" "isolated" "_const" "sending" "__shared" "__owned" "nonisolated" "dependsOn" ) type .
 ```
 
@@ -603,7 +586,7 @@ boxedProtocolType = "any" >-> ( "inout" "borrowing" "consuming" "isolated" "_con
 ### Grammar of a metatype type
 _metatype-type → type **.** **Type** | type **.** **Protocol**_
 
-```swift
+```apus
 metatypeType = simpleType "." "Type" | simpleType "." "Protocol" .
 ```
 
@@ -611,7 +594,7 @@ metatypeType = simpleType "." "Type" | simpleType "." "Protocol" .
 ### Grammar of an Any type
 _any-type → **Any**_
 
-```swift
+```apus
 anyType = "Any" .
 ```
 
@@ -619,7 +602,7 @@ anyType = "Any" .
 ### Grammar of a Self type
 _self-type → **Self**_
 
-```swift
+```apus
 selfType = "Self" .
 ```
 
@@ -628,7 +611,7 @@ selfType = "Self" .
 _type-inheritance-clause → **:** type-inheritance-list_
 _type-inheritance-list → attributes? ~? type-identifier | attributes? ~? type-identifier **,** type-inheritance-list_
 
-```swift
+```apus
 typeInheritanceClause = ":" typeInheritance { "," typeInheritance } .
 typeInheritance = attributes? "~"? "nonisolated"? typeIdentifier .
 typeInheritance = classRestrictionType .
@@ -641,7 +624,7 @@ classRestrictionType = "class" .
 ### Grammar of an expression
 _expression → try-operator? await-operator? prefix-expression infix-expressions?_
 
-```swift
+```apus
 expression = tryOperator? awaitOperator? conditionalExpression coercingOperator? .
 expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 ```
@@ -651,7 +634,7 @@ expression = tryOperator? awaitOperator? prefixExpression infixExpressions? .
 _prefix-expression → prefix-operator? postfix-expression_
 _prefix-expression → in-out-expression_
 
-```swift
+```apus
 @longest
 prefixExpression = @shortest [ prefixOperator >s< ] postfixExpression .
 prefixExpression = "!" >s< postfixExpression .
@@ -666,7 +649,7 @@ prefixExpression = @prefer "unsafe"  <s> >n< prefixExpression .
 ### Grammar of an in-out expression
 _in-out-expression → **&** primary-expression_
 
-```swift
+```apus
 inOutExpression = "&" >s< postfixExpression .
 ```
 
@@ -674,7 +657,7 @@ inOutExpression = "&" >s< postfixExpression .
 ### Grammar of a try expression
 _try-operator → **try** | **try** **?** | **try** **!**_
 
-```swift
+```apus
 tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .
 ```
 
@@ -682,7 +665,7 @@ tryOperator = "try" | "try" >s< "?" | "try" >s< "!" .
 ### Grammar of an await expression
 _await-operator → **await**_
 
-```swift
+```apus
 awaitOperator = "await" .
 ```
 
@@ -694,7 +677,7 @@ _infix-expression → conditional-operator try-operator? await-operator? prefix-
 _infix-expression → type-casting-operator_
 _infix-expressions → infix-expression infix-expressions?_
 
-```swift
+```apus
 @longest
 infixExpression = @cannotParse( genericArgumentClause ) >s< ( postfixOperatorToken | dotOperator | "&" ) >s< tryOperator? awaitOperator? prefixExpression .
 infixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
@@ -707,7 +690,7 @@ infixExpression = typeCastingOperator .
 infixExpressions = infixExpression infixExpressions? .
 ```
 
-```swift
+```apus
 conditionInfixExpression = >s< infixOperator >s< tryOperator? awaitOperator? prefixExpression .
 conditionInfixExpression = <s> infixOperator <s> tryOperator? awaitOperator? prefixExpression .
 conditionInfixExpression = conditionalOperator expression .
@@ -722,7 +705,7 @@ conditionExpression = tryOperator? awaitOperator? prefixExpression conditionInfi
 ### Grammar of an assignment operator
 _assignment-operator → **=**_
 
-```swift
+```apus
 assignmentOperator = <s> "=" <s>
                    | >s< "=" >s< .
 ```
@@ -731,7 +714,7 @@ assignmentOperator = <s> "=" <s>
 ### Grammar of a conditional operator
 _conditional-operator → **?** expression **:**_
 
-```swift
+```apus
 conditionalOperator = <s> "?" expression ":" .
 ```
 
@@ -742,7 +725,7 @@ _type-casting-operator → **as** type_
 _type-casting-operator → **as** **?** type_
 _type-casting-operator → **as** **!** type_
 
-```swift
+```apus
 typeCastingOperator = "is" type
                     | "as" type
                     | "as" >s< "?" type
@@ -770,7 +753,7 @@ _primary-expression → key-path-expression_
 _primary-expression → selector-expression_
 _primary-expression → key-path-string-expression_
 
-```swift
+```apus
 primaryExpression = genericIdentifier .
 genericIdentifier = hardIdentifier | hardIdentifier genericArgumentClause .
 
@@ -824,7 +807,7 @@ _playground-literal → **#colorLiteral** **(** red **:** expression **,** green
 _playground-literal → **#fileLiteral** **(** resourceName **:** expression **)**_
 _playground-literal → **#imageLiteral** **(** resourceName **:** expression **)**_
 
-```swift
+```apus
 literalExpression = literal | arrayLiteral | dictionaryLiteral .
 
 arrayLiteral = "[" arrayLiteralItems? ","? "]" .
@@ -848,7 +831,7 @@ _self-method-expression → **self** **.** identifier_
 _self-subscript-expression → **self** **[** function-call-argument-list **]**_
 _self-initializer-expression → **self** **.** **init**_
 
-```swift
+```apus
 selfExpression = "self" .
 ```
 
@@ -859,7 +842,7 @@ _superclass-method-expression → **super** **.** identifier_
 _superclass-subscript-expression → **super** **[** function-call-argument-list **]**_
 _superclass-initializer-expression → **super** **.** **init**_
 
-```swift
+```apus
 superclassExpression = "super" .
 ```
 
@@ -874,11 +857,11 @@ _switch-expression-cases → switch-expression-case switch-expression-cases?_
 _switch-expression-case → case-label statement_
 _switch-expression-case → default-label statement_
 
-```swift
+```apus
 conditionalExpression = ifExpression | switchExpression .
 ```
 
-```swift
+```apus
 ifExpression = "if" >-> ( "{" ) conditionList codeBlock elseClause? .
 elseClause = "else" codeBlock | "else" ifExpression .
 
@@ -890,7 +873,7 @@ switchCase = defaultLabel statements .
 switchCase = conditionalSwitchCase .
 ```
 
-```swift
+```apus
 caseLabel = switchCaseAttribute? "case" caseItemList ":" .
 caseItemList = matchPattern whereClause? | matchPattern whereClause? "," caseItemList .
 
@@ -925,7 +908,7 @@ _capture-list-item → capture-specifier? identifier **=** expression_
 _capture-list-item → capture-specifier? self-expression_
 _capture-specifier → **weak** | **unowned** | **unowned**(**safe**) | **unowned**(**unsafe**)_
 
-```swift
+```apus
 closureExpression       = samelineOpenedClosure
                         | @excludedFrom(conditionExpression) @excludedFrom(trailingClosures)
                           newlineOpenedClosure .
@@ -935,9 +918,7 @@ newlineOpenedClosure    = "{" <n> closureSignature? statements? "}" .
 closureSignature = attributes? captureList? closureParameterClause "async"? throwsClause? functionResult? "in" .
 closureSignature = attributes? captureList "in" .
 closureSignature = attributes "in" .
-```
 
-```swift
 closureParameterClause = "(" ")"
                        | "(" closureParameterList ","? ")"
                        | closureShorthandNameList .
@@ -965,7 +946,7 @@ captureSpecifier = "weak" | "unowned" | "unowned" "(" "safe" ")" | "unowned" "("
 _implicit-member-expression → **.** identifier_
 _implicit-member-expression → **.** identifier **.** postfix-expression_
 
-```swift
+```apus
 implicitMemberExpression = "." moduleSelector? softIdentifier .
 implicitMemberExpression = "." moduleSelector? softIdentifier "." postfixExpression .
 ```
@@ -974,7 +955,7 @@ implicitMemberExpression = "." moduleSelector? softIdentifier "." postfixExpress
 ### Grammar of a parenthesized expression
 _parenthesized-expression → **(** expression **)**_
 
-```swift
+```apus
 parenthesizedExpression = "(" expression ")" .
 ```
 
@@ -984,7 +965,7 @@ _tuple-expression → **(** **)** | **(** tuple-element **,** tuple-element-list
 _tuple-element-list → tuple-element | tuple-element **,** tuple-element-list_
 _tuple-element → expression | identifier **:** expression_
 
-```swift
+```apus
 tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ","? ")" .
 tupleElementList = tupleElement { "," tupleElement } .
 tupleElement = expression | softIdentifier ":" expression .
@@ -994,7 +975,7 @@ tupleElement = expression | softIdentifier ":" expression .
 ### Grammar of a wildcard expression
 _wildcard-expression → **\_**_
 
-```swift
+```apus
 wildcardExpression = "_" .
 ```
 
@@ -1002,7 +983,7 @@ wildcardExpression = "_" .
 ### Grammar of a macro-expansion expression
 _macro-expansion-expression → **#** identifier generic-argument-clause? function-call-argument-clause? trailing-closures?_
 
-```swift
+```apus
 @longest
 macroExpansionExpression = macroHead genericArgumentClause? [ >n< functionCallArgumentClause ] trailingClosures? .
 ```
@@ -1015,7 +996,7 @@ _key-path-component → identifier key-path-postfixes? | key-path-postfixes_
 _key-path-postfixes → key-path-postfix key-path-postfixes?_
 _key-path-postfix → **?** | **!** | **self** | **[** function-call-argument-list **]**_
 
-```swift
+```apus
 keyPathExpression = @prefer "\\" keyPathRootType keyPathComponents? .
 keyPathExpression =         "\\" keyPathComponents .
 
@@ -1029,15 +1010,12 @@ keyPathRootBase = metatypeType
                 | dictionaryType
                 | anyType
                 | "(" tupleTypeElement ")" .
-keyPathRootOptionals = keyPathRootOptional keyPathRootOptionals? .
+keyPathRootOptionals = keyPathRootOptional { keyPathRootOptional } .
 keyPathRootOptional = >s< optionalMark .
 keyPathRootOptional = >s< forceMark .
 
-keyPathComponents = keyPathProperty keyPathComponentsAfterProperty? .
+keyPathComponents = keyPathProperty { keyPathProperty } ( keyPathPivot keyPathBareTail? )? .
 keyPathComponents = keyPathPivotFirst keyPathBareTail? .
-
-keyPathComponentsAfterProperty = keyPathProperty keyPathComponentsAfterProperty? .
-keyPathComponentsAfterProperty = keyPathPivot keyPathBareTail? .
 
 keyPathProperty = "." keyPathMemberName .
 
@@ -1049,7 +1027,7 @@ keyPathPivot = keyPathPivotFirst .
 keyPathPivot = >s< optionalMark .
 keyPathPivot = >s< forceMark .
 
-keyPathBareTail = keyPathBareComponent keyPathBareTail? .
+keyPathBareTail = keyPathBareComponent { keyPathBareComponent } .
 keyPathBareComponent = keyPathProperty .
 keyPathBareComponent = >s< optionalMark .
 keyPathBareComponent = >s< forceMark .
@@ -1058,7 +1036,7 @@ keyPathBareComponent = "[" functionCallArgumentList? "]" .
 keyPathMemberName = moduleSelector? softIdentifier .
 keyPathMemberName = decimalDigits .
 keyPathMemberName = moduleSelector? softIdentifier "(" keyPathArgumentLabels ")" .
-keyPathArgumentLabels = keyPathArgumentLabel keyPathArgumentLabels? .
+keyPathArgumentLabels = keyPathArgumentLabel { keyPathArgumentLabel } .
 keyPathArgumentLabel = identifier ---( "inout" "_" ) ":" .
 keyPathArgumentLabel = "_" ":" .
 ```
@@ -1084,7 +1062,7 @@ _postfix-expression → subscript-expression_
 _postfix-expression → forced-value-expression_
 _postfix-expression → optional-chaining-expression_
 
-```swift
+```apus
 postfixExpression = primaryExpression .
 
 postfixExpression = @prefer postfixExpression >s< postfixOperator <s>
@@ -1117,13 +1095,12 @@ _trailing-closures → closure-expression labeled-trailing-closures?_
 _labeled-trailing-closures → labeled-trailing-closure labeled-trailing-closures?_
 _labeled-trailing-closure → identifier **:** closure-expression_
 
-```swift
+```apus
 functionCallExpression = postfixExpression >n< functionCallArgumentClause .
 functionCallExpression = @prefer postfixExpression functionCallArgumentClause >n< trailingClosures
                        | nonLiteralPostfix >n< trailingClosures .
 
 functionCallArgumentClause = "(" ")" | "(" functionCallArgumentList ","? ")" .
-
 functionCallArgumentList = functionCallArgument { "," functionCallArgument } .
 
 functionCallArgument = expression
@@ -1148,7 +1125,7 @@ trailingClosureLabel = identifier ---( "_" "let" "var" "inout" "default" ) | "_"
 _initializer-expression → postfix-expression **.** **init**_
 _initializer-expression → postfix-expression **.** **init** **(** argument-names **)**_
 
-```swift
+```apus
 initializerExpression = "init" >-> ( "{" ) .
 ```
 
@@ -1161,7 +1138,7 @@ _explicit-member-expression → postfix-expression conditional-compilation-block
 _argument-names → argument-name argument-names?_
 _argument-name → identifier **:**_
 
-```swift
+```apus
 explicitMemberExpression = postfixExpression "." decimalDigits .
 explicitMemberExpression = postfixExpression "." moduleSelector? softIdentifier .
 explicitMemberExpression = @cannotParse( keyPathExpression ) postfixExpression "." moduleSelector? softIdentifier genericArgumentClause .
@@ -1179,7 +1156,7 @@ _postfix-self-expression → postfix-expression **.** **self**_
 ### Grammar of a subscript expression
 _subscript-expression → postfix-expression **[** function-call-argument-list **]**_
 
-```swift
+```apus
 subscriptExpression = postfixExpression >n< "[" functionCallArgumentList? "]" .
 ```
 
@@ -1187,7 +1164,7 @@ subscriptExpression = postfixExpression >n< "[" functionCallArgumentList? "]" .
 ### Grammar of a forced-value expression
 _forced-value-expression → postfix-expression **!**_
 
-```swift
+```apus
 forcedValueExpression = postfixExpression >s< forceMark .
 ```
 
@@ -1195,7 +1172,7 @@ forcedValueExpression = postfixExpression >s< forceMark .
 ### Grammar of an optional-chaining expression
 _optional-chaining-expression → postfix-expression **?**_
 
-```swift
+```apus
 optionalChainingExpression = postfixExpression >s< optionalMark .
 ```
 
@@ -1214,7 +1191,7 @@ _statement → do-statement ;?_
 _statement → compiler-control-statement_
 _statements → statement statements?_
 
-```swift
+```apus
 statement = @cannotParse(declaration attributes) expression .
 statement = declaration .
 statement = loopStatement .
@@ -1228,9 +1205,7 @@ statement = yieldStatement .
 statement = discardStatement .
 
 yieldStatement = "yield" >-> ( "(" "[" "." ) <s> >n< expression .
-```
 
-```swift
 discardStatement = "discard" >-> ( "(" "[" "." ) <s> >n< expression .
 
 statements = statement ";"? .
@@ -1244,7 +1219,7 @@ _loop-statement → for-in-statement_
 _loop-statement → while-statement_
 _loop-statement → repeat-while-statement_
 
-```swift
+```apus
 loopStatement = forInStatement .
 loopStatement = whileStatement .
 loopStatement = repeatWhileStatement .
@@ -1254,7 +1229,7 @@ loopStatement = repeatWhileStatement .
 ### Grammar of a for-in statement
 _for-in-statement → **for** **case**? pattern **in** expression where-clause? code-block_
 
-```swift
+```apus
 forInStatement = "for" "try"? "await"? "unsafe"? "case" matchPattern "in" expression whereClause? codeBlock .
 forInStatement = "for" "try"? "await"? "unsafe"? bindingPattern "in" expression whereClause? codeBlock .
 ```
@@ -1267,7 +1242,7 @@ _condition → expression | availability-condition | case-condition | optional-b
 _case-condition → **case** pattern initializer_
 _optional-binding-condition → **let** pattern initializer? | **var** pattern initializer?_
 
-```swift
+```apus
 whileStatement = "while" >-> ( "{" ) conditionList codeBlock .
 
 conditionList = condition { "," condition } .
@@ -1286,7 +1261,7 @@ optionalBindingCondition = "let" bindingPattern initializer? | "var" bindingPatt
 ### Grammar of a repeat-while statement
 _repeat-while-statement → **repeat** code-block **while** expression_
 
-```swift
+```apus
 repeatWhileStatement = "repeat" codeBlock "while" >-> ( "{" ) conditionExpression .
 ```
 
@@ -1317,7 +1292,7 @@ _switch-elseif-directive-clauses → elseif-directive-clause switch-elseif-direc
 _switch-elseif-directive-clause → elseif-directive compilation-condition switch-cases?_
 _switch-else-directive-clause → else-directive switch-cases?_
 
-```swift
+```apus
 branchStatement = guardStatement .
 ```
 
@@ -1325,7 +1300,7 @@ branchStatement = guardStatement .
 ### Grammar of a guard statement
 _guard-statement → **guard** condition-list **else** code-block_
 
-```swift
+```apus
 guardStatement = "guard" >-> ( "{" ) conditionList "else" codeBlock .
 ```
 
@@ -1338,7 +1313,7 @@ _labeled-statement → statement-label do-statement_
 _statement-label → label-name **:**_
 _label-name → identifier_
 
-```swift
+```apus
 labeledStatement = statementLabel loopStatement .
 labeledStatement = statementLabel conditionalExpression .
 labeledStatement = statementLabel doStatement .
@@ -1355,7 +1330,7 @@ _control-transfer-statement → fallthrough-statement_
 _control-transfer-statement → return-statement_
 _control-transfer-statement → throw-statement_
 
-```swift
+```apus
 controlTransferStatement = breakStatement
                          | continueStatement
                          | fallthroughStatement
@@ -1367,7 +1342,7 @@ controlTransferStatement = breakStatement
 ### Grammar of a break statement
 _break-statement → **break** label-name?_
 
-```swift
+```apus
 breakStatement = "break" labelName? .
 ```
 
@@ -1375,7 +1350,7 @@ breakStatement = "break" labelName? .
 ### Grammar of a continue statement
 _continue-statement → **continue** label-name?_
 
-```swift
+```apus
 continueStatement = "continue" labelName? .
 ```
 
@@ -1383,7 +1358,7 @@ continueStatement = "continue" labelName? .
 ### Grammar of a fallthrough statement
 _fallthrough-statement → **fallthrough**_
 
-```swift
+```apus
 fallthroughStatement = "fallthrough" .
 ```
 
@@ -1391,7 +1366,7 @@ fallthroughStatement = "fallthrough" .
 ### Grammar of a return statement
 _return-statement → **return** expression?_
 
-```swift
+```apus
 returnStatement = "return" expression? .
 ```
 
@@ -1399,7 +1374,7 @@ returnStatement = "return" expression? .
 ### Grammar of a throw statement
 _throw-statement → **throw** expression_
 
-```swift
+```apus
 throwStatement = "throw" expression .
 ```
 
@@ -1407,7 +1382,7 @@ throwStatement = "throw" expression .
 ### Grammar of a defer statement
 _defer-statement → **defer** code-block_
 
-```swift
+```apus
 deferStatement = "defer" codeBlock .
 ```
 
@@ -1419,7 +1394,7 @@ _catch-clause → **catch** catch-pattern-list? code-block_
 _catch-pattern-list → catch-pattern | catch-pattern **,** catch-pattern-list_
 _catch-pattern → pattern where-clause?_
 
-```swift
+```apus
 doStatement = "do" throwsClause? codeBlock catchClauses? .
 catchClauses = catchClause catchClauses? .
 catchClause = "catch" catchPatternList? codeBlock .
@@ -1436,7 +1411,7 @@ _compiler-control-statement → conditional-compilation-block_
 _compiler-control-statement → line-control-statement_
 _compiler-control-statement → diagnostic-statement_
 
-```swift
+```apus
 compilerControlStatement = conditionalCompilationBlock .
 compilerControlStatement = lineControlStatement .
 ```
@@ -1471,7 +1446,7 @@ _swift-version → decimal-digits swift-version-continuation?_
 _swift-version-continuation → **.** decimal-digits swift-version-continuation?_
 _environment → simulator | macCatalyst_
 
-```swift
+```apus
 conditionalCompilationBlock = ifDirectiveClause elseifDirectiveClauses? elseDirectiveClause? endifDirective .
 
 postfixConditionalCompilationBlock = postfixIfDirectiveClause postfixElseifDirectiveClauses? postfixElseDirectiveClause? endifDirective .
@@ -1508,7 +1483,7 @@ _line-control-statement → **#sourceLocation** **(** **)**_
 _line-number → A decimal integer greater than zero_
 _file-path → static-string-literal_
 
-```swift
+```apus
 lineNumber - /0*[1-9][0-9]*/ .
 
 lineControlStatement = "#sourceLocation" "(" [ "file" ":" filePath "," "line" ":" lineNumber ] ")" .
@@ -1533,7 +1508,7 @@ _platform-version → decimal-digits_
 _platform-version → decimal-digits **.** decimal-digits_
 _platform-version → decimal-digits **.** decimal-digits **.** decimal-digits_
 
-```swift
+```apus
 availabilityCondition = "#available" "(" availabilityArguments ")" .
 availabilityCondition = "#unavailable" "(" availabilityArguments ")" .
 availabilityArguments = availabilityArgument | availabilityArgument "," availabilityArguments .
@@ -1568,7 +1543,7 @@ _declaration → macro-declaration_
 _declaration → operator-declaration_
 _declaration → precedence-group-declaration_
 
-```swift
+```apus
 declaration = importDeclaration .
 declaration = constantDeclaration .
 declaration = variableDeclaration .
@@ -1603,7 +1578,7 @@ macroHead = "#" >s< moduleSelector identifier ---( "_" ) .
 ### Grammar of a code block
 _code-block → **{** statements? **}**_
 
-```swift
+```apus
 codeBlock = "{" statements? "}" .
 ```
 
@@ -1613,7 +1588,7 @@ _import-declaration → attributes? **import** import-kind? import-path_
 _import-kind → **typealias** | **struct** | **class** | **enum** | **protocol** | **let** | **var** | **func**_
 _import-path → identifier | identifier **.** import-path_
 
-```swift
+```apus
 importDeclaration = attributes? "import" importKind? importPath .
 importDeclaration = attributes? "import" importKind moduleSelector ( hardIdentifier | operatorName ) .
 
@@ -1628,7 +1603,7 @@ _pattern-initializer-list → pattern-initializer | pattern-initializer **,** pa
 _pattern-initializer → pattern initializer?_
 _initializer → **=** expression_
 
-```swift
+```apus
 constantDeclaration = attributes? declarationModifiers? "let" patternInitializerList .
 
 patternInitializerList = patternInitializer { "," patternInitializer } .
@@ -1662,7 +1637,7 @@ _willSet-didSet-block → **{** didSet-clause willSet-clause? **}**_
 _willSet-clause → attributes? **willSet** setter-name? code-block_
 _didSet-clause → attributes? **didSet** setter-name? code-block_
 
-```swift
+```apus
 variableDeclaration = variableDeclarationHead patternInitializerList .
 variableDeclaration = variableDeclarationHead variableName typeAnnotation getterSetterBlock .
 variableDeclaration = variableDeclarationHead variableName initializer willSetDidSetBlock .
@@ -1695,9 +1670,7 @@ coroutineAccessorClause = attributes? accessorModifier? coroutineSpecifier acces
 coroutineSpecifier = "_read" | "read" | "_modify" | "modify" | "borrow" | "mutate" .
 
 accessorModifier = "mutating" | "nonmutating" | "borrowing" | "consuming" | "__consuming" .
-```
 
-```swift
 willSetDidSetBlock = "{" willSetClause didSetClause? "}"
                    | "{" didSetClause willSetClause? "}" .
 
@@ -1713,7 +1686,7 @@ _typealias-declaration → attributes? access-level-modifier? **typealias** type
 _typealias-name → identifier_
 _typealias-assignment → **=** type_
 
-```swift
+```apus
 typealiasDeclaration = attributes? accessLevelModifier? "typealias" typealiasName genericParameterClause? typealiasAssignment .
 typealiasName = hardIdentifier .
 typealiasAssignment = assignmentOperator type .
@@ -1738,7 +1711,7 @@ _local-parameter-name → identifier_
 _parameter-type-annotation → **:** attributes? parameter-modifier? type_
 _parameter-modifier → **inout** | **borrowing** | **consuming** default-argument-clause → **=** expression_
 
-```swift
+```apus
 @longest
 functionDeclaration = functionHead functionName genericParameterClause? functionSignature genericWhereClause? functionBody? .
 
@@ -1760,18 +1733,16 @@ externalParameterName = softIdentifier | "_" .
 localParameterName = softIdentifier | "_" .
 ```
 
-```swift
+```apus
 parameterModifiers = parameterModifier parameterModifiers? .
 
 parameterModifier = "inout" | "borrowing" | "consuming" | "isolated" | "_const" | "sending" | "__shared" | "__owned" .
-```
 
-```swift
 parameterModifier = parenthesisedTypeSpecifier .
 parenthesisedTypeSpecifier = "nonisolated" >s< "(" "nonsending" ")" .
 ```
 
-```swift
+```apus
 parenthesisedTypeSpecifier = "dependsOn" >s< "(" "scoped"? identifierList ")" .
 
 parameterDeclarationModifiers = parameterDeclarationModifier parameterDeclarationModifiers? .
@@ -1802,7 +1773,7 @@ _raw-value-style-enum-case → enum-case-name raw-value-assignment?_
 _raw-value-assignment → **=** raw-value-literal_
 _raw-value-literal → numeric-literal | static-string-literal | boolean-literal_
 
-```swift
+```apus
 enumDeclaration = attributes? accessLevelModifier? "indirect"? "enum" enumName genericParameterClause? typeInheritanceClause? genericWhereClause? "{" enumMembers? "}" .
 enumMembers = enumMember ";"? .
 enumMembers = enumMember statementSeparator enumMembers .
@@ -1817,9 +1788,7 @@ enumCaseParameter = parameterModifiers? externalArgumentLabel? localArgumentLabe
 
 enumName = hardIdentifier .
 enumCaseName = hardIdentifier .
-```
 
-```swift
 enumCaseDeclaration = attributes? "indirect"? "case" enumCaseElementList .
 
 enumCaseElementList = enumCaseElement | enumCaseElement "," enumCaseElementList .
@@ -1836,7 +1805,7 @@ _struct-body → **{** struct-members? **}**_
 _struct-members → struct-member struct-members?_
 _struct-member → declaration | compiler-control-statement_
 
-```swift
+```apus
 structDeclaration = attributes? accessLevelModifier? "struct" structName genericParameterClause? typeInheritanceClause? genericWhereClause? structBody .
 structName = hardIdentifier .
 structBody = "{" structMembers? "}" .
@@ -1855,7 +1824,7 @@ _class-body → **{** class-members? **}**_
 _class-members → class-member class-members?_
 _class-member → declaration | compiler-control-statement_
 
-```swift
+```apus
 classDeclaration = attributes? accessLevelModifier? "final"? "class" className genericParameterClause? typeInheritanceClause? genericWhereClause? classBody .
 classDeclaration = attributes? "final" accessLevelModifier? "class" className genericParameterClause? typeInheritanceClause? genericWhereClause? classBody .
 className = hardIdentifier .
@@ -1874,7 +1843,7 @@ _actor-body → **{** actor-members? **}**_
 _actor-members → actor-member actor-members?_
 _actor-member → declaration | compiler-control-statement_
 
-```swift
+```apus
 actorDeclaration = attributes? accessLevelModifier? "actor" actorName genericParameterClause? typeInheritanceClause? genericWhereClause? actorBody .
 actorName = hardIdentifier .
 actorBody = "{" actorMembers? "}" .
@@ -1915,7 +1884,7 @@ _protocol-subscript-declaration → subscript-head subscript-result generic-wher
 ### Grammar of a protocol associated type declaration
 _protocol-associated-type-declaration → attributes? access-level-modifier? **associatedtype** typealias-name type-inheritance-clause? typealias-assignment? generic-where-clause?_
 
-```swift
+```apus
 protocolDeclaration = attributes? accessLevelModifier? "protocol" protocolName primaryAssociatedTypeClause? typeInheritanceClause? genericWhereClause? protocolBody .
 protocolName = hardIdentifier .
 
@@ -1941,7 +1910,7 @@ _initializer-head → attributes? declaration-modifiers? **init** **?**_
 _initializer-head → attributes? declaration-modifiers? **init** **!**_
 _initializer-body → code-block_
 
-```swift
+```apus
 initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? declarationThrowsClause? functionResult? genericWhereClause? initializerBody .
 bodylessInitializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? declarationThrowsClause? functionResult? genericWhereClause? .
 initializerHead = attributes? declarationModifiers? "init" .
@@ -1954,7 +1923,7 @@ initializerBody = codeBlock .
 ### Grammar of a deinitializer declaration
 _deinitializer-declaration → attributes? **deinit** code-block_
 
-```swift
+```apus
 deinitializerDeclaration = attributes? declarationModifiers? "deinit" "async"? codeBlock? .
 ```
 
@@ -1965,7 +1934,7 @@ _extension-body → **{** extension-members? **}**_
 _extension-members → extension-member extension-members?_
 _extension-member → declaration | compiler-control-statement_
 
-```swift
+```apus
 extensionDeclaration = attributes? accessLevelModifier? "extension" typeIdentifier typeInheritanceClause? genericWhereClause? extensionBody .
 extensionBody = "{" extensionMembers? "}" .
 
@@ -1982,7 +1951,7 @@ _subscript-declaration → subscript-head subscript-result generic-where-clause?
 _subscript-head → attributes? declaration-modifiers? **subscript** generic-parameter-clause? parameter-clause_
 _subscript-result → **->** attributes? type_
 
-```swift
+```apus
 subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterBlock .
 subscriptHead = attributes? declarationModifiers? "subscript" genericParameterClause? parameterClause .
 subscriptResult = "->" type .
@@ -1996,7 +1965,7 @@ _macro-signature → parameter-clause macro-function-signature-result?_
 _macro-function-signature-result → **->** type_
 _macro-definition → **=** expression_
 
-```swift
+```apus
 macroDeclaration = macroDeclarationHead hardIdentifier genericParameterClause? macroSignature macroDefinition? genericWhereClause? .
 macroDeclarationHead = attributes? declarationModifiers? "macro" .
 macroSignature = parameterClause macroFunctionSignatureResult? .
@@ -2012,7 +1981,7 @@ _postfix-operator-declaration → **postfix** **operator** **operator**_
 _infix-operator-declaration → **infix** **operator** **operator** infix-operator-group?_
 _infix-operator-group → **:** precedence-group-name_
 
-```swift
+```apus
 operatorDeclaration = ( "prefix" | "postfix" | "infix" ) "operator" declaredOperator infixOperatorGroup? .
 
 declaredOperator = operatorName | dotOperator | "&" .
@@ -2040,7 +2009,7 @@ _precedence-group-associativity → **associativity** **:** **none**_
 _precedence-group-names → precedence-group-name | precedence-group-name **,** precedence-group-names_
 _precedence-group-name → identifier_
 
-```swift
+```apus
 precedenceGroupDeclaration = "precedencegroup" precedenceGroupName "{" precedenceGroupAttributes? "}" .
 
 precedenceGroupAttributes = precedenceGroupAttribute precedenceGroupAttributes? .
@@ -2052,9 +2021,7 @@ precedenceGroupRelation = "higherThan" ":" precedenceGroupNames .
 precedenceGroupRelation = "lowerThan" ":" precedenceGroupNames .
 
 precedenceGroupAssignment = "assignment" ":" booleanLiteral .
-```
 
-```swift
 precedenceGroupAssociativity = "associativity" ":" ( "left" | "right" | "none" ) .
 
 precedenceGroupNames = precedenceGroupName | precedenceGroupName "," precedenceGroupNames .
@@ -2077,7 +2044,7 @@ _access-level-modifier → **open** | **open** **(** **set** **)**_
 _mutation-modifier → **mutating** | **nonmutating**_
 _actor-isolation-modifier → **nonisolated**_
 
-```swift
+```apus
 declarationModifier = "class" | "convenience" | "dynamic" | "final" | "infix" | "lazy" | "optional" | "override" | "postfix" | "prefix" | "required" | "static" | "unowned" | "unowned" "(" "safe" ")" | "unowned" "(" "unsafe" ")" | "weak" .
 declarationModifier = "async" | "borrowing" | "consuming" | "sending" | "distributed" | "reasync" | "indirect" | "isolated" .
 declarationModifier = "_const" | "_local" | "__consuming" | "__setter_access" .
@@ -2113,7 +2080,7 @@ _balanced-token → **{** balanced-tokens? **}**_
 _balanced-token → **Any** identifier, keyword, literal, or **operator**_
 _balanced-token → **Any** punctuation except (, ), [, ], {, or **}**_
 
-```swift
+```apus
 attribute = "@" >s< "abi" >s< "(" abiDeclaration ")" .
 
 abiDeclaration = associatedTypeDeclaration | deinitializerDeclaration | enumCaseDeclaration
@@ -2124,20 +2091,18 @@ abiSubscriptDeclaration = subscriptHead subscriptResult genericWhereClause? .
 abiVariableDeclaration  = variableDeclarationHead variableName getterSetterBlock .
 ```
 
-```swift
+```apus
 attribute = "@" >s< "isolated" >s< "(" identifier ")" .
 ```
 
-```swift
+```apus
 attribute = "@" >s< "attached"     >s< "(" macroRoleArguments? ")" .
 attribute = "@" >s< "freestanding" >s< "(" macroRoleArguments? ")" .
-```
 
-```swift
 attribute = availableAttribute .
 ```
 
-```swift
+```apus
 availableAttribute = "@" >s< "available" >s< "(" availabilityAttributeArguments ")" .
 availabilityAttributeArguments = availabilityAttributeArgument
                                | availabilityAttributeArgument "," availabilityAttributeArguments .
@@ -2170,7 +2135,7 @@ derivativeNameChain = derivativeNameAtom
 derivativeNameAtom  = moduleSelector? hardIdentifier | moduleSelector? selfType | operator .
 ```
 
-```swift
+```apus
 attribute = "@" >s< "lifetime" >s< "(" lifetimeArguments ")" .
 lifetimeArguments = lifetimeArgument | lifetimeArgument "," lifetimeArguments .
 lifetimeArgument  = lifetimeTarget | hardIdentifier ":" lifetimeTarget .
@@ -2180,7 +2145,7 @@ lifetimeTarget    = hardIdentifier
                   | "&" >s< hardIdentifier .
 ```
 
-```swift
+```apus
 attribute = "@" >s< "backDeployed" >s< "(" "before" ":" backDeployedPlatforms ")" .
 backDeployedPlatforms = backDeployedPlatform | backDeployedPlatform "," backDeployedPlatforms .
 
@@ -2191,7 +2156,7 @@ originallyDefinedInPlatform  = platformName platformVersion? | "*" platformVersi
 backDeployedPlatform  = platformName platformVersion? .
 ```
 
-```swift
+```apus
 attribute = "@" >s< "differentiable" >s< "(" differentiableArguments ")" .
 differentiableArguments = differentiableKind
                         | differentiableKind "," differentiableWrt
@@ -2208,11 +2173,9 @@ differentiabilityArgumentList = differentiabilityArgument { "," differentiabilit
 differentiabilityArgument = hardIdentifier | "self" | selfType | decimalDigits .
 ```
 
-```swift
+```apus
 attribute = "@" >s< "specialized" >s< "(" genericWhereClause ")" .
-```
 
-```swift
 attribute = "@"
             >-> ( "abi" "attached" "available" "convention" "freestanding" "isolated" "backDeployed" "derivative" "differentiable" "lifetime" "objc" "specialized" "transpose" "_originallyDefinedIn" )
             >s< attributeName attributeArgumentExprClause? .
@@ -2248,7 +2211,6 @@ elseifDirectiveAttributes = elseifDirective compilationCondition attributes? .
 elseDirectiveAttributes = elseDirective attributes? .
 
 nonWordToken = "#available" | "#colorLiteral" | "#elseif" | "#else" | "#endif" | "#error" | "#fileLiteral" | "#if" | "#imageLiteral" | "#keyPath" | "#selector" | "#sourceLocation" | "#unavailable" | "#warning" | "." | "," | ":" | ";" | "=" | "&" | "?" | "!" | "_" | "@".
-
 nonWordToken = "#" >-> ( singleLineStringLiteral multilineStringLiteral ) .
 ```
 
@@ -2265,7 +2227,7 @@ _pattern → optional-pattern_
 _pattern → type-casting-pattern_
 _pattern → expression-pattern_
 
-```swift
+```apus
 bindingPattern = wildcardPattern typeAnnotation?
                | identifierPattern typeAnnotation?
                | tupleBindingPattern typeAnnotation? .
@@ -2278,7 +2240,7 @@ tupleBindingElement = bindingSubpattern | softIdentifier ":" bindingSubpattern .
 bindingSubpattern = wildcardPattern | identifierPattern | tupleBindingPattern .
 ```
 
-```swift
+```apus
 matchPattern = wildcardPattern
              | identifierPattern
              | valueBindingPattern
@@ -2293,7 +2255,7 @@ matchPattern = wildcardPattern
 ### Grammar of a wildcard pattern
 _wildcard-pattern → **\_**_
 
-```swift
+```apus
 wildcardPattern = "_" .
 ```
 
@@ -2301,7 +2263,7 @@ wildcardPattern = "_" .
 ### Grammar of an identifier pattern
 _identifier-pattern → identifier_
 
-```swift
+```apus
 identifierPattern = hardIdentifier .
 identifierPattern = @confinedTo(optionalBindingCondition) "self" .
 ```
@@ -2310,7 +2272,7 @@ identifierPattern = @confinedTo(optionalBindingCondition) "self" .
 ### Grammar of a value-binding pattern
 _value-binding-pattern → **var** pattern | **let** pattern_
 
-```swift
+```apus
 valueBindingPattern = "var" matchPattern
                     | "let" matchPattern
                     | "inout" matchPattern
@@ -2327,7 +2289,7 @@ _tuple-pattern → **(** tuple-pattern-element-list? **)**_
 _tuple-pattern-element-list → tuple-pattern-element | tuple-pattern-element **,** tuple-pattern-element-list_
 _tuple-pattern-element → pattern | identifier **:** pattern_
 
-```swift
+```apus
 tupleMatchPattern = "(" tupleMatchElementList? ")" .
 
 tupleMatchElementList = tupleMatchElement { "," tupleMatchElement } .
@@ -2339,7 +2301,7 @@ tupleMatchElement = matchPattern | softIdentifier ":" matchPattern .
 ### Grammar of an enumeration case pattern
 _enum-case-pattern → type-identifier? **.** enum-case-name tuple-pattern?_
 
-```swift
+```apus
 enumCasePattern = enumCaseName tupleMatchPattern .
 enumCasePattern = typeIdentifier? "." enumCaseName tupleMatchPattern? .
 ```
@@ -2348,7 +2310,7 @@ enumCasePattern = typeIdentifier? "." enumCaseName tupleMatchPattern? .
 ### Grammar of an optional pattern
 _optional-pattern → identifier-pattern **?**_
 
-```swift
+```apus
 optionalPattern = identifierPattern >s< optionalMark .
 ```
 
@@ -2358,7 +2320,7 @@ _type-casting-pattern → is-pattern | as-pattern_
 _is-pattern → **is** type_
 _as-pattern → pattern **as** type_
 
-```swift
+```apus
 typeCastingPattern = isPattern .
 isPattern = "is" type .
 ```
@@ -2367,7 +2329,7 @@ isPattern = "is" type .
 ### Grammar of an expression pattern
 _expression-pattern → expression_
 
-```swift
+```apus
 expressionPattern = expression .
 ```
 
@@ -2389,13 +2351,13 @@ _conformance-requirement → type-identifier **:** protocol-composition-type_
 _same-type-requirement → type-identifier **==** type_
 _same-type-requirement → type-identifier **==** signed-integer-literal_
 
-```swift
+```apus
 genericParameterClause  = openAngle genericParameterList ","? closeAngle .
 
 genericParameterList = genericParameter { "," genericParameter } .
 ```
 
-```swift
+```apus
 genericParameter = attributes? typeName .
 genericParameter = attributes? typeName ":" "~"? typeIdentifier .
 genericParameter = attributes? typeName ":" "~"? protocolCompositionType .
@@ -2407,7 +2369,7 @@ requirementList = requirement { "," requirement } .
 requirement = conformanceRequirement | sameTypeRequirement .
 ```
 
-```swift
+```apus
 conformanceRequirement = typeIdentifier ":" "~"? ( typeIdentifier | protocolCompositionType ) .
 sameTypeRequirement    = typeIdentifier "==" ( type | signedIntegerLiteral ) .
 ```
@@ -2418,7 +2380,7 @@ _generic-argument-clause → < generic-argument-list ,? **>**_
 _generic-argument-list → generic-argument | generic-argument **,** generic-argument-list_
 _generic-argument → type | signed-integer-literal_
 
-```swift
+```apus
 genericArgumentClause     = openAngle genericArgumentList ","? closeAngle
                             >+> ( "(" ")" "[" "]" "{" "}" "," ";" ":" "." "?" "!" ">" "&" EOF ) .
 

@@ -40,9 +40,9 @@ This is the workhorse and it is genuinely general.
   arbitrary grammar-declared character class — would cover other languages' rules
   (e.g. "no tab here", "must be followed by a digit") with the same primitive.
 
-### Tool 2 — Longest match / lexical class: `@lexicalClass`  ✅ HAVE, proven
-A regex terminal declared a lexical class; a literal match is suppressed when a class
-terminal matches strictly longer at the same start. Resolves maximal munch (keyword `for`
+### Tool 2 — Longest match / literal munch: `@literalMunch`  ✅ HAVE, proven
+A regex terminal declared with `@literalMunch` suppresses a literal match when it
+matches strictly longer at the same start. Resolves maximal munch (keyword `for`
 inside `foreach`; operator `&&`). Grammar-derived, language-neutral.
 
 ### Tool 3 — Munch exemption / split  ⚠️ EXISTS IN THREE AD-HOC FORMS — should unify
@@ -65,7 +65,7 @@ structural — use the Oracle."
 ## Mapping (which tool each case wants)
 | ambiguity | tool |
 |---|---|
-| keyword/`foreach`, `&&`, `<<` | 2 (`@lexicalClass`) |
+| keyword/`foreach`, `&&`, `<<` | 2 (`@literalMunch`) |
 | generic `>>`, optional `??`, `^^/regex/` | 3 (exemption/split) |
 | `.self` | grammar redundancy (it *is* a member access) |
 | operator prefix/infix/postfix, newline continuation, call/subscript line-start | 1 (boundary) |
@@ -248,7 +248,7 @@ predicts `prefixExpression`, whose FIRST includes `prefixOperator` (= `operatorT
 **The reframe (the approved plan).** Key the split on the *terminal* that may begin at the break,
 not on a raw char:
 ```apus
-@lexicalClass @splitBefore(regexOpenSlash)
+@literalMunch @splitBefore(regexOpenSlash)
 operatorToken - @builder .
 ```
 Strictly better than `@splitBefore("/")`: (1) restricts to the one legitimate case (only where
@@ -288,7 +288,7 @@ regexes. So converting them to literals *under this fix alone* would re-trigger 
 `>>` (`Array<Array<Int>>`) and `Int??` — the same "wash" trap as the `!?`-exclusion experiment.
 
 **What would actually retire it: a separate change — predict-gate the literal suppression.** Suppress
-a literal only when a longer lexical-class terminal is *itself predicted at this slot*. In the
+a literal only when a longer literal-munch terminal is *itself predicted at this slot*. In the
 generic-close / type-optional / force-unwrap slots `operatorToken` isn't predicted, so
 `closeAngle - ">"`, `optionalMark - "?"`, `forceMark - "!"` survive as **plain literals** — kept as
 distinct terminals (Scott-faithful, maximal in their own one-char sublanguage), just not regexes.

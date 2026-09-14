@@ -386,11 +386,11 @@ class MessageParser {
             )
         }
         // Maximal-munch default (longest-across; see TODO #0). The grammar
-        // declares its lexical classes with `@lexicalClass` (identifier,
-        // operator, …); a literal is suppressed when a class terminal has a
-        // strictly longer match at the same start. Collect the class terminal
+        // declares literal-munch terminals with `@literalMunch` (identifier,
+        // operator, …); a literal is suppressed when one has a strictly longer
+        // match at the same start. Collect those terminal
         // IDs; the runtime prefix-match lives in `OnDemandLiteralLexer.lex`.
-        var lexicalClassIDs: [Int] = []
+        var literalMunchIDs: [Int] = []
         
         // `@preempt(X, …)`: terminal ID → the ID of the terminal `X` whose start
         // positions define the split points. Terminal-keyed (not char-keyed) so
@@ -399,7 +399,7 @@ class MessageParser {
         var preemptStartByID: [Int: Int] = [:]
         for (name, pat) in grammar.terminals {
             guard let id = grammar.symbolToID[name] else { continue }
-            if pat.isLexicalClass { lexicalClassIDs.append(id) }
+            if pat.isLiteralMunch { literalMunchIDs.append(id) }
             if let st = pat.preemptStart, let stID = grammar.symbolToID[st] {
                 preemptStartByID[id] = stID
             }
@@ -409,7 +409,7 @@ class MessageParser {
             literalSourceByID: literalSourceByID,
             regexByID: regexByID,
             preemptStartByID: preemptStartByID,
-            lexicalClassIDs: lexicalClassIDs,
+            literalMunchIDs: literalMunchIDs,
             triviaRegexes: triviaRegexes,
             triviaRecognisers: triviaRecognisers,
             lexicalTokenRecognisers: lexicalTokenRecognisers,

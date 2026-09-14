@@ -305,8 +305,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """#,
         origin: "DeclarationTests.testParseSpecializeAttribute",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "'mutating' is only valid on methods"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testParseSpecializeAttribute#2",
@@ -321,8 +320,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testParseSpecializeAttribute",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "too few generic parameters are specified in '_specialize' attribute (g"
+        syntaxVersion: "603.0.1", compilerRejects: "SIL layout constraint (_Trivial(32)) not modelled"
     ),
     SwiftSnippet(
         label: "testParseSpecializeAttribute#3",
@@ -401,8 +399,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testParseDynamicReplacement",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testParseDynamicReplacement#2",
@@ -430,8 +427,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testParseDynamicReplacement",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testParseDynamicReplacement#4",
@@ -442,8 +438,7 @@ let declarationSnippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testParseDynamicReplacement",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "initializers may only be declared within a type"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testEnumParsing#1",

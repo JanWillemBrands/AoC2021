@@ -174,7 +174,7 @@ by construction (opening `#`-count fixes the close via backreference `\1`; insid
 is plain content). Rule of thumb: **CFG for the ambiguous delimiter (`/`), scanner
 terminal for the unambiguous one (`#/…/#`).**
 
-**Operator side — maximal-munch + prefix-gated split.** `@lexicalClass operatorToken`
+**Operator side — maximal-munch + prefix-gated split.** `@literalMunch operatorToken`
 (includes `/`) munches `=/`, `.../`, `/^/` as single operators (kills the infix-op +
 `/regex/` reading). `@splitBefore("/")` additionally offers "operator ends before an
 internal `/`" so a regex can follow a **prefix** operator (`^^/regex/` → `^^` +

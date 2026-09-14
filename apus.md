@@ -430,7 +430,7 @@ annotation class; put lookaround where the production cursor should be tested.
 ## Terminal Pragmas
 
 ```swift
-@lexicalClass operator - /.../ .
+@literalMunch operator - /.../ .
 @preempt(regexOpenSlash, regularExpressionLiteral) operator - /.../ .
 regexLiteral - @builder(plainRegularExpressionLiteral) .
 ```
@@ -501,7 +501,7 @@ lookaround  = ( ">+>" | ">->" | "<+<" | "<-<" ) "(" < literal | identifier | "EO
 exclusion   = "---" "(" < literal > ")" .
 
 productionPragma     = terminalPragma | nonterminalPragma .
-terminalPragma       = "@lexicalClass" | "@preempt" preemptArgs .
+terminalPragma       = "@literalMunch" | "@preempt" preemptArgs .
 nonterminalPragma    = "@longest" | "@shortest" | "@left" | "@right" | "@sameLine" .
 groupPragma          = "@longest" | "@shortest" | "@left" | "@right" .
 alternateAnnotation  = "@prefer" | "@avoid" | containment | parsePredicate .

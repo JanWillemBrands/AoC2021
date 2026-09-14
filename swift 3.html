@@ -154,7 +154,7 @@ sup.apus-rep { font-size: 0.75em; }
 <h2 class="apus-section">Identifiers</h2>
 <aside class="note">
   <p class="label">Grammar of an identifier</p>
-  <p class="rule"><span class="apus-pragma">@lexicalClass</span> <em>identifier</em> <span class="apus-arrow">↦</span> <code class="apus-regex" title="regex from the RegexBuilder library">@builder</code></p>
+  <p class="rule"><span class="apus-pragma">@literalMunch</span> <em>identifier</em> <span class="apus-arrow">↦</span> <code class="apus-regex" title="regex from the RegexBuilder library">@builder</code></p>
 </aside>
 <aside class="note">
   <p class="label">Grammar of an escaped identifier</p>
@@ -379,11 +379,11 @@ sup.apus-rep { font-size: 0.75em; }
 <h2 class="apus-section">Operators</h2>
 <aside class="note">
   <p class="label">Grammar of an operator token</p>
-  <p class="rule"><span class="apus-pragma">@lexicalClass</span> <span class="apus-pragma">@splitBefore</span> <em>operator-token</em> <span class="apus-arrow">↦</span> <code class="apus-regex" title="regex from the RegexBuilder library">@builder</code> <span class="apus-annot" title="only when NOT preceded by">⋪ (true false nil self Self super Any identifier escapedIdentifier implicitParameterName propertyWrapperProjection binaryLiteral octalLiteral decimalNumber hexadecimalLiteral decimalFloatingPointLiteral hexadecimalFloatingPointLiteral regexCloseSlash extendedRegularExpressionLiteral _ ) ] } &gt; !)</span></p>
+  <p class="rule"><span class="apus-pragma">@literalMunch</span> <span class="apus-pragma">@splitBefore</span> <em>operator-token</em> <span class="apus-arrow">↦</span> <code class="apus-regex" title="regex from the RegexBuilder library">@builder</code> <span class="apus-annot" title="only when NOT preceded by">⋪ (true false nil self Self super Any identifier escapedIdentifier implicitParameterName propertyWrapperProjection binaryLiteral octalLiteral decimalNumber hexadecimalLiteral decimalFloatingPointLiteral hexadecimalFloatingPointLiteral regexCloseSlash extendedRegularExpressionLiteral _ ) ] } &gt; !)</span></p>
 </aside>
 <aside class="note">
   <p class="label">Grammar of a dot operator</p>
-  <p class="rule"><span class="apus-pragma">@lexicalClass</span> <em>dot-operator</em> <span class="apus-arrow">↦</span> <code class="apus-regex" title="regex from the RegexBuilder library">@builder</code></p>
+  <p class="rule"><span class="apus-pragma">@literalMunch</span> <em>dot-operator</em> <span class="apus-arrow">↦</span> <code class="apus-regex" title="regex from the RegexBuilder library">@builder</code></p>
 </aside>
 <aside class="note">
   <p class="label">Grammar of an operator</p>

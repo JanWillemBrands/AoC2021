@@ -21,8 +21,7 @@ let attributeSnippets: [SwiftSnippet] = [
       func foo(_ t: T) {}
       """,
         origin: "AttributeTests.testSpecializeAttribute",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "trailing 'where' clause in '_specialize' attribute of non-generic func"
+        syntaxVersion: "603.0.1", compilerRejects: "SIL layout constraint (_Trivial(32) / @_noMetdata) not modelled"
     ),
     SwiftSnippet(
         label: "testSpecializeAttribute#2",
@@ -31,8 +30,7 @@ let attributeSnippets: [SwiftSnippet] = [
       func foo(_ t: T) {}
       """,
         origin: "AttributeTests.testSpecializeAttribute",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "trailing 'where' clause in '_specialize' attribute of non-generic func"
+        syntaxVersion: "603.0.1", compilerRejects: "SIL layout constraint (_Trivial(32) / @_noMetdata) not modelled"
     ),
     SwiftSnippet(
         label: "testSpecializeAttribute#3",
@@ -50,8 +48,7 @@ let attributeSnippets: [SwiftSnippet] = [
       public func specializeWithAvailability<T>(_ t: T) { }
       """,
         origin: "AttributeTests.testSpecializeWithAvailability",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testObjCAttribute#1",
@@ -347,8 +344,7 @@ let attributeSnippets: [SwiftSnippet] = [
       struct Foo {}
       """,
         origin: "AttributeTests.testBackDeployed",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "'@backDeployed' attribute cannot be applied to this declaration"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testBackDeployed#5",
@@ -357,8 +353,7 @@ let attributeSnippets: [SwiftSnippet] = [
       struct Foo {}
       """,
         origin: "AttributeTests.testBackDeployed",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "'@backDeployed' attribute cannot be applied to this declaration"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testBackDeployed#6",
@@ -368,8 +363,7 @@ let attributeSnippets: [SwiftSnippet] = [
       public func backDeployTopLevelFunc2() -> Int { return 48 }
       """,
         origin: "AttributeTests.testBackDeployed",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testExpose#1",
@@ -473,8 +467,7 @@ let attributeSnippets: [SwiftSnippet] = [
       func foo() {}
       """,
         origin: "AttributeTests.testEffects",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testEffects#2",
@@ -483,8 +476,7 @@ let attributeSnippets: [SwiftSnippet] = [
       func foo() {}
       """,
         origin: "AttributeTests.testEffects",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(label: "testEscapingOnClosureType#1", source: "func foo(closure: @escaping () -> Void) {}", origin: "AttributeTests.testEscapingOnClosureType", syntaxVersion: "603.0.1"),
     SwiftSnippet(
@@ -497,11 +489,11 @@ let attributeSnippets: [SwiftSnippet] = [
         origin: "AttributeTests.testNonSendable",
         syntaxVersion: "603.0.1"
     ),
-    SwiftSnippet(label: "testDocumentationAttribute#1", source: "@_documentation(visibility: internal) @_exported import A", origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testDocumentationAttribute#2", source: "@_documentation(visibility: package) @objc final public class Klass {}", origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testDocumentationAttribute#3", source: "@_documentation(metadata: cool_stuff) public class SomeClass {}", origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testDocumentationAttribute#4", source: #"@_documentation(metadata: "this is a longer string") public class OtherClass {}"#, origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
-    SwiftSnippet(label: "testDocumentationAttribute#5", source: #"@_documentation(visibility: internal, metadata: "this is a longer string") public class OtherClass {}"#, origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1", disabledReason: "underscore attribute"),
+    SwiftSnippet(label: "testDocumentationAttribute#1", source: "@_documentation(visibility: internal) @_exported import A", origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testDocumentationAttribute#2", source: "@_documentation(visibility: package) @objc final public class Klass {}", origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testDocumentationAttribute#3", source: "@_documentation(metadata: cool_stuff) public class SomeClass {}", origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testDocumentationAttribute#4", source: #"@_documentation(metadata: "this is a longer string") public class OtherClass {}"#, origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1"),
+    SwiftSnippet(label: "testDocumentationAttribute#5", source: #"@_documentation(visibility: internal, metadata: "this is a longer string") public class OtherClass {}"#, origin: "AttributeTests.testDocumentationAttribute", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testSendable#1", source: "func takeRepeater(_ f: @MainActor @Sendable @escaping () -> Int) {}", origin: "AttributeTests.testSendable", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testSendable#2", source: "takeRepesater { @MainActor @Sendable () -> Int in 0 }", origin: "AttributeTests.testSendable", syntaxVersion: "603.0.1"),
     SwiftSnippet(
@@ -525,8 +517,7 @@ let attributeSnippets: [SwiftSnippet] = [
       private import G
       """,
         origin: "AttributeTests.testImportAttributes",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testMacroRoleNames#1",

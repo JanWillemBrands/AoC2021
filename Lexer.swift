@@ -88,13 +88,13 @@ struct OnDemandLiteralLexer {
     /// begins a non-empty match. Ports swift-syntax's operator regex-scan
     /// (`^^/regex/` → `^^` + `/regex/`, keyed on `regexOpenSlash`).
     let preemptStartByID: [Int: Int]
-    /// Terminal IDs of `@lexicalClass` regex terminals (identifier, operator, …).
+    /// Terminal IDs of `@literalMunch` regex terminals (identifier, operator, …).
     /// Maximal-munch (default, longest-across): a literal match is suppressed when
-    /// any lexical-class terminal has a strictly longer match at the same start
+    /// any literal-munch terminal has a strictly longer match at the same start
     /// (`for` inside `foreach`, `_` inside `_foo`, `&` inside `&&`). The check is
-    /// a runtime prefix-match of the class regex — the ground truth, not a
-    /// derived extension class. See `Multiple Lexicalisation` §4.1.
-    let lexicalClassIDs: [Int]
+    /// a runtime prefix-match of the declared regex — the ground truth, not a
+    /// derived extension set. See `Multiple Lexicalisation` §4.1.
+    let literalMunchIDs: [Int]
     /// Compiled `isSkip` patterns from the grammar, used to skip whitespace /
     /// comments / etc. between the parser's cursor and the next meaningful
     /// character.
@@ -148,11 +148,11 @@ struct OnDemandLiteralLexer {
             guard remaining.hasPrefix(literal) else { return [] }
             let literalEnd = input.index(scanStart, offsetBy: literal.count)
             // Maximal munch (longest-across): suppress this literal if any declared
-            // `@lexicalClass` terminal has a strictly longer match at the same
+            // `@literalMunch` terminal has a strictly longer match at the same
             // start — `for` inside `foreach`, `_` inside `_foo`. Runtime prefix-
-            // match of the class regex is the faithful test (no extension-class
+            // match of the declared regex is the faithful test (no extension-set
             // extraction, no probes). TODO #0.
-            for classID in lexicalClassIDs where classID != terminalID {
+            for classID in literalMunchIDs where classID != terminalID {
                 guard let rx = regexByID[classID] else { continue }
                 if let rm = remaining.prefixMatch(of: rx), rm.range.upperBound > literalEnd {
                     return []

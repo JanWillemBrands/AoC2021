@@ -188,11 +188,11 @@ class ApusParser {
             sameLineAnnotation = true
             cI += 1
         }
-        // `@lexicalClass` — marks a regex terminal as a lexical class for the
-        // maximal-munch (longest-across) default. See TODO #0.
-        var isLexicalClassAnnotation = false
-        if token.kind == "pragma", token.stripped == "lexicalClass" {
-            isLexicalClassAnnotation = true
+        // `@literalMunch` — marks a regex terminal as participating in
+        // literal-suppression maximal munch. See TODO #0.
+        var isLiteralMunchAnnotation = false
+        if token.kind == "pragma", token.stripped == "literalMunch" {
+            isLiteralMunchAnnotation = true
             cI += 1
         }
         // `@preempt(X)` / `@preempt(X, N)` — this terminal's maximal munch must not swallow something
@@ -237,7 +237,7 @@ class ApusParser {
                 // assign the name of the production to the regex
                 terminalAlias = nonTerminalName
                 _ = try regex()
-                if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
+                if isLiteralMunchAnnotation { grammar.terminals[nonTerminalName]?.isLiteralMunch = true }
                 if let ps = preemptStartName { grammar.terminals[nonTerminalName]?.preemptStart = ps }
                 if let pc = preemptConstructName { grammar.terminals[nonTerminalName]?.preemptConstruct = pc }
             case "literal":
@@ -252,7 +252,7 @@ class ApusParser {
                 //   name - @builder .          → ApusRegexLibrary.patterns["name"]
                 //   name - @builder(key) .     → ApusRegexLibrary.patterns["key"]
                 _ = try regexBuilder(name: nonTerminalName)
-                if isLexicalClassAnnotation { grammar.terminals[nonTerminalName]?.isLexicalClass = true }
+                if isLiteralMunchAnnotation { grammar.terminals[nonTerminalName]?.isLiteralMunch = true }
                 if let ps = preemptStartName { grammar.terminals[nonTerminalName]?.preemptStart = ps }
                 if let pc = preemptConstructName { grammar.terminals[nonTerminalName]?.preemptConstruct = pc }
             default:

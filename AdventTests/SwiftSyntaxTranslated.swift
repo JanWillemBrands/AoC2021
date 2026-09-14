@@ -6930,8 +6930,7 @@ let translatedSnippets: [SwiftSnippet] = [
       mutating func myNegate() {}
       """,
         origin: "ModuleSelectorTests.testModuleSelectorCorrectCode",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testModuleSelectorCorrectCode#5",
@@ -7099,8 +7098,7 @@ let translatedSnippets: [SwiftSnippet] = [
       public var stringValue: String { fatalError() }
       """,
         origin: "ModuleSelectorTests.testModuleSelectorAttrs",
-        syntaxVersion: "603.0.1",
-        disabledReason: "underscore attribute"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testModuleSelectorAttrs#3",
@@ -8773,8 +8771,7 @@ let translatedSnippets: [SwiftSnippet] = [
       public func foo() {}
       """#,
         origin: "OriginalDefinedInAttrTests.testOriginalDefinedInAttr1",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "'@_originallyDefinedIn' requires that 'foo()' have explicit availabili"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testOriginalDefinedInAttr3#1",
@@ -8783,8 +8780,7 @@ let translatedSnippets: [SwiftSnippet] = [
       public class ToplevelClass {}
       """#,
         origin: "OriginalDefinedInAttrTests.testOriginalDefinedInAttr3",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "'@_originallyDefinedIn' requires that 'ToplevelClass' have explicit av"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testOriginalDefinedInAttr7#1",
@@ -8794,8 +8790,7 @@ let translatedSnippets: [SwiftSnippet] = [
       public class ToplevelClass4 {}
       """#,
         origin: "OriginalDefinedInAttrTests.testOriginalDefinedInAttr7",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "expected at least one platform version in '@_originallyDefinedIn' attr"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testOriginalDefinedInAttr7#2",
@@ -8829,8 +8824,7 @@ let translatedSnippets: [SwiftSnippet] = [
       }
       """#,
         origin: "OriginalDefinedInAttrTests.testOriginalDefinedInAttr7",
-        syntaxVersion: "603.0.1",
-        compilerRejects: "'@_originallyDefinedIn' attribute cannot be applied to this declaratio"
+        syntaxVersion: "603.0.1"
     ),
     SwiftSnippet(
         label: "testOriginalDefinedInAttr8#1",

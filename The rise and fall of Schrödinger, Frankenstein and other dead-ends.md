@@ -23,7 +23,7 @@ token when positions were token-indices. LCNP made `CharPosition = String.Index`
 split just ends at an ordinary character position — the short `>` at `[p,p+1)`, the
 next at `[p+1,p+2)`, both plain positions the descriptor/CRF/BSR keys already handle.
 
-**What replaced it.** Default maximal munch (`@lexicalClass`) + munch-exempt
+**What replaced it.** Default maximal munch (`@literalMunch`) + munch-exempt
 single-char regex terminals (`closeAngle - />/`, `openAngle - /</`). No sub-token
 positions, no sentinel. Zero references remain in the source.
 
@@ -135,8 +135,8 @@ stays.
 | **Distance-2 lookahead** `>>2` `++2` `--2` | two-token lookahead/behind | nothing used it; scheme is distance-1 only |
 | **Old spellings** `>>1`, `++1`/`--1` | pre-unification lookahead/behind | → `>+> >-> <+< <-<` (see `Structured Lookahead Design.md`) |
 | **Start-keyed `@prefer`** | prune any loser sharing start `i` (extent-blind) | broke `a?.b`, multi-arg subscripts → narrowed to strictly same-span; prefer-longer → `@longest` |
-| **`@greedy(class)` / `<suffix>`** | opt-in maximal munch | dropped for always-on default munch via `@lexicalClass` |
-| **Probe-alphabet / `regexExtenders`** | space-boundary munch heuristic | replaced by running the faithful `@lexicalClass` regex directly |
+| **`@greedy(class)` / `<suffix>`** | opt-in maximal munch | dropped for always-on default munch via `@literalMunch` |
+| **Probe-alphabet / `regexExtenders`** | space-boundary munch heuristic | replaced by running the faithful `@literalMunch` regex directly |
 | **Explicit Unicode-range regex classes** | faithful ident/operator code-point ranges in a Swift `Regex` | Swift `Regex` rejects canonically-decomposable range bounds → `\p{…}` approximation now; interval-table primitive is the endgame (`TODO.md` #8) |
 | **`distributedPackedBySlot` dedup** | per-slot descriptor dedup mode | benchmarked identical to the global set → removed |
 | **Eager single-token-stream scanner** | commit one token stream up front | → LCNP on-demand, parser-driven multi-lex |

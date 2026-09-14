@@ -23,6 +23,19 @@ struct ExplorerView: View {
     @State private var selection: String?
     @State private var zoom = 1.0
     @State private var status = Status.idle
+    @State private var pane = Pane.derivation
+
+    /// The grammar read by the last successful parseGrammar(). Held as state rather than read
+    /// from the `nonTerminalDefinitions` global so that editing the grammar redraws the
+    /// diagram — SwiftUI cannot observe a global.
+    @State private var definitions: [Character: GrammarNode] = [:]
+
+    enum Pane: String, CaseIterable, Identifiable {
+        case derivation = "Derivation"
+        case grammar = "Grammar"
+
+        var id: Self { self }
+    }
 
     enum Status {
         case idle
@@ -38,13 +51,18 @@ struct ExplorerView: View {
         VStack(spacing: 0) {
             controls
             Divider()
-            HSplitView {
-                treeArea
-                inspector
-                    .frame(minWidth: 260, idealWidth: 300, maxWidth: 420)
+            switch pane {
+            case .derivation:
+                HSplitView {
+                    treeArea
+                    inspector
+                        .frame(minWidth: 260, idealWidth: 300, maxWidth: 420)
+                }
+                Divider()
+                sourceStrip
+            case .grammar:
+                GrammarDiagramView(definitions: definitions)
             }
-            Divider()
-            sourceStrip
         }
         .onAppear(perform: parse)
     }
@@ -67,11 +85,18 @@ struct ExplorerView: View {
             }
 
             HStack(spacing: 12) {
+                Picker("", selection: $pane) {
+                    ForEach(Pane.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 180)
+
                 statusLabel
 
                 Spacer()
 
-                if derivations.count > 1 {
+                if pane == .derivation, derivations.count > 1 {
                     HStack(spacing: 6) {
                         Button {
                             index = (index - 1 + derivations.count) % derivations.count
@@ -86,13 +111,17 @@ struct ExplorerView: View {
                     }
                 }
 
-                Button("Expand All") { collapsed.removeAll() }
-                    .disabled(collapsed.isEmpty)
+                // The grammar pane carries its own expand and zoom controls, next to the
+                // canvas they act on.
+                if pane == .derivation {
+                    Button("Expand All") { collapsed.removeAll() }
+                        .disabled(collapsed.isEmpty)
 
-                HStack(spacing: 4) {
-                    Image(systemName: "minus.magnifyingglass").foregroundStyle(.secondary)
-                    Slider(value: $zoom, in: 0.6...2.0).frame(width: 110)
-                    Image(systemName: "plus.magnifyingglass").foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: "minus.magnifyingglass").foregroundStyle(.secondary)
+                        Slider(value: $zoom, in: 0.6...2.0).frame(width: 110)
+                        Image(systemName: "plus.magnifyingglass").foregroundStyle(.secondary)
+                    }
                 }
             }
         }
@@ -332,11 +361,15 @@ struct ExplorerView: View {
         syntax = Array(grammarText)
         input = Array(inputText)
         derivations = []
+        definitions = [:]
         index = 0
         resetView()
 
         do {
             try parseGrammar()
+            // Captured before the input parse, so the grammar diagram still draws when the
+            // input is rejected or the grammar is being edited toward something parseable.
+            definitions = nonTerminalDefinitions
             try parseInput()
         } catch {
             status = .failed("\(error)")

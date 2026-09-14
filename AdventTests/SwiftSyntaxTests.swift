@@ -2240,6 +2240,13 @@ struct MultilineSegmentProbe {
 ///
 /// Deliberately does NOT assert `Parser.parse(source:).hasError`, the way `RejectSyntaxTests` does:
 /// for every snippet here swift-syntax is the permissive one, which is the whole point.
+///
+/// MEMBERSHIP IS MECHANICAL: the compiler rejects it AND we reject it. No judgement about whether
+/// the compiler's reason is syntactic or semantic — that distinction is finer than the project's
+/// "follow the compiler" rule needs. The value is that the rule is self-policing: if a grammar
+/// change makes one of these PARSE, this suite fails and the fixture has to be reclassified (a
+/// passing accept fixture if its tree matches, otherwise a gap). Five have moved out that way so
+/// far, each surfaced by this test rather than by inspection.
 @Suite("SwiftSyntax - Compiler-rejected (swift-syntax disagrees)")
 struct CompilerRejectTests {
 
@@ -2255,5 +2262,37 @@ struct CompilerRejectTests {
             compiler: \(snippet.compilerRejects ?? "?")
             source:   \(snippet.source)
             """)
+    }
+}
+
+// TEMPORARY — final disabled-fixture audit. Delete after reading.
+@Suite("TempFinalAudit", .serialized)
+struct TempFinalAudit {
+    static let acceptCorpus: [SwiftSnippet] =
+        declarationSnippets + expressionSnippets + statementSnippets
+        + typeSnippets + patternSnippets + attributeSnippets + translatedSnippets
+        + phase1Snippets + phase2LiteralSnippets + phase2InfixSnippets + phase2PostfixSnippets
+        + phase3FunctionSnippets + phase3BranchSnippets + phase3ModifierSnippets
+        + phase3EnumCaseSnippets + phase3StatementSnippets + phase3TypeSnippets
+        + phase4AttrSnippets + phase4ClosureSnippets + phase4DeclSnippets + phase4TypeSnippets
+        + phase4CoroutineSnippets + phase4PatternSnippets + phase4PrecedenceSnippets
+        + phase4IfConfigSnippets + phase4StringSnippets + phase4KeyPathSnippets
+        + phase4ImportSnippets + phase4MacroSnippets + phase4LoopSnippets
+        + phase4AccessorSnippets + phase4MiscSnippets + phase4AvailableSnippets
+
+    @Test("final audit")
+    func audit() throws {
+        for s in Self.acceptCorpus where s.gapReason != nil {
+            var verdict = "no-parse"
+            if let tree = try? adventSwiftSyntaxTree(s) {
+                let ref = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: s.source)), indent: 0)
+                verdict = dumpSwiftSyntaxNode(Syntax(tree), indent: 0) == ref ? "PASSES" : "tree-differ"
+            }
+            print("FA|accept|\(verdict)|\(s.label)")
+        }
+        for s in allRejectSnippets where s.gapReason != nil {
+            let accepted = (try? adventParse(s.source)) ?? nil
+            print("FA|reject|\(accepted == nil ? "PASSES" : "accepts")|\(s.label)")
+        }
     }
 }

@@ -19,12 +19,12 @@ struct TokenPattern {
     let regex: Regex<AnyRegexOutput>
     let isLiteral: Bool
     let isSkip: Bool
-    /// `@lexicalClass` — this (regex) terminal is a lexical class (e.g. identifier,
-    /// operator). Maximal-munch default: a literal match is suppressed when a
-    /// lexical-class terminal has a strictly longer match at the same start
+    /// `@literalMunch` — this regex terminal participates in literal-suppression
+    /// maximal munch (e.g. identifier, operator). A literal match is suppressed when a
+    /// literal-munch terminal has a strictly longer match at the same start
     /// (`for` inside `foreach`). Grammar-declared; see TODO #0 / `Multiple
     /// Lexicalisation` §4.1 (suffix-property longest-across).
-    var isLexicalClass: Bool = false
+    var isLiteralMunch: Bool = false
     /// `@preempt(X, …)` first operand — besides its maximal match, this (regex) terminal also
     /// offers the prefix ending before each *internal* position where terminal `X`
     /// begins a non-empty match. Ports swift-syntax's `lexOperatorIdentifier`

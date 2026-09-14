@@ -222,7 +222,7 @@ enum ApusRegexLibrary {
     }.matchingSemantics(.unicodeScalar)
 
     /// `operatorToken` / `operatorName` — the operator body (already scalar-semantic)
-    /// (Swift.apus operator dev 1: one greedy `@lexicalClass` token).
+    /// (Swift.apus operator dev 1: one greedy `@literalMunch` token).
     static let operatorToken = operatorBody
 
     /// `postfixOperatorToken` — operator body that may not BEGIN with `!`/`?`

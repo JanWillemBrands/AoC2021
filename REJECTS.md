@@ -931,7 +931,7 @@ candidate match shares the position, so it is a plain choice among sibling EXTEN
 no Oracle rule. `@splitBefore` + `@yieldTo` were folded into ONE annotation, second operand optional:
 
 ```apus
-@lexicalClass @preempt(regexOpenSlash, plainRegularExpressionLiteral)   -- offer split + COMMIT
+@literalMunch @preempt(regexOpenSlash, plainRegularExpressionLiteral)   -- offer split + COMMIT
 operatorToken - @builder .
 @preempt(openAngle)                                                     -- offer only (generics)
 operatorName  - @builder .
