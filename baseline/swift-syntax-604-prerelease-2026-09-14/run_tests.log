@@ -1,0 +1,11 @@
+▶ Suites: DeclarationSyntaxTests ExpressionSyntaxTests StatementSyntaxTests TypeSyntaxTests PatternSyntaxTests AttributeSyntaxTests TranslatedSyntaxTests RejectSyntaxTests
+▶ Log:    /var/folders/bg/t20_gl712tj3g9tx5yn730740000gn/T/advent-test.XXXXXX.log.jM5kwr0JNj
+▶ Building + running (non-deterministic hashing — order-dependence is a fuzzer)…
+
+────────────── RESULTS ──────────────
+  reject failures:      0   (wrongly accepted invalid input)
+  accept failures:      0   (wrongly rejected valid input)
+  residual ambiguity:   0
+  trees differ:         0   (frontier — not counted as failure)
+─────────────────────────────────────
+PASS (xcodebuild rc=74; trees-differ is expected frontier)

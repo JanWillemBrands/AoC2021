@@ -16,6 +16,25 @@ import Foundation
 nonisolated(unsafe) var trace = false
 nonisolated(unsafe) var traceIndent = 0
 
+/// Per-parse console reporting: the `matched/failed/crf size/descriptors` summary
+/// `MessageParser.parse` emits on completion, the `no parse found at …` block it
+/// emits on failure (plus `explainNoMatch` / `dumpRecentCommits`), and Oracle's
+/// `oracle: removed …` line.
+///
+/// These were written for the single-message CLI in `main.swift`, where one report
+/// per run is exactly what you want. They were never gated, so under the test
+/// suites they fire on EVERY parse: a full `xcodebuild test` run emitted ~9k such
+/// lines — 4.1k summaries, 2.4k oracle lines, 1.3k `no parse found` blocks and
+/// their commit dumps — burying the assertion failures that actually matter.
+///
+/// Default OFF so bulk runs are quiet; `main.swift` turns it on for the CLI.
+/// Set `APUS_PARSE_REPORTS=1` to get it back in a test run without editing code
+/// (e.g. when debugging one snippet with `-only-testing:`).
+///
+/// This is the same convention `ScannerTelemetry.telemetryEnabled` already uses.
+nonisolated(unsafe) var parseReports =
+    ProcessInfo.processInfo.environment["APUS_PARSE_REPORTS"] == "1"
+
 func trace(_ items: Any..., terminator term: String = "") {
 #if DEBUG
     if trace {

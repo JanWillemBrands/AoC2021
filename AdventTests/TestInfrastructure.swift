@@ -303,3 +303,49 @@ func parseOracleAmbiguity(grammar grammarString: String, message: String) throws
         return (raw, post, pruned, builder.diagnostics.isEmpty, builder.diagnostics.map(\.fingerprint))
     }
 }
+
+// MARK: - Failure-message reflection limits
+//
+// When an `#expect` fails, Swift Testing captures every subexpression in the
+// condition and `Mirror`-walks it to build the value tree it prints under the
+// message. Our assertions name rich values — `#expect(result == nil, …)`,
+// `#expect(result.isUnambiguous, …)` — so that walk descended
+// `AdventParseResult` → `DerivationBuilder` → `MessageParser` → `Grammar` and
+// dumped the whole engine: every `TokenPattern` (each holding a compiled
+// `Regex`), the entire `nonTerminals` table, and the `GrammarNode` graph
+// reachable from `root`.
+//
+// It was not just noise. Measured on a full `xcodebuild test` run with
+// per-line timestamps: 100 full `terminals` dumps, 100 full `nonTerminals`
+// dumps, ~27k of 88k log lines, and a single 6.98 s stall inside the walk that
+// made the run look hung mid-suite before the dump landed all at once.
+//
+// `CustomTestReflectable` lets a type hand Swift Testing its own `Mirror`.
+// Supplying a childless one stops the descent at that type while
+// `CustomTestStringConvertible` keeps a one-line summary, so failures still
+// report what matters and the suites' own `#expect` messages are untouched.
+//
+// `DerivationBuilder` alone would cut the descent today (it is the only route
+// the reflection actually took), but `Grammar` and `MessageParser` are capped
+// too so a future assertion that names either one directly cannot reopen this.
+
+extension DerivationBuilder: CustomTestReflectable, CustomTestStringConvertible {
+    var customTestMirror: Mirror { Mirror(self, children: []) }
+    var testDescription: String {
+        "DerivationBuilder(diagnostics: \(diagnostics.count))"
+    }
+}
+
+extension MessageParser: CustomTestReflectable, CustomTestStringConvertible {
+    var customTestMirror: Mirror { Mirror(self, children: []) }
+    var testDescription: String {
+        "MessageParser(descriptors: \(descriptorCount), crf: \(crf.count), yields: \(yieldCount))"
+    }
+}
+
+extension Grammar: CustomTestReflectable, CustomTestStringConvertible {
+    var customTestMirror: Mirror { Mirror(self, children: []) }
+    var testDescription: String {
+        "Grammar(start: \(startSymbol), terminals: \(terminals.count), nonTerminals: \(nonTerminals.count), nodes: \(nodeCount))"
+    }
+}

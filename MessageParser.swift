@@ -583,6 +583,9 @@ class MessageParser {
         // Skip the diagnostic prints for sub-parses (structured recogniser runs);
         // they fire at every trivia-skip position and drown out the console.
         guard root === grammar.root else { return }
+        // ...and skip them entirely unless reporting is on. Under the test suites
+        // this fires once per parse; see `parseReports` in OutputTools.swift.
+        guard parseReports else { return }
         print(
             "\nmatched:", successfullParses,
             "  failed:", failedParses,

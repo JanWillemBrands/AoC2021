@@ -37,9 +37,22 @@ LOG="$(mktemp -t advent-test.XXXXXX.log)"
 
 # All parametrized SwiftSyntax suites (the ones that carry the correctness signal).
 ALL_SUITES=(
-  DeclarationSyntaxTests ExpressionSyntaxTests StatementSyntaxTests
-  TypeSyntaxTests PatternSyntaxTests AttributeSyntaxTests
-  TranslatedSyntaxTests RejectSyntaxTests
+  SwiftSyntax603Tests/DeclarationSyntaxTests
+  SwiftSyntax603Tests/ExpressionSyntaxTests
+  SwiftSyntax603Tests/StatementSyntaxTests
+  SwiftSyntax603Tests/TypeSyntaxTests
+  SwiftSyntax603Tests/PatternSyntaxTests
+  SwiftSyntax603Tests/AttributeSyntaxTests
+  SwiftSyntax603Tests/TranslatedSyntaxTests
+  SwiftSyntax603Tests/RejectSyntaxTests
+  SwiftSyntax604Tests/DeclarationSyntax604Tests
+  SwiftSyntax604Tests/ExpressionSyntax604Tests
+  SwiftSyntax604Tests/StatementSyntax604Tests
+  SwiftSyntax604Tests/TypeSyntax604Tests
+  SwiftSyntax604Tests/PatternSyntax604Tests
+  SwiftSyntax604Tests/AttributeSyntax604Tests
+  SwiftSyntax604Tests/TranslatedSyntax604Tests
+  SwiftSyntax604Tests/RejectSyntax604Tests
 )
 
 # Optional filter args → keep suites whose name matches any arg (case-insensitive).
@@ -82,6 +95,8 @@ rej_fail=$(count "Advent wrongly accepted invalid input")   # reject suite: acce
 acc_fail=$(count "Advent failed to parse:")                 # accept suites: rejected valid
 ambig=$(count "Residual ambiguity in")                      # post-Oracle ambiguity
 trees=$(count "Trees differ for")                           # frontier — informational only
+ref_accept_fail=$(count "SwiftSyntax parse error for:")      # reference accepted corpus drift
+ref_reject_fail=$(count "Expected swift-syntax to flag an error:")
 
 echo
 echo "────────────── RESULTS ──────────────"
@@ -92,13 +107,18 @@ fi
 echo "  reject failures:      $rej_fail   (wrongly accepted invalid input)"
 echo "  accept failures:      $acc_fail   (wrongly rejected valid input)"
 echo "  residual ambiguity:   $ambig"
+echo "  reference failures:   $(( ref_accept_fail + ref_reject_fail ))   (SwiftSyntax corpus drift)"
 echo "  trees differ:         $trees   (frontier — not counted as failure)"
 echo "─────────────────────────────────────"
 
-correctness=$(( rej_fail + acc_fail + ambig ))
+correctness=$(( rej_fail + acc_fail + ambig + ref_accept_fail + ref_reject_fail ))
 if [ "$crashes" -gt 0 ] || [ "$correctness" -gt 0 ]; then
   echo "FAIL — see $LOG"
   exit 1
+fi
+if [ "$xcode_rc" -ne 0 ]; then
+  echo "FAIL — xcodebuild failed before producing parsed test failures (rc=$xcode_rc); see $LOG"
+  exit "$xcode_rc"
 fi
 echo "PASS (xcodebuild rc=$xcode_rc; trees-differ is expected frontier)"
 exit 0

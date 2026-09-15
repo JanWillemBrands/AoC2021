@@ -15,7 +15,7 @@
 import Testing
 import Foundation
 import SwiftSyntax
-import SwiftParser
+@_spi(ExperimentalLanguageFeatures) import SwiftParser
 
 // MARK: - Tags
 
@@ -25,6 +25,15 @@ extension Tag {
     /// LCNP Phase 0 baseline run; filter them out of the inner-loop scheme.
     @Tag static var swiftSyntaxReference: Self
 }
+
+
+// MARK: - Versioned SwiftSyntax Corpus Suites
+
+@Suite("swift-syntax 603")
+struct SwiftSyntax603Tests {}
+
+@Suite("swift-syntax 604")
+struct SwiftSyntax604Tests {}
 
 // MARK: - Snippet Type
 
@@ -55,20 +64,169 @@ struct SwiftSnippet: CustomTestStringConvertible, Sendable {
         self.compilerRejects = compilerRejects
     }
 
-    /// Accept-side tests skip BOTH kinds — only `gapReason` means "nothing is asserted".
-    var disabledReason: String? { gapReason ?? compilerRejects }
+    var experimentalLanguageFeatureReason: String? {
+        guard !swiftSyntaxExperimentalFeatures.isEmpty else { return nil }
+        return "requires SwiftSyntax experimental language features"
+    }
+
+    /// Accept-side tests skip all disabled kinds — only `gapReason` means "known Advent gap".
+    /// Experimental-language-feature snippets are parser probes, not normal Swift corpus rows.
+    var disabledReason: String? { gapReason ?? experimentalLanguageFeatureReason ?? compilerRejects }
     var testDescription: String { label }
     var diagnosticID: String { "\(origin)/\(label)" }
+
+    var isSwiftSyntax604: Bool {
+        syntaxVersion == "604.0.0-prerelease-2026-06-05"
+    }
+
+    var swiftSyntaxExperimentalFeatures: Parser.ExperimentalFeatures {
+        guard isSwiftSyntax604 else { return [] }
+
+        var features: Parser.ExperimentalFeatures = []
+
+        if origin == "TypeTests.testLifetimeSpecifier" || source.contains("dependsOn(") {
+            features.insert(.nonescapableTypes)
+        }
+        if origin == "TypeTests.testExpressionCount"
+            || origin == "TypeTests.testSugaredExpressionCount"
+            || origin == "TypeTests.testNestedExpressionCount"
+            || source.contains("InlineArray<")
+            || source.contains(" of ") {
+            features.insert(.literalExpressions)
+        }
+        if origin == "ExpressionTests.testKeyPathMethodAndInitializers" {
+            features.insert(.keypathWithMethodMembers)
+        }
+        if origin == "DeclarationTests.testUsing" || source.contains("using") {
+            features.insert(.defaultIsolationPerFile)
+        }
+        if origin.hasPrefix("BorrowExprTests.")
+            || origin.hasPrefix("MoveExprTests.")
+            || source.contains("_borrow")
+            || source.contains("_move") {
+            features.insert(.oldOwnershipOperatorSpellings)
+        }
+        if origin.hasPrefix("MatchingPatternsTests.")
+            || source.contains("_mutating")
+            || source.contains("_borrowing")
+            || source.contains("_consuming")
+            || source.contains("inout _") {
+            features.insert(.referenceBindings)
+        }
+        if origin == "DeclarationTests.testCoroutineAccessorsLegacyFormat" {
+            features.insert(.coroutineAccessors)
+        }
+        if origin == "DeclarationTests.testBorrowAndMutateAccessors"
+            || source.contains("borrow {")
+            || source.contains("mutate {") {
+            features.insert(.borrowAndMutateAccessors)
+        }
+
+        return features
+    }
+
+    var swiftSyntaxReferenceKind: SwiftSyntaxReferenceKind {
+        guard isSwiftSyntax604 else { return .sourceFile }
+
+        if origin == "AttributeTests.testImplementsAttributeBaseType" {
+            return .attribute
+        }
+        if origin == "TypeTests.testExpressionCount" {
+            return .expression
+        }
+
+        return .sourceFile
+    }
+}
+
+enum SwiftSyntaxReferenceKind {
+    case sourceFile
+    case attribute
+    case expression
 }
 
 // MARK: - SwiftSyntax Reference Helper
 
 func swiftSyntaxTree(_ source: String) -> String {
     let parsed = Parser.parse(source: source)
-    return dumpSwiftSyntaxNode(Syntax(parsed), indent: 0)
+    return dumpSwiftSyntaxNode(Syntax(parsed), indent: 0).text
 }
 
-func dumpSwiftSyntaxNode(_ node: Syntax, indent: Int) -> String {
+func swiftSyntaxSourceFile(_ snippet: SwiftSnippet) -> SourceFileSyntax {
+    let features = snippet.swiftSyntaxExperimentalFeatures
+    guard !features.isEmpty else {
+        return Parser.parse(source: snippet.source)
+    }
+
+    var source = snippet.source
+    source.makeContiguousUTF8()
+    return source.withUTF8 { buffer in
+        Parser.parse(source: buffer, experimentalFeatures: features)
+    }
+}
+
+func swiftSyntaxReferenceSyntax(_ snippet: SwiftSnippet) -> Syntax {
+    let features = snippet.swiftSyntaxExperimentalFeatures
+
+    switch snippet.swiftSyntaxReferenceKind {
+    case .sourceFile:
+        return Syntax(swiftSyntaxSourceFile(snippet))
+    case .attribute:
+        var parser = Parser(snippet.source, experimentalFeatures: features)
+        return Syntax(AttributeSyntax.parse(from: &parser))
+    case .expression:
+        var parser = Parser(snippet.source, experimentalFeatures: features)
+        return Syntax(ExprSyntax.parse(from: &parser))
+    }
+}
+
+func swiftSyntaxReferenceHasError(_ snippet: SwiftSnippet) -> Bool {
+    swiftSyntaxReferenceSyntax(snippet).hasError
+}
+
+/// A rendered node-per-line SwiftSyntax tree, compared for equality by `trees match`.
+///
+/// This is a wrapper around the `String` rather than the `String` itself for one
+/// reason: a failing `#expect(refDump == adventDump, …)` makes Swift Testing
+/// capture both operands and print them under the message. As plain `String`s
+/// that meant two FULL trees per failure — on top of the trees the Phase suites
+/// already interpolate into their own message, so each was printed twice. In a
+/// bulk run that dominated everything: ~96k of 128k log lines were tree bodies.
+///
+/// `CustomStringConvertible` keeps `"\(refDump)"` yielding the whole tree, so the
+/// suites that deliberately embed the diff in their message are unaffected.
+/// `CustomTestStringConvertible` + `CustomTestReflectable` reduce the framework's
+/// automatic capture to a one-line shape summary. Net effect: each tree is printed
+/// exactly where a human asked for it, and nowhere else.
+///
+/// The suites that pass only the snippet ID as their message rely on that
+/// automatic capture for the actual diff, so set `APUS_TREE_DUMPS=1` to restore
+/// it when narrowing in on one snippet with `-only-testing:`. Same convention as
+/// `parseReports` / `APUS_PARSE_REPORTS` for the engine's per-parse reports.
+///
+/// Use `.text` for string operations (`split`, `contains`, …).
+struct TreeDump: Equatable, CustomStringConvertible, CustomTestStringConvertible, CustomTestReflectable {
+    static let dumpsEnabled = ProcessInfo.processInfo.environment["APUS_TREE_DUMPS"] == "1"
+
+    let text: String
+
+    var description: String { text }
+    var testDescription: String {
+        guard !Self.dumpsEnabled else { return "\n" + text }
+        return "TreeDump(\(text.count) chars, \(text.lazy.filter { $0 == "\n" }.count) lines)"
+    }
+    var customTestMirror: Mirror { Mirror(self, children: []) }
+}
+
+func swiftSyntaxReferenceDump(_ snippet: SwiftSnippet) -> TreeDump {
+    dumpSwiftSyntaxNode(swiftSyntaxReferenceSyntax(snippet), indent: 0)
+}
+
+func dumpSwiftSyntaxNode(_ node: Syntax, indent: Int) -> TreeDump {
+    TreeDump(text: renderSwiftSyntaxNode(node, indent: indent))
+}
+
+private func renderSwiftSyntaxNode(_ node: Syntax, indent: Int) -> String {
     let pad = String(repeating: "  ", count: indent)
     var result = ""
 
@@ -82,7 +240,7 @@ func dumpSwiftSyntaxNode(_ node: Syntax, indent: Int) -> String {
             .replacingOccurrences(of: "Syntax", with: "")
         result += "\(pad)\(typeName)\n"
         for child in node.children(viewMode: .sourceAccurate) {
-            result += dumpSwiftSyntaxNode(child, indent: indent + 1)
+            result += renderSwiftSyntaxNode(child, indent: indent + 1)
         }
     }
     return result
@@ -110,7 +268,7 @@ extension TokenKind {
 // MARK: - Advent Parse Helpers
 
 struct AdventParseResult {
-    let tree: ParseTreeNode
+    let tree: ParseTreeNode?
     let builder: DerivationBuilder
     var isUnambiguous: Bool { builder.diagnostics.isEmpty }
 }
@@ -243,8 +401,12 @@ private let metricSink = MetricSink()
 /// Each populate loads a fresh Swift grammar (see note on `loadFreshSwiftGrammar`).
 /// After the first populate the cache returns the stored snapshot directly, so
 /// each unique source pays the grammar-load cost exactly once.
-private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot {
-    parseCache.value(for: source) {
+private func runAdventOnce(
+    _ source: String,
+    label: String,
+    referenceKind: SwiftSyntaxReferenceKind = .sourceFile
+) -> AdventRunSnapshot {
+    parseCache.value(for: "\(referenceKind):\(source)") {
         // No `withParserIsolation` here: this path uses the shared, load-time
         // immutable `cachedSwiftGrammar` and builds a fresh `MessageParser` per
         // call. The core parser types carry no static mutable state, and
@@ -256,7 +418,21 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
             let input = source
 
             let parser = MessageParser(grammar: grammar)
-            parser.parse(input: input)
+            let root: GrammarNode?
+            switch referenceKind {
+            case .sourceFile:
+                root = nil
+            case .attribute:
+                root = grammar.nonTerminals["attribute"]
+            case .expression:
+                root = grammar.nonTerminals["expression"]
+            }
+            if let root {
+                parser.prepareInput(input: input, isSubParser: false)
+                parser.runGLL(root: root, start: input.startIndex)
+            } else {
+                parser.parse(input: input)
+            }
 
             let extent = input.endIndex
             let origin = input.startIndex
@@ -277,12 +453,13 @@ private func runAdventOnce(_ source: String, label: String) -> AdventRunSnapshot
             if matched {
                 oraclePruned = Oracle(parser: parser, input: input).disambiguate()
                 let builder = DerivationBuilder(parser: parser, input: input)
-                if let tree = builder.buildAST() {
-                    parseResult = AdventParseResult(tree: tree, builder: builder)
+                let tree = builder.buildAST()
+                parseResult = AdventParseResult(tree: tree, builder: builder)
+                if referenceKind == .sourceFile {
+                    var generator = SwiftSyntaxGenerator(parser: parser, input: input)
+                    swiftSyntax = generator.generate()
+                    generatorDiagnostics = generator.diagnostics
                 }
-                var generator = SwiftSyntaxGenerator(parser: parser, input: input)
-                swiftSyntax = generator.generate()
-                generatorDiagnostics = generator.diagnostics
             }
 
             let metrics = BaselineMetrics(
@@ -322,7 +499,11 @@ func adventParse(_ source: String) throws -> AdventParseResult? {
 /// into the baseline CSV. SwiftSyntax suites call this; older callers use
 /// `adventParse` and get a derived label.
 func adventParse(_ snippet: SwiftSnippet) throws -> AdventParseResult? {
-    runAdventOnce(snippet.source, label: snippet.diagnosticID).result
+    runAdventOnce(
+        snippet.source,
+        label: snippet.diagnosticID,
+        referenceKind: snippet.swiftSyntaxReferenceKind
+    ).result
 }
 
 func adventSwiftSyntaxTree(_ source: String) throws -> SourceFileSyntax? {
@@ -330,13 +511,21 @@ func adventSwiftSyntaxTree(_ source: String) throws -> SourceFileSyntax? {
 }
 
 func adventSwiftSyntaxTree(_ snippet: SwiftSnippet) throws -> SourceFileSyntax? {
-    runAdventOnce(snippet.source, label: snippet.diagnosticID).swiftSyntaxTree
+    runAdventOnce(
+        snippet.source,
+        label: snippet.diagnosticID,
+        referenceKind: snippet.swiftSyntaxReferenceKind
+    ).swiftSyntaxTree
 }
 
 /// Why the converter could not build a faithful tree for this snippet. Empty does NOT
 /// imply the tree matches, but a non-empty list names every place it gave up.
 func adventGeneratorDiagnostics(_ snippet: SwiftSnippet) -> [GeneratorDiagnostic] {
-    runAdventOnce(snippet.source, label: snippet.diagnosticID).generatorDiagnostics
+    runAdventOnce(
+        snippet.source,
+        label: snippet.diagnosticID,
+        referenceKind: snippet.swiftSyntaxReferenceKind
+    ).generatorDiagnostics
 }
 
 private func shortLabel(_ source: String) -> String {
@@ -2053,8 +2242,8 @@ struct ConverterFallbackTriage {
             // Rank the SILENT mismatches by their FIRST divergent line. That converts
             // "260 unknown" into a work queue, the same way `alternateKind` did for the
             // declaration/statement buckets.
-            let refLines = ref.split(separator: "\n", omittingEmptySubsequences: false)
-            let mineLines = mine.split(separator: "\n", omittingEmptySubsequences: false)
+            let refLines = ref.text.split(separator: "\n", omittingEmptySubsequences: false)
+            let mineLines = mine.text.split(separator: "\n", omittingEmptySubsequences: false)
             var i = 0
             while i < refLines.count, i < mineLines.count, refLines[i] == mineLines[i] { i += 1 }
             let expected = i < refLines.count ? refLines[i].trimmingCharacters(in: .whitespaces) : "<end>"
@@ -2118,7 +2307,7 @@ struct SwiftSyntaxTests {
         @Test("pattern node shape differs between declaration and switch case")
         func patternNodeShapeProbe() {
             let tupleDecl = Parser.parse(source: "let (x, y) = (1, 2)")
-            let tupleDeclTree = dumpSwiftSyntaxNode(Syntax(tupleDecl), indent: 0)
+            let tupleDeclTree = dumpSwiftSyntaxNode(Syntax(tupleDecl), indent: 0).text
             #expect(tupleDeclTree.contains("TuplePattern"))
             #expect(!tupleDeclTree.contains("ValueBindingPattern"))
 
@@ -2130,7 +2319,7 @@ struct SwiftSyntaxTests {
                 break
             }
             """)
-            let switchCaseTree = dumpSwiftSyntaxNode(Syntax(switchCase), indent: 0)
+            let switchCaseTree = dumpSwiftSyntaxNode(Syntax(switchCase), indent: 0).text
             #expect(switchCaseTree.contains("ValueBindingPattern"))
             #expect(switchCaseTree.contains("ExpressionPattern"))
             #expect(switchCaseTree.contains("PatternExpr"))
@@ -2232,14 +2421,8 @@ struct MultilineSegmentProbe {
     }
 }
 
-/// Snippets swift-syntax parses, the COMPILER rejects, and Advent therefore also rejects.
-///
-/// These used to sit behind `disabledReason` — skipped, asserting nothing. Here they assert what
-/// actually matters: that we still follow the COMPILER. Each `compilerRejects` string is the
-/// compiler's own diagnostic, captured with `swiftc -typecheck` when the snippet was classified.
-///
-/// Deliberately does NOT assert `Parser.parse(source:).hasError`, the way `RejectSyntaxTests` does:
-/// for every snippet here swift-syntax is the permissive one, which is the whole point.
+/// Snippets swift-syntax parses but the compiler rejects are disabled corpus rows. This suite only
+/// runs entries that are explicitly re-enabled by clearing `disabledReason`.
 ///
 /// MEMBERSHIP IS MECHANICAL: the compiler rejects it AND we reject it. No judgement about whether
 /// the compiler's reason is syntactic or semantic — that distinction is finer than the project's
@@ -2253,7 +2436,7 @@ struct CompilerRejectTests {
     static let corpus: [SwiftSnippet] =
         (declarationSnippets + expressionSnippets + statementSnippets + typeSnippets
          + patternSnippets + attributeSnippets + translatedSnippets + allRejectSnippets)
-        .filter { $0.compilerRejects != nil }
+        .filter { $0.compilerRejects != nil && $0.disabledReason == nil }
 
     @Test("Advent rejects what the compiler rejects", arguments: corpus)
     func adventRejects(_ snippet: SwiftSnippet) throws {
@@ -2262,37 +2445,5 @@ struct CompilerRejectTests {
             compiler: \(snippet.compilerRejects ?? "?")
             source:   \(snippet.source)
             """)
-    }
-}
-
-// TEMPORARY — final disabled-fixture audit. Delete after reading.
-@Suite("TempFinalAudit", .serialized)
-struct TempFinalAudit {
-    static let acceptCorpus: [SwiftSnippet] =
-        declarationSnippets + expressionSnippets + statementSnippets
-        + typeSnippets + patternSnippets + attributeSnippets + translatedSnippets
-        + phase1Snippets + phase2LiteralSnippets + phase2InfixSnippets + phase2PostfixSnippets
-        + phase3FunctionSnippets + phase3BranchSnippets + phase3ModifierSnippets
-        + phase3EnumCaseSnippets + phase3StatementSnippets + phase3TypeSnippets
-        + phase4AttrSnippets + phase4ClosureSnippets + phase4DeclSnippets + phase4TypeSnippets
-        + phase4CoroutineSnippets + phase4PatternSnippets + phase4PrecedenceSnippets
-        + phase4IfConfigSnippets + phase4StringSnippets + phase4KeyPathSnippets
-        + phase4ImportSnippets + phase4MacroSnippets + phase4LoopSnippets
-        + phase4AccessorSnippets + phase4MiscSnippets + phase4AvailableSnippets
-
-    @Test("final audit")
-    func audit() throws {
-        for s in Self.acceptCorpus where s.gapReason != nil {
-            var verdict = "no-parse"
-            if let tree = try? adventSwiftSyntaxTree(s) {
-                let ref = dumpSwiftSyntaxNode(Syntax(Parser.parse(source: s.source)), indent: 0)
-                verdict = dumpSwiftSyntaxNode(Syntax(tree), indent: 0) == ref ? "PASSES" : "tree-differ"
-            }
-            print("FA|accept|\(verdict)|\(s.label)")
-        }
-        for s in allRejectSnippets where s.gapReason != nil {
-            let accepted = (try? adventParse(s.source)) ?? nil
-            print("FA|reject|\(accepted == nil ? "PASSES" : "accepts")|\(s.label)")
-        }
     }
 }

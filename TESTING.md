@@ -207,8 +207,18 @@ parser was made reentrant:
 
 ## 6. The test corpus / extraction pipeline
 
-Snippets are extracted from the `swift-syntax` repo (tag must match the dependency,
-currently **603.0.1**) by `tools/extract_snippets.py`:
+Snippets are extracted from the `swift-syntax` repo by `tools/extract_snippets.py`.
+The Advent test target currently keeps two corpora side by side:
+
+- `swift-syntax 603`: the pre-6.4 baseline corpus, with child suites such as
+  `Declarations`, `Expressions`, and `Rejects`.
+- `swift-syntax 604`: the 6.4 migration corpus, imported from
+  `604.0.0-prerelease-2026-06-05`, with the same child-suite names.
+
+The raw 604 SwiftSyntax parser tests are copied under `tools/swiftsyntax_tests_604`
+for provenance; `tools/swiftsyntax_tests` remains the older corpus source.
+
+Extraction rules:
 1. Parse `assertParse(...)` calls; **skip** those with a `diagnostics:` arg
    (error-recovery tests).
 2. Strip diagnostic markers (1️⃣, ℹ️).
@@ -317,6 +327,48 @@ the root goes GONE localises the fault immediately.
 Costs nothing when the variable is unset. Implemented in `Oracle.swift` (`traceRulePrunes`,
 `logRulePrune`, `logRootStatus`). This is what finally explained the accessor-block gap after three
 wrong inferences — see REJECTS.md C7.
+
+## 8c. Bulk runs are quiet — `APUS_PARSE_REPORTS=1`, `APUS_TREE_DUMPS=1`
+
+Two output sources were written for the single-message CLI in `main.swift` and were never gated,
+so under the suites they fired on *every* parse and *every* failure. Both now default to OFF and
+are opt-in per run. Nothing about the failure signal changed — the same 1028 issues and the same
+`Trees differ` / `Residual ambiguity` / accept / reject counts, at a quarter of the volume:
+
+| Run | Log lines | Issues |
+|---|---|---|
+| both sources ungated | 127,827 | 1028 |
+| both gated (current default) | 30,966 | 1028 |
+
+**`APUS_PARSE_REPORTS=1`** — the engine's own per-parse console output: the
+`matched/failed/crf size/descriptors` summary `MessageParser.parse` emits on completion, the
+`no parse found at …` block plus `explainNoMatch` / `dumpRecentCommits` on failure, and Oracle's
+`oracle: removed …` line. That was ~9k lines per full run (4.1k summaries, 2.4k oracle lines,
+1.3k failure blocks and their commit dumps). Flag lives in `OutputTools.swift` (`parseReports`);
+`main.swift` sets it to `true` because the CLI parses one message, where the report is the point.
+
+**`APUS_TREE_DUMPS=1`** — the full `refDump` / `adventDump` SwiftSyntax trees that Swift Testing
+prints automatically under a failing `#expect(refDump == adventDump, …)`. That was ~96k of the
+128k log lines. `TreeDump` (in `SwiftSyntaxTests.swift`) caps the framework's capture to a
+one-line shape summary; suites that interpolate `\(refDump)` into their own message still print
+the whole tree, because there a human asked for it. Set this when narrowing in on one snippet
+whose suite passes only the snippet ID as its message.
+
+Both need the **`TEST_RUNNER_` prefix** to reach the test process (same trap as
+`SWIFT_DETERMINISTIC_HASHING` — see "Reading the numbers"):
+
+```sh
+TEST_RUNNER_APUS_TREE_DUMPS=1 TEST_RUNNER_APUS_PARSE_REPORTS=1 \
+  xcodebuild test -scheme Advent -destination "platform=macOS,arch=arm64" \
+  -project Advent.xcodeproj -only-testing:AdventTests/SwiftSyntax603Tests/TypeSyntaxTests
+```
+
+Related: a failing `#expect` also made the framework `Mirror`-walk whatever the condition named.
+`#expect(result == nil, …)` therefore dumped the entire engine — every `TokenPattern` with its
+compiled `Regex`, the `nonTerminals` table, the `GrammarNode` graph — 100 times per run, with a
+**6.98 s stall** inside one such walk that made the run look hung mid-suite. `DerivationBuilder`,
+`MessageParser` and `Grammar` now conform to `CustomTestReflectable` with a childless `Mirror`
+(bottom of `TestInfrastructure.swift`), which caps the descent at the engine boundary.
 
 ## 9. Efficient testing workflow — recommendations
 

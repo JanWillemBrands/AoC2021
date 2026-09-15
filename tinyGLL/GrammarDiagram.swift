@@ -64,6 +64,10 @@ struct ASTLayout {
         let origin: CGFloat        // top row in the shared coordinate space
         let columns, rows: CGFloat
         let isFocus: Bool
+
+        /// The box's fill opacity. A node standing on the box re-applies it under its own
+        /// fill, so that an opaque node matches the backdrop it hides.
+        var tint: Double { isFocus ? 0.08 : 0.04 }
     }
 
     var nodes: [Node] = []
@@ -293,10 +297,15 @@ struct GrammarDiagramView: View {
                             draw(edges: layout.edges, in: context)
                         }
                         .frame(width: size.width, height: size.height)
+                        // The badges sit above this layer and carry their own gestures, so a
+                        // tap that reaches the canvas is a tap on the background.
+                        .contentShape(Rectangle())
+                        .onTapGesture(perform: resetDiagram)
 
                         ForEach(layout.nodes) { node in
                             GrammarNodeBadge(node: node,
                                              isSelected: selection == node.id,
+                                             clusterTint: tint(of: node, in: layout),
                                              zoom: zoom,
                                              select: { selection = node.id },
                                              jump: { jump(from: node) })
@@ -305,7 +314,8 @@ struct GrammarDiagramView: View {
                     }
                     .frame(width: size.width, height: size.height)
                 }
-                .background(Color(nsColor: .textBackgroundColor))
+                // Covers the part of the viewport the content does not reach.
+                .background(Color(nsColor: .textBackgroundColor).onTapGesture(perform: resetDiagram))
 
                 Divider()
                 legend
@@ -320,6 +330,11 @@ struct GrammarDiagramView: View {
         }
     }
 
+    /// The fill of the cluster box a node stands on, so the node can reproduce it opaquely.
+    private func tint(of node: ASTLayout.Node, in layout: ASTLayout) -> Double {
+        layout.clusters.first { $0.id == node.cluster }?.tint ?? 0
+    }
+
     private func draw(clusters: [ASTLayout.Cluster], in context: GraphicsContext) {
         for cluster in clusters {
             let topLeft = canvasPoint(-0.45, cluster.origin - 0.35)
@@ -329,7 +344,7 @@ struct GrammarDiagramView: View {
                                                height: bottomRight.y - topLeft.y),
                            cornerRadius: 8)
 
-            context.fill(box, with: .color(.secondary.opacity(cluster.isFocus ? 0.08 : 0.04)))
+            context.fill(box, with: .color(.secondary.opacity(cluster.tint)))
             context.stroke(box,
                            with: .color(cluster.isFocus ? .accentColor.opacity(0.5) : .secondary.opacity(0.25)),
                            lineWidth: 1)
@@ -396,6 +411,16 @@ struct GrammarDiagramView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
+    }
+
+    /// Clicking the background puts the diagram back to its defaults. The focused
+    /// nonterminal is deliberately left alone: it is chosen in the sidebar, or by following a
+    /// reference, and a stray click should not navigate away from it.
+    private func resetDiagram() {
+        selection = nil
+        showEndLinks = false
+        showReferences = true
+        zoom = 1
     }
 
     /// Double-clicking an RHS reference refocuses on its definition — the navigation that
@@ -497,6 +522,7 @@ struct GrammarDiagramView: View {
 private struct GrammarNodeBadge: View {
     let node: ASTLayout.Node
     let isSelected: Bool
+    let clusterTint: Double
     let zoom: Double
     let select: () -> Void
     let jump: () -> Void
@@ -510,7 +536,14 @@ private struct GrammarNodeBadge: View {
             .frame(minWidth: 22 * zoom)
             .padding(.horizontal, 7 * zoom)
             .padding(.vertical, 3 * zoom)
-            .background(shape.fill(fill))
+            .background {
+                // The badges are layered over the edges, so they have to be opaque or the
+                // lines run straight through the label. The canvas colour and the cluster
+                // tint are repainted underneath, leaving the node's own colour unchanged.
+                shape.fill(Color(nsColor: .textBackgroundColor))
+                shape.fill(Color.secondary.opacity(clusterTint))
+                shape.fill(fill)
+            }
             .overlay(shape.stroke(stroke, lineWidth: isSelected ? 2.5 : 1))
             .scaleEffect(hovering ? 1.08 : 1.0)
             .animation(.easeOut(duration: 0.12), value: hovering)

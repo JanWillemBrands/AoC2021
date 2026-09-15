@@ -9,6 +9,9 @@ import OSLog
 import Foundation
 
 trace = false
+// The CLI parses ONE message, so the per-parse report is the whole point here.
+// It defaults off for the test suites, which parse thousands — see `parseReports`.
+parseReports = true
 
 let grammarURL = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()

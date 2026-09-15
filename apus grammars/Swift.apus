@@ -250,19 +250,20 @@ interpolatedStringLiteral       = singleLineInterpolatedStringLiteral
 
 // Interpolation heads/parts/tails must not span a newline consumed as trivia.
 @sameLine
-singleLineInterpolatedStringLiteral = interpolatedStringLiteralHead functionCallArgumentList
-                                      { interpolatedStringLiteralPart functionCallArgumentList }
+singleLineInterpolatedStringLiteral = interpolatedStringLiteralHead functionCallArgumentList?
+                                      { interpolatedStringLiteralPart functionCallArgumentList? }
                                       interpolatedStringLiteralTail
-                                    | extendedInterpolatedStringLiteralHead functionCallArgumentList
-                                      { extendedInterpolatedStringLiteralPart functionCallArgumentList }
-                                      extendedInterpolatedStringLiteralTail .
+                                    | extendedInterpolatedStringLiteralHead functionCallArgumentList?
+                                      { extendedInterpolatedStringLiteralPart functionCallArgumentList? }
+                                      extendedInterpolatedStringLiteralTail
 
-multilineInterpolatedStringLiteral  = multilineInterpolatedStringLiteralHead functionCallArgumentList
-                                      { multilineInterpolatedStringLiteralPart functionCallArgumentList }
+multilineInterpolatedStringLiteral  = multilineInterpolatedStringLiteralHead functionCallArgumentList?
+                                      { multilineInterpolatedStringLiteralPart functionCallArgumentList? }
                                       multilineInterpolatedStringLiteralTail
-                                    | extendedMultilineInterpolatedStringLiteralHead functionCallArgumentList
-                                      { extendedMultilineInterpolatedStringLiteralPart functionCallArgumentList }
-                                      extendedMultilineInterpolatedStringLiteralTail .
+                                    | extendedMultilineInterpolatedStringLiteralHead functionCallArgumentList?
+                                      { extendedMultilineInterpolatedStringLiteralPart functionCallArgumentList? }
+                                      extendedMultilineInterpolatedStringLiteralTail
+                                    .
 
 
 /// REGULAR EXPRESSIONS
@@ -348,14 +349,14 @@ regexLexemeShape = >n< <-< ( "true" "false" "nil" "self" "Self" "super" "Any"
                              "->" "..." "." "@" )
                    regexSlash >s< regexShapeBody >s< regexSlash .
 regexShapeBody   = regexShapeItem { regexSpaceAtom? regexShapeItem } .
-regexShapeItem   = regexEscape | regexShapeGroup | "(" | regexShapeAtom .
+regexShapeItem   = regexEscape | regexShapeGroup | "(" | ")" | regexShapeAtom .
 
-// `lexPatternCharacter` rejects `)` at group depth zero when `mustBeRegex`
-// is false, but allows unclosed `(` at scan end. Character classes do not
-// participate in group depth, so the shape grammar tracks groups only.
+// swift-syntax 604 scanner-commits malformed slash regexes such as `/)/` and
+// `/]/`; body errors are recovered after tokenization, not by falling back to
+// operator parsing.
 regexShapeGroup  = "(" { regexSpaceAtom | regexShapeItem } ")" .
 
-regularExpressionLiteral = plainRegularExpressionLiteral .
+regularExpressionLiteral = regexLexemeShape .
 
 regularExpressionLiteral = <-< ( "true" "false" "nil" "self" "Self" "super" "Any" "func" "operator"
                                   identifier escapedIdentifier implicitParameterName propertyWrapperProjection
@@ -480,6 +481,7 @@ type = functionType .
 type = arrayType .
 type = inlineArrayType .
 type = dictionaryType .
+type = placeholderType .
 type = typeIdentifier .
 type = tupleType .
 type = optionalType .
@@ -509,7 +511,10 @@ type = attribute type .
 /// Grammar of a type annotation
 /// type-annotation → : attributes? type
 
-typeAnnotation = ":" type .   // specifiers/attributes carried by `type` (single source of truth)
+typeAnnotation = ":" resultType .   // specifiers/attributes carried by `type` (single source of truth)
+resultType = type .
+resultType = namedOpaqueReturnType .
+namedOpaqueReturnType = genericParameterClause type .
 
 /// Grammar of a type identifier
 /// type-identifier → type-name generic-argument-clause? | type-name generic-argument-clause? . type-identifier
@@ -520,7 +525,8 @@ typeAnnotation = ":" type .   // specifiers/attributes carried by `type` (single
 // left-nested `MemberType` shape.
 
 typeIdentifier  = typeName typeGenericArgumentClause? .
-typeIdentifier  = typeIdentifier "." typeName typeGenericArgumentClause? .
+typeIdentifier  = typeIdentifier "." >-> ( "Type" "Protocol" ) typeName typeGenericArgumentClause? .
+typeIdentifier  = typeIdentifier "." "self" .
 
 typeName        = hardIdentifier .
 typeName        = selfType .
@@ -529,6 +535,7 @@ typeName        = selfType .
 // accepts keyword tokens as names, so APUS uses raw `identifier` rather than
 // `hardIdentifier`.
 typeName        = moduleSelector identifier ---( "_" ) .
+placeholderType = "_" .
 
 // SE-0491 module selector. swift-syntax `parseModuleSelectorIfPresent`
 // (Names.swift) consumes `name ::` before reference names in expression/type
@@ -587,7 +594,8 @@ declarationThrowsClause = throwsClause | "rethrows" .
 arrayType       = "[" type "]" .
 
 // SE-0453 inline array sugar. swift-syntax `parseInlineArrayType`
-// (Types.swift) expects `of` with `allowAtStartOfLine: false`.
+// (Types.swift) uses `parseGenericArgumentType` for both operands and expects
+// `of` with `allowAtStartOfLine: false`.
 inlineArrayType = "[" genericArgument >n< "of" genericArgument "]" .
 
 /// Grammar of a dictionary type
@@ -890,6 +898,7 @@ primaryExpression = "(" moduleSelector? operator ")" .  // operator-as-value ref
 // Single `attribute`, not `attributes`: a multi-attribute run nests through
 // `type = attribute type`, avoiding duplicate split points.
 primaryExpression = attribute type .
+primaryExpression = inlineArrayType .
 // `@longest` on an LHS applies to the whole nonterminal in APUS. This is the
 // primary-expression extent policy used for numeric maximal munch, generic
 // identifiers, key-path extents, and boxed protocol types.
@@ -1017,8 +1026,8 @@ elseClause = "else" codeBlock | "else" ifExpression .
 switchExpression = "switch" >-> ( "{" ) expression "{" switchCases? "}" .
 
 switchCases = switchCase switchCases? .
-switchCase = caseLabel statements .
-switchCase = defaultLabel statements .
+switchCase = caseLabel statements? .
+switchCase = defaultLabel statements? .
 switchCase = conditionalSwitchCase .
 
 // swift-syntax `atStartOfSwitchCase` accepts at most one bare attribute before
@@ -1279,6 +1288,8 @@ functionCallExpression = postfixExpression >n< functionCallArgumentClause .   //
 // brace also may not start a new line (`allowAtStartOfLine:false`).
 functionCallExpression = @prefer postfixExpression functionCallArgumentClause >n< trailingClosures    // f(args){closure} — preferred over base=`f()` (same span)
                        | nonLiteralPostfix >n< trailingClosures .                                    // f{closure}: literal callees (bare `1{}`, `"s"{}`, `[1]{}`) are rejected (B1)
+functionCallExpression = collectionLiteralCallee >n< trailingClosures .
+collectionLiteralCallee = arrayLiteral | dictionaryLiteral .
 
 functionCallArgumentClause = "(" ")" | "(" functionCallArgumentList ","? ")" .
 functionCallArgumentList = functionCallArgument { "," functionCallArgument } .
@@ -1345,7 +1356,7 @@ explicitMemberExpression = postfixExpression "." moduleSelector? softIdentifier 
 explicitMemberExpression = postfixExpression postfixConditionalCompilationBlock .
 
 argumentNames = argumentName argumentNames? .
-argumentName = softIdentifier ":" .
+argumentName = ( softIdentifier | "_" ) ":" .
 
 /// Grammar of a postfix self expression
 /// postfix-self-expression → postfix-expression . self
@@ -1446,9 +1457,12 @@ conditionList = condition { "," condition } .
 condition = conditionExpression
           | availabilityCondition
           | caseCondition
+          | missingIntroducerWildcardCondition
           | optionalBindingCondition .
 
 caseCondition = "case" matchPattern initializer .
+
+missingIntroducerWildcardCondition = "_" initializer .
 
 optionalBindingCondition = "let" bindingPattern initializer? | "var" bindingPattern initializer? .
 
@@ -1745,6 +1759,7 @@ declaration = classDeclaration .
 declaration = actorDeclaration .
 declaration = protocolDeclaration .
 declaration = initializerDeclaration .
+declaration = bodylessInitializerDeclaration .
 declaration = deinitializerDeclaration .
 declaration = extensionDeclaration .
 declaration = subscriptDeclaration .
@@ -1752,11 +1767,12 @@ declaration = macroDeclaration .
 declaration = operatorDeclaration .
 declaration = precedenceGroupDeclaration .
 declaration = associatedTypeDeclaration .
+declaration = usingDeclaration .
 // Bare freestanding macros are declarations only in member position; in
 // statement/expression position swift-syntax parses `#foo` as MacroExpansionExpr.
 // Attributed/modified macro expansions are declarations everywhere declarations
 // are allowed.
-memberDeclaration = declaration | freestandingMacroExpansionDeclaration | bodylessInitializerDeclaration .
+memberDeclaration = declaration | freestandingMacroExpansionDeclaration .
 // swift-syntax parseDecl recognizes `case` as the start of an EnumCaseDeclSyntax in any member
 // context; the compiler enforces the semantic constraint that cases only live in enum bodies.
 // Not in TSPL: swift-syntax parses enum cases in any member context; the
@@ -1776,7 +1792,12 @@ freestandingMacroExpansionDeclaration = macroHead genericArgumentClause? [ >n< f
 // same span and can be excluded by `---`.
 poundName - @builder .   // `#` + identifier (N1518 ranges); `_` included in identifierHead. Bare `#_` excluded at macroHead below.
 macroHead = poundName ---( "#_" "#available" "#unavailable" "#if" "#elseif" "#else" "#endif" "#sourceLocation" ) .
+macroHead = "#" >s< propertyWrapperProjection .                       // 604 accepts dollar-prefixed unknown directives (`#$UnknownDirective`)
 macroHead = "#" >s< moduleSelector identifier ---( "_" ) .   // SE-0491 #Module::macro (rare; keeps the module-qualified form)
+
+// swift-syntax `parseUsingDeclaration` (Declarations.swift) accepts `using`
+// only when same-line followed by `@` or an identifier-like modifier.
+usingDeclaration = "using" >n< ( attribute | softIdentifier ) .
 
 /// Grammar of a code block
 /// code-block → { statements? }
@@ -1817,6 +1838,7 @@ constantDeclaration = attributes? declarationModifiers? "let" patternInitializer
 patternInitializerList = patternInitializer { "," patternInitializer } .
 
 patternInitializer = bindingPattern initializer? .
+patternInitializer = bindingPattern initializer? initializedAccessorBlock .
 initializer = assignmentOperator expression .
 
 /// Grammar of a variable declaration
@@ -1849,12 +1871,10 @@ variableDeclaration = variableDeclarationHead patternInitializerList .
 // and commits to an ACCESSOR BLOCK if the contents open with an accessor introducer — optionally
 // preceded by attributes/modifiers — rather than treating the `{` as a trailing closure on the
 // initializer. `parsePatternBinding` consumes it via `parseAccessorBlock` and never reconsiders.
-variableDeclaration = variableDeclarationHead variableName typeAnnotation getterSetterBlock .
 variableDeclaration = variableDeclarationHead variableName initializer willSetDidSetBlock .
 variableDeclaration = variableDeclarationHead variableName typeAnnotation initializer? willSetDidSetBlock .
 // SE-0400: with a default value, an `init` accessor may appear only first.
 // Without a default value, unrestricted `getterSetterBlock` handles the list.
-variableDeclaration = variableDeclarationHead variableName typeAnnotation initializer initializedAccessorBlock .
 
 variableDeclarationHead = attributes? declarationModifiers? "var" .
 variableName = hardIdentifier | "_" .   // `_` = wildcard-named computed property, e.g. `static var _: Int { 0 }` (swift-syntax accepts; stored `var _ = 0` goes via bindingPattern)
@@ -1891,14 +1911,14 @@ accessorClauseEntryNoInit = getterClause | setterClause | coroutineAccessorClaus
 // (protocol requirement `{ get }`, `{ get set }`) is just an accessor with no body — no separate
 // getterSetterKeywordBlock needed. `@prefer accessorClauseList` (above) makes `{ get }` bind as
 // an accessor rather than a codeBlock with `get` as an identifier-expression.
-getterClause = attributes? accessorModifier? "get" accessorEffects? codeBlock? .
-setterClause = attributes? accessorModifier? "set" setterName? accessorEffects? codeBlock? .
+getterClause = attributes? accessorModifiers? "get" accessorEffects? codeBlock? .
+setterClause = attributes? accessorModifiers? "set" setterName? accessorEffects? codeBlock? .
 setterName = "(" hardIdentifier ")" .
 
 accessorClauseList = accessorClauseEntry accessorClauseList? .
 accessorClauseEntry = getterClause | setterClause | initAccessorClause | coroutineAccessorClause .
 initAccessorClause = attributes? "init" setterName? accessorEffects? codeBlock .
-coroutineAccessorClause = attributes? accessorModifier? coroutineSpecifier accessorEffects? codeBlock .
+coroutineAccessorClause = attributes? accessorModifiers? coroutineSpecifier accessorEffects? codeBlock .
 // SE-0443 coroutine accessors. `read`/`modify`/`mutate` are listed because
 // swift-syntax knows these spellings, although some are gated behind
 // experimental features —
@@ -1910,7 +1930,8 @@ coroutineSpecifier = "_read" | "read" | "_modify" | "modify" | "borrow" | "mutat
 
 // Accessor-level modifiers are distinct from declaration mutation modifiers;
 // this mirrors swift-syntax AccessorModifier.
-accessorModifier = "mutating" | "nonmutating" | "borrowing" | "consuming" | "__consuming" .
+accessorModifiers = accessorModifier accessorModifiers? .
+accessorModifier = "__consuming" | "consuming" | "borrowing" | "mutating" | "nonmutating" | "yielding" .
 
 willSetDidSetBlock = "{" willSetClause didSetClause? "}"
                    | "{" didSetClause willSetClause? "}" .
@@ -1928,7 +1949,7 @@ accessorEffects = "throws" | "async" "throws"? .
 /// typealias-name → identifier
 /// typealias-assignment → = type
 
-typealiasDeclaration = attributes? accessLevelModifier? "typealias" typealiasName genericParameterClause? typealiasAssignment .
+typealiasDeclaration = attributes? declarationModifiers? "typealias" typealiasName genericParameterClause? typealiasAssignment .
 typealiasName = hardIdentifier .
 typealiasAssignment = assignmentOperator type .
 
@@ -1969,8 +1990,9 @@ functionHead = attributes? declarationModifiers? "func" .
 // character. Declaration name position accepts bare `&`.
 functionName = hardIdentifier | functionNameOperator | "&" .   // Reserved keywords are excluded; contextual keywords remain identifiers.
 
-functionSignature = parameterClause "async"? declarationThrowsClause? functionResult? .
-functionResult = "->" type .   // result-type attributes carried by `type`
+functionSignature = parameterClause functionAsyncSpecifier? declarationThrowsClause? functionResult? .
+functionAsyncSpecifier = "async" | "reasync" .
+functionResult = "->" resultType .
 functionBody = codeBlock .
 
 parameterClause = "(" ")" | "(" parameterList ","? ")" .
@@ -2010,7 +2032,9 @@ parenthesisedTypeSpecifier = "nonisolated" >s< "(" "nonsending" ")" .
 // Type-specifier form only: swift-syntax `parseNonisolatedTypeSpecifier`
 // requires `(nonsending)`. Bare `nonisolated` is a declaration modifier.
 
-parenthesisedTypeSpecifier = "dependsOn" >s< "(" "scoped"? identifierList ")" .
+parenthesisedTypeSpecifier = "dependsOn" >s< "(" "scoped"? lifetimeSpecifierArgumentList ")" .
+lifetimeSpecifierArgumentList = lifetimeSpecifierArgument { "," lifetimeSpecifierArgument } .
+lifetimeSpecifierArgument = hardIdentifier | "self" | integerLiteral .
 
 parameterDeclarationModifiers = parameterDeclarationModifier parameterDeclarationModifiers? .
 
@@ -2039,7 +2063,7 @@ defaultArgumentClause = assignmentOperator expression .
 /// raw-value-literal → numeric-literal | static-string-literal | boolean-literal
 
 // swift-syntax has one EnumDeclSyntax; raw-value vs union-style is semantic.
-enumDeclaration = attributes? accessLevelModifier? "indirect"? "enum" enumName genericParameterClause? typeInheritanceClause? genericWhereClause? "{" enumMembers? "}" .
+enumDeclaration = attributes? declarationModifiers? "enum" enumName genericParameterClause? typeInheritanceClause? genericWhereClause? "{" enumMembers? "}" .
 enumMembers = enumMember ";"? .
 enumMembers = enumMember statementSeparator enumMembers .
 enumMember = memberDeclaration | compilerControlStatement .
@@ -2048,7 +2072,7 @@ enumMember = memberDeclaration | compilerControlStatement .
 // distinct EnumCaseParameterListSyntax with function-parameter-like elements — optional
 // firstName/secondName labels (when followed by `:`), required type, optional default value.
 // NOT tuple-type elements (which only allow a single label per element).
-associatedValues = "(" enumCaseParameterList ")" .
+associatedValues = "(" enumCaseParameterList? ")" .
 
 enumCaseParameterList = enumCaseParameter { "," enumCaseParameter } .
 
@@ -2076,7 +2100,7 @@ enumCaseRawValueInitializer = assignmentOperator expression .
 /// struct-members → struct-member struct-members?
 /// struct-member → declaration | compiler-control-statement
 
-structDeclaration = attributes? accessLevelModifier? "struct" structName genericParameterClause? typeInheritanceClause? genericWhereClause? structBody .
+structDeclaration = attributes? declarationModifiers? "struct" structName genericParameterClause? typeInheritanceClause? genericWhereClause? structBody .
 structName = hardIdentifier .
 structBody = "{" structMembers? "}" .
 
@@ -2092,8 +2116,7 @@ structMember = memberDeclaration | compilerControlStatement .
 /// class-members → class-member class-members?
 /// class-member → declaration | compiler-control-statement
 
-classDeclaration = attributes? accessLevelModifier? "final"? "class" className genericParameterClause? typeInheritanceClause? genericWhereClause? classBody .
-classDeclaration = attributes? "final" accessLevelModifier? "class" className genericParameterClause? typeInheritanceClause? genericWhereClause? classBody .
+classDeclaration = attributes? declarationModifiers? "class" className genericParameterClause? typeInheritanceClause? genericWhereClause? classBody .
 className = hardIdentifier .
 classBody = "{" classMembers? "}" .
 
@@ -2108,7 +2131,7 @@ classMember = memberDeclaration | compilerControlStatement .
 /// actor-members → actor-member actor-members?
 /// actor-member → declaration | compiler-control-statement
 
-actorDeclaration = attributes? accessLevelModifier? "actor" actorName genericParameterClause? typeInheritanceClause? genericWhereClause? actorBody .
+actorDeclaration = attributes? declarationModifiers? "actor" actorName genericParameterClause? typeInheritanceClause? genericWhereClause? actorBody .
 actorName = hardIdentifier .
 actorBody = "{" actorMembers? "}" .
 
@@ -2145,7 +2168,7 @@ actorMember = memberDeclaration | compilerControlStatement .
 /// Grammar of a protocol associated type declaration
 /// protocol-associated-type-declaration → attributes? access-level-modifier? associatedtype typealias-name type-inheritance-clause? typealias-assignment? generic-where-clause?
 
-protocolDeclaration = attributes? accessLevelModifier? "protocol" protocolName primaryAssociatedTypeClause? typeInheritanceClause? genericWhereClause? protocolBody .
+protocolDeclaration = attributes? declarationModifiers? "protocol" protocolName primaryAssociatedTypeClause? typeInheritanceClause? genericWhereClause? protocolBody .
 protocolName = hardIdentifier .
 
 primaryAssociatedTypeClause = openAngle primaryAssociatedTypeList ","? closeAngle .
@@ -2182,8 +2205,8 @@ associatedTypeDeclaration = attributes? declarationModifiers? "associatedtype" t
 // expression, not a declaration. The bodyless decl form (protocol requirement
 // `init()`) is member-only — see bodylessInitializerDeclaration in memberDeclaration.
 
-initializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? declarationThrowsClause? functionResult? genericWhereClause? initializerBody .
-bodylessInitializerDeclaration = initializerHead genericParameterClause? parameterClause "async"? declarationThrowsClause? functionResult? genericWhereClause? .
+initializerDeclaration = initializerHead genericParameterClause? parameterClause functionAsyncSpecifier? declarationThrowsClause? functionResult? genericWhereClause? initializerBody .
+bodylessInitializerDeclaration = initializerHead genericParameterClause? parameterClause functionAsyncSpecifier? declarationThrowsClause? functionResult? genericWhereClause? .
 initializerHead = attributes? declarationModifiers? "init" .
 initializerHead = attributes? declarationModifiers? "init" "?" .   // space allowed: swift-syntax accepts `init ?(…)` (no >s< — the `?`/`!` may be separated from `init`)
 initializerHead = attributes? declarationModifiers? "init" "!" .
@@ -2217,7 +2240,7 @@ extensionMember = memberDeclaration | compilerControlStatement .
 /// subscript-head → attributes? declaration-modifiers? subscript generic-parameter-clause? parameter-clause
 /// subscript-result → -> attributes? type
 
-subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterBlock .
+subscriptDeclaration = subscriptHead subscriptResult genericWhereClause? getterSetterBlock? .
 subscriptHead = attributes? declarationModifiers? "subscript" genericParameterClause? parameterClause .
 subscriptResult = "->" type .   // result-type attributes carried by `type`
 
@@ -2799,7 +2822,7 @@ expressionPattern = expression .
 /// same-type-requirement → type-identifier == signed-integer-literal
 
 // declaration-position generic params are unambiguous — no follow-restriction (unlike expression-position genericArgumentClause)
-genericParameterClause  = openAngle genericParameterList ","? closeAngle .
+genericParameterClause  = openAngle genericParameterList genericWhereClause? ","? closeAngle .
 
 genericParameterList = genericParameter { "," genericParameter } .
 
@@ -2814,14 +2837,21 @@ genericParameter = attributes? "let" typeName ":" type .
 genericWhereClause = "where" requirementList .
 requirementList = requirement { "," requirement } .
 
-requirement = conformanceRequirement | sameTypeRequirement .
+requirement = conformanceRequirement | sameTypeRequirement | layoutRequirement .
 
-// LHS is typeIdentifier (compiler-correct — only nominal types can have constraints).
-// RHS allows "~"? for SE-0390 suppressed conformance (T: ~Copyable in where clauses).
-// swift-syntax accepts function types etc. on LHS but compiler rejects those — we follow compiler.
-
-conformanceRequirement = typeIdentifier ":" "~"? ( typeIdentifier | protocolCompositionType ) .
-sameTypeRequirement    = typeIdentifier "==" ( type | signedIntegerLiteral ) .
+// swift-syntax parses generic requirements with recovery-friendly `type` operands
+// (Declarations.swift:740-880), including SIL layout constraints used by `_specialize`.
+conformanceRequirement = type ":" "~"? conformanceRequirementRHS .
+conformanceRequirementRHS = >-> ( "_Trivial" "_TrivialAtMost" "_TrivialStride"
+                                  "_UnknownLayout" "_RefCountedObject" "_NativeRefCountedObject"
+                                  "_Class" "_NativeClass" "_BridgeObject" )
+                          ( typeIdentifier | protocolCompositionType ) .
+sameTypeRequirement    = type "==" ( type | signedIntegerLiteral ) .
+layoutRequirement      = type ":" layoutSpecifier layoutRequirementArguments? .
+layoutSpecifier        = "_Trivial" | "_TrivialAtMost" | "_TrivialStride"
+                       | "_UnknownLayout" | "_RefCountedObject" | "_NativeRefCountedObject"
+                       | "_Class" | "_NativeClass" | "_BridgeObject" .
+layoutRequirementArguments = "(" integerLiteral ( "," integerLiteral )? ")" .
 
 /// Grammar of a generic argument clause
 /// generic-argument-clause → < generic-argument-list ,? >
@@ -2847,7 +2877,10 @@ genericArgumentClause     = openAngle genericArgumentList ","? closeAngle
 typeGenericArgumentClause = openAngle genericArgumentList ","? closeAngle .
 
 genericArgumentList = genericArgument { "," genericArgument } .
-genericArgument = type | signedIntegerLiteral .
+// swift-syntax 604 `parseGenericArgumentType` accepts value generic arguments:
+// signed integer literals, plus parenthesized expressions when literal
+// expressions are enabled.
+genericArgument = type | signedIntegerLiteral | parenthesizedExpression .
 ^^^
 // testKeyPathMethodAndInitializers#17
 _ = f(\String?.!.count)

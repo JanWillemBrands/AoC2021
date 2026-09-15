@@ -613,7 +613,7 @@ class Oracle {
 
         logRootStatus("phase 2 dead-wood")
         let total = deadYields + interDead + secondDead + disambiguated
-        if total > 0 {
+        if total > 0, parseReports {
             print("oracle: removed \(deadYields)+\(secondDead) dead + \(disambiguated) disambiguated yields")
         }
         assert(isUnambiguous(endPosition: n), "Oracle postcondition violated: residual ambiguity remains")
