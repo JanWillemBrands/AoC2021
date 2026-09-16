@@ -575,7 +575,7 @@ registered per-alternate whose closure CAPTURES THE PARSER, so it can query anyt
 That corrects an earlier claim in this file — the committed-token cover IS reachable post-parse, via
 `parser.commits` (`TerminalCommit` carries `[start, end)`).
 
-Implemented: `GrammarNode.requiresSameLine`, an `@sameLine` alternate pragma in `ApusParser`, and
+Implemented: `GrammarNode.requiresSameLine`, an `@sameLine` production pragma in `ApusParser`, and
 `SameLineSpanRule` in `Oracle.swift` — prune a yield whose span contains a newline NOT covered by any
 committed token. Newlines inside a token stay legal, which is what keeps the nested-multiline case
 parseable. The cover over-approximates (the log includes commits from derivations that later died), so
@@ -628,8 +628,7 @@ the same line" — is also wrong, because in that same legal case the Tail sits 
 **Why this is hard in a GENERAL parser, which is the real obstacle.** The natural formulation is a
 region-scoped trivia policy: on entering the interpolation, newlines stop counting as trivia; on
 leaving, they resume. That is the `Scanner Mode Design.md` concept — but note the live `Scanner.swift`
-has NO mode machinery (only the `AllSources.swift` archive still carries a `mode` field on
-`TokenPattern`), and `Swift.apus` uses no mode annotations at all. Reviving it as parser STATE will not
+has NO mode machinery, and `Swift.apus` uses no mode annotations at all. Reviving it as parser STATE will not
 work: GLL processes descriptors from an unordered worklist, so "currently inside the region" is not a
 well-defined global during the parse — it would have to become part of the descriptor/CRF identity, or
 be derived from the input position alone. That is very likely why the mode system was dropped.

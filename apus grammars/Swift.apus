@@ -248,7 +248,8 @@ staticStringLiteral             = singleLineStringLiteral
 interpolatedStringLiteral       = singleLineInterpolatedStringLiteral
                                 | multilineInterpolatedStringLiteral .
 
-// Interpolation heads/parts/tails must not span a newline consumed as trivia.
+// Mirrors swift-syntax's `.noNewlines` trivia mode while lexing a single-line
+// string interpolation expression.
 @sameLine
 singleLineInterpolatedStringLiteral = interpolatedStringLiteralHead functionCallArgumentList?
                                       { interpolatedStringLiteralPart functionCallArgumentList? }
@@ -256,6 +257,7 @@ singleLineInterpolatedStringLiteral = interpolatedStringLiteralHead functionCall
                                     | extendedInterpolatedStringLiteralHead functionCallArgumentList?
                                       { extendedInterpolatedStringLiteralPart functionCallArgumentList? }
                                       extendedInterpolatedStringLiteralTail
+                                    .
 
 multilineInterpolatedStringLiteral  = multilineInterpolatedStringLiteralHead functionCallArgumentList?
                                       { multilineInterpolatedStringLiteralPart functionCallArgumentList? }
@@ -277,11 +279,8 @@ multilineInterpolatedStringLiteral  = multilineInterpolatedStringLiteralHead fun
 // This is larger than TSPL suggests because swift-syntax commits to regex
 // tokens in the lexer; APUS must model that commitment to disambiguate `/`
 // from operators.
-// Slash regexes follow swift-syntax `RegexLiteralLexer`. The opening `/` is
-// gated by the same previous-token decision as `isInRegexLiteralPosition`; the
-// closing `/` is not gated because the body may end in `)` or `]`.
-// `tryScanOperatorAsRegexLiteral` is modeled separately by `regexLexemeShape`,
-// the `@preempt` target used by operator lexing.
+// Slash regexes follow swift-syntax `RegexLiteralLexer`: the opening `/` is
+// gated by previous-token context; the closing `/` is body-local.
 
 regexEscape          - /\\[^\r\n]/ .
 regexNonOperatorAtom - /[^\/\\\[\]\(\)\r\n\u{20}\u{09}\+\-\*%&\|\^~<>=!\?\.#;:,]/ .
@@ -323,40 +322,35 @@ regexBody       = regexItem { regexSpaceAtom? regexItem } .
 regexItem       = regexEscape
                 | regexCharacterClass
                 | regexGroup
+                | "("
                 | regexNonOperatorAtom
                 | regexOperatorChar
-                | "#" | ":" | ";" | "," .
+                | "#" | ":" | ";" | "," | "]" .
                 
 // Spaces are free inside groups; the outer delimiter-adjacency rule does not apply there.
 regexGroup      = "(" { regexSpaceAtom | regexItem } ")" .
 regexCharacterClass = "[" ( regexEscape | regexClassAtom ) { regexEscape | regexClassAtom } "]" .   // Swift forbids []
 
-// Scanner-commit shape used only by `@preempt(regexSlash, regexLexemeShape)`.
-// It is weaker than `plainRegularExpressionLiteral`: swift-syntax first scans a
-// regex-shaped lexeme and reports body errors after tokenization.
-regexShapeAtom   - /[^\/\\\r\n\u{20}\u{09}\(\)]/ .
+// Shared by the forced regex scanner and the operator-internal probe below.
+regexScannerAtom   - /[^\/\\\r\n\u{20}\u{09}\(\)]/ .
 
-regexLexemeShape = >n< <-< ( "true" "false" "nil" "self" "Self" "super" "Any"
-                             "func" "operator"
-                             identifier escapedIdentifier implicitParameterName propertyWrapperProjection
-                             binaryLiteral octalLiteral decimalLiteral hexadecimalLiteral
-                             decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
-                             regexSlash extendedRegularExpressionLiteral
-                             "_" ")" "]" "}"
-                             ">" closeAngle
-                             "!" forceMark
-                             optionalMark
-                             "->" "..." "." "@" )
-                   regexSlash >s< regexShapeBody >s< regexSlash .
-regexShapeBody   = regexShapeItem { regexSpaceAtom? regexShapeItem } .
-regexShapeItem   = regexEscape | regexShapeGroup | "(" | ")" | regexShapeAtom .
+tryScanOperatorAsRegexLiteral = >n< <-< ( "true" "false" "nil" "self" "Self" "super" "Any"
+                                          "func" "operator"
+                                          identifier escapedIdentifier implicitParameterName propertyWrapperProjection
+                                          binaryLiteral octalLiteral decimalLiteral hexadecimalLiteral
+                                          decimalFloatingPointLiteral hexadecimalFloatingPointLiteral
+                                          regexSlash extendedRegularExpressionLiteral
+                                          "_" ")" "]" "}"
+                                          ">" closeAngle
+                                          "!" forceMark
+                                          optionalMark
+                                          "->" "..." "." "@" )
+                               regexSlash >s< tryScanOperatorAsRegexLiteralBody >s< regexSlash .
+tryScanOperatorAsRegexLiteralBody = tryScanOperatorAsRegexLiteralItem { regexSpaceAtom? tryScanOperatorAsRegexLiteralItem } .
+tryScanOperatorAsRegexLiteralItem = regexEscape | tryScanOperatorAsRegexLiteralGroup | "(" | regexScannerAtom .
+tryScanOperatorAsRegexLiteralGroup = "(" { regexSpaceAtom | tryScanOperatorAsRegexLiteralItem } ")" .
 
-// swift-syntax 604 scanner-commits malformed slash regexes such as `/)/` and
-// `/]/`; body errors are recovered after tokenization, not by falling back to
-// operator parsing.
-regexShapeGroup  = "(" { regexSpaceAtom | regexShapeItem } ")" .
-
-regularExpressionLiteral = regexLexemeShape .
+regularExpressionLiteral = plainRegularExpressionLiteral .
 
 regularExpressionLiteral = <-< ( "true" "false" "nil" "self" "Self" "super" "Any" "func" "operator"
                                   identifier escapedIdentifier implicitParameterName propertyWrapperProjection
@@ -404,18 +398,10 @@ regularExpressionLiteral = <-< ( "true" "false" "nil" "self" "Self" "super" "Any
 /// prefix-operator → operator
 /// postfix-operator → operator
 
-// Operator terminals model swift-syntax maximal munch plus parser-side splits:
-// slash-regex preemption, `.`-led operators, postfix `!`/`?` splitting,
-// function-name generic `<` preemption, and single-character terminals that
-// must survive inside longer operator runs.
-// `@preempt(regexSlash, regexLexemeShape)` mirrors
-// `tryScanOperatorAsRegexLiteral`: split an operator before an internal `/`
-// only where swift-syntax would commit to a slash-regex lexeme.
-// The target is `regexLexemeShape`, not `regularExpressionLiteral`: this preemption asks whether
-// swift's scanner would COMMIT to a slash-regex lexeme at this split, not whether the strict regex
-// grammar accepts the body.
+// Operator terminals model swift-syntax maximal munch plus parser-side splits.
+// Slash preemption uses `tryScanOperatorAsRegexLiteral`, not the forced regex scanner.
 
-@literalMunch @preempt(regexSlash, regexLexemeShape)
+@literalMunch @preempt(regexSlash, tryScanOperatorAsRegexLiteral)
 nonArrowOperatorToken   - @builder .
 
 @literalMunch
@@ -701,12 +687,9 @@ prefixExpression = inOutExpression .
 // parses these in parseUnaryExpression as contextual-keyword prefixes on a
 // sequence-expression-element. APUS recurses on prefixExpression to keep the
 // construct local while still covering chained prefix expressions.
-// `>->( "(" "[" "." ) <s> >n<` mirrors swift-syntax's atContextualKeywordPrefixedSyntax
-// for ownership operators (`preferPostfixExpr: true`):
-//   >->  — a following call/subscript/member suffix belongs to an identifier named borrow/copy/consume,
-//          even when spaced (`borrow (msg)` is a FunctionCallExpr, not BorrowExpr).
-//   <s>  — non-empty trivia gap → rejects `borrow(msg)`.
-//   >n<  — no newline in gap    → rejects `borrow\nmsg` (Statements.swift:911).
+// Ownership contextual prefixes follow swift-syntax `atContextualKeywordPrefixedSyntax`
+// (`preferPostfixExpr: true`): a following call/subscript/member suffix belongs
+// to the identifier reading, while the prefix form requires same-line whitespace.
 // `unsafe` is asymmetric: swift-syntax calls the same helper
 // with `preferPostfixExpr: false` (Expressions.swift:484), which INVERTS the `.`/`(`/`[`-after-space
 // answer (Statements.swift:987) — so spaced `unsafe ()` / `unsafe .lock` are UnsafeExprs, not calls.
@@ -1129,7 +1112,7 @@ parenthesizedExpression = "(" expression ")" .
 /// tuple-element-list → tuple-element | tuple-element , tuple-element-list
 /// tuple-element → expression | identifier : expression
 
-tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ","? ")" .
+tupleExpression = "(" ")" | "(" softIdentifier ":" expression ","? ")" | "(" tupleElement "," tupleElementList ","? ")" .
 tupleElementList = tupleElement { "," tupleElement } .
 tupleElement = expression | softIdentifier ":" expression .
 
@@ -1306,11 +1289,13 @@ functionCallArgument = moduleSelector operator
 // unaffected — that goes through `expression`; the `:` distinguishes label from value.
 argumentLabel = softIdentifier | "_" .
 
-// `atValidTrailingClosure` rejects condition-position closures followed by
-// `else`. A brace that starts an accessor block is also not a trailing closure;
+// `atValidTrailingClosure` rejects a trailing closure that would consume the
+// body before a real `else` clause. Labeled trailing closures are parsed first
+// so `else:` remains a label, while bare `else { ... }` is still blocked.
+// A brace that starts an accessor block is also not a trailing closure;
 // swift-syntax checks this with `atStartOfGetSetAccessor` (Lookahead.swift).
-trailingClosures = @cannotParse(willSetDidSetBlock accessorBlockBrace) closureExpression >-> ( "else" ) labeledTrailingClosures? .
-trailingClosures = @excludedFrom(conditionExpression) closureExpression >+> ( "else" ) labeledTrailingClosures? .
+trailingClosures = @cannotParse(willSetDidSetBlock accessorBlockBrace) closureExpression labeledTrailingClosures
+                 | @cannotParse(willSetDidSetBlock accessorBlockBrace) closureExpression >-> ( "else" ) .
 labeledTrailingClosures = labeledTrailingClosure labeledTrailingClosures? .
 labeledTrailingClosure = trailingClosureLabel ":" closureExpression .
 
@@ -1897,9 +1882,8 @@ getterSetterBlock = @prefer accessorBlockBrace .   // swift-syntax AccessorBlock
 // an observer block; willSet/didSet are not in `accessorClauseList`, so both
 // names are required in the negative predicate.
 initializedAccessorBlock = @cannotParse(accessorBlockBrace willSetDidSetBlock) codeBlock .
-initializedAccessorBlock = "{" accessorClauseListNoInit "}" .
-initializedAccessorBlock = "{" initAccessorClause accessorClauseList? "}" .
-initializedAccessorBlock = @excludedFrom(variableDeclaration) accessorBlockBrace .
+initializedAccessorBlock = @prefer "{" accessorClauseListNoInit "}" .
+initializedAccessorBlock = @prefer "{" initAccessorClause accessorClauseList? "}" .
 
 accessorClauseListNoInit = accessorClauseEntryNoInit accessorClauseListNoInit? .
 accessorClauseEntryNoInit = getterClause | setterClause | coroutineAccessorClause .
@@ -1928,8 +1912,8 @@ coroutineAccessorClause = attributes? accessorModifiers? coroutineSpecifier acce
 // `_read`/`_modify`/`borrow` are ungated.
 coroutineSpecifier = "_read" | "read" | "_modify" | "modify" | "borrow" | "mutate" .
 
-// Accessor-level modifiers are distinct from declaration mutation modifiers;
-// this mirrors swift-syntax AccessorModifier.
+// Accessor-level modifiers use swift-syntax `AccessorModifierSyntax`, distinct
+// from declaration mutation modifiers.
 accessorModifiers = accessorModifier accessorModifiers? .
 accessorModifier = "__consuming" | "consuming" | "borrowing" | "mutating" | "nonmutating" | "yielding" .
 
@@ -2379,15 +2363,12 @@ actorIsolationModifier = "nonisolated" | "nonisolated" "(" "unsafe" ")" | "nonis
 // Argument is required; empty `@abi()` and bare `@abi` are both rejected.
 attribute = "@" >s< "abi" >s< "(" abiDeclaration ")" .
 
-// Declaration types allowed as the argument to `@abi(...)` — mirrors swift-syntax
-// ABIAttributeArgumentsSyntax.Provider (8 cases; import/class/struct/etc. are NOT included).
+// `abiDeclaration` is swift-syntax `ABIAttributeArgumentsSyntax.Provider`
+// (8 cases; import/class/struct/etc. are NOT included).
 abiDeclaration = associatedTypeDeclaration | deinitializerDeclaration | enumCaseDeclaration
                | functionDeclaration | initializerDeclaration | bodylessInitializerDeclaration
-               | subscriptDeclaration | abiSubscriptDeclaration
-               | typealiasDeclaration | variableDeclaration | constantDeclaration | abiVariableDeclaration .
-// ABI signatures may be bodyless (they are declarations-without-implementation):
-abiSubscriptDeclaration = subscriptHead subscriptResult genericWhereClause? .        // `subscript(i:) -> E` with no accessor block
-abiVariableDeclaration  = variableDeclarationHead variableName getterSetterBlock .   // `var v { get set }` with no type annotation
+               | subscriptDeclaration
+               | typealiasDeclaration | variableDeclaration | constantDeclaration .
 
 
 
@@ -2424,7 +2405,8 @@ availabilityAttributeArgument = "*" .
 availabilityAttributeArgument = platformName platformVersion? .
 availabilityAttributeArgument = availabilityLabel ":" availabilityValue .
 availabilityLabel = hardIdentifier .
-availabilityValue = platformVersion | staticStringLiteral | hardIdentifier .
+availabilityValue = platformVersion | availabilityStringLiteral | hardIdentifier .
+availabilityStringLiteral = singleLineStringLiteral | multilineStringLiteral .
 // `@convention(c)` / `@convention(block)` / `@convention(thin)` / `@convention(thick)` /
 // `@convention(c, cType: "int (*)(int)")`. swift-syntax has NO dedicated convention node — the
 // arguments surface as a plain LabeledExprList (`AttributeSyntax.Arguments` has no
@@ -2861,8 +2843,8 @@ layoutRequirementArguments = "(" integerLiteral ( "," integerLiteral )? ")" .
 // Expression-position generic args: the `>+>(...)` follow-restriction is swift-syntax's
 // `isGenericTypeDisambiguatingToken` set (Types.swift:1478) — what may legally follow `>` for the
 // `<...>` to be read as generic args rather than comparison operators (`a < b > c`).
-// Closing '>' commits only when followed by a Swift-approved disambiguation token —
-// mirrors swift-syntax canParseAsGenericArgumentList. EOF is explicit in the operand set.
+// `genericArgumentClause` commits only on swift-syntax's
+// `canParseAsGenericArgumentList` follow set. EOF is explicit in the operand set.
 // Type position uses `typeGenericArgumentClause` (no follow restriction): swift-syntax
 // parseTypeIdentifier (Types.swift:418-420) commits to generic args unconditionally on `<` —
 // there's no `Foo<Bar>` vs `a < b > c` ambiguity in type position. The `>+>`-restricted

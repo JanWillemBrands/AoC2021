@@ -238,7 +238,7 @@ Touch list (estimated):
 - `MessageParser.swift` — every `cI` / `cU` / `i` / `k` / `j` site
 - `Oracle.swift` — `pruneUnproductive` reachability walk
 - `DerivationBuilder` and `SPPFExtractor` — character extents in tree spans
-- `GenerateDerivationDiagram.swift` — diagram labels
+- `DerivationBuilder.swift` — diagram labels
 - Test infrastructure (`parseMatches`, `parseLanguageMessage`) — return-value comparisons that today rely on `TokenPosition`
 
 **Validation:** all 590 SwiftSyntax cases plus 47 embedded messages produce identical pass/fail outcomes and identical ambiguity profiles through the legacy adapter. Derivation counts should remain identical; if they change, Phase A changed behavior and should be investigated before moving on.
@@ -263,7 +263,7 @@ Build is green; no behavior change. The bulk of Phase A — replacing `TokenPosi
 - `MessageParser.swift` — every `addYield(i: cU, k: cI, j: ...)` bridged via a new private `charPos(_:)` helper that wraps `TokenPosition.charPosition(in: tokens, input: input)`. The success check at the end of `parse()` now compares against `input.startIndex` / `input.endIndex` instead of `.zero` / `TokenPosition(token: tokens.count - 1)`. `cI`/`cU` themselves still hold `TokenPosition` — that's Step 3.
 - `CallReturnForest.swift` — five `addYield` call sites in `call`/`rtn`/`bracketCall`/`bracketRtn` bridged the same way.
 - `Oracle.swift` — `NodeSpan`/`NodePos` and every `from`/`to` parameter now `CharPosition`; `disambiguate()` derives `n`/`origin` from `input.{end,start}Index`; `pruneByExtent`/`pruneByPivot` return-type fixed to `CharPosition`; constructor gains `input: String`.
-- `GenerateDerivationDiagram.swift` — `ParseTreeNode.{from,to}`, `DerivationBuilder.{NodeSpan,NodePos}`, every method signature; the two `tokens[from.tokenIndex]` sites bridge to `from.tokenIndex(in: tokens, input: input)`; constructor gains `input: String`; `generateDerivationDiagram` free function picks up `input` too.
+- `DerivationBuilder.swift` — `ParseTreeNode.{from,to}`, `DerivationBuilder.{NodeSpan,NodePos}`, every method signature; the two `tokens[from.tokenIndex]` sites bridge to `from.tokenIndex(in: tokens, input: input)`; constructor gains `input: String`.
 - `GenerateSwiftSyntaxAST.swift` — `SwiftSyntaxGenerator` fields, span tuples `(GrammarNode, CharPosition, CharPosition)`, `endCache`/`endGuard`, `tokenText(at:)` and `collectTerminalText` use the bridge; constructor gains `input: String`.
 - `SPPF.swift` — `SPPFNode.i`, `SPPFNode.j` (now `CharPosition?` because the old `TokenPosition.unused` sentinel doesn't have a `String.Index` equivalent — packed nodes carry `nil`, extendable readers force-unwrap with comments explaining why), `SPPFNodeKey`, every position-typed parameter; constructor gains `input: String`. Two `let j = w.j!` sites enforce the invariant that only packed nodes carry `nil` and packed nodes are never extended.
 - Test infrastructure — `parseMatches`, `parseLanguageMessage`, `parseAndDisambiguate`, `runAdventOnce`, the `RegexLookbehind` probe, and `SpecialTokenTests` all switched from `TokenPosition(token: tokens.count - 1)` / `.zero` to `input.{end,start}Index`; Oracle/DerivationBuilder/SwiftSyntaxGenerator constructions thread `scanner.input` through.
@@ -1393,7 +1393,7 @@ Phase A (source positions + legacy adapter):
 | `CallReturnForest.swift` | `ParsePosition` and pop set key types | small |
 | `MessageParser.swift` | replace `cI`/`cU` mechanics; consume legacy adapter matches by source span | medium/large |
 | `Oracle.swift` | `pruneUnproductive`, `endPositions`, span comparisons | medium |
-| `GenerateDerivationDiagram.swift` | label generation from source extents | small |
+| `DerivationBuilder.swift` | label generation from source extents | small |
 | `SPPFExtractor.swift` / derivation builder | character extents | small/medium |
 | `AdventTests/TestInfrastructure.swift` | helper comparisons and baseline capture | small |
 

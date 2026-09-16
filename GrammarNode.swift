@@ -191,8 +191,8 @@ final class GrammarNode {
     var confinedToContainers: [String] = []
     var excludedFromContainers: [String] = []
 
-    /// `@sameLine` — this alternate's span may not cross a newline that was consumed as TRIVIA.
-    /// Newlines INSIDE a committed token (nested multiline string, block comment) are permitted.
+    /// `@sameLine` — this nonterminal's span may not cross a newline consumed as trivia.
+    /// Newlines inside a committed token (nested multiline string, block comment) are permitted.
     var requiresSameLine: Bool = false
 
     /// Terminal occurrence belongs directly to a structured `:` / `-` recognizer body and should
@@ -225,8 +225,6 @@ final class GrammarNode {
     // recursive sub-parse) share a grammar without state collisions.
     
     var disambiguation: Disambiguation? // TODO:  this seems not to be used
-    
-    var cell = Cell(name: "", r: 0, c: 0)
 }
 
 extension GrammarNode {
@@ -290,35 +288,7 @@ extension GrammarNode: Hashable {
 extension GrammarNode: CustomStringConvertible {
     
     var description: String { number.description }
-    
-    // generate labels like A, B, C, ... AA, AB, AC, ...
-    var _description: String {
-        if kind == .EOS { return "00" }
-        let latin = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-        func toLatin(_ n: Int) -> String {
-            let letter = String(latin[n % 26])
-            if n < 26 {
-                return letter
-            } else {
-                return toLatin(n / 26 - 1) + letter
-            }
-        }
-        return toLatin(self.number).graphvizHTML
-    }
-    
-    var __description: String {
-        let greek = Array("αβγδεζηθικλμνξοπρστυφχωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ")
-        func toGreek(_ n: Int) -> String {
-            let letter = String(greek[n % 24])
-            if n < 24 {
-                return letter
-            } else {
-                return toGreek(n / 24 - 1) + letter
-            }
-        }
-        return toGreek(self.number)
-    }
-    
+
     var kindName: String {
         "." + String(describing: self.kind).prefix(3)
     }

@@ -118,8 +118,6 @@ final class GrammarNode {
     }
     
     var yield: Set<BinarySpan> = []
-    
-    var cell = Cell(name: "", r: 0, c: 0)
 }
 
 extension GrammarNode {

@@ -13856,7 +13856,8 @@ let translated604Snippets: [SwiftSnippet] = [
       func f5<T>(x: T) where T : Equatable {} // no-warning
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere3",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "'where' clause next to generic parameters is obsolete, must be written"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere4#1",
@@ -13876,7 +13877,8 @@ let translated604Snippets: [SwiftSnippet] = [
       func f34<T>(x: T) -> Int where T: Equatable { return 2 } // no-warning
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere4",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "'where' clause next to generic parameters is obsolete, must be written"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere5#1",
@@ -13890,7 +13892,8 @@ let translated604Snippets: [SwiftSnippet] = [
       func f234<T where T: Womparable>(x: T) -> Int where T: Equatable { return 2 }
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere5",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "'where' clause next to generic parameters is obsolete, must be written"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere6#1",
@@ -13900,7 +13903,8 @@ let translated604Snippets: [SwiftSnippet] = [
       func f1234<T: Mashable where T: Womparable>(x: T) -> Int where T: Equatable { return 2 }
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere6",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "'where' clause next to generic parameters is obsolete, must be written"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere7#1",
@@ -13923,7 +13927,8 @@ let translated604Snippets: [SwiftSnippet] = [
       struct S3<T> where T : Equatable {} // no-warning
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere8",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "'where' clause next to generic parameters is obsolete, must be written"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere9#1",
@@ -13937,7 +13942,8 @@ let translated604Snippets: [SwiftSnippet] = [
       struct S23<T where T: Womparable> where T: Equatable {}
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere9",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "'where' clause next to generic parameters is obsolete, must be written"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere10#1",
@@ -13947,7 +13953,8 @@ let translated604Snippets: [SwiftSnippet] = [
       struct S123<T: Mashable where T: Womparable> where T: Equatable {}
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere10",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "'where' clause next to generic parameters is obsolete, must be written"
     ),
     SwiftSnippet(
         label: "testDeprecatedWhere11#1",
@@ -13960,7 +13967,8 @@ let translated604Snippets: [SwiftSnippet] = [
       func testCombinedConstraints<T: ProtoA & ProtoB where T: ProtoC>(x: T) where T: ProtoD {}
       """,
         origin: "DeprecatedWhereTests.testDeprecatedWhere11",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "'where' clause next to generic parameters is obsolete, must be written"
     ),
     SwiftSnippet(
         label: "testDiagnoseAvailability1#1",
@@ -14336,7 +14344,8 @@ let translated604Snippets: [SwiftSnippet] = [
       #$UnknownDirective()
       """,
         origin: "DollarIdentifierTests.testDollarIdentifier8",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "cannot declare entity named '$declareWithDollar'; the '$' prefix is re"
     ),
     SwiftSnippet(
         label: "testDollarIdentifier9#1",
@@ -16410,7 +16419,8 @@ let translated604Snippets: [SwiftSnippet] = [
       func a3() { _ = /)/ }
       """,
         origin: "ForwardSlashRegexSkippingTests.testForwardSlashRegexSkipping37",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "expected expression after unary operator"
     ),
     SwiftSnippet(
         label: "testForwardSlashRegexSkipping39#1",
@@ -17452,7 +17462,8 @@ let translated604Snippets: [SwiftSnippet] = [
       _ = /)/
       """,
         origin: "ForwardSlashRegexTests.testForwardSlashRegex168",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "expected expression after unary operator"
     ),
     SwiftSnippet(
         label: "testForwardSlashRegex169#1",
@@ -19679,7 +19690,8 @@ let translated604Snippets: [SwiftSnippet] = [
       }
       """,
         origin: "ModuleSelectorTests.testModuleSelectorCorrectCode",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "static methods may only be declared on a type"
     ),
     SwiftSnippet(
         label: "testModuleSelectorCorrectCode#4",
@@ -22406,7 +22418,8 @@ let translated604Snippets: [SwiftSnippet] = [
       _ = /)/
       """,
         origin: "RegexParseErrorTests.testRegexParseError4",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "expected expression after unary operator"
     ),
     SwiftSnippet(
         label: "testRegexParseError5#1",
@@ -24622,7 +24635,8 @@ let translated604Snippets: [SwiftSnippet] = [
       _ = try "\() \(1)"
       """#,
         origin: "TryTests.testTry26",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "missing argument for parameter #1 in call"
     ),
     SwiftSnippet(
         label: "testTry27#1",

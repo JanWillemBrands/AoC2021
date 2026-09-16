@@ -176,38 +176,6 @@ for (mi, message) in grammar.messages.enumerated() {
             info += "LL1 recursive descent parser written to \(parserFile.lastPathComponent)\n"
         }
 
-        // MARK: - Generate CRF and AST diagrams
-
-        let diagramFile = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .appendingPathComponent("ART")
-            .appendingPathExtension("gv")
-        let diagramGenerator = ASTDiagramGenerator(outputFile: diagramFile, grammar: grammar, messageParser: messageParser)
-        try diagramGenerator.generate()
-        info += "AST diagram written to \(diagramFile.lastPathComponent)\n"
-
-        // MARK: - Generate SPPF Diagram
-        let sppfExtractor = SPPFExtractor(parser: messageParser, input: input)
-
-        if let sppfRoot = sppfExtractor.extractSPPF() {
-            let sppfFile = URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent()
-                .appendingPathComponent("SPPF")
-                .appendingPathExtension("gv")
-            try generateSPPFDiagram(outputFile: sppfFile, root: sppfRoot)
-            info += "SPPF diagram written to \(sppfFile.lastPathComponent)\n"
-        } else {
-            Logger.ui.warning("SPPF: no parse tree to extract")
-        }
-
-        // MARK: - Generate Derivation Diagram
-        let derivFile = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .appendingPathComponent("Derivations")
-            .appendingPathExtension("gv")
-        try generateDerivationDiagram(outputFile: derivFile, parser: messageParser, input: input)
-        info += "Derivation diagram written to \(derivFile.lastPathComponent)\n"
-
         Logger.ui.info("\(info, privacy: .public)")
     }
 #endif

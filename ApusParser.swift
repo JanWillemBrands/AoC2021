@@ -180,9 +180,9 @@ class ApusParser {
             disambiguationAnnotation = d
             cI += 1
         }
-        // `@sameLine` — a whole-nonterminal span property, so it sits at the production start next to
-        // `@longest`/`@shortest` rather than after the `=`: the Oracle prunes this nonterminal's LHS
-        // completion yields, which is not an alternate-level notion.
+        // `@sameLine` — a whole-nonterminal span property, so it sits at the
+        // production start next to `@longest`/`@shortest`. The Oracle prunes this
+        // nonterminal's LHS completion yields; it is not an alternate-level notion.
         var sameLineAnnotation = false
         if token.kind == "pragma", token.stripped == "sameLine" {
             sameLineAnnotation = true

@@ -3246,18 +3246,11 @@ struct SwiftSyntaxGenerator {
         // bespoke argument grammar — just re-wrap the result. `Provider` is the subset of decl
         // kinds swift-syntax accepts here; anything else stays unhandled rather than guessed.
         if let abiNT = find("abiDeclaration", in: spans) {
-            // `abiDeclaration` admits BODYLESS forms that `declaration` does not
-            // (`abiSubscriptDeclaration`, `abiVariableDeclaration`, `bodylessInitializerDeclaration`),
+            // `abiDeclaration` admits member-only forms (`bodylessInitializerDeclaration`),
             // so fall back to the member-only reader before giving up.
             var converted = convertDeclaration(abiNT.nt, from: abiNT.from, to: abiNT.to, speculative: true)
             if converted == nil, let (_, abiSpans) = tileAlternate(abiNT.nt, from: abiNT.from, to: abiNT.to) {
                 converted = memberOnlyDeclaration(abiSpans, from: abiNT.from, to: abiNT.to)
-                if converted == nil, let subNT = find("abiSubscriptDeclaration", in: abiSpans) {
-                    converted = DeclSyntax(convertSubscriptDeclaration(subNT.nt, from: subNT.from, to: subNT.to))
-                }
-                if converted == nil, let varNT = find("abiVariableDeclaration", in: abiSpans) {
-                    converted = DeclSyntax(convertVarLetDecl(varNT.nt, from: varNT.from, to: varNT.to, isLet: false))
-                }
             }
             guard let decl = converted,
                   let provider = ABIAttributeArgumentsSyntax.Provider(decl)
@@ -3838,22 +3831,32 @@ struct SwiftSyntaxGenerator {
             let quote: TokenSyntax = isMultiline ? .multilineStringQuoteToken() : .stringQuoteToken()
             let delimiter = isMultiline ? 3 : 1
             var content = String(text.dropFirst(delimiter).dropLast(delimiter))
+            var hasContentLine = !isMultiline
             if isMultiline {
-                // The opener's line break and the closer's indentation are delimiters, exactly as
-                // in `convertStringLiteral`.
+                // Same boundary rule as swift-syntax's `parseSimpleString` path: the opener's
+                // line break and the closer's indentation are delimiters; the closing indentation
+                // column is stripped from content lines, but content is not otherwise trimmed.
                 if content.hasPrefix("\r\n") { content.removeFirst(2) }
                 else if content.hasPrefix("\n") { content.removeFirst() }
+                var indent = ""
                 if let lastNewline = content.lastIndex(of: "\n") {
+                    indent = String(content[content.index(after: lastNewline)...])
                     content = String(content[content.startIndex..<lastNewline])
                     if content.hasSuffix("\r") { content.removeLast() }
+                    hasContentLine = true
                 }
-                content = content.trimmingCharacters(in: .whitespaces)
+                if !indent.isEmpty {
+                    content = content.split(separator: "\n", omittingEmptySubsequences: false)
+                        .map { $0.hasPrefix(indent) ? String($0.dropFirst(indent.count)) : String($0) }
+                        .joined(separator: "\n")
+                }
             }
+            let segments = hasContentLine ? multilineSegmentTexts(content, pounds: 0) : []
             return .string(SimpleStringLiteralExprSyntax(
                 openingQuote: quote,
-                segments: SimpleStringLiteralSegmentListSyntax([
-                    StringSegmentSyntax(content: .stringSegment(content))
-                ]),
+                segments: SimpleStringLiteralSegmentListSyntax(segments.map {
+                    StringSegmentSyntax(content: .stringSegment($0))
+                }),
                 closingQuote: quote
             ))
         }
@@ -6625,7 +6628,7 @@ struct SwiftSyntaxGenerator {
     }
 
     private mutating func convertTupleExpression(_ nt: GrammarNode, from: CharPosition, to: CharPosition) -> ExprSyntax {
-        // tupleExpression = "(" ")" | "(" tupleElement "," tupleElementList ","? ")" .
+        // tupleExpression = "(" ")" | "(" softIdentifier ":" expression ","? ")" | "(" tupleElement "," tupleElementList ","? ")" .
         guard let (_, spans) = tileAlternate(nt, from: from, to: to) else {
             return missingExpr(.lookupFailed, "no alternate tiles the span", from: from, to: to)
         }
@@ -6635,6 +6638,15 @@ struct SwiftSyntaxGenerator {
         }
         if let listNT = find("tupleElementList", in: spans) {
             collectTupleElements(listNT.nt, from: listNT.from, to: listNT.to, into: &elements)
+        }
+        if elements.isEmpty,
+           let labelNT = find("softIdentifier", in: spans),
+           let exprNT = find("expression", in: spans) {
+            elements.append(LabeledExprSyntax(
+                label: .identifier(collectTerminalText(labelNT.nt, from: labelNT.from, to: labelNT.to)),
+                colon: .colonToken(),
+                expression: convertExpression(exprNT.nt, from: exprNT.from, to: exprNT.to)
+            ))
         }
         if elements.count > 1 {
             for i in 0..<elements.count - 1 {
@@ -8708,7 +8720,7 @@ struct SwiftSyntaxGenerator {
         let name: TokenSyntax
         if text == "Self" && selector == nil && !isMember {
             name = .keyword(.Self)
-        } else if text == "self" && isMember {
+        } else if text == "self" && selector == nil && isMember {
             name = .keyword(.self)
         } else {
             name = .identifier(text)

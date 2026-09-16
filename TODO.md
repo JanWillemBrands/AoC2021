@@ -1,46 +1,66 @@
 # This file is the canonical TODO list in this project.
 
-0. **preserving trivia** needs a round-trip test
+11. **preserving trivia** needs a round-trip test
 
-1. **wider tests on Swift 6.4** test all swift-syntax sources files for equivalence.
+12. **wider tests on Swift 6.4** test all swift-syntax sources files for equivalence.
 
-2. **SwiftSyntax 604 migration frontier**
+1. Wrong accepts: condition trailing closures
+   • testTrailingClosureInIfCondition#1
+   • testTrailingClosureInGuard#1...#4
+   • Also related tree failures: testTrailingClosureInIfCondition#1...#3
+   • High value: correctness failure, clustered root.
 
-   Treat the imported 604 corpus as ground truth: no disabled snippets. A 604 test is done when it
-   passes, or when a remaining SwiftSyntax-604-vs-Swift-6.4-compiler disagreement has an explicit
-   note.
+2. Accessor/init accessor ambiguity
+   • testVariableDeclarations#9
+   • testInitAccessor#3/#4
+   • testInitAccessorsWithDefaultValues#1
+   • testYield#1/#3/#4
+   • testRecovery165/#166, testSemicolon6, testTrailingSemi5
+   • Biggest cluster. Likely one grammar/Ast-builder root.
 
-   Current rough classification from the 604 failure bundle:
+3. String interpolation / unterminated string handling
+   • testNewlineInInterpolationOfSingleLineString#1
+   • testUnterminatedString4#1
+   • testUnterminatedString5#1
+   • Plus string ambiguity cases.
+   • Correctness, and likely scanner/string-mode boundary issue.
 
-   - 122 distinct failing snippets.
-   - 98 Advent accept/reject gaps.
-   - 60 SwiftSyntax reference mismatches in our harness.
-   - 22 tree mismatches.
-   - 0 residual ambiguities.
+4. Module selector in binding/pattern positions
+   • testModuleSelectorIncorrectBindingDecls#7/#8/#9
+   • testModuleSelectorType#7
+   • Correctness. Needs careful grammar containment, not a broad ban.
 
-   Feature-family buckets:
+5. Regex / slash disambiguation leftovers
+   • testForwardSlashRegex116#1
+   • testForwardSlashRegex142#1
+   • testForwardSlashRegexSkippingAllowed11#1
+   • testPrefixSlash4#1
+   • Important but risky; touch after cleaner structural buckets.
 
-   - 31 mixed/other.
-   - 19 `@_implements` attribute fragments.
-   - 15 ownership keywords / pattern modifiers.
-   - 10 deprecated generic `where` forms.
-   - 9 key-path method/init/subscript cases.
-   - 7 `using` declarations.
-   - 6 `dependsOn` / nonescapable type cases.
-   - 6 inline-array expression-count cases.
-   - 5 accessor/coroutine variants.
-   - 3 `@_specialize` / SIL-ish constraints.
-   - 3 literal-with-trailing-closure cases.
-   - 3 SwiftSyntax recovery-leniency cases.
-   - Singletons: protocol members / associatedtype `where`, dynamic-replacement subscript spelling,
-     `reasync`/`rethrows`, dollar identifiers, non-breaking-space trivia.
+6. Literal with trailing closure
+   • testLiteralWithTrailingClosure#4
+   • testLiteralWithTrailingClosure#6
+   • Narrow, correctness-focused. Might share suffix/call eligibility logic.
 
-   First work item: classify and fix the 60 SwiftSyntax reference mismatches. Likely causes include
-   fragment parser entry points, experimental feature flags, and recovery-mode fixtures. Do not mark
-   them disabled; either teach the 604 harness the correct SwiftSyntax parse context or record a real
-   SwiftSyntax/compiler disagreement.
+7. Top-level enum case / enum tree mismatches
+   • testEnum11#1
+   • testEnum70#1
+   • testEnum72#1
+   • Probably declaration-position containment.
 
----
+8. ABI attribute ambiguity
+   • testABIAttribute#7/#19
+   • Pure ambiguity, likely small grammar disambiguation.
+
+9. Single correctness stragglers
+   • testSelfRebinding2#1
+   • Handle after bigger reject clusters.
+
+10. Low-priority tree-only mismatches
+• testInitCallInPoundIf#1
+• testDiagnoseAvailability18#1
+• Other isolated tree diffs.
+• Leave last unless they fall out of earlier fixes.---
 
 ## Maintenance Rule
 

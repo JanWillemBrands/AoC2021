@@ -1641,7 +1641,8 @@ let declaration604Snippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testParseSpecializeAttribute",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "SIL layout constraint (_Trivial(32)) not modelled"
     ),
     SwiftSnippet(
         label: "testParseSpecializeAttribute#3",
@@ -1736,7 +1737,8 @@ let declaration604Snippets: [SwiftSnippet] = [
       }
       """,
         origin: "DeclarationTests.testParseDynamicReplacement",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "'subscript' functions may only be declared within a type"
     ),
     SwiftSnippet(
         label: "testParseDynamicReplacement#3",

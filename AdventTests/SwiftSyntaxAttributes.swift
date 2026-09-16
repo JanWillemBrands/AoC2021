@@ -971,7 +971,8 @@ let attribute604Snippets: [SwiftSnippet] = [
       func foo(_ t: T) {}
       """,
         origin: "AttributeTests.testSpecializeAttribute",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "SIL layout constraint (_Trivial(32) / @_noMetdata) not modelled"
     ),
     SwiftSnippet(
         label: "testSpecializeAttribute#2",
@@ -980,7 +981,8 @@ let attribute604Snippets: [SwiftSnippet] = [
       func foo(_ t: T) {}
       """,
         origin: "AttributeTests.testSpecializeAttribute",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "SIL layout constraint (_Trivial(32) / @_noMetdata) not modelled"
     ),
     SwiftSnippet(
         label: "testSpecializeAttribute#3",
@@ -1188,25 +1190,26 @@ let attribute604Snippets: [SwiftSnippet] = [
       }
       """,
         origin: "AttributeTests.testImplementsAttribute",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "static methods may only be declared on a type"
     ),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#1", source: "@_implements(X<T>, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#2", source: "@_implements(X.Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#3", source: "@_implements(X.Y<T>, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#4", source: "@_implements(X.Type, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#5", source: "@_implements(X.Protocol, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#6", source: "@_implements(X?, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#7", source: "@_implements(X!, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#8", source: "@_implements([X], f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#9", source: "@_implements([X : Y], f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#10", source: "@_implements((), f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#11", source: "@_implements((X), f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#12", source: "@_implements((X, X), f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#13", source: "@_implements(Any, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#14", source: "@_implements(Self, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#15", source: "@_implements(X & Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#16", source: "@_implements(any X & Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testImplementsAttributeBaseType#17", source: "@_implements((X) -> Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#1", source: "@_implements(X<T>, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#2", source: "@_implements(X.Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#3", source: "@_implements(X.Y<T>, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#4", source: "@_implements(X.Type, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#5", source: "@_implements(X.Protocol, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#6", source: "@_implements(X?, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#7", source: "@_implements(X!, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#8", source: "@_implements([X], f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#9", source: "@_implements([X : Y], f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#10", source: "@_implements((), f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#11", source: "@_implements((X), f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#12", source: "@_implements((X, X), f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#13", source: "@_implements(Any, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#14", source: "@_implements(Self, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#15", source: "@_implements(X & Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#16", source: "@_implements(any X & Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
+    SwiftSnippet(label: "testImplementsAttributeBaseType#17", source: "@_implements((X) -> Y, f())", origin: "AttributeTests.testImplementsAttributeBaseType", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "expected declaration"),
     SwiftSnippet(
         label: "testSemanticsAttribute#1",
         source: """

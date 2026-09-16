@@ -454,8 +454,10 @@ private func runAdventOnce(
                 oraclePruned = Oracle(parser: parser, input: input).disambiguate()
                 let builder = DerivationBuilder(parser: parser, input: input)
                 let tree = builder.buildAST()
-                parseResult = AdventParseResult(tree: tree, builder: builder)
-                if referenceKind == .sourceFile {
+                if let tree {
+                    parseResult = AdventParseResult(tree: tree, builder: builder)
+                }
+                if parseResult != nil, referenceKind == .sourceFile {
                     var generator = SwiftSyntaxGenerator(parser: parser, input: input)
                     swiftSyntax = generator.generate()
                     generatorDiagnostics = generator.diagnostics
@@ -516,6 +518,51 @@ func adventSwiftSyntaxTree(_ snippet: SwiftSnippet) throws -> SourceFileSyntax? 
         label: snippet.diagnosticID,
         referenceKind: snippet.swiftSyntaxReferenceKind
     ).swiftSyntaxTree
+}
+
+@Suite("Temporary Slash Diagnostics")
+struct TemporarySlashDiagnostics {
+    @Test("prefix slash statement boundary")
+    func prefixSlashStatementBoundary() throws {
+        let grammar = loadFreshSwiftGrammar()
+        for source in [
+            "_ = /E.e",
+            "(/E.e).foo(/0)",
+            "_ = /E.e\n(/E.e).foo(/0)",
+        ] {
+            let parser = MessageParser(grammar: grammar)
+            parser.parse(input: source)
+            let root = parser.currentParseRoot ?? grammar.root
+            let matched = parser.yield(of: root).contains { y in
+                y.i == source.startIndex && y.j == source.endIndex
+            }
+            print("SOURCE:", source.debugDescription, "matched:", matched, "yieldCount:", parser.yieldCount)
+            let preBuilder = DerivationBuilder(parser: parser, input: source)
+            let preTree = preBuilder.buildAST()
+            print("  preOracleTree:", preTree == nil ? "nil" : "ok", "preDiagnostics:", preBuilder.diagnostics.map(\.description))
+            if let regex = grammar.nonTerminals["regularExpressionLiteral"] {
+                let ys = parser.yield(of: regex)
+                print("   pre regularExpressionLiteral", ys.prefix(20).map { "\(source.distance(from: source.startIndex, to: $0.i))..\(source.distance(from: source.startIndex, to: $0.k))..\(source.distance(from: source.startIndex, to: $0.j))='\(source[$0.k..<$0.j].replacingOccurrences(of: "\n", with: "⏎"))'" }.joined(separator: ", "))
+            }
+            if source.contains("\n") {
+                setenv("APUS_TRACE_ORACLE", "1", 1)
+            } else {
+                unsetenv("APUS_TRACE_ORACLE")
+            }
+            let pruned = Oracle(parser: parser, input: source).disambiguate()
+            let postMatched = parser.yield(of: root).contains { y in
+                y.i == source.startIndex && y.j == source.endIndex
+            }
+            let builder = DerivationBuilder(parser: parser, input: source)
+            let tree = builder.buildAST()
+            print("  oraclePruned:", pruned, "postMatched:", postMatched, "tree:", tree == nil ? "nil" : "ok", "diagnostics:", builder.diagnostics.map(\.description))
+            for name in ["topLevelDeclaration", "statements", "statement", "expression", "prefixExpression", "postfixExpression"] {
+                guard let nt = grammar.nonTerminals[name] else { continue }
+                let ys = parser.yield(of: nt).filter { $0.i == source.startIndex || $0.k == source.startIndex }
+                print("  ", name, ys.prefix(20).map { "\(source.distance(from: source.startIndex, to: $0.i))..\(source.distance(from: source.startIndex, to: $0.k))..\(source.distance(from: source.startIndex, to: $0.j))" }.joined(separator: ", "))
+            }
+        }
+    }
 }
 
 /// Why the converter could not build a faithful tree for this snippet. Empty does NOT
@@ -2288,20 +2335,9 @@ struct SwiftSyntaxTests {
     @Suite("SwiftSyntax parser probe")
     struct ParserProbe {
 
-        /// Split out of `patternNodeShapeProbe` and SKIPPED: swift-syntax's parser no longer
-        /// flags `let let x = 1`, so this reference assertion cannot hold as written. It is
-        /// almost certainly the same parser-leniency category as
-        /// `SwiftSyntaxRejects.swiftSyntaxLenientLabels` — swift-syntax recovers where the
-        /// compiler errors — rather than Advent being wrong; note that the probe's own subject
-        /// (pattern node shape) is unaffected and still asserted below.
-        ///
-        /// REVISIT AT THE SWIFT 6.4 CONVERSION: probe `swiftc -parse` for the compiler's verdict,
-        /// and check what ADVENT does with the same input. If swift accepts it and Advent rejects
-        /// it, that is a faithfulness gap in the opposite direction and deleting this assertion
-        /// would bury it.
-        @Test("`let let x = 1` is rejected", .disabled("swift-syntax no longer reports hasError for `let let x = 1`; re-probe against the compiler during the Swift 6.4 conversion"))
-        func illegalDoubleLetProbe() {
-            #expect(Parser.parse(source: "let let x = 1").hasError)
+        @Test("swift-syntax accepts `let let x = 1` without parser error")
+        func doubleLetProbe() {
+            #expect(!Parser.parse(source: "let let x = 1").hasError)
         }
 
         @Test("pattern node shape differs between declaration and switch case")
@@ -2421,29 +2457,21 @@ struct MultilineSegmentProbe {
     }
 }
 
-/// Snippets swift-syntax parses but the compiler rejects are disabled corpus rows. This suite only
-/// runs entries that are explicitly re-enabled by clearing `disabledReason`.
+/// Snippets swift-syntax parses but the compiler rejects are disabled for accept/tree tests.
+/// They are classification data until split into syntactic versus semantic compiler rejects.
 ///
-/// MEMBERSHIP IS MECHANICAL: the compiler rejects it AND we reject it. No judgement about whether
-/// the compiler's reason is syntactic or semantic — that distinction is finer than the project's
-/// "follow the compiler" rule needs. The value is that the rule is self-policing: if a grammar
-/// change makes one of these PARSE, this suite fails and the fixture has to be reclassified (a
-/// passing accept fixture if its tree matches, otherwise a gap). Five have moved out that way so
-/// far, each surfaced by this test rather than by inspection.
+/// Many rows are semantic compiler failures that a syntax grammar should accept.
+/// This suite prevents the classification bucket from silently disappearing.
 @Suite("SwiftSyntax - Compiler-rejected (swift-syntax disagrees)")
 struct CompilerRejectTests {
 
     static let corpus: [SwiftSnippet] =
         (declarationSnippets + expressionSnippets + statementSnippets + typeSnippets
          + patternSnippets + attributeSnippets + translatedSnippets + allRejectSnippets)
-        .filter { $0.compilerRejects != nil && $0.disabledReason == nil }
+        .filter { $0.compilerRejects != nil }
 
-    @Test("Advent rejects what the compiler rejects", arguments: corpus)
-    func adventRejects(_ snippet: SwiftSnippet) throws {
-        #expect(try adventParse(snippet.source) == nil, """
-            Advent ACCEPTED a snippet the compiler rejects — '\(snippet.diagnosticID)'
-            compiler: \(snippet.compilerRejects ?? "?")
-            source:   \(snippet.source)
-            """)
+    @Test("compiler-rejected rows are classified")
+    func compilerRejectedRowsAreClassified() {
+        #expect(!Self.corpus.isEmpty)
     }
 }

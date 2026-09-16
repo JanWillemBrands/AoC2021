@@ -3,8 +3,8 @@
 - Use fast mode by default.
 - Keep file reads minimal and targeted.
 - Make only targeted edits for the requested task.
-- Do not run full builds or test suites unless explicitly requested.
-- If any command runs longer than 90 seconds, stop and replan with a lighter approach.
+- Always run full builds and full test suites, unless it's very low risk to run a limited one.
+- If any command runs longer than 120 seconds, stop and replan with a lighter approach.
 
 ## Tool Selection (Critical)
 
@@ -52,14 +52,6 @@
 - Keep users informed during long operations with periodic status updates.
 - Prefer diagnosing root causes over patching symptoms; avoid adding flags unless required.
 - Keep structural reorganization separate from parser behavior changes.
-
-### Local Wiki Retrieval
-
-- Build or refresh index with `./wiki-build`.
-- Query with `./wiki-search "your query"` (optional second arg is top N).
-- Backing scripts: `tools/wiki/build_wiki.py`, `tools/wiki/query_wiki.py`.
-- Backing data: `wiki/index.db`, `wiki/notes/`.
-- After material parser/grammar/scanner/test/doc changes, update relevant `wiki/notes/*.md` and rebuild index.
 
 ### TODO Source Of Truth
 

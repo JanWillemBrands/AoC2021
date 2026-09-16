@@ -50,28 +50,6 @@ extension String {
         }
         return modified
     }
-    
-    // https://forum.graphviz.org/t/how-do-i-properly-escape-arbitrary-text-for-use-in-labels/1762/5
-    var graphvizHTML: String {
-        var modified = ""
-        for char in self {
-            switch char {
-            case "&":   modified.append("&amp;")
-            case "<":   modified.append("&lt;")
-            case ">":   modified.append("&gt;")
-            case "\n":  modified.append("<br/>")
-            default:    modified.append(char)
-            }
-        }
-        return modified.escapesRemoved
-    }
-
-    var whitespaceMadeVisible: String {
-        self
-            .replacingOccurrences(of: " ", with: "·")
-            .replacingOccurrences(of: "\t", with: "→")
-            .replacingOccurrences(of: "\n", with: "↵")
-    }
 }
 
 extension String {

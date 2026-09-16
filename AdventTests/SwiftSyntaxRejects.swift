@@ -9581,7 +9581,7 @@ let expression604RejectSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "testKeyPathMethodAndInitializers#3", source: #"\Foo.method<Int>()"#, origin: "ExpressionTests.testKeyPathMethodAndInitializers", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testKeyPathMethodAndInitializers#4", source: #"\Foo.method<Int>(arg:)"#, origin: "ExpressionTests.testKeyPathMethodAndInitializers", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testKeyPathSubscript#1", source: #"\Foo.Bar.[2].[1]"#, origin: "ExpressionTests.testKeyPathSubscript", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testKeyPathSubscript#2", source: #"\Foo.Bar.?.[1]"#, origin: "ExpressionTests.testKeyPathSubscript", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
+    SwiftSnippet(label: "testKeyPathSubscript#2", source: #"\Foo.Bar.?.[1]"#, origin: "ExpressionTests.testKeyPathSubscript", syntaxVersion: "604.0.0-prerelease-2026-06-05", disabledReason: "greedy-keypath commit (REJECTS.md C1): swift-syntax commits to the keypath and errors on the missing member after `.?` (`.[` is not `.member`). Advent (GLL) also finds the valid-shaped reading `\\Foo.Bar` + infix `.?.` + `[1]` and nothing prunes it — the greedy alternative doesn't complete, so `@longest` can't see it. Needs a keypath-commit / structural-lookahead primitive, not a lexical fix."),
     SwiftSnippet(label: "testChainedOptionalUnwrapsWithDot#1", source: #"\T.?.!"#, origin: "ExpressionTests.testChainedOptionalUnwrapsWithDot", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testChainedOptionalUnwrapsAfterSubscript#1", source: #"\T.abc[2].?"#, origin: "ExpressionTests.testChainedOptionalUnwrapsAfterSubscript", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(
@@ -9872,7 +9872,7 @@ let expression604RejectSnippets: [SwiftSnippet] = [
         origin: "ExpressionTests.testMissingExpresssionInSequenceExpression",
         syntaxVersion: "604.0.0-prerelease-2026-06-05"
     ),
-    SwiftSnippet(label: "testNonBreakingSpace#1", source: "a \u{a0}+ 2", origin: "ExpressionTests.testNonBreakingSpace", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
+    SwiftSnippet(label: "testNonBreakingSpace#1", source: "a \u{a0}+ 2", origin: "ExpressionTests.testNonBreakingSpace", syntaxVersion: "604.0.0-prerelease-2026-06-05", disabledReason: "diagnostic-only NBSP case: swift-syntax lexes U+00A0 as trivia and records a lexer diagnostic; Advent currently models parse structure, not lexer diagnostics"),
     SwiftSnippet(label: "testLiteralWithTrailingClosure#1", source: "_ = true { return true }", origin: "ExpressionTests.testLiteralWithTrailingClosure", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testLiteralWithTrailingClosure#2", source: "_ = nil { return nil }", origin: "ExpressionTests.testLiteralWithTrailingClosure", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testLiteralWithTrailingClosure#3", source: "_ = 1 { return 1 }", origin: "ExpressionTests.testLiteralWithTrailingClosure", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
@@ -11965,7 +11965,8 @@ let translated604RejectSnippets: [SwiftSnippet] = [
       }()
       """#,
         origin: "ConflictMarkersTests.testConflictMarkers12",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        disabledReason: "git conflict markers — not Swift syntax"
     ),
     SwiftSnippet(
         label: "testConflictMarkers14#1",

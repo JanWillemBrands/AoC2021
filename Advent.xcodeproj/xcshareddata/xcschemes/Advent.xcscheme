@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "2620"
-   version = "1.7">
+   version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES">
@@ -50,25 +50,6 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <PostActions>
-         <ExecutionAction
-            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
-            <ActionContent
-               title = "Run Script"
-               scriptText = "# Type a script or drag a script file from your workspace to insert its path.&#10;exec &gt; ${PROJECT_DIR}/postRunActions.log 2&gt;&amp;1&#10;/opt/local/bin/dot  -Gnslimit=2 -Gnslimit1=2 -Gmaxiter=5000 -v5 -Tsvg ${PROJECT_DIR}/ART.gv -o ${PROJECT_DIR}/ART.svg&#10;/opt/local/bin/dot  -Gnslimit=2 -Gnslimit1=2 -Gmaxiter=5000 -v5 -Tsvg ${PROJECT_DIR}/SPPF.gv -o ${PROJECT_DIR}/SPPF.svg&#10;/opt/local/bin/dot  -Gnslimit=2 -Gnslimit1=2 -Gmaxiter=5000 -v5 -Tsvg ${PROJECT_DIR}/Derivations.gv -o ${PROJECT_DIR}/Derivations.svg&#10;"
-               shellToInvoke = "/bin/zsh">
-               <EnvironmentBuildable>
-                  <BuildableReference
-                     BuildableIdentifier = "primary"
-                     BlueprintIdentifier = "CB6B7314257EA9F400B929C6"
-                     BuildableName = "Advent"
-                     BlueprintName = "Advent"
-                     ReferencedContainer = "container:Advent.xcodeproj">
-                  </BuildableReference>
-               </EnvironmentBuildable>
-            </ActionContent>
-         </ExecutionAction>
-      </PostActions>
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference

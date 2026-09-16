@@ -421,10 +421,11 @@ let type604Snippets: [SwiftSnippet] = [
       }
       """,
         origin: "TypeTests.testNamedOpaqueReturnTypes",
-        syntaxVersion: "604.0.0-prerelease-2026-06-05"
+        syntaxVersion: "604.0.0-prerelease-2026-06-05",
+        compilerRejects: "expected type for function result"
     ),
     SwiftSnippet(label: "testUppercaseSelf#1", source: "let a: Self", origin: "TypeTests.testUppercaseSelf", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testNestedLowercaseSelf#1", source: "let a: Foo.self", origin: "TypeTests.testNestedLowercaseSelf", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
+    SwiftSnippet(label: "testNestedLowercaseSelf#1", source: "let a: Foo.self", origin: "TypeTests.testNestedLowercaseSelf", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "'self' is not a member type of struct 'Foo'"),
     SwiftSnippet(label: "testNestedUppercaseSelf#1", source: "let a: Foo.Self", origin: "TypeTests.testNestedUppercaseSelf", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testInverseTypes#1", source: "[~Copyable]()", origin: "TypeTests.testInverseTypes", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testInverseTypes#2", source: "[any ~Copyable]()", origin: "TypeTests.testInverseTypes", syntaxVersion: "604.0.0-prerelease-2026-06-05"),

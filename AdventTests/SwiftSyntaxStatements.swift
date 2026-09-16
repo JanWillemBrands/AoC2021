@@ -600,7 +600,7 @@ let statement604Snippets: [SwiftSnippet] = [
         origin: "StatementTests.testSwitch",
         syntaxVersion: "604.0.0-prerelease-2026-06-05"
     ),
-    SwiftSnippet(label: "testMissingIfClauseIntroducer#1", source: "if _ = 42 {}", origin: "StatementTests.testMissingIfClauseIntroducer", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
+    SwiftSnippet(label: "testMissingIfClauseIntroducer#1", source: "if _ = 42 {}", origin: "StatementTests.testMissingIfClauseIntroducer", syntaxVersion: "604.0.0-prerelease-2026-06-05", compilerRejects: "use of '=' in a boolean context, did you mean '=='?"),
     SwiftSnippet(
         label: "testIfHasSymbol#1",
         source: """

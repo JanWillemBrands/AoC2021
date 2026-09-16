@@ -118,5 +118,7 @@ Parser (permissive)
 - `Oracle.swift` — implementation (`AvoidOptionalRule`, `PreferRule`,
   `Long/ShortestMatchRule`, `Left/RightAssocRule`, the phase-1 walk + `tileBody`).
 - `Trivia Oracle.md` — boundary gates (`>s<`, `<n>`, …), which are zero-width.
-- `GenerateDerivationDiagram.swift` — derivation tree (ambiguous nodes outlined red).
+- `DerivationBuilder.swift` — rebuilds the tree and reports the residual ambiguities.
+  (The Graphviz derivation diagram it used to emit was removed 2026-09-15; use tinyGLL's
+  explorer, which outlines ambiguous nodes in orange.)
 - `AdventTests/OracleDisambiguationTests.swift` — the flavor/probe suite.

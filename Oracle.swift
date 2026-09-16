@@ -221,7 +221,7 @@ struct ContainmentRule: DisambiguationRule {
     }
 }
 
-/// `@sameLine`. Prunes a yield whose span contains a newline that the parse crossed as TRIVIA —
+/// `@sameLine`. Prunes a yield whose span contains a newline that the parse crossed as trivia —
 /// i.e. a newline not inside any committed terminal's content. Newlines INSIDE a token (a nested
 /// multiline string, a block comment) are fine, which is what keeps `"a\("""⏎x⏎""")"` legal.
 ///
@@ -343,8 +343,8 @@ class Oracle {
             """)
     }
 
-    /// `@sameLine` — anchored on the LHS, whose completion yields have `i == k` and `j` = the true
-    /// end, i.e. the EXACT span of the construct. A body-symbol anchor cannot work: its yield is
+    /// `@sameLine` — anchored on the LHS, whose completion yields have `i == k` and `j` =
+    /// the true end, i.e. the exact span of the construct. A body-symbol anchor cannot work: its yield is
     /// `(i = production start, k = symbol start, j = SYMBOL end)`, so the first symbol gives too
     /// little and the last gives an extent that measured wrong in practice (6 valid inputs pruned).
     ///
@@ -445,7 +445,7 @@ class Oracle {
                     assertionFailure("containment predicate on an empty alternate")
                 }
             }
-            // `@sameLine` is registered per NONTERMINAL (`registerSameLine`), not here — it must
+            // `@sameLine` is registered per nonterminal, not here — it must
             // anchor on LHS completion yields to get the construct's exact span.
             if node.kind != .END { walk(node.seq) }
             walk(node.alt)

@@ -19,7 +19,7 @@ Swift source text
 ```
 
 Key components:
-- `DerivationBuilder` (GenerateDerivationDiagram.swift) — walks BSR yields on
+- `DerivationBuilder` (DerivationBuilder.swift) — walks BSR yields on
   GrammarNodes, produces `ParseTreeNode` trees for diagram rendering. Two modes:
   - `buildAllTrees()` — enumerates all derivations (ambiguous grammars)
   - `buildAST()` — single deterministic tree (after Oracle disambiguation),
