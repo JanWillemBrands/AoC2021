@@ -372,8 +372,15 @@ let expressionRejectSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "testLiteralWithTrailingClosure#4", source: "_ = 1.0 { return 1.0 }", origin: "ExpressionTests.testLiteralWithTrailingClosure", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testLiteralWithTrailingClosure#5", source: #"_ = "foo" { return "foo" }"#, origin: "ExpressionTests.testLiteralWithTrailingClosure", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testLiteralWithTrailingClosure#6", source: "_ = /foo/ { return /foo/ }", origin: "ExpressionTests.testLiteralWithTrailingClosure", syntaxVersion: "603.0.1"),
-    SwiftSnippet(label: "testLiteralWithTrailingClosure#7", source: "_ = [1] { return [1] }", origin: "ExpressionTests.testLiteralWithTrailingClosure", syntaxVersion: "603.0.1"),
-    SwiftSnippet(label: "testLiteralWithTrailingClosure#8", source: "_ = [1: 1] { return [1: 1] }", origin: "ExpressionTests.testLiteralWithTrailingClosure", syntaxVersion: "603.0.1"),
+    // RETIRED 2026-09-17: `_ = [1] { return [1] }` and `_ = [1: 1] { return [1: 1] }` were #7/#8
+    // here. SE-0508 (Array expression trailing closures, Swift 6.4) MADE THEM VALID, so a reject
+    // assertion on them is now wrong — and the 604 corpus already asserts the opposite on the
+    // byte-identical sources (`ExpressionTests.testLiteralWithTrailingClosure#1/#2` in
+    // SwiftSyntaxExpressions.swift, both green). Coverage is preserved there; keeping these rows
+    // would just assert 603-era behaviour against a 6.4 grammar. They were also the two entries on
+    // `swiftSyntaxLenientLabels` below whose comment said "REVISIT AT THE SWIFT 6.4 CONVERSION" —
+    // this is that revisit. Collection literals are the ONLY bases SE-0508 legalises: #1…#6 and #9
+    // (nil/int/double/string/regex/`1 + 1`) still reject and stay.
     SwiftSnippet(label: "testLiteralWithTrailingClosure#9", source: "_ = 1 + 1 { return 1 }", origin: "ExpressionTests.testLiteralWithTrailingClosure", syntaxVersion: "603.0.1"),
     SwiftSnippet(
         label: "testSecondaryArgumentLabelDollarIdentifierInClosure#1",
@@ -1735,8 +1742,24 @@ let typeRejectSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "testLifetimeSpecifier#3", source: "func foo() -> dependsOn X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testLifetimeSpecifier#4", source: "func foo() -> dependsOn @Sendable (Int, isolated (any Actor)?) async throws -> Void", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testLifetimeSpecifier#5", source: "func foo() -> dependsOn(*) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1"),
-    SwiftSnippet(label: "testLifetimeSpecifier#6", source: "func foo() -> dependsOn(0) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1"),
-    SwiftSnippet(label: "testLifetimeSpecifier#7", source: "func foo() -> dependsOn(0) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1"),
+    // RETIRED 2026-09-17: `testLifetimeSpecifier#6` / `#7`, both `func foo() -> dependsOn(0) X`.
+    // Two fixtures with IDENTICAL source demanding opposite verdicts is unsound whatever the
+    // grammar does, and the reject side is the wrong one — Advent is right to accept.
+    //
+    // `#6` came from `assertParse("func foo() -> dependsOn(0) X", diagnostics: [],
+    // experimentalFeatures: [.nonescapableTypes])` (TypeTests.swift:516). `diagnostics: []` asserts
+    // NO errors, i.e. a VALID case; `tools/extract_snippets.py` `has_diagnostics` was a bare
+    // substring test, so it read the empty list as "has diagnostics" and filed it as a reject — and
+    // symmetrically excluded it from the accept corpus. Helper fixed; exactly one call in each raw
+    // corpus was affected, so no bulk re-harvest is needed.
+    //
+    // `#7` came from `assertParse("func foo() -> dependsOn(0) X", diagnostics: [...])` at :520 —
+    // which errors ONLY because that call passes no `experimentalFeatures:`. The fixture cannot
+    // record "invalid without .nonescapableTypes, valid with it" for one source string, and Advent
+    // has no feature gating, so the assertion is unsatisfiable.
+    //
+    // `#1`…`#5` and `#8` (`dependsOn()`, `dependsOn(x,)`, bare `dependsOn`, `dependsOn(*)`,
+    // `dependsOn(-1)`) are genuine rejects and stay.
     SwiftSnippet(label: "testLifetimeSpecifier#8", source: "func foo() -> dependsOn(-1) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testNonisolatedSpecifier#1", source: "Foo<Int, nonisolated @Sendable (Int, inout (any Actor)?) async throws -> Void>()", origin: "TypeTests.testNonisolatedSpecifier", syntaxVersion: "603.0.1"),
     SwiftSnippet(label: "testNonisolatedSpecifier#2", source: "func foo(test: nonisolated () async -> Void)", origin: "TypeTests.testNonisolatedSpecifier", syntaxVersion: "603.0.1"),
@@ -9510,8 +9533,9 @@ struct RejectSyntaxTests {
     /// the compiler; a label that starts erroring in swift-syntax should come off this list.
     static let swiftSyntaxLenientLabels: Set<String> = [
         "testRecovery28#1",
-        "testLiteralWithTrailingClosure#7",
-        "testLiteralWithTrailingClosure#8",
+        // `testLiteralWithTrailingClosure#7`/`#8` came off this list on 2026-09-17 together with
+        // their fixtures: SE-0508 legalised collection-literal trailing closures, so swift-syntax
+        // is no longer *more permissive than the compiler* on them — both now accept.
     ]
 
     @Test("SwiftSyntax rejects", .tags(.swiftSyntaxReference), arguments: allRejectSnippets)
@@ -11238,8 +11262,24 @@ let type604RejectSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "testLifetimeSpecifier#3", source: "func foo() -> dependsOn X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testLifetimeSpecifier#4", source: "func foo() -> dependsOn @Sendable (Int, isolated (any Actor)?) async throws -> Void", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testLifetimeSpecifier#5", source: "func foo() -> dependsOn(*) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testLifetimeSpecifier#6", source: "func foo() -> dependsOn(0) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
-    SwiftSnippet(label: "testLifetimeSpecifier#7", source: "func foo() -> dependsOn(0) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
+    // RETIRED 2026-09-17: `testLifetimeSpecifier#6` / `#7`, both `func foo() -> dependsOn(0) X`.
+    // Two fixtures with IDENTICAL source demanding opposite verdicts is unsound whatever the
+    // grammar does, and the reject side is the wrong one — Advent is right to accept.
+    //
+    // `#6` came from `assertParse("func foo() -> dependsOn(0) X", diagnostics: [],
+    // experimentalFeatures: [.nonescapableTypes])` (TypeTests.swift:516). `diagnostics: []` asserts
+    // NO errors, i.e. a VALID case; `tools/extract_snippets.py` `has_diagnostics` was a bare
+    // substring test, so it read the empty list as "has diagnostics" and filed it as a reject — and
+    // symmetrically excluded it from the accept corpus. Helper fixed; exactly one call in each raw
+    // corpus was affected, so no bulk re-harvest is needed.
+    //
+    // `#7` came from `assertParse("func foo() -> dependsOn(0) X", diagnostics: [...])` at :520 —
+    // which errors ONLY because that call passes no `experimentalFeatures:`. The fixture cannot
+    // record "invalid without .nonescapableTypes, valid with it" for one source string, and Advent
+    // has no feature gating, so the assertion is unsatisfiable.
+    //
+    // `#1`…`#5` and `#8` (`dependsOn()`, `dependsOn(x,)`, bare `dependsOn`, `dependsOn(*)`,
+    // `dependsOn(-1)`) are genuine rejects and stay.
     SwiftSnippet(label: "testLifetimeSpecifier#8", source: "func foo() -> dependsOn(-1) X", origin: "TypeTests.testLifetimeSpecifier", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testNonisolatedSpecifier#1", source: "Foo<Int, nonisolated @Sendable (Int, inout (any Actor)?) async throws -> Void>()", origin: "TypeTests.testNonisolatedSpecifier", syntaxVersion: "604.0.0-prerelease-2026-06-05"),
     SwiftSnippet(label: "testNonisolatedSpecifier#2", source: "func foo(test: nonisolated () async -> Void)", origin: "TypeTests.testNonisolatedSpecifier", syntaxVersion: "604.0.0-prerelease-2026-06-05"),

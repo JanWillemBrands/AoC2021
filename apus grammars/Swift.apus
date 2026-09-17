@@ -318,7 +318,18 @@ plainRegularExpressionLiteral = <n> regexSlash >s< regexBody >s< regexSlash .
 
 // First and last body items are never bare space/tab. Escaped spaces are
 // `regexEscape` and therefore legal at either boundary.
-regexBody       = regexItem { regexSpaceAtom? regexItem } .
+//
+// The body is a sequence of TOKENS, so the lexer skips trivia between them
+// unless a boundary forbids it. `>s<` on the delimiters only pins the two ends,
+// which let a newline inside the body be skipped silently: `_ = /E.e⏎(/E.e)`
+// lexed `/E.e⏎(/` as one literal, and `@cannotParse(regularExpressionLiteral)`
+// then pruned the correct prefix-`/` reading (testPrefixSlash4). A plain
+// `/…/` literal is single-line in swift-syntax's `RegexLiteralLexer`, so every
+// intra-body junction carries `>n<`. Space/tab stay legal as `regexSpaceAtom`.
+//
+// Converting this to a tight `-` lexical recognizer (TODO.md 13) was ATTEMPTED and
+// reverted — see that item for the two measured failure modes.
+regexBody       = regexItem { >n< regexSpaceAtom? >n< regexItem } .
 regexItem       = regexEscape
                 | regexCharacterClass
                 | regexGroup
@@ -326,10 +337,10 @@ regexItem       = regexEscape
                 | regexNonOperatorAtom
                 | regexOperatorChar
                 | "#" | ":" | ";" | "," | "]" .
-                
+
 // Spaces are free inside groups; the outer delimiter-adjacency rule does not apply there.
-regexGroup      = "(" { regexSpaceAtom | regexItem } ")" .
-regexCharacterClass = "[" ( regexEscape | regexClassAtom ) { regexEscape | regexClassAtom } "]" .   // Swift forbids []
+regexGroup      = "(" { >n< ( regexSpaceAtom | regexItem ) } >n< ")" .
+regexCharacterClass = "[" >n< ( regexEscape | regexClassAtom ) { >n< ( regexEscape | regexClassAtom ) } >n< "]" .   // Swift forbids []
 
 // Shared by the forced regex scanner and the operator-internal probe below.
 regexScannerAtom   - /[^\/\\\r\n\u{20}\u{09}\(\)]/ .
@@ -346,9 +357,15 @@ tryScanOperatorAsRegexLiteral = >n< <-< ( "true" "false" "nil" "self" "Self" "su
                                           optionalMark
                                           "->" "..." "." "@" )
                                regexSlash >s< tryScanOperatorAsRegexLiteralBody >s< regexSlash .
-tryScanOperatorAsRegexLiteralBody = tryScanOperatorAsRegexLiteralItem { regexSpaceAtom? tryScanOperatorAsRegexLiteralItem } .
+// Mirrors `regexBody`, including its single-line `>n<` junctions — and it needs them for the same
+// reason: a speculative `@preempt` sub-parse uses the NORMAL lex policy (`MessageParser.swift:81`),
+// so trivia IS skipped between its tokens. Its LEADING `>n< <-<` gate, by contrast, is DEAD: a
+// `@preempt` sub-parse starts with an empty commit log, so the lookbehind finds nothing and the
+// negative form returns true. Currently masked by the live gates on `plainRegularExpressionLiteral`
+// — see TODO.md 13.
+tryScanOperatorAsRegexLiteralBody = tryScanOperatorAsRegexLiteralItem { >n< regexSpaceAtom? >n< tryScanOperatorAsRegexLiteralItem } .
 tryScanOperatorAsRegexLiteralItem = regexEscape | tryScanOperatorAsRegexLiteralGroup | "(" | regexScannerAtom .
-tryScanOperatorAsRegexLiteralGroup = "(" { regexSpaceAtom | tryScanOperatorAsRegexLiteralItem } ")" .
+tryScanOperatorAsRegexLiteralGroup = "(" { >n< ( regexSpaceAtom | tryScanOperatorAsRegexLiteralItem ) } >n< ")" .
 
 regularExpressionLiteral = plainRegularExpressionLiteral .
 
@@ -1744,6 +1761,15 @@ declaration = classDeclaration .
 declaration = actorDeclaration .
 declaration = protocolDeclaration .
 declaration = initializerDeclaration .
+// NOTE (2026-09-17): `@excludedFrom(initializerBody)` here is WRONG and was reverted — it took
+// testInitCallInPoundIf#1 from 2 tree issues to 6 (accept + ambiguity + trees), i.e. it killed the
+// parse outright. The reason is instructive and is the same engine gap as TODO.md 14:
+// `statement = @cannotParse(declaration attributes) expression` snapshots the RAW forest at Oracle
+// registration, so pruning the declaration reading LATER can never enable the expression reading —
+// `@cannotParse(declaration)` still sees the declaration and still suppresses the expression, and
+// now nothing is left. An Oracle-level restriction of a `@cannotParse` target is always a net loss.
+// Fixing this needs a PARSE-TIME notion of "inside an initializer body", which APUS lacks
+// (containment is Oracle-only). See TODO.md 10.
 declaration = bodylessInitializerDeclaration .
 declaration = deinitializerDeclaration .
 declaration = extensionDeclaration .
@@ -1884,6 +1910,27 @@ getterSetterBlock = @prefer accessorBlockBrace .   // swift-syntax AccessorBlock
 initializedAccessorBlock = @cannotParse(accessorBlockBrace willSetDidSetBlock) codeBlock .
 initializedAccessorBlock = @prefer "{" accessorClauseListNoInit "}" .
 initializedAccessorBlock = @prefer "{" initAccessorClause accessorClauseList? "}" .
+
+// REACHABILITY RECOGNIZER — contributes no parse, exists only so the predicate above has an
+// answer. `@cannotParse(accessorBlockBrace)` is a query over the RAW forest, so it is meaningful
+// only where `accessorBlockBrace` is actually PREDICTED: a target the grammar never attempts at
+// the anchor yields nothing and the guard then passes for free. `Grammar Predicate Lookahead
+// Design.md:85` calls that a specification error, not a silent false, and requires the target to be
+// reachable or seeded — the seeded sub-parse is NOT implemented (see TODO.md item 14).
+//
+// `accessorBlockBrace` is otherwise referenced only by `getterSetterBlock`, which only
+// `subscriptDeclaration` uses, so at a VARIABLE brace it was unreachable and the guard was DEAD:
+// `var pair: (Int, Int) = (42, 0) { get … set … init(initialValue) {} }` fell through to the
+// `codeBlock` alternate (bare `init` as a decl-reference expression, `(initialValue)` as its call,
+// `{}` as a trailing closure) and was wrongly accepted — `testInitAccessorsWithDefaultValues#1`.
+// Rejecting it is faithful to Swift 6.4: an `init` accessor after a getter/setter is an SE-0508
+// source break, listed under Xcode 27's Swift Compiler known issues (radar 180969028), workaround
+// "declare the `init` accessor first".
+//
+// Self-annihilating, so it can never widen the language: its own predicate names its own first
+// symbol, so it is pruned at exactly the positions where it derives, while still forcing the
+// descriptors the query reads. Delete this the moment the engine seeds unreachable targets.
+initializedAccessorBlock = @cannotParse(accessorBlockBrace) accessorBlockBrace .
 
 accessorClauseListNoInit = accessorClauseEntryNoInit accessorClauseListNoInit? .
 accessorClauseEntryNoInit = getterClause | setterClause | coroutineAccessorClause .

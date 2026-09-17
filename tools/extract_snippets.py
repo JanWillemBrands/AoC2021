@@ -199,8 +199,25 @@ def extract_first_string_arg(text):
 
 
 def has_diagnostics(rest_of_args):
-    """Check if the remaining arguments contain a diagnostics: parameter."""
-    return 'diagnostics:' in rest_of_args or 'diagnostics :' in rest_of_args
+    """Check if the remaining arguments contain a NON-EMPTY diagnostics: parameter.
+
+    `diagnostics: []` asserts the opposite of what the bare substring suggests: it means
+    "this source parses with NO errors". Both extractors key off this helper and so both
+    misfiled such a call — `extract_snippets.py` skipped it from the ACCEPT corpus while
+    `extract_rejects.py` asserted it as a REJECT, i.e. exactly backwards.
+
+    It bit `TypeTests.testLifetimeSpecifier`: `assertParse("func foo() -> dependsOn(0) X",
+    diagnostics: [], experimentalFeatures: [.nonescapableTypes])` is a VALID case, but landed
+    in the reject corpus as `testLifetimeSpecifier#6`, where it could never pass — Advent is
+    right to accept it. Only one call in each raw corpus is affected, so this is a guard
+    against recurrence on the next version bump rather than a bulk re-harvest.
+    """
+    match = re.search(r'diagnostics\s*:\s*\[', rest_of_args)
+    if not match:
+        return False
+    # Empty list (whitespace/newlines only before the closing bracket) = asserts NO errors.
+    tail = rest_of_args[match.end():]
+    return tail.lstrip()[:1] != ']'
 
 
 def has_underscored_attrs(source_literal):

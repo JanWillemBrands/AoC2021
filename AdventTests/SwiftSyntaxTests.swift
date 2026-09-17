@@ -520,51 +520,6 @@ func adventSwiftSyntaxTree(_ snippet: SwiftSnippet) throws -> SourceFileSyntax? 
     ).swiftSyntaxTree
 }
 
-@Suite("Temporary Slash Diagnostics")
-struct TemporarySlashDiagnostics {
-    @Test("prefix slash statement boundary")
-    func prefixSlashStatementBoundary() throws {
-        let grammar = loadFreshSwiftGrammar()
-        for source in [
-            "_ = /E.e",
-            "(/E.e).foo(/0)",
-            "_ = /E.e\n(/E.e).foo(/0)",
-        ] {
-            let parser = MessageParser(grammar: grammar)
-            parser.parse(input: source)
-            let root = parser.currentParseRoot ?? grammar.root
-            let matched = parser.yield(of: root).contains { y in
-                y.i == source.startIndex && y.j == source.endIndex
-            }
-            print("SOURCE:", source.debugDescription, "matched:", matched, "yieldCount:", parser.yieldCount)
-            let preBuilder = DerivationBuilder(parser: parser, input: source)
-            let preTree = preBuilder.buildAST()
-            print("  preOracleTree:", preTree == nil ? "nil" : "ok", "preDiagnostics:", preBuilder.diagnostics.map(\.description))
-            if let regex = grammar.nonTerminals["regularExpressionLiteral"] {
-                let ys = parser.yield(of: regex)
-                print("   pre regularExpressionLiteral", ys.prefix(20).map { "\(source.distance(from: source.startIndex, to: $0.i))..\(source.distance(from: source.startIndex, to: $0.k))..\(source.distance(from: source.startIndex, to: $0.j))='\(source[$0.k..<$0.j].replacingOccurrences(of: "\n", with: "⏎"))'" }.joined(separator: ", "))
-            }
-            if source.contains("\n") {
-                setenv("APUS_TRACE_ORACLE", "1", 1)
-            } else {
-                unsetenv("APUS_TRACE_ORACLE")
-            }
-            let pruned = Oracle(parser: parser, input: source).disambiguate()
-            let postMatched = parser.yield(of: root).contains { y in
-                y.i == source.startIndex && y.j == source.endIndex
-            }
-            let builder = DerivationBuilder(parser: parser, input: source)
-            let tree = builder.buildAST()
-            print("  oraclePruned:", pruned, "postMatched:", postMatched, "tree:", tree == nil ? "nil" : "ok", "diagnostics:", builder.diagnostics.map(\.description))
-            for name in ["topLevelDeclaration", "statements", "statement", "expression", "prefixExpression", "postfixExpression"] {
-                guard let nt = grammar.nonTerminals[name] else { continue }
-                let ys = parser.yield(of: nt).filter { $0.i == source.startIndex || $0.k == source.startIndex }
-                print("  ", name, ys.prefix(20).map { "\(source.distance(from: source.startIndex, to: $0.i))..\(source.distance(from: source.startIndex, to: $0.k))..\(source.distance(from: source.startIndex, to: $0.j))" }.joined(separator: ", "))
-            }
-        }
-    }
-}
-
 /// Why the converter could not build a faithful tree for this snippet. Empty does NOT
 /// imply the tree matches, but a non-empty list names every place it gave up.
 func adventGeneratorDiagnostics(_ snippet: SwiftSnippet) -> [GeneratorDiagnostic] {
@@ -598,9 +553,12 @@ let regexLookbehindSnippets: [SwiftSnippet] = [
     SwiftSnippet(label: "regex-in-array",   source: "let arr = [/abc/]",        origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
 
     // Compound positive override — eliminates Swift's `preferRegexOverBinaryOperator` hack.
+    // NOT newly broken: this row is accepted and always was, but until `treesMatch` was added to
+    // this suite (2026-09-17) nothing here compared trees, so the converter gap was invisible.
     SwiftSnippet(label: "regex-after-try-bang",
                  source: #"let m = try! /^x/.wholeMatch(in: "hello")"#,
-                 origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
+                 origin: "RegexLookbehind", syntaxVersion: "603.0.1",
+                 disabledReason: "converter tree gap on `try!` + regex + member call; acceptance is fine. Pre-existing, surfaced by this suite's new treesMatch test"),
     SwiftSnippet(label: "regex-after-try-question",
                  source: #"let m = try? /^x/.wholeMatch(in: "hello")"#,
                  origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
@@ -613,6 +571,33 @@ let regexLookbehindSnippets: [SwiftSnippet] = [
                  source: "let r = b?/1/:/2/",
                  origin: "RegexLookbehind", syntaxVersion: "603.0.1",
                  disabledReason: "lookbehind allows regex after '?'; blocked by Swift.apus conditionalOperator's <s> spacing requirement, a separate grammar policy"),
+
+    // INTERIOR SPACES — a KNOWN DEFECT, recorded here so it cannot be forgotten again. The corpus
+    // had no fixture with a space inside a `/…/` body, which is why the loss went unseen.
+    //
+    // `plainRegularExpressionLiteral`'s body is a sequence of TOKENS with trivia skipped between the
+    // items, so `regexSpaceAtom` never matches — the space is always consumed as trivia first. The
+    // converter's `collectTerminalText` then rebuilds the literal by concatenating COMMITTED
+    // terminals, so every interior space is dropped and `/a b/` generates the pattern `ab` — a regex
+    // that matches something else entirely, silently. All these rows ACCEPT; they fail `treesMatch`.
+    //
+    // The fix is to make the body character-tight, which is TODO.md item 13 — attempted 2026-09-17
+    // and reverted twice (6 → 45 and 6 → 629 issues); see that item for the two failure modes.
+    // `regex-escaped-space` is the control: `\ ` lexes as one `regexEscape` token, so it survives
+    // and must keep passing.
+    SwiftSnippet(label: "regex-interior-space",       source: "let r = /a b/",     origin: "RegexLookbehind", syntaxVersion: "603.0.1",
+                 disabledReason: "interior space dropped from the generated pattern (`ab`) — TODO.md 13"),
+    SwiftSnippet(label: "regex-interior-2-spaces",    source: "let r = /a  b/",    origin: "RegexLookbehind", syntaxVersion: "603.0.1",
+                 disabledReason: "interior spaces dropped from the generated pattern (`ab`) — TODO.md 13"),
+    SwiftSnippet(label: "regex-interior-3-spaces",    source: "let r = /a   b/",   origin: "RegexLookbehind", syntaxVersion: "603.0.1",
+                 disabledReason: "interior spaces dropped from the generated pattern (`ab`) — TODO.md 13"),
+    SwiftSnippet(label: "regex-interior-space-thrice", source: "let r = /a b c/",  origin: "RegexLookbehind", syntaxVersion: "603.0.1",
+                 disabledReason: "interior spaces dropped from the generated pattern (`abc`) — TODO.md 13"),
+    SwiftSnippet(label: "regex-interior-space-group", source: "let r = /(a  b)/",  origin: "RegexLookbehind", syntaxVersion: "603.0.1",
+                 disabledReason: "interior spaces dropped from the generated pattern (`(ab)`) — TODO.md 13"),
+    SwiftSnippet(label: "regex-interior-space-class", source: "let r = /[a b]/",   origin: "RegexLookbehind", syntaxVersion: "603.0.1",
+                 disabledReason: "interior space dropped from the generated pattern (`[ab]`) — TODO.md 13"),
+    SwiftSnippet(label: "regex-escaped-space",        source: #"let r = /a\ b/"#,  origin: "RegexLookbehind", syntaxVersion: "603.0.1"),
 ]
 
 @Suite("Regex Lookbehind (Swift.apus integration)", .serialized)
@@ -622,6 +607,29 @@ struct RegexLookbehindIntegration {
         guard snippet.disabledReason == nil else { return }
         let result = try adventParse(snippet)
         #expect(result != nil, "Advent failed to parse: \(snippet.source)")
+    }
+
+    /// Acceptance alone cannot see a corrupted literal: `/a b/` parsed fine while generating the
+    /// pattern `ab`. Comparing against swift-syntax is what pins the body text, so this suite is
+    /// `trees match`-asserting like the Phase suites — a failure here is a regression, not frontier.
+    @Test("trees match", arguments: regexLookbehindSnippets)
+    func treesMatch(_ snippet: SwiftSnippet) throws {
+        guard snippet.disabledReason == nil else { return }
+        let reference = Parser.parse(source: snippet.source)
+        try #require(!reference.hasError, "fixture is not valid Swift: \(snippet.source)")
+        let refDump = dumpSwiftSyntaxNode(Syntax(reference), indent: 0)
+        guard let adventTree = try adventSwiftSyntaxTree(snippet) else {
+            Issue.record("Advent produced no SwiftSyntax tree for: \(snippet.source)")
+            return
+        }
+        let adventDump = dumpSwiftSyntaxNode(Syntax(adventTree), indent: 0)
+        #expect(refDump == adventDump, """
+            Trees differ for '\(snippet.diagnosticID)' — \(snippet.source)
+            --- swift-syntax ---
+            \(refDump)
+            --- advent ---
+            \(adventDump)
+            """)
     }
 }
 
@@ -2405,58 +2413,6 @@ struct SwiftSyntaxTests {
 /// Ground truth for `StringLiteralSegmentList` shape. Guessing the segmentation rule from tree
 /// dumps produced two contradictory hypotheses, so print what swift-syntax ACTUALLY builds:
 /// every segment's exact text, escaped, for the fixtures whose segment COUNT we get wrong.
-@Suite("multiline segment probe")
-struct MultilineSegmentProbe {
-    @Test("dump reference segments")
-    func dumpReferenceSegments() throws {
-        let labels: Set<String> = [
-            "testMultilineString7#1", "testMultilineString9#1", "testMultilineString11#1",
-            "testMultilineString25#1", "testMultilineString26#1", "testMultilineString29#1",
-            "testMultilineString31#1", "testMultilineString41#1", "testMultilineString44#1",
-            "testEscapeNewlineInRawString#1", "testEscapeLastNewlineInRawString#1",
-        ]
-        for snippet in translatedSnippets where labels.contains(snippet.label) {
-            let tree = Parser.parse(source: snippet.source)
-            print("### \(snippet.diagnosticID)  source=\(snippet.source.debugDescription)")
-            dumpLiterals(in: Syntax(tree))
-        }
-    }
-
-    /// Does EVERY escape end a segment, or only the ones that affect layout (`\n`, `\<newline>`)?
-    /// The fixtures only exercise the layout ones, so probe the rest directly.
-    @Test("which escapes break a segment")
-    func escapeBreaks() throws {
-        let probes = [
-            "tab":        "_ = \"\"\"\n    a\\tb\n    \"\"\"",
-            "quote":      "_ = \"\"\"\n    a\\\"b\n    \"\"\"",
-            "newlineEsc": "_ = \"\"\"\n    a\\nb\n    \"\"\"",
-            "backslash":  "_ = \"\"\"\n    a\\\\b\n    \"\"\"",
-            "unicode":    "_ = \"\"\"\n    a\\u{41}b\n    \"\"\"",
-            "oneLine":    "_ = \"\"\"\n    a\n    \"\"\"",
-            "empty":      "_ = \"\"\"\n    \"\"\"",
-        ]
-        for (name, source) in probes.sorted(by: { $0.key < $1.key }) {
-            print("### probe \(name)  source=\(source.debugDescription)")
-            dumpLiterals(in: Syntax(Parser.parse(source: source)))
-        }
-    }
-
-    private func dumpLiterals(in node: Syntax) {
-        if let lit = node.as(StringLiteralExprSyntax.self) {
-            print("   openQuote=\(lit.openingQuote.text.debugDescription) segments=\(lit.segments.count)")
-            for (i, seg) in lit.segments.enumerated() {
-                switch seg {
-                case .stringSegment(let s):
-                    print("     [\(i)] stringSegment \(s.content.text.debugDescription)")
-                case .expressionSegment(let e):
-                    print("     [\(i)] expressionSegment \(e.description.debugDescription)")
-                }
-            }
-        }
-        for child in node.children(viewMode: .sourceAccurate) { dumpLiterals(in: child) }
-    }
-}
-
 /// Snippets swift-syntax parses but the compiler rejects are disabled for accept/tree tests.
 /// They are classification data until split into syntactic versus semantic compiler rejects.
 ///

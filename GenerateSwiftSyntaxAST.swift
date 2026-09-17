@@ -3812,7 +3812,10 @@ struct SwiftSyntaxGenerator {
         }
     }
 
-    /// availabilityValue = platformVersion | staticStringLiteral | hardIdentifier .
+    /// availabilityValue = platformVersion | availabilityStringLiteral | hardIdentifier .
+    /// availabilityStringLiteral = singleLineStringLiteral | multilineStringLiteral .
+    /// (Copied from Swift.apus, not paraphrased — this comment previously said `staticStringLiteral`
+    /// and `tookMultilineStringForm` was written to match the comment rather than the grammar.)
     private mutating func availabilityValue(_ span: NTSpan) -> AvailabilityLabeledArgumentSyntax.Value? {
         guard let (_, spans) = tileAlternate(span.nt, from: span.from, to: span.to) else {
             record(.lookupFailed, "no alternate tiles the span", from: span.from, to: span.to)
@@ -7579,8 +7582,10 @@ struct SwiftSyntaxGenerator {
 
     /// Split a MULTILINE literal body into `StringSegment` texts.
     ///
-    /// The boundaries are probe-confirmed against swift-syntax — see `MultilineSegmentProbe`,
-    /// which prints the reference segments for every fixture below. A segment ends after:
+    /// The boundaries were probe-confirmed against swift-syntax by dumping its reference segments
+    /// for every fixture below, plus a direct sweep of which escapes break a segment. That probe
+    /// (`MultilineSegmentProbe`) asserted nothing once its answers were written down here, so it was
+    /// removed 2026-09-17; the rules it established are the list below. A segment ends after:
     ///
     ///   • a real line break — the break STAYS in the segment (`"Six⏎"`, `"Zeta⏎"`, `""`)
     ///   • a `\n` ESCAPE — the two escape characters STAY in the segment (`"Five\n"`, `"⏎"`, …)
@@ -7740,12 +7745,21 @@ struct SwiftSyntaxGenerator {
                                   ("singleLineStringLiteral", false), ("extendedSinglelineStringLiteral", false)] {
             if findTerminal(named: name, in: spans) != nil { return multiline }
         }
-        if let staticNT = find("staticStringLiteral", in: spans),
-           let (_, staticSpans) = tileAlternate(staticNT.nt, from: staticNT.from, to: staticNT.to) {
-            if findTerminal(named: "multilineStringLiteral", in: staticSpans) != nil { return true }
-            if findTerminal(named: "extendedMultilineStringLiteral", in: staticSpans) != nil { return true }
-            if findTerminal(named: "singleLineStringLiteral", in: staticSpans) != nil { return false }
-            if findTerminal(named: "extendedSinglelineStringLiteral", in: staticSpans) != nil { return false }
+        // One level down, through whichever wrapper nonterminal the caller's rule actually names.
+        // `availabilityStringLiteral` belongs here: `availabilityValue = platformVersion |
+        // availabilityStringLiteral | hardIdentifier`, NOT `staticStringLiteral` as the comment on
+        // `availabilityValue` used to claim. Only `staticStringLiteral` was descended, so a
+        // multiline `@available(… message: """…""")` fell through to `return nil`, `isMultiline`
+        // came out false, and the message was rebuilt as a SINGLE-line literal with a 1-character
+        // delimiter — leaving stray quotes in the segments (testDiagnoseAvailability18#1).
+        for wrapper in ["staticStringLiteral", "availabilityStringLiteral"] {
+            guard let wrapNT = find(wrapper, in: spans),
+                  let (_, wrapSpans) = tileAlternate(wrapNT.nt, from: wrapNT.from, to: wrapNT.to)
+            else { continue }
+            if findTerminal(named: "multilineStringLiteral", in: wrapSpans) != nil { return true }
+            if findTerminal(named: "extendedMultilineStringLiteral", in: wrapSpans) != nil { return true }
+            if findTerminal(named: "singleLineStringLiteral", in: wrapSpans) != nil { return false }
+            if findTerminal(named: "extendedSinglelineStringLiteral", in: wrapSpans) != nil { return false }
             return nil
         }
         if let interpNT = find("interpolatedStringLiteral", in: spans),
