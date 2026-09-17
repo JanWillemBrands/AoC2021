@@ -143,6 +143,7 @@ class ApusParser {
         }
         grammar.isLL1 = isLL1
         grammar.propagateExcludeSets()
+        grammar.diagnosePredicateTargets()
         try grammar.populateBitSets()
 
         return grammar

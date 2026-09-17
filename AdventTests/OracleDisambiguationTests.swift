@@ -451,6 +451,42 @@ struct OracleDisambiguationTests {
     @Suite("Parse predicates", .serialized)
     struct ParsePredicates {
 
+        // MARK: Blind-target diagnostic (TODO.md 14)
+        //
+        // `LookaheadPredicateRule` answers "does N derive here?" from N's yields, and an empty
+        // answer is ambiguous: N failed (a real false) or N was never attempted (blind). Blind
+        // resolves to the PERMISSIVE verdict, so `@cannotParse(N)` silently becomes `true` and the
+        // guarded alternate is unguarded. `diagnosePredicateTargets` raises the unconditionally
+        // blind cases as the "specification error" the design doc already calls them.
+
+        @Test("a predicate target referenced by no production body is reported as blind")
+        func blindTargetNotReferenced() throws {
+            // `A` is defined and named by the predicate, but no production body mentions it, so it
+            // is never predicted and `@cannotParse(A)` can never fire.
+            let g = #"a - /a/ . S = @cannotParse(A) "a" . A = "a" ."#
+            let findings = try parseGrammar(g).diagnosePredicateTargets()
+            #expect(findings.contains { $0.contains("BLIND PREDICATE") && $0.contains("'A'") },
+                    "expected a blind-predicate finding for 'A', got: \(findings)")
+        }
+
+        @Test("a predicate target reachable from a production body is not reported")
+        func reachableTargetIsClean() throws {
+            // Same predicate, but `A` now appears in a body, so it is predicted and the query is
+            // authoritative. This is the guard against the diagnostic crying wolf.
+            let g = #"a - /a/ . S = @cannotParse(A) "a" | A . A = "a" ."#
+            let findings = try parseGrammar(g).diagnosePredicateTargets()
+            #expect(findings.isEmpty, "expected no findings, got: \(findings)")
+        }
+
+        @Test("the Swift grammar has no blind predicate targets")
+        func swiftGrammarHasNoBlindPredicates() throws {
+            // Regression lock for the `@cannotParse(accessorBlockBrace)` class of bug: that guard was
+            // dead because the target was never predicted at a variable brace. This asserts the
+            // statically-detectable half stays clean as predicates are added.
+            let findings = try loadGrammarFile(named: "Swift.apus").diagnosePredicateTargets()
+            #expect(findings.isEmpty, "Swift.apus has blind predicate targets: \(findings)")
+        }
+
         @Test("@cannotParse is the Oracle predicate spelling")
         func cannotParsePrunesAlternate() throws {
             let g = #"a - /a/ . S = @cannotParse(A) "a" | A . A = "a" ."#

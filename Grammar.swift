@@ -120,12 +120,7 @@ class Grammar {
         }
     }
 
-    // MARK: - Schrödinger Exclusion Set Propagation
-    //
-    // Background: the scanner produces Schrödinger tokens when multiple patterns
-    // match the same input at the same length (e.g. "if" matches both the `if`
-    // keyword and `plainIdentifier`). The GLL parser explores ALL duals, which
-    // is correct but creates many descriptors that will ultimately fail.
+    // MARK: - Exclusion Set Propagation
     //
     // The `---` annotation in APUS grammar files declares that certain keywords
     // should never be treated as a specific terminal in that context:
@@ -381,7 +376,6 @@ extension Grammar {
             updateFollow(for: node)
         case .EOS, .T, .TI, .C:
             try populateFirstFollowSets(for: node.seq!)
-//            node.first = [node.name]
             node.first.insert(node.name)
             updateFollow(for: node)
         case .B:
@@ -437,13 +431,11 @@ extension Grammar {
                 production.follow.formUnion(node.follow)
             } else {
                 var error = "grammar parse error: '\(node.name)' was not defined as a grammar rule\n"
-//                trace("grammar parse error: '\(node.name)' was not defined as a grammar rule")
                 let definedAsTerminal = terminals[node.name] != nil
                 if definedAsTerminal {
                     error += "instead it was defined as terminal \(terminals[node.name]!.source)\n"
                     error += "if this was intended please define the terminal before using it in the grammar"
                     Logger.grammar.error("\(error, privacy: .public)")
-//                    trace("but it was defined as terminal \(terminals[node.name]!.source) instead, if this was intended please define the terminal before using it in the grammar.")
                 }
                 throw GrammarNodeError.undefinedNonTerminal(name: node.name, definedAsTerminal: definedAsTerminal)
             }

@@ -1402,6 +1402,29 @@ optionalChainingExpression = postfixExpression >s< optionalMark .
 // statements where either a declaration or an attribute starts here.
 statement = @cannotParse(declaration attributes) expression .
 statement = declaration .
+
+// swift-syntax `allowInitDecl: false`: inside an initializer's OWN body, statement-start `init` is
+// NOT a declaration start, so `init()` there is a bare `init` decl-reference plus a call. Probed —
+// `class C { init() { init(x: 1) } }` has no error, while `func f() { init(x: 1) }`,
+// `class C { func g() { … } }`, `if true { … }`, `class C { deinit { … } }` and top level all DO.
+// Without this, `#if true init() #endif` inside `init() { … }` came out as an InitializerDecl rather
+// than a FunctionCallExpr (testInitCallInPoundIf#1).
+//
+// This ADDS a reading rather than restricting one, which is the only thing that can work here.
+// `statement = @cannotParse(declaration attributes) expression` reads a SNAPSHOT of the raw forest
+// taken at Oracle registration, so pruning the competing `bodylessInitializerDeclaration` later
+// cannot revive the expression — tried, and it killed the parse outright (2 issues → 6). This
+// alternate carries no `@cannotParse`, so it survives that guard, and the two Oracle annotations
+// then place it exactly:
+//   • `@confinedTo(initializerBody)` is a HARD CONSTRAINT, so it runs in the first pass and deletes
+//     this reading everywhere outside an initializer body (including when there are no initializers
+//     at all, since nothing is contained in an empty container set).
+//   • `@prefer` is a PREFERENCE, so it runs after that pass over the survivors and prunes the
+//     same-span `statement = declaration` sibling — but only where this reading actually survived,
+//     i.e. only inside an initializer body. The phase order is what makes the pair safe.
+// `>+> ( "init" )` keeps the whole thing to `init`-led statements; reusing `expression` as the body
+// symbol means the AST converter needs no new case.
+statement = @prefer @confinedTo(initializerBody) >+> ( "init" ) expression .
 statement = loopStatement .
 // `if`/`switch` arrive via `statement = expression` (first `expression` alternative covers
 // `conditionalExpression`); branchStatement holds only `guard` (the sole keyword-led true statement).
@@ -1761,15 +1784,15 @@ declaration = classDeclaration .
 declaration = actorDeclaration .
 declaration = protocolDeclaration .
 declaration = initializerDeclaration .
-// NOTE (2026-09-17): `@excludedFrom(initializerBody)` here is WRONG and was reverted — it took
-// testInitCallInPoundIf#1 from 2 tree issues to 6 (accept + ambiguity + trees), i.e. it killed the
-// parse outright. The reason is instructive and is the same engine gap as TODO.md 14:
+// DO NOT add `@excludedFrom(initializerBody)` here. It looks like the way to model swift-syntax's
+// `allowInitDecl: false`, and it is WRONG: measured, it took testInitCallInPoundIf#1 from 2 tree
+// issues to 6 (accept + ambiguity + trees) by killing the parse outright.
 // `statement = @cannotParse(declaration attributes) expression` snapshots the RAW forest at Oracle
-// registration, so pruning the declaration reading LATER can never enable the expression reading —
-// `@cannotParse(declaration)` still sees the declaration and still suppresses the expression, and
-// now nothing is left. An Oracle-level restriction of a `@cannotParse` target is always a net loss.
-// Fixing this needs a PARSE-TIME notion of "inside an initializer body", which APUS lacks
-// (containment is Oracle-only). See TODO.md 10.
+// registration, so pruning this declaration reading LATER cannot enable the expression reading —
+// `@cannotParse(declaration)` still sees the declaration, still suppresses the expression, and
+// nothing is left. Restricting a `@cannotParse` target with an Oracle rule is always a net loss.
+// The working fix ADDS a reading instead: see the `@prefer @confinedTo(initializerBody)
+// >+> ( "init" ) expression` alternate at `statement`, and TODO.md 10.
 declaration = bodylessInitializerDeclaration .
 declaration = deinitializerDeclaration .
 declaration = extensionDeclaration .

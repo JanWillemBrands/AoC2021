@@ -379,6 +379,22 @@ Use `SwiftSyntaxTests / ParserProbe` with a temporary inline `adventParse` call.
 parametrized). Best for: confirming a single snippet accepts/rejects before
 touching the grammar.
 
+### `-only-testing` silently runs ZERO tests when the path is wrong
+
+`xcodebuild ... -only-testing:'AdventTests/Oracle Disambiguation/Parse predicates'` exits **rc=0**
+having run nothing. A non-matching filter is not an error, and a suite `@Suite("…")` display name
+with spaces is not the identifier `-only-testing` wants. So a green targeted run proves nothing until
+you confirm the count:
+
+```sh
+grep -E "Test run with|Executed [0-9]+ tests" run.log
+# "Executed 0 tests, with 0 failures" ← the filter matched nothing
+```
+
+swift-testing also needs the trailing parens on a function (`…/myProbe()`). When in doubt, filter to
+the FILE-level suite (`-only-testing:AdventTests/SwiftSyntax603Tests/ExpressionSyntaxTests`) or just
+run the full set — it is 80s.
+
 ### Tier 2: targeted suite run (seconds to ~1 min)
 
 Use `RunSomeTests` on a single suite (e.g. `RejectSyntaxTests/adventRejects(_:)`)

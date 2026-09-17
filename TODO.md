@@ -1,97 +1,10 @@
 # This file is the canonical TODO list in this project.
 
-11. **preserving trivia** needs a round-trip test
+1. **preserving trivia** needs a round-trip test
 
-12. **wider tests on Swift 6.4** test all swift-syntax sources files for equivalence.
+2. **wider tests on Swift 6.4** test all swift-syntax sources files for equivalence.
 
-1. Wrong accepts: condition trailing closures
-   • testTrailingClosureInIfCondition#1
-   • testTrailingClosureInGuard#1...#4
-   • Also related tree failures: testTrailingClosureInIfCondition#1...#3
-   • High value: correctness failure, clustered root.
-
-2. Accessor/init accessor ambiguity
-   • testVariableDeclarations#9
-   • testInitAccessor#3/#4
-   • testInitAccessorsWithDefaultValues#1
-   • testYield#1/#3/#4
-   • testRecovery165/#166, testSemicolon6, testTrailingSemi5
-   • Biggest cluster. Likely one grammar/Ast-builder root.
-
-3. String interpolation / unterminated string handling
-   • testNewlineInInterpolationOfSingleLineString#1
-   • testUnterminatedString4#1
-   • testUnterminatedString5#1
-   • Plus string ambiguity cases.
-   • Correctness, and likely scanner/string-mode boundary issue.
-
-4. Module selector in binding/pattern positions
-   • testModuleSelectorIncorrectBindingDecls#7/#8/#9
-   • testModuleSelectorType#7
-   • Correctness. Needs careful grammar containment, not a broad ban.
-
-5. Regex / slash disambiguation leftovers
-   • testForwardSlashRegex116#1
-   • testForwardSlashRegex142#1
-   • testForwardSlashRegexSkippingAllowed11#1
-   • testPrefixSlash4#1
-   • Important but risky; touch after cleaner structural buckets.
-
-6. Literal with trailing closure
-   • testLiteralWithTrailingClosure#4
-   • testLiteralWithTrailingClosure#6
-   • Narrow, correctness-focused. Might share suffix/call eligibility logic.
-
-7. Top-level enum case / enum tree mismatches
-   • testEnum11#1
-   • testEnum70#1
-   • testEnum72#1
-   • Probably declaration-position containment.
-
-8. ABI attribute ambiguity
-   • testABIAttribute#7/#19
-   • Pure ambiguity, likely small grammar disambiguation.
-
-9. Single correctness stragglers
-   • testSelfRebinding2#1
-   • Handle after bigger reject clusters.
-
-10. Low-priority tree-only mismatches
-
-    • ~~testDiagnoseAvailability18#1~~ **FIXED 2026-09-17.** `tookMultilineStringForm` descended
-      through `staticStringLiteral` only, but the rule is `availabilityValue = platformVersion |
-      availabilityStringLiteral | hardIdentifier` — and the comment above `availabilityValue` said
-      `staticStringLiteral`, so the code matched the comment rather than the grammar. A multiline
-      `@available(… message: """…""")` therefore fell through to `nil`, `isMultiline` came out false,
-      and the message was rebuilt as a single-line literal with a 1-character delimiter, leaving
-      stray quotes in the segments. Textbook case of the `TESTING.md` rule "rule comments are
-      copy-paste, never paraphrase". Fixed by descending through both wrappers.
-
-    • **testInitCallInPoundIf#1 — BLOCKED on the same engine gap as item 14. Do not retry with an
-      Oracle rule.** `class C { init() { #if true init() #endif } }`: swift-syntax emits
-      `FunctionCallExpr(DeclReferenceExpr(keyword(init)))`, Advent emits `InitializerDecl`.
-      Root cause is swift-syntax's `allowInitDecl: false` context — statement-start `init` is a
-      declaration start EVERYWHERE except inside an initializer's own body. Probed:
-      `class C { init() { init(x: 1) } }` has no error, while `func f() { init(x: 1) }`,
-      `class C { func g() { … } }`, `if true { … }`, `class C { deinit { … } }` and top level all DO.
-
-      `declaration = @excludedFrom(initializerBody) bodylessInitializerDeclaration` was tried and
-      made it WORSE — 2 tree issues became 6 (accept + ambiguity + trees), killing the parse. The
-      reason generalises: `statement = @cannotParse(declaration attributes) expression` snapshots the
-      RAW forest at Oracle registration (`Oracle.swift:183-188`), so pruning the declaration reading
-      later can never ENABLE the expression reading — `@cannotParse(declaration)` still sees the
-      declaration, still suppresses the expression, and now nothing survives. **Rule of thumb:
-      restricting a `@cannotParse` target with an Oracle rule is always a net loss.**
-
-      A real fix needs a PARSE-TIME notion of "inside an initializer body"; APUS containment is
-      Oracle-only. Options: a parse-time containment primitive, or model swift-syntax's context flag
-      by threading a distinct `initializerBodyStatement` nonterminal through the initializer body's
-      code block (duplicating the statement grammar for one alternate — ugly but parse-time).
-
-    • Other isolated tree diffs. Leave last unless they fall out of earlier fixes.
-
-13. **Convert the plain-regex body to a `-` lexical recognizer** — ATTEMPTED 2026-09-17, REVERTED
-    TWICE. Do not retry without solving the two blockers below first.
+3. **Convert the plain-regex body to a `-` lexical recognizer** — ATTEMPTED 2026-09-17, REVERTED TWICE. Do not retry without solving the two blockers below first.
 
     Baseline was 6 issues. Attempt 1 (whole literal as `-`): **45**. Attempt 2 (body only as `-`):
     **629**. Both reverted; the grammar is back to the `>n<`-gated `=` form.
@@ -212,29 +125,6 @@
     still see the cross-newline literal and still prune the correct prefix-`/` reading. `@preempt`
     is scanner-time, earlier still. And `registerSameLine` asserts a single-alternate nonterminal,
     which `plainRegularExpressionLiteral` is not. Only a parse-time gate works.
-
-14. **Predicate reachability: implement the seeded sub-parse fallback**
-
-    `Grammar Predicate Lookahead Design.md:85` requires a predicate's target to be *parsed at `p`* —
-    reachable or seeded — and calls an unreachable, unseeded target "a **specification error**, not a
-    silent false". The seeded half is **not implemented**: `Oracle.swift:424` only snapshots raw
-    yields, so a predicate whose target the grammar never predicts at the anchor silently reads TRUE.
-
-    This bit for real: `initializedAccessorBlock = @cannotParse(accessorBlockBrace willSetDidSetBlock)
-    codeBlock` was **dead**, because `accessorBlockBrace` is referenced only by `getterSetterBlock`,
-    which only `subscriptDeclaration` uses — so at a *variable* brace it is never predicted, yields
-    nothing, and the guard passes for free (`testInitAccessorsWithDefaultValues#1` wrongly accepted).
-    Worked around in the grammar with a self-annihilating recognizer alternate; the general fix is the
-    engine one.
-
-    Note the doc rejects "query, then sub-parse if empty" as the *selector*, preferring a static
-    property of the predicate site. But sub-parsing on empty is SOUND either way (a target that was
-    attempted and genuinely failed also fails the sub-parse) — it is only wasteful, and it needs no
-    static reachability analysis. That is the cheap route if the static one proves awkward.
-
-    Until it exists, **any new `@canParse`/`@cannotParse` needs its target's reachability at the
-    anchor checked by hand.** A grammar-load diagnostic that flags predicate targets not predicted at
-    any anchor position would catch the whole class.
 
 ## Maintenance Rule
 
